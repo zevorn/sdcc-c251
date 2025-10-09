@@ -46,16 +46,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #endif
 
 
-//#ifndef HAVE_STRNDUP
-char *
-strndup (const char *str, size_t len)
-{
+static char *
+sd_strndup (const char *str, size_t len)
+{ 
+  // strndup-like function for sdld specific lkar code
+  // Consistently used by all compile targets.
+  // static and name to avoid collisions
   char *s = (char *) malloc (len + 1);
   memcpy (s, str, len);
   s[len] = '\0';
   return s;
 }
-//#endif
 
 static int
 is_ar (FILE * libfp)
@@ -100,7 +101,7 @@ get_long_name (const char *name)
                 while (*++n != '\n')
                   assert (n < &str_tab[str_tab_size]);
 
-              return strndup (name, n - name);
+              return sd_strndup (name, n - name);
             }
         }
     }
@@ -166,7 +167,7 @@ get_member_name (char *name, size_t *p_size, int allocate, FILE * libfp)
               while (name[++len] == ' ')
                 ;
               if (len == AR_NAME_LEN)
-                return strndup (name, p - name);
+                return sd_strndup (name, p - name);
             }
           else
             {
@@ -175,7 +176,7 @@ get_member_name (char *name, size_t *p_size, int allocate, FILE * libfp)
               p = name + AR_NAME_LEN;
               while (*--p == ' ' && p >= name)
                 ;
-              return strndup (name, p - name + 1);
+              return sd_strndup (name, p - name + 1);
             }
         }
 

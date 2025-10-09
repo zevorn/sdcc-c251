@@ -1,3 +1,8 @@
+2025-09-28 Janko Stamenović
+
+	* sdas/linksrc/lkar.c
+	  Fix sdld less dependent builds (Linux on i386)
+
 2025-09-28 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge atomic branch.
