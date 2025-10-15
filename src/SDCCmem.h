@@ -52,6 +52,7 @@ extern FILE *junkFile;
 #define  IDATA_NAME        port->mem.idata_name
 #define  PDATA_NAME        port->mem.pdata_name
 #define  XDATA_NAME        port->mem.xdata_name
+#define  XCONST_NAME       port->mem.xconst_name
 #define  XIDATA_NAME       port->mem.xidata_name
 #define  XINIT_NAME        port->mem.xinit_name
 #define  BIT_NAME          port->mem.bit_name
@@ -74,6 +75,7 @@ extern memmap *initialized;            /* initialized data, such as initialized,
 extern memmap *initializer;            /* a copy of the values for the initialized data from initialized in code space */
 extern memmap *pdata;                  /* paged external data upto 256 */
 extern memmap *xdata;                  /* external data                */
+extern memmap *xconst;                 // constant data in __far/__xdata space */
 extern memmap *xidata;                 /* the initialized xdata        */
 extern memmap *xinit;                  /* the initializers for xidata  */
 extern memmap *idata;                  /* internal data upto 256       */
@@ -113,7 +115,7 @@ void initMem (void);
 bool defaultOClass (struct symbol *);
 void allocGlobal (struct symbol *);
 void allocLocal (struct symbol *);
-void allocParms (struct value *, bool smallc);
+void allocParms (struct value *, bool smallc, bool dynamicc);
 void deallocParms (struct value *);
 void deallocLocal (struct symbol *);
 int allocVariables (struct symbol *);

@@ -141,6 +141,13 @@ testmodes = {
             "__has_z88dk_fastcall":"1"
         }
     },
+    "r4k":{
+        "compiler":sdcc,
+        "port":"r4k",
+        "extra-defines": {
+            "__has_z88dk_fastcall":"1"
+        }
+    },
     "sm83":{
         "compiler":sdcc,
         "port":"sm83",

@@ -121,6 +121,8 @@ getTypeValinfo (sym_link *type, bool loose)
       v.min = 0;
       if (IS_FUNCPTR (type))
         v.max = (1ll << ((IFFUNC_ISBANKEDCALL (type->next) ? BFUNCPTRSIZE : FUNCPTRSIZE) * 8)) - 1;
+      else if (IS_FARPTR (type))
+        v.max = (1ll << (FARPTRSIZE * 8)) - 1;
       else
         v.max = (1ll << (GPTRSIZE * 8)) - 1;
       v.knownbitsmask = ~((unsigned long long)v.max);
@@ -206,6 +208,7 @@ getOperandValinfo (const iCode *ic, const operand *op)
         litval = ullFromVal (list2expr (OP_SYMBOL_CONST (op)->ival)->opval.val);
       v2.anything = false;
       v2.nothing = false;
+      v2.nonnull = litval;
       v2.min = litval;
       v2.max = litval;
       v2.knownbitsmask = ~0ull;

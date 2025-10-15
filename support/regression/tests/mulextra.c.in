@@ -66,5 +66,10 @@ testMul (void)
 	c = 1000;
 	g();
 	ASSERT (ull == 100000ull * ({type})1000);
+
+	l = 0xfffffffful;
+	c = 0x7f;
+	g();
+	ASSERT (ull == 0xffffffffull * ({type})0x7f);
 }
 

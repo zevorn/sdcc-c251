@@ -36,18 +36,10 @@
 
 #define BITVAR_PAD -1
 
-// values for first byte (or 3 most significant bits) of generic pointer.
-#if 0
-#define GPTYPE_FAR       0x00
-#define GPTYPE_NEAR      0x40
-#define GPTYPE_XSTACK    0x60
-#define GPTYPE_CODE      0x80
-#else
 #define GPTYPE_FAR      (port->gp_tags.tag_far)
 #define GPTYPE_NEAR     (port->gp_tags.tag_near)
 #define GPTYPE_XSTACK   (port->gp_tags.tag_xstack)
 #define GPTYPE_CODE     (port->gp_tags.tag_code)
-#endif
 
 #define HASHTAB_SIZE 256
 
@@ -267,6 +259,7 @@ typedef struct sym_link
     unsigned raisonance:1;          /* Raisonance calling convention for STM8 */
     unsigned iar:1;                 /* IAR calling convention               */
     unsigned cosmic:1;              /* Cosmic calling convention            */
+    unsigned dynamicc:1;            /* Dynamic C calling convention         */
     unsigned z88dk_fastcall:1;      /* For the z80-related ports: Function has a single parameter of at most 32 bits that is passed in dehl */
     unsigned z88dk_callee:1;        /* Stack pointer adjustment for parameters passed on the stack is done by the callee */
     unsigned z88dk_shortcall:1;     /* Short call available via rst (see values later) (Z80 only) */
@@ -277,7 +270,7 @@ typedef struct sym_link
     unsigned javaNative;            /* is a JavaNative Function (TININative ONLY) */
     unsigned overlay;               /* force parameters & locals into overlay segment */
     unsigned hasStackParms;         /* function has parameters on stack     */
-    bool preserved_regs[9];         /* Registers preserved by the function - may be an underestimate */
+    bool preserved_regs[11];        /* Registers preserved by the function - may be an underestimate */
     unsigned char z88dk_shortcall_rst;  /* Rst for a short call */
     unsigned short z88dk_shortcall_val; /* Value for a short call */
     unsigned short z88dk_params_offset;  /* Additional offset from for arguments */
@@ -467,6 +460,8 @@ extern sym_link *validateLink (sym_link * l,
 #define IFFUNC_ISIAR(x) (IS_FUNC(x) && FUNC_ISIAR(x))
 #define FUNC_ISCOSMIC(x) (x->funcAttrs.cosmic)
 #define IFFUNC_ISCOSMIC(x) (IS_FUNC(x) && FUNC_ISCOSMIC(x))
+#define FUNC_ISDYNAMICC(x) (x->funcAttrs.dynamicc)
+#define IFFUNC_ISDYNAMICC(x) (IS_FUNC(x) && FUNC_ISDYNAMICC(x))
 #define FUNC_ISZ88DK_FASTCALL(x) (x->funcAttrs.z88dk_fastcall)
 #define IFFUNC_ISZ88DK_FASTCALL(x) (IS_FUNC(x) && FUNC_ISZ88DK_FASTCALL(x))
 #define FUNC_ISZ88DK_CALLEE(x) (x->funcAttrs.z88dk_callee)
@@ -476,7 +471,7 @@ extern sym_link *validateLink (sym_link * l,
 
 #define BANKED_FUNCTIONS        ( options.model == MODEL_HUGE || \
                                   ( (options.model == MODEL_LARGE || options.model == MODEL_MEDIUM) && \
-                                    TARGET_Z80_LIKE ) )
+                                    TARGET_Z80_LIKE && !TARGET_RABBIT_LIKE) )
 #define IFFUNC_ISBANKEDCALL(x)  ( IS_FUNC(x) && \
                                   ( FUNC_BANKED(x) || ( BANKED_FUNCTIONS && !FUNC_NONBANKED(x) ) ) )
 

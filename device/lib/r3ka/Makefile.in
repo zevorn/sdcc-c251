@@ -53,7 +53,8 @@ Z80_SDCC = $(COMMON_SDCC) \
 Z80SOURCES = $(addprefix ../,$(Z80_FLOAT) $(Z80_INT) $(Z80_LONG) $(Z80_LONGLONG) $(Z80_SDCC))
 Z8OBJECTS = $(patsubst %.c,%.rel,$(Z80_FLOAT) $(Z80_INT) $(Z80_LONG) $(Z80_LONGLONG) $(Z80_SDCC))
 
-OBJ = divunsigned.rel divsigned.rel divmixed.rel modunsigned.rel modsigned.rel modmixed.rel mulchar.rel \
+OBJ = mulchar.rel __mululonguchar2ulonglong.rel \
+      divunsigned.rel divsigned.rel divmixed.rel modunsigned.rel modsigned.rel modmixed.rel \
       heap.rel memmove.rel strcpy.rel abs.rel __sdcc_call_hl.rel __sdcc_call_iy.rel crtenter.rel memcpy.rel \
       setjmp.rel atomic_flag_test_and_set.rel
 
@@ -67,9 +68,6 @@ all: $(PORTDIR)/$(LIB) $(PORTDIR)/crt0.rel
 
 $(PORTDIR)/crt0.rel: crt0.rel
 	cp crt0.rel $(PORTDIR)/crt0.rel
-
-Makefile: $(srcdir)/Makefile.in
-	cd $(top_builddir); ./config.status device/lib/r3ka/Makefile
 
 $(PORTDIR)/$(LIB): $(OBJ) $(Z8OBJECTS) Makefile
 	rm -f $@
@@ -96,3 +94,4 @@ distclean: clean
 
 Makefile: $(srcdir)/Makefile.in
 	cd $(top_builddir); ./config.status device/lib/r3ka/Makefile
+

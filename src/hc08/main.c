@@ -849,6 +849,7 @@ PORT hc08_port =
     NULL, /* "ISEG" */
     NULL, /* "PSEG" */
     "XSEG",
+    NULL,                // xconst_name
     NULL, /* "BSEG" */
     "RSEG    (ABS)",
     "GSINIT  (CODE)",
@@ -941,6 +942,8 @@ PORT hc08_port =
   cseCostEstimation,
   NULL,                         /* no builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  true,
+  false,
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   3,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -996,6 +999,7 @@ PORT s08_port =
     NULL, /* "ISEG" */
     NULL, /* "PSEG" */
     "XSEG",
+    NULL,                // xconst_name
     NULL, /* "BSEG" */
     "RSEG    (ABS)",
     "GSINIT  (CODE)",
@@ -1088,6 +1092,8 @@ PORT s08_port =
   cseCostEstimation,
   NULL,                         /* no builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  true,
+  false,
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   3,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

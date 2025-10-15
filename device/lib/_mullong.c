@@ -701,7 +701,7 @@ _mullong (long a, long b)
 
         return t.l;
 }
-#elif defined(__SDCC_z80) || defined(__SDCC_sm83) || defined(__SDCC_r2ka) || defined(__SDCC_r3k) || defined(__SDCC_r3ka) || defined(__SDCC_r800)
+#elif defined(__SDCC_z80) || defined(__SDCC_sm83) || defined(__SDCC_r2ka) || defined(__SDCC_r3k) || defined(__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k) || defined(__SDCC_r800)
 /* 32x32->32 multiplication to be used
    if 16x16->16 is faster than three 8x8->16.
    2009, by M.Bodrato ( http://bodrato.it/ )

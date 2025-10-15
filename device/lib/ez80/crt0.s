@@ -1,7 +1,8 @@
 ;--------------------------------------------------------------------------
-;  crt0.s - Generic crt0.s for a Z80
+;  crt0.s - Generic crt0.s for eZ80
 ;
 ;  Copyright (C) 2000, Michael Hope
+;  Copyright (c) 2025, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -27,6 +28,8 @@
 ;--------------------------------------------------------------------------
 
 	.module crt0
+	.ez80
+
 	.globl	_main
 
 	.area	_HEADER (ABS)
@@ -58,10 +61,11 @@
 
 	.org	0x100
 init:
-	;; Set stack pointer directly above top of memory.
-	ld	sp,#0x0000
+	;; Set stack pointers directly above top of memory.
+	ld.lil	sp, #0x0000      ; spl - stack to save 4 24-bit pairs on ISR entry, and one more 24-bit pair each in nin-ISR code and in executed ISR. Makes a total of 18 bytes.
+	ld	sp, #0x0000 - 24 ; sps - default stack for virtually all uses. Place 18 bytes plus a 6 byte safety buffer (for user asm code) below spl.
 
-    call ___sdcc_external_startup
+	call ___sdcc_external_startup
 
 	;; Initialise global variables. Skip if __sdcc_external_startup returned
 	;; non-zero value. Note: calling convention version 0 only.

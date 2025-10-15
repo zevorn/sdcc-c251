@@ -1337,6 +1337,7 @@ PORT pic16_port =
     "ISEG    (DATA)",       // idata
     "PSEG    (DATA)",       // pdata
     "XSEG    (XDATA)",      // xdata
+    NULL,                   // xconst_name
     "BSEG    (BIT)",        // bit
     "RSEG    (DATA)",       // reg
     "GSINIT  (CODE)",       // static
@@ -1424,6 +1425,8 @@ PORT pic16_port =
   0,    //cseCostEstimation,            /* !!!no CSE cost estimation yet */
   NULL,             /* no builtin functions */
   GPOINTER,         /* treat unqualified pointers as "generic" pointers */
+  true,
+  false,
   1,                /* reset labelKey to 1 */
   1,                /* globals & local static allowed */
   0,                /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

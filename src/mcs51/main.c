@@ -1031,6 +1031,7 @@ PORT mcs51_port =
     "ISEG    (DATA)",           // idata_name
     "PSEG    (PAG,XDATA)",      // pdata_name
     "XSEG    (XDATA)",          // xdata_name
+    NULL,                       // xconst_name
     "BSEG    (BIT)",            // bit_name
     "RSEG    (ABS,DATA)",       // reg_name
     "GSINIT  (CODE)",           // static_name
@@ -1108,6 +1109,8 @@ PORT mcs51_port =
   cseCostEstimation,
   NULL,                         /* no builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  true,                         // __far is a subspace of the generic space.
+  false,                        // the generic space is not a subspace of __far.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   0,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

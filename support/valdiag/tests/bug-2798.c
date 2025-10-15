@@ -9,7 +9,7 @@ __sfr __at 0x1234 x; /* IGNORE */
 
 unsigned char *foo(void)
 {
-    return &x; /* WARNING(SDCC_z80|SDCC_z180|SDCC_r2k|SDCC_r2ka|SDCC_r3ka|SDCC_pdk13|SDCC_pdk14|SDCC_pdk15) */
+    return &x; /* WARNING(SDCC_z80|SDCC_z180|SDCC_r2k|SDCC_r2ka|SDCC_r3ka|SDCC_r4k|SDCC_r5k|SDCC_r6k|SDCC_pdk13|SDCC_pdk14|SDCC_pdk15) */
 }
 
 #endif

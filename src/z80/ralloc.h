@@ -27,8 +27,6 @@
 #ifndef SDCCRALLOC_H
 #define SDCCRALLOC_H 1
 
-#define DEBUG_FAKE_EXTRA_REGS 	0
-
 #define USE_OLDSALLOC 0 // Change to 1 to use old stack allocator
 
 enum
@@ -40,25 +38,18 @@ enum
   D_IDX,
   L_IDX,
   H_IDX,
-  IYL_IDX,
+  IYL_IDX, // iy register pair - not for sm83
   IYH_IDX,
-#if DEBUG_FAKE_EXTRA_REGS
-  M_IDX,
-  N_IDX,
-  O_IDX,
-  P_IDX,
-  Q_IDX,
-  R_IDX,
-  S_IDX,
-  T_IDX,
-#endif
+  K_IDX,   // jk register pair - only for r4k, r5k, r6k.
+  J_IDX,
   CND_IDX,
 
   // These pairs are for internal use in code generation only.
-  IY_IDX,
   BC_IDX,
   DE_IDX,
-  HL_IDX
+  HL_IDX,
+  IY_IDX,
+  JK_IDX
 };
 
 enum
@@ -92,3 +83,4 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi);
 
 void Z80RegFix (eBBlock ** ebbs, int count);
 #endif
+

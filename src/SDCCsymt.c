@@ -885,6 +885,7 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
   FUNC_ISRAISONANCE (dest) |= FUNC_ISRAISONANCE (src);
   FUNC_ISIAR (dest) |= FUNC_ISIAR (src);
   FUNC_ISCOSMIC (dest) |= FUNC_ISCOSMIC (src);
+  FUNC_ISDYNAMICC (dest) |= FUNC_ISDYNAMICC (src);
   FUNC_ISZ88DK_FASTCALL (dest) |= FUNC_ISZ88DK_FASTCALL (src);
   FUNC_ISZ88DK_CALLEE (dest) |= FUNC_ISZ88DK_CALLEE (src);
   for (i = 0; i < 9; i++)
@@ -1205,9 +1206,11 @@ getSize (sym_link *p)
     case PPOINTER:
     case POINTER:
       return (NEARPTRSIZE);
+    case CPOINTER:
+      if (!IS_FUNCPTR(p))
+        return (TARGET_Z80_LIKE ? GPTRSIZE : FARPTRSIZE);
     case EEPPOINTER:
     case FPOINTER:
-    case CPOINTER:
       if (!IS_FUNCPTR(p))
         return (FARPTRSIZE);
     case GPOINTER:
@@ -2934,7 +2937,7 @@ comparePtrType (sym_link *dest, sym_link *src, bool mustCast, bool ignoreimplici
 
 /*--------------------------------------------------------------------*/
 /* compareType - will do type check return 1 if match, 0 if no match, */
-/*               -1 if castable, -2 if only signedness differs        */
+/*               -1 if castable, -2 if only signedness differs        */ // Hmm. Does "castable" mean "implicitly castable" here? Apparently this function is used that way in SDCCast.c.
 /* ignoreimplicitintrinsic - ignore implicitly assigned intrinsic named address spaces */
 /*--------------------------------------------------------------------*/
 int
@@ -2985,10 +2988,18 @@ compareType (sym_link *dest, sym_link *src, bool ignoreimplicitintrinsic)
             {
               return -1;
             }
+
+          if (IS_GENPTR (dest) && IS_FARPTR (src) && !port->far_in_generic)
+            return 0;
+          if (IS_FARPTR (dest) && IS_GENPTR (src) && !port->generic_in_far)
+            return 0;
+
           if (IS_PTR (src) && (IS_GENPTR (dest) || ((DCL_TYPE (src) == POINTER) && (DCL_TYPE (dest) == IPOINTER))))
             {
               return comparePtrType (dest, src, true, ignoreimplicitintrinsic);
             }
+          if (IS_FARPTR (dest) && (IS_GENPTR (src) || DCL_TYPE (src) == POINTER) && port->generic_in_far)
+            return -1;
           if (IS_PTR (dest) && IS_ARRAY (src))
             {
               value *val = aggregateToPointer (valFromType (src));
@@ -3948,6 +3959,8 @@ dbuf_printTypeChain (sym_link * start, struct dbuf_s *dbuf)
                 dbuf_append_str (dbuf, " __iar");
               if (IFFUNC_ISCOSMIC (type))
                 dbuf_append_str (dbuf, " __cosmic");
+              if (IFFUNC_ISDYNAMICC (type))
+                dbuf_append_str (dbuf, " __dynamicc");
               if (IFFUNC_ISZ88DK_CALLEE (type))
                 dbuf_append_str (dbuf, " __z88dk_callee");
               if (IFFUNC_ISZ88DK_FASTCALL (type))

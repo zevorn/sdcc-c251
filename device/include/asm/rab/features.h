@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------------------
-   features.h - Rabbit 3000A specific features.
+   features.h - Z80 specific features.
 
    Copyright (C) 2001, Michael Hope
 
@@ -26,8 +26,8 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#ifndef __SDCC_ASM_R3KA_FEATURES_H
-#define __SDCC_ASM_R3KA_FEATURES_H   1
+#ifndef __SDCC_ASM_RAB_FEATURES_H
+#define __SDCC_ASM_RAB_FEATURES_H   1
 
 #define _REENTRANT
 #define _CODE

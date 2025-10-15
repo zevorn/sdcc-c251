@@ -7558,7 +7558,7 @@ createFunction (symbol * name, ast * body)
   if (FUNC_ISINLINE (name->type))
     name->funcTree = copyAst (body);
 
-  allocParms (FUNC_ARGS (name->type), IFFUNC_ISSMALLC (name->type));  /* allocate the parameters */
+  allocParms (FUNC_ARGS (name->type), IFFUNC_ISSMALLC (name->type), IFFUNC_ISDYNAMICC (name->type));  /* allocate the parameters */
 
   /* do processing for parameters that are passed in registers */
   processRegParms (FUNC_ARGS (name->type), body);

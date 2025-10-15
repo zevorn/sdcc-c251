@@ -328,6 +328,7 @@ PORT pdk13_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",               /* reg */
     "GSINIT",                   /* static initialization */
@@ -416,6 +417,8 @@ PORT pdk13_port =
   0,                            /* no CSE cost estimation yet */
   0,                            /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   2,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -497,6 +500,7 @@ PORT pdk14_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",               /* reg */
     "GSINIT",                   /* static initialization */
@@ -585,6 +589,8 @@ PORT pdk14_port =
   0,                            /* no CSE cost estimation yet */
   0,                            /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   2,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -666,6 +672,7 @@ PORT pdk15_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",               /* reg */
     "GSINIT",                   /* static initialization */
@@ -754,6 +761,8 @@ PORT pdk15_port =
   0,                            /* no CSE cost estimation yet */
   0,                            /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   2,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

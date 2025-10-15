@@ -783,9 +783,12 @@ AC_DO_PORT(z180,     z80,    Z180,     [Excludes the Z180 port])
 AC_DO_PORT(r2k,      z80,    R2K,      [Excludes the Rabbit 2000 port])
 AC_DO_PORT(r2ka,     z80,    R2KA,     [Excludes the Rabbit 2000A port])
 AC_DO_PORT(r3ka,     z80,    R3KA,     [Excludes the Rabbit 3000A port])
+AC_DO_PORT(r4k,      z80,    R4K,      [Excludes the Rabbit 4000 port])
+AC_DO_PORT(r5k,      z80,    R5K,      [Excludes the Rabbit 5000 port])
+AC_DO_PORT(r6k,      z80,    R6K,      [Excludes the Rabbit 6000 port])
 AC_DO_PORT(sm83,     z80,    SM83,     [Excludes the SM83 port])
 AC_DO_PORT(tlcs90,   z80,    TLCS90,   [Excludes the TLCS-90 port])
-AC_DO_PORT(ez80_z80, z80,    EZ80_Z80, [Excludes the EZ80-Z80 port])
+AC_DO_PORT(ez80,     z80,    EZ80,     [Excludes the eZ80 port])
 AC_DO_PORT(z80n,     z80,    Z80N,     [Excludes the Z80N port])
 AC_DO_PORT(r800,     z80,    R800,     [Excludes the R800 port])
 AC_DO_PORT(ds390,    ds390,  DS390,    [Excludes the DS390 port])
@@ -908,24 +911,27 @@ if test $OPT_DISABLE_PIC16 = 0 && test $OPT_DISABLE_NON_FREE = 0; then
   test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_SUBDIRS(device/non-free/lib/pic16)
 fi
 
-if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0 || test $OPT_DISABLE_SM83 = 0 || test $OPT_DISABLE_TLCS90 = 0 || test $OPT_DISABLE_EZ80_Z80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
+if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0 || test $OPT_DISABLE_R4K = 0 || test $OPT_DISABLE_R5K = 0 || test $OPT_DISABLE_R6K = 0 || test $OPT_DISABLE_SM83 = 0 || test $OPT_DISABLE_TLCS90 = 0 || test $OPT_DISABLE_EZ80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
   AC_CONFIG_FILES([src/z80/Makefile])
 fi
 
-if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_EZ80_Z80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
+if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_EZ80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
   AC_CONFIG_FILES([sdas/asz80/Makefile])
   test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/z80/Makefile
                                                        device/lib/z180/Makefile
-                                                       device/lib/ez80_z80/Makefile
+                                                       device/lib/ez80/Makefile
                                                        device/lib/z80n/Makefile
                                                        device/lib/r800/Makefile])
 fi
 
-if test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0; then
+if test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0 || test $OPT_DISABLE_R4K = 0 || test $OPT_DISABLE_R5K = 0 || test $OPT_DISABLE_R6K = 0; then
   AC_CONFIG_FILES([sdas/asrab/Makefile])
   test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/r2k/Makefile
                                                        device/lib/r2ka/Makefile
-                                                       device/lib/r3ka/Makefile])
+                                                       device/lib/r3ka/Makefile
+                                                       device/lib/r4k/Makefile
+                                                       device/lib/r5k/Makefile
+                                                       device/lib/r6k/Makefile])
 fi
 
 if test $OPT_DISABLE_TLCS90 = 0; then
@@ -1065,9 +1071,12 @@ sdcc ${VERSION} is now configured for
     r2k                 ${enable_r2k_port}
     r2ka                ${enable_r2ka_port}
     r3ka                ${enable_r3ka_port}
+    r4k                 ${enable_r4k_port}
+    r5k                 ${enable_r5k_port}
+    r6k                 ${enable_r6k_port}
     sm83                ${enable_sm83_port}
     tlcs90              ${enable_tlcs90_port}
-    ez80_z80            ${enable_ez80_z80_port}
+    ez80                ${enable_ez80_port}
     z80n                ${enable_z80n_port}
     r800                ${enable_r800_port}
     stm8                ${enable_stm8_port}

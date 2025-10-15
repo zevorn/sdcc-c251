@@ -1,4 +1,14 @@
+2025-10-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge rabbit branch.
+
+2025-10-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* sdcc/support/regression/tests/dynamiccstructret.c.in:
+	  Disable a test for targets where it fails for known reasons.
+
 2025-10-14 Janko Stamenović
+
 	* sdas/linksrc/aslink.h
 	  sdas/linksrc/lkar.h
 	  sdas/linksrc/lkarea.c
@@ -23,10 +33,69 @@
 	  sdas/linksrc/lklib.c
 	  gcc15 sdld compatibilty, lklib loadfile_lib remove fclose on null
 
+2025-10-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx:
+	  Documentation updates for Rabbit and eZ80 ports.
+
+2025-10-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/far_rabbits.c.in:
+	  Disable a test for tlcs90, where it fails due to incomplete __far support.
+	* doc/sdccman.lyx:
+	  Document that __far support for Rabbits, TLCS-90 and eZ80 is still experimental. Document interrupt handler changes in z80-related ports.
+
+2025-10-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx,
+	  src/SDCCicode.c,
+	  src/SDCCmem.c,
+	  src/z80/gen.c,
+	  support/regression/tests/dynamicc.c:
+	  Support pointers to __far as __dynamicc parameters.
+	* sim/ucsim/src/sims/tlcs.src/inst_arith.cc.
+	  sim/ucsim/src/sims/tlcs.src/tlcs.cc.
+	  sim/ucsim/src/sims/tlcs.src/tlcscl.h:
+	  Fix uCsim bug #3883.
+
+2025-10-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/dynamiccstructret.c.in,
+	  src/z80/gen.c,
+	  doc/sdccman.lyx:
+	  __dynamicc struct return.
+
+2025-10-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx,
+	  support/regression/tests/dynamic.c.in,
+	  support/regression/tests/dynamiccasmchk.c:
+	  Test and announce __dynamicc varying argument support.
+
+2025-10-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx,
+	  support/regression/tests/dynamic.c.in,
+	  support/regression/tests/dynamicc.c,
+	  support/regression/tests/dynamiccasmchk.c:
+	  Further test cases for __dynamicc.
+
 2025-09-28 Janko Stamenović
 
 	* sdas/linksrc/lkar.c
 	  Fix sdld less dependent builds (Linux on i386)
+
+2025-10-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx,
+	  src/SDCCast.c,
+	  src/SDCCicode.c,
+	  src/SDCCmem.c,
+	  src/SDCCmem.h,
+	  src/z80/gen.c,
+	  support/regression/tests/dynamicc.c,
+	  support/regression/tests/dynamic.c.in:
+	  Parameter and 8-bit return value support for __dynamicc; callee struct return support for __dynamicc.
 
 2025-09-28 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -92,6 +161,88 @@
 	  src/SDCCsymt.c:
 	  Foundations for handling _Atomic qualifier and specifier in the front-end.
 
+2025-09-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/ralloc2.cc,
+	  src/z80/gen.c,
+	  src/SDCCicode.h,
+	  src/SDCCicode.c,
+	  src/z80/z80.h:
+	  Improve small direct operand handling.
+
+2025-09-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/ralloc2.cc:
+	  Enable more flexible use of a in pointer reads in register allocator (support in codegen was already added earlier).
+	* src/z80/gen.c:
+	  Prepare for further direct operand handling improvements.
+
+2025-09-17 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/ralloc2.cc,
+	  src/z80/gen.c:
+	  Register allocation / code generation improvements, in particular for right shift relevant to rotation implementation.
+
+2025-09-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Enable new direct operand handling for a few cases.
+
+2025-09-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx:
+	  Update information on use of complex Z80 instructions.
+	* src/z80/gen.h,
+	  src/z80/gen.c:
+	  Preparations for more efficient handling of small operands as direct operands.
+
+2025-09-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peeph.def:
+	  Rabbit codegen improvements.
+	* src/z80/mappings.i:
+	  Unify whitespace in emitted asm.
+	* doc/sdccman.lyx:
+	  Document syntax for Rabbit interrupt handlers.
+
+2025-09-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/include/rab/r*.h:
+	  Rabbit register name headers.
+	* src/z80/peep.c:
+	  Fix handling of ipset in peephole optimzer distance estimation.
+	* src/z80/gen.c:
+	  Improve Rabbit software interrupt handlers.
+
+2025-09-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* .version,
+	  device/lib/r2k/crt0.s,
+	  device/lib/r2ka/crt0.s,
+	  device/lib/r3ka/crt0.s,
+	  device/lib/r4k/crt0.s,
+	  device/lib/r5k/crt0.s,
+	  device/lib/r6k/crt0.s,
+	  doc/sdccman.lyx,
+	  src/SDCCglue.c,
+	  src/z80/main.c:
+	  Have compiler provide internal interrupt table for Rabbits instead of crt0.
+
+2025-09-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  TLCS-90 __far fixes.
+
+2025-09-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.h,
+	  src/z80/gen.c,
+	  src/z80/peep.c,
+	  support/regression/tests/far_rabbit_fields.c,
+	  support/regression/tests/far_rabbits.c.in:
+	  Further work towards Rabbit/TLCS-90/eZ80 __far support.
+
 2025-09-09 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCast.c,
@@ -124,6 +275,11 @@
 
 	* doc/sdccman.lyx:
 	  Clarification on new calloc/malloc/realloc behavior for zero-sized allocations.
+
+2025-09-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Improve peephole optimizer support for eZ80 instructions for __far support.
 
 2025-09-07 Janko Stamenović
 
@@ -207,10 +363,22 @@
 
 2025-08-31 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c:
+	  Various codegen improvements.
+
+2025-08-31 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/gen.c,
 	  support/regression/tests/bug-3873.c,
 	  support/regression/MakeList:
 	  Fix bug #3873.
+
+2025-08-31 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peeph.def,
+	  src/z80/ralloc2.cc:
+	  Various codegen improvements, in particular for Rabbits.
 
 2025-08-30 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -221,12 +389,23 @@
 
 2025-08-30 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  Improve pointer read codegen.
+
+2025-08-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/SDCCerr.c,
 	  src/SDCCerr.h,
 	  src/SDCCsymt.c,
 	  .version,
 	  support/regression/tests/bitint-enum.c:
 	  Allow bit-precise type as fixed underlying type for enum, allow signed bit-precise integer types of width 1.
+
+2025-08-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve equality comparison codegen.
 
 2025-08-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -237,26 +416,92 @@
 	* device/lib/realloc.c:
 	  Document a realloc implementation choice.
 
+2025-08-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  Improve equality comparison codegen, in particular for Rabbits and TLCS.
+
 2025-08-23 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c,
 	  support/regression/tests/bug-3870.c:
 	  Fix bug #3870.
 
+2025-08-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Rabbit 4000/5000/6000 fixes.
+
 2025-08-20 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/f8/gen.c:
 	  Improve f8(l) struct/union argument passing, also fixing bug #3869.
 
+2025-08-19 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  Improve IFX codegen, in particular for Rabbits.
+
+2025-08-19 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/SDCCgenconstprop.cc,
+	  src/z80/peeph.def:
+	  Improve use of 16-bit instructions, mostly for Rabbits, eZ80 and TLCS.
+
 2025-08-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* sdcc/src/z80/gen.c,
+	  sdcc/src/z80/peep.c:
+	  Improve r4k/r5k/r6k support in peephole optimizer.
+
+2025-08-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Merge f8l branch.
+
+2025-08-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peeph.def:
+	  Some optimizations for Rabbits and TLCS.
+
+2025-08-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Fix an eZ80 / TLCS pointer read bug.
+
+2025-08-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peeph.def,
+	  src/z80/gen.c:
+	  Clearly distinguish between 0 (iy) and (iy), since these are different operands for tlcs.
+
+2025-08-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve use of 16-bit instructions for Rabbits, eZ80 and TLCS.
+
+2025-08-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/main.c:
+	  Enable r2ka/r3ka 32x8->64 multiplication support routine.
 
 2025-08-13 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/fwk/lib/testfwk.c,
 	  .version:
 	  Restore dummy function until bugs #3863, #3864 are fixed.
+
+2025-08-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/r?ka/Makefile.in,
+	  device/lib/r?ka/__mululonguchar2ulonglong.s,
+	  src/z80/main.c,
+	  support/regression/tests/mulextra.c.in:
+	  r2ka/r3ka 32x8->64 multiplication support routine - disabled until bug #3865 is fixed.
 
 2025-08-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -342,6 +587,11 @@
 
 2025-08-08 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/peep.c:
+	  Fix an issue introduced erlier today while resolving merge conflict.
+
+2025-08-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/peep.c,
 	  device/lib/z80/Makefile.in,
 	  device/lib/z80/__mulsint2slong.s,
@@ -406,6 +656,16 @@
 	* src/f8/gen.c:
 	  Improve register/stack operand shuffling, mostly for f8l under high register pressure.
 
+2025-07-17 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Codegen for Rabbit 1 MB / 16 MB code space memory models.
+
+2025-07-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Codegen preparations for Rabbit 1 MB / 16 MB code space memory models.
+
 2025-07-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/f8/gen.c:
@@ -432,10 +692,164 @@
 	* src/f8/gen.c:
 	  Some refactoring to prepare for f8l codegen.
 
+2025-07-09 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  support/regression/tests/far_rabbit_fields.c:
+	  __far-bit-field write for Rabbits; preparations for future Rabbit 4000 and 6000 instruction use.
+
+2025-07-06 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  __far fixes.
+
+2025-07-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  support/regression/tests/far_rabbit_fields.c:
+	  __far-bit-field write for eZ80 and TLCS-90.
+
 2025-07-05 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* sdcc/doc/MCS51_named.svg:
 	  Put __sfr into mcs51 address space graphic.
+
+2025-07-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/SDCCicode.c:
+	  z80 codegen cleanup.
+	* src/z80/main.c,
+	  support/regression/tests/dynamic.c.in:
+	  Disable Dynamic C calling convention support for sm83, since it has no ix register.
+
+2025-07-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Bit-field read refactoring, read of __far bit-fields.
+
+2025-07-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c,
+	  src/z80/peeph.def,
+	  support/regression/tests/far_rabbits.c.in,
+	  src/SDCCsymt.c:
+	  Some __far support for Rabbits/TLCS90/eZ80, still not really useable in any way.
+
+2025-07-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.lex,
+	  src/z80/gen.c,
+	  support/regression/fwk/include/testfwk.h,
+	  support/regression/tests/dynamic.c.in:
+	  Very basic Dynamic C calling convention support (no arguments; return type must be void, 16 bits, or 32 bits).
+
+2025-07-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Cost function refactoring.
+
+2025-07-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.y,
+	  src/z80/gen.c,
+	  src/z80/peep.c:
+	  Start of Dynamic C calling convention support. Some Rabbit/eZ80/TLCS optimizations.
+
+2025-07-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve cost function accuracy.
+
+2025-07-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peeph.def:
+	  Unify conditional jump handling.
+
+2025-07-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve cost function accuracy (mostly for Rabbits and TLCS).
+	* src/SDCCsymt.h,
+	  src/SDCCsymt.c:
+	  Some infrastructure for Dynamic C calling convention support.
+
+2025-07-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve cost function accuracy (mostly for Rabbits and TLCS).
+
+2025-07-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve cost function accuracy (mostly for Rabbits and TLCS).
+
+2025-07-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Further bits of __far support. Prototype first bits of Rabbit 4000/6000 optimizations via equivalent TLCS-90 functionality.
+
+2025-06-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve cost function accuracy (mostly for Rabbits and TLCS).
+
+2025-06-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  z80 codegen refactoring.
+
+2025-06-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve cost function accuracy (mostly for Rabbits and TLCS).
+	* src/z80/main.c,
+	  src/z80/gen.c,
+	  src/SDCCicode.c:
+	  __far pointer fixes.
+
+2025-06-29 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  Improve cost function accuracy (mostly for Rabbits and TLCS).
+	* src/z80/peeph.def:
+	  Remove broken peephole optimizer rule 177a.
+	* src/z80/peep.c:
+	  Improve peephole optimizer ez80/tlcs90 lea/lda handling and z80n shift handling.
+	* src/z80/main.c:
+	  Do not announce r4k/r5k/r6k multiplication capabilities not yet supported by codegen.
+	* doc/sdccman.lyx:
+	  Basic documentation of eZ80, Rabbit, TLCS-90 __far support.
+	* support/regression/MakeList:
+	  Enable a few tests that no longer fail for z80-related ports.
+
+2025-06-29 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/ralloc2.cc,
+	  src/z80/gen.h,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  src/z80/mappings.i,
+	  device/lib/ez80/crt0.s,
+	  .version:
+	  Initial __far support (untested, also no __far bit-fields yet) for Rabbits, TLCS-90, and eZ80.
+
+2025-06-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx,
+	  doc/tlcs90-named-address-spaces.svg:
+	  Document planned tlcs90 __far support.
+
+2025-06-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Replace ISINST macro by lineIsInst function, refactor using lineArg function.
+	* src/SDCCpeeph.h:
+	  Fix handling of arguments separated by comma only (without white spaes).
 
 2025-06-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -450,6 +864,112 @@
 	  src/pdk/peep.c,
 	  src/stm8/peep.c:
 	  Replace ISINST macro by a new lineIsInst function.
+
+2025-06-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Introduce r4k, r5k, r6k peephole optimizer support. Extend ez80 and tlcs90 peephole optimizer support.
+
+2025-06-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/z80.h,
+	  src/z80/gen.c,
+	  src/z80/peep.c:
+	  Rename eZ80 subport macro.
+
+2025-06-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+<<<<<<< .working
+	* src/SDCCgenconstprop.cc,
+	  src/SDCCglue.c,
+	  src/SDCCmem.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/z80/gen.c:
+	  Infrastructure for handling the generic address space as a subspace of __far.
+	* sdccconf_in.h,
+	  src/SDCCmain.c:
+	  Rename ez80 port enable macro.
+
+2025-06-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/z80.h,
+	  src/z80/gen.c:
+	  Extend cost function for tlcs.
+
+2025-06-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* .version,
+	  configure,
+	  configure.ac,
+	  device/include/asm/rab/features.h,
+	  device/include/math.h,
+	  device/include/sdcc-lib.h,
+	  device/include/setjmp.h,
+	  device/include/stdarg.h,
+	  device/include/stdatomic.h,
+	  device/include/stdlib.h,
+	  device/include/string.h,
+	  device/lib/Makefile.in,
+	  device/lib/clean.mk,
+	  device/lib/ez80/Makefile.in,
+	  device/lib/r2k/Makefile.in,
+	  device/lib/r2ka/Makefile.in,
+	  device/lib/r3ka/Makefile.in,
+	  doc/sdccman.lyx,
+	  src/SDCCglue.c,
+	  src/SDCCmain.c,
+	  src/SDCCmem.c,
+	  src/SDCCmem.h,
+	  src/ds390/main.c,
+	  src/f8/main.c,
+	  src/hc08/main.c,
+	  src/mcs51/main.c,
+	  src/mos6502/main.c,
+	  src/pdk/main.c,
+	  src/pic14/main.c,
+	  src/pic16/main.c,
+	  src/port.h,
+	  src/stm8/main.c,
+	  src/z80/main.c,
+	  src/z80/peeph.def,
+	  src/z80/ralloc.c,
+	  src/z80/ralloc.h,
+	  src/z80/z80.h,
+	  support/regression/MakeList,
+	  support/regression/Makefile.in,
+	  support/regression/fwk/include/testfwk.h,
+	  support/regression/ports/ucez80/spec.mk,
+	  support/regression/ports/ucr4k/spec.mk,
+	  support/regression/ports/ucr5k/spec.mk,
+	  support/regression/ports/ucr6k/spec.mk,
+	  support/regression/tests/banked.c.in,
+	  support/regression/tests/bug-2368.c,
+	  support/regression/tests/bug-2770.c,
+	  support/regression/tests/bug-2771.c,
+	  support/regression/tests/bug-2958.c,
+	  support/regression/tests/bug-2959.c,
+	  support/regression/tests/bug-3231.c,
+	  support/regression/tests/bug-3636.c,
+	  support/regression/tests/bug-3661.c,
+	  support/regression/tests/critical.c,
+	  support/regression/tests/iobit.c.in,
+	  support/regression/tests/malloc.c,
+	  support/regression/tests/preserves_regs.c.in,
+	  support/valdiag/Makefile.in,
+	  support/valdiag/tests/bug-2798.c,
+	  support/valdiag/valdiag.py,
+	  device/include/asm/rab,
+	  device/lib/ez80,
+	  device/lib/r4k,
+	  device/lib/r5k,
+	  device/lib/r6k,
+	  src/z80/peeph-ez80.def,
+	  support/regression/ports/ucez80,
+	  support/regression/ports/ucr4k,
+	  support/regression/ports/ucr5k,
+	  support/regression/ports/ucr6k:
+	  Create r4k, r5k r6k ports (just some compiler infrastructure, and a few other bits here and there, no codegen yet), rename ez80_z80 port to ez80 (to prepare for future use of ADL mode).
 
 2025-06-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -583,6 +1103,11 @@
 
 	* src/mcs51/peeph.def:
 	  mcs51 peephole optimizer rule improvement inspired by patch #466 by Oleg.
+
+2025-06-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx:
+	  Migrate Rabbit port choice table from wiki.
 
 2025-05-27 Philipp Klaus Krause <philipp@colecovision.eu>
 

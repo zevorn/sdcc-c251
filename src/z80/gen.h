@@ -30,9 +30,11 @@ typedef enum
   AOP_REG,
   /* Is in direct space */
   AOP_DIR,
+  /* Is in far direct space - Rabbits, TLCS-90 and eZ80 only */
+  AOP_FDIR,
   /* SFR space ($FF00 and above) */
   AOP_SFR,
-  /* Is on the stack */
+  /* Is on the stack (addressed stackpointer-relative or framepointer-relative) */
   AOP_STK,
   /* Is an immediate value */
   AOP_IMMD,
@@ -44,7 +46,7 @@ typedef enum
   AOP_IY,
   /* Is pointed to by HL */
   AOP_HL,
-  /* Is on the extended stack (addressed via IY or HL) */
+  /* Is on the extended stack (addressed via address calculated locally in IY or HL) */
   AOP_EXSTK,
   /* Is referenced by a pointer in a register pair. */
   AOP_PAIRPTR,
@@ -62,20 +64,20 @@ typedef struct asmop
   short coff;                   /* current offset */
   short size;                   /* total size */
   unsigned code:1;              /* is in Code space */
-  unsigned paged:1;             /* in paged memory  */
+  bool banked:1;                // in banked/paged memory (for i/o and functiomns)
   unsigned freed:1;             /* already freed    */
   unsigned bcInUse:1;           /* for banked I/O, which uses bc for the I/O address */
   union
   {
     value *aop_lit;             /* if literal */
-    reg_info *aop_reg[4];       /* array of registers */
+    reg_info *aop_reg[8];       /* array of registers */
     char *aop_dir;              /* if direct  */
     char *aop_immd;             /* if immediate others are implied */
-    int aop_stk;                /* stack offset when AOP_STK or AOP_STL*/
+    int aop_stk;                // stack offset when AOP_STK or AOP_STL
     int aop_pairId;             /* The pair ID */
   }
   aopu;
-  signed char regs[9]; // Byte of this aop that is in the register. -1 if no byte of this aop is in the reg.
+  signed char regs[11]; // Byte of this aop that is in the register. -1 if no byte of this aop is in the reg.
   struct valinfo valinfo;
 }
 asmop;

@@ -23,18 +23,6 @@ static const ASM_MAPPING _asxxxx_gb_mapping[] = {
     { "enters", "" },
     { "enterx",
       "add sp, #-%d" },
-    { "pusha",
-      "push af\n"
-      "push bc\n"
-      "push de\n"
-      "push hl"
-    },
-    { "popa",
-      "pop hl\n"
-      "pop de\n"
-      "pop bc\n"
-      "pop af"
-    },
     { "adjustsp", "add sp, #-%d" },
     { "fileprelude", "" },
     { "here", "." },
@@ -76,24 +64,10 @@ static const ASM_MAPPING _asxxxx_z80_mapping[] = {
     { "mems", "(%s)" },
     { "enter",
       "push\tix\n"
-      "ld\tix,#0\n"
-      "add\tix,sp" },
+      "ld\tix, #0\n"
+      "add\tix, sp" },
     { "enters",
       "call\t___sdcc_enter_ix\n" },
-    { "pusha",
-      "push af\n"
-      "push\tbc\n"
-      "push\tde\n"
-      "push\thl\n"
-      "push\tiy"
-    },
-    { "popa",
-      "pop iy\n"
-      "pop\thl\n"
-      "pop\tde\n"
-      "pop\tbc\n"
-      "pop\taf"
-    },
     { "adjustsp", "lda sp,-%d(sp)" },
     { "here", "." },
     { "optsdcc", ".optsdcc" },
@@ -134,24 +108,10 @@ static const ASM_MAPPING _asxxxx_r2k_mapping[] = {
     { "mems", "(%s)" },
     { "enter",
       "push\tix\n"
-      "ld\tix,#0\n"
-      "add\tix,sp" },
+      "ld\tix, #0\n"
+      "add\tix, sp" },
     { "enters",
       "call\t___sdcc_enter_ix\n" },
-    { "pusha",
-      "push af\n"
-      "push\tbc\n"
-      "push\tde\n"
-      "push\thl\n"
-      "push\tiy"
-    },
-    { "popa",
-      "pop iy\n"
-      "pop\thl\n"
-      "pop\tde\n"
-      "pop\tbc\n"
-      "pop\taf"
-    },
     { "adjustsp", "lda sp,-%d(sp)" },
     { "optsdcc", ".optsdcc" },
     { NULL, NULL }
@@ -202,18 +162,6 @@ static const ASM_MAPPING _rgbds_mapping[] = {
 };
 
 static const ASM_MAPPING _rgbds_gb_mapping[] = {
-    { "pusha",
-      "push af\n"
-      "\tpush bc\n"
-      "\tpush de\n"
-      "\tpush hl"
-    },
-    { "popa",
-      "pop hl\n"
-      "\tpop de\n"
-      "\tpop bc\n"
-      "\tpop af"
-    },
     { "di", "di" },
     { "ei", "ei" },
     { "adjustsp", "add sp, -%d" },
@@ -297,18 +245,6 @@ static const ASM_MAPPING _isas_mapping[] = {
 };
 
 static const ASM_MAPPING _isas_gb_mapping[] = {
-    { "pusha",
-      "push af\n"
-      "push bc\n"
-      "push de\n"
-      "push hl"
-    },
-    { "popa",
-      "pop hl\n"
-      "pop de\n"
-      "pop bc\n"
-      "pop af"
-    },
     { "di", "di" },
     { "ei", "ei" },
     { "adjustsp", "add sp, -%d" },
@@ -415,20 +351,6 @@ static const ASM_MAPPING _z80asm_z80_mapping[] = {
       "add\tix,sp" },
     { "enters",
       "call\t___sdcc_enter_ix\n" },
-    { "pusha",
-      "push af\n"
-      "push\tbc\n"
-      "push\tde\n"
-      "push\thl\n"
-      "push\tiy"
-    },
-    { "popa",
-      "pop\tiy\n"
-      "pop\thl\n"
-      "pop\tde\n"
-      "pop\tbc\n"
-      "pop\taf"
-    },
     { "adjustsp", "lda sp, (sp%+d)" },
     { "optsdcc", "; optsdcc" },
     { NULL, NULL }
@@ -458,18 +380,6 @@ static const ASM_MAPPING _gas_gb_mapping[] = {
     { "enter", "" },
     { "enters", "" },
     { "enterx", "add\tsp, #-%d" },
-    { "pusha",
-      "push\taf\n"
-      "push\tbc\n"
-      "push\tde\n"
-      "push\thl"
-    },
-    { "popa",
-      "pop\thl\n"
-      "pop\tde\n"
-      "pop\tbc\n"
-      "pop\taf"
-    },
     { "adjustsp", "lda\tsp, -%d (sp)" },
     { "fileprelude", "" },
     { "optsdcc", "; optsdcc" },
@@ -517,20 +427,6 @@ static const ASM_MAPPING _gas_z80_mapping[] = {
 		"ld\tix,#0\n"
 		"add\tix,sp" },
     { "enters", "call\t___sdcc_enter_ix\n" },
-    { "pusha",
-      		"push\taf\n"
-      		"push\tbc\n"
-      		"push\tde\n"
-      		"push\thl\n"
-		"push\tiy"
-    },
-    { "popa",
-		"pop\tiy\n"
-		"pop\thl\n"
-		"pop\tde\n"
-		"pop\tbc\n"
-		"pop\taf"
-    },
     { "adjustsp", "lda\tsp,-%d (sp)" },
     { "optsdcc", "; optsdcc" },
     { NULL, NULL }

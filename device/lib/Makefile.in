@@ -71,11 +71,14 @@ OPT_DISABLE_PIC16    = @OPT_DISABLE_PIC16@
 OPT_DISABLE_XA51     = @OPT_DISABLE_XA51@
 OPT_DISABLE_Z80      = @OPT_DISABLE_Z80@
 OPT_DISABLE_Z180     = @OPT_DISABLE_Z180@
-OPT_DISABLE_EZ80_Z80 = @OPT_DISABLE_EZ80_Z80@
+OPT_DISABLE_EZ80     = @OPT_DISABLE_EZ80@
 OPT_DISABLE_Z80N     = @OPT_DISABLE_Z80N@
 OPT_DISABLE_R2K      = @OPT_DISABLE_R2K@
 OPT_DISABLE_R2KA     = @OPT_DISABLE_R2KA@
 OPT_DISABLE_R3KA     = @OPT_DISABLE_R3KA@
+OPT_DISABLE_R4K      = @OPT_DISABLE_R4K@
+OPT_DISABLE_R5K      = @OPT_DISABLE_R5K@
+OPT_DISABLE_R6K      = @OPT_DISABLE_R6K@
 OPT_DISABLE_TLCS90   = @OPT_DISABLE_TLCS90@
 OPT_DISABLE_SM83     = @OPT_DISABLE_SM83@
 OPT_DISABLE_R800     = @OPT_DISABLE_R800@
@@ -241,8 +244,8 @@ ifeq ($(OPT_DISABLE_Z180), 0)
 TARGETS        += model-z180
 endif
 
-ifeq ($(OPT_DISABLE_EZ80_Z80), 0)
-TARGETS        += model-ez80_z80
+ifeq ($(OPT_DISABLE_EZ80), 0)
+TARGETS        += model-ez80
 endif
 
 ifeq ($(OPT_DISABLE_Z80N), 0)
@@ -259,6 +262,18 @@ endif
 
 ifeq ($(OPT_DISABLE_R3KA), 0)
 TARGETS        += model-r3ka
+endif
+
+ifeq ($(OPT_DISABLE_R4K), 0)
+TARGETS        += model-r4k
+endif
+
+ifeq ($(OPT_DISABLE_R5K), 0)
+TARGETS        += model-r5k
+endif
+
+ifeq ($(OPT_DISABLE_R6K), 0)
+TARGETS        += model-r6k
 endif
 
 ifeq ($(OPT_DISABLE_TLCS90), 0)
@@ -397,9 +412,9 @@ model-z180:
 	  $(MAKE) MODELFLAGS="-mz180" PORT=z180 objects-z80 OEXT=.o || exit 1; \
 	fi
 
-model-ez80_z80:
+model-ez80:
 	if grep '^z80$$' $(top_builddir)/ports.build > /dev/null; then \
-	  $(MAKE) MODELFLAGS="-mez80_z80" PORT=ez80_z80 objects-z80 OEXT=.o || exit 1; \
+	  $(MAKE) MODELFLAGS="-mez80" PORT=ez80 objects-z80 OEXT=.o || exit 1; \
 	fi
 
 model-z80n:
@@ -420,6 +435,21 @@ model-r2ka:
 model-r3ka:
 	if grep '^z80$$' $(top_builddir)/ports.build > /dev/null; then \
 	  $(MAKE) MODELFLAGS="-mr3ka" PORT=r3ka objects-z80 OEXT=.o || exit 1; \
+	fi
+
+model-r4k:
+	if grep '^z80$$' $(top_builddir)/ports.build > /dev/null; then \
+	  $(MAKE) MODELFLAGS="-mr4k" PORT=r4k objects-z80 OEXT=.o || exit 1; \
+	fi
+
+model-r5k:
+	if grep '^z80$$' $(top_builddir)/ports.build > /dev/null; then \
+	  $(MAKE) MODELFLAGS="-mr5k" PORT=r5k objects-z80 OEXT=.o || exit 1; \
+	fi
+
+model-r6k:
+	if grep '^z80$$' $(top_builddir)/ports.build > /dev/null; then \
+	  $(MAKE) MODELFLAGS="-mr6k" PORT=r6k objects-z80 OEXT=.o || exit 1; \
 	fi
 
 model-tlcs90:
@@ -701,16 +731,16 @@ clean_intermediate-pic14:
 install: all installdirs
 	[ ! -d "$(BUILDDIR)" ] || $(CP_U) -r $(BUILDDIR)/* $(sdcc_libdir)
 	$(CP_U) -r $(MODELS) $(srcdir)/mcs51 $(srcdir)/ds390 $(srcdir)/ds400 \
-	                     $(srcdir)/z80 $(srcdir)/z180 $(srcdir)/ez80_z80 $(srcdir)/z80n $(srcdir)/r2k $(srcdir)/r2ka $(srcdir)/r3ka $(srcdir)/tlcs90 $(srcdir)/sm83 $(srcdir)/r800 \
+	                     $(srcdir)/z80 $(srcdir)/z180 $(srcdir)/ez80_z80 $(srcdir)/z80n $(srcdir)/r2k $(srcdir)/r2ka $(srcdir)/r3ka $(srcdir)/r4k $(srcdir)/r5k $(srcdir)/r6k $(srcdir)/tlcs90 $(srcdir)/sm83 $(srcdir)/r800 \
 	                     $(srcdir)/hc08 $(srcdir)/s08 \
 	                     $(srcdir)/mos6502 $(srcdir)/mos65c02 \
 	                     $(srcdir)/stm8 \
 	                     $(srcdir)/pdk13 $(srcdir)/pdk14 $(srcdir)/pdk15 \
 	                     $(srcdir)/f8 $(srcdir)/f8l \
 	                     $(srcdir)/pic14 $(srcdir)/pic16 $(srcdir)/*.c $(sdcc_libdir)/src
-	$(CP_U) -r $(MODELS) mcs51 ds390 ds400 z80 z180 ez80_z80 z80n r2k r2ka r3ka tlcs90 sm83 r800 hc08 s08 stm8 pdk13 pdk14 pdk15 f8 f8l $(sdcc_libdir)/src
+	$(CP_U) -r $(MODELS) mcs51 ds390 ds400 z80 z180 ez80_z80 z80n r2k r2ka r3ka r4k r5k r6k tlcs90 sm83 r800 hc08 s08 stm8 pdk13 pdk14 pdk15 f8 f8l $(sdcc_libdir)/src
 
-	for src in $(MODELS) ds390 ds400 z80 z180 ez80_z80 z80n r2k r2ka r3ka tlcs90 sm83 r800 hc08 s08 mos6502 mos65c02 stm8 pdk13 pdk14 pdk15 f8 f8l pic14 pic16; do \
+	for src in $(MODELS) ds390 ds400 z80 z180 ez80_z80 z80n r2k r2ka r3ka r4k r5k r6k tlcs90 sm83 r800 hc08 s08 mos6502 mos65c02 stm8 pdk13 pdk14 pdk15 f8 f8l pic14 pic16; do \
 	  find $(sdcc_libdir)/src/$$src -depth \
 	    \( -name '*.rel' -o -name '*.dump*' -o -name '*.sym' -o -name '*.o' -o -name '*.lib' -o \
 	    -name '*.lst' -o -name '*.asm' -o -name '.svn' -o -name 'autom4te.cache' -o \

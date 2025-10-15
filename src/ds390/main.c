@@ -1213,6 +1213,7 @@ PORT ds390_port =
     "ISEG    (DATA)",
     "PSEG    (PAG,XDATA)",
     "XSEG    (XDATA)",
+    NULL,                       // xconst_name
     "BSEG    (BIT)",
     "RSEG    (DATA)",
     "GSINIT  (CODE)",
@@ -1283,6 +1284,8 @@ PORT ds390_port =
   cseCostEstimation,
   __ds390_builtins,             /* table of builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  true,
+  false,
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local static allowed */
   0,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -1566,6 +1569,7 @@ PORT tininative_port =
     "ISEG    (DATA)",
     "PSEG    (PAG,XDATA)",
     "XSEG    (XDATA)",
+    NULL,                       // xconst_name
     "BSEG    (BIT)",
     "RSEG    (DATA)",
     "GSINIT  (CODE)",
@@ -1636,6 +1640,8 @@ PORT tininative_port =
   cseCostEstimation,
   __tininative_builtins,        /* table of builtin functions */
   FPOINTER,                     /* treat unqualified pointers as far pointers */
+  true,
+  false,
   0,                            /* DONOT reset labelKey */
   0,                            /* globals & local static NOT allowed */
   0,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -1824,6 +1830,7 @@ PORT ds400_port =
     "ISEG    (DATA)",
     "PSEG    (PAG,XDATA)",
     "XSEG    (XDATA)",
+    NULL,                       // xconst_name
     "BSEG    (BIT)",
     "RSEG    (DATA)",
     "GSINIT  (CODE)",
@@ -1893,6 +1900,8 @@ PORT ds400_port =
   cseCostEstimation,
   __ds390_builtins,             /* table of builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  true,
+  false,
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local static allowed */
   0,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

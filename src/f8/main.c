@@ -463,6 +463,7 @@ PORT f8_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst_name
     NULL,                       /* bit */
     "RSEG (ABS)",               /* reg */
     "GSINIT",                   /* static initialization */
@@ -554,6 +555,8 @@ PORT f8_port =
   0,                            /* no CSE cost estimation yet */
   NULL,                         /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   6,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -631,6 +634,7 @@ PORT f8l_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst_name
     NULL,                       /* bit */
     "RSEG (ABS)",               /* reg */
     "GSINIT",                   /* static initialization */
@@ -722,6 +726,8 @@ PORT f8l_port =
   0,                            /* no CSE cost estimation yet */
   NULL,                         /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   6,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

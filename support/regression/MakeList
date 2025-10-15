@@ -129,10 +129,6 @@ EXCLUDE_ARCH_mos6502 += \
 	gte_memcpy-1
 
 # Failure
-EXCLUDE_ucr3ka += \
-	gte_20041218-1
-
-# Failure
 EXCLUDE_stm8 += \
    gte_20041218-1
 
@@ -157,8 +153,7 @@ EXCLUDE_ucr2ka += \
 
 # Fail
 EXCLUDE_ucgbz80 += \
-	gte_20041218-1 \
-	gte_pr97404
+	gte_20041218-1
 
 # Fail
 EXCLUDE_ucz180 += \
@@ -174,10 +169,6 @@ EXCLUDE_ucz80-unsafe-read += \
 EXCLUDE_ucz180-resiy += \
 	gte_20041218-1
 
-# Fail
-EXCLUDE_ucz180-resiy += \
-	gte_pr97404
-
 # Failure
 EXCLUDE_hc08 += \
 	gte_20041218-1
@@ -185,10 +176,6 @@ EXCLUDE_hc08 += \
 # Failure
 EXCLUDE_ucz80n += \
 	gte_20041218-1
-
-# Failure
-EXCLUDE_ARCH_z80 += \
-	gte_pr97404
 
 # Fail
 EXCLUDE_ucz80-undoc += \
@@ -202,12 +189,8 @@ EXCLUDE_pdk14 += \
 EXCLUDE_pdk15-stack-auto += \
 	gte_pr33669
 
-# misc Failure
-EXCLUDE_ucrxk3a += \
-	gte_20041218-1
-
 # abnormal stop
-EXCLUDE_ez80-z80 += \
+EXCLUDE_ucez80 += \
 	gte_20041218-1
 
 # Failure
@@ -470,7 +453,10 @@ EXCLUDE_ucgbz80 += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucr2k += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucr2ka += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucr3ka += ${EXCLUDE_ARCH_z80}
-EXCLUDE_ez80-z80 += ${EXCLUDE_ARCH_z80}
+EXCLUDE_ucr4k += ${EXCLUDE_ARCH_z80}
+EXCLUDE_ucr5k += ${EXCLUDE_ARCH_z80}
+EXCLUDE_ucr6k += ${EXCLUDE_ARCH_z80}
+EXCLUDE_ucez80 += ${EXCLUDE_ARCH_z80}
 EXCLUDE_tlcs90 += ${EXCLUDE_ARCH_z80}
 ###################################################
 EXCLUDE_mcs51-small += ${EXCLUDE_ARCH_mcs51}

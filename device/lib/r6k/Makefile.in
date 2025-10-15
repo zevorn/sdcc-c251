@@ -1,4 +1,4 @@
-# libc/ez80_z80 Makefile
+# libc/r6k Makefile
 
 VPATH  = @srcdir@
 srcdir = @srcdir@
@@ -7,11 +7,11 @@ abs_top_builddir = @abs_top_builddir@
 
 LIB_TYPE     = @LIB_TYPE@
 
-EXTRA_CFLAGS = -mez80_z80 --max-allocs-per-node 25000
-SAS = $(top_builddir)/bin/sdasz80
+EXTRA_CFLAGS = -mr6k --max-allocs-per-node 25000
+SAS = $(top_builddir)/bin/sdasrab
 
 # override PORTDIR defined by super (parent) makefile
-override PORTDIR = ../build/ez80_z80
+override PORTDIR = ../build/r6k
 
 %.rel: %.s
 	@# TODO: sdas should place it\'s output in the current dir
@@ -37,12 +37,15 @@ Z80_LONGLONG = $(COMMON_LONGLONG) \
   _modulonglong.c
 
 Z80_SDCC = $(COMMON_SDCC) \
+  __itoa.c \
+  __ltoa.c \
   _startup.c \
   div.c \
   ldiv.c \
   lldiv.c \
   sprintf.c \
   vprintf.c \
+  strlen.c \
   strnlen.c \
   _strcmp.c \
   atomic_flag_clear.c
@@ -50,12 +53,11 @@ Z80_SDCC = $(COMMON_SDCC) \
 Z80SOURCES = $(addprefix ../,$(Z80_FLOAT) $(Z80_INT) $(Z80_LONG) $(Z80_LONGLONG) $(Z80_SDCC))
 Z8OBJECTS = $(patsubst %.c,%.rel,$(Z80_FLOAT) $(Z80_INT) $(Z80_LONG) $(Z80_LONGLONG) $(Z80_SDCC))
 
-OBJ = divunsigned.rel divsigned.rel divmixed.rel modunsigned.rel modsigned.rel modmixed.rel mul.rel mulchar.rel \
-      heap.rel memmove.rel strcpy.rel strlen.rel abs.rel __sdcc_call_hl.rel __sdcc_call_iy.rel crtenter.rel \
-      setjmp.rel atomic_flag_test_and_set.rel memcpy.rel __strreverse.rel __uitobcd.rel __ultobcd.rel __itoa.rel \
-      __ltoa.rel __sdcc_bcall.rel
+OBJ = divunsigned.rel divsigned.rel divmixed.rel modunsigned.rel modsigned.rel modmixed.rel mulchar.rel \
+      heap.rel memmove.rel strcpy.rel abs.rel __sdcc_call_hl.rel __sdcc_call_iy.rel crtenter.rel memcpy.rel \
+      setjmp.rel atomic_flag_test_and_set.rel
 
-LIB = ez80_z80.lib
+LIB = r6k.lib
 AS = $(SAS)
 ASFLAGS = -plosgff
 
@@ -65,9 +67,6 @@ all: $(PORTDIR)/$(LIB) $(PORTDIR)/crt0.rel
 
 $(PORTDIR)/crt0.rel: crt0.rel
 	cp crt0.rel $(PORTDIR)/crt0.rel
-
-Makefile: $(srcdir)/Makefile.in
-	cd $(top_builddir); ./config.status device/lib/ez80_z80/Makefile
 
 $(PORTDIR)/$(LIB): $(OBJ) $(Z8OBJECTS) Makefile
 	rm -f $@
@@ -93,4 +92,5 @@ distclean: clean
 	rm -f Makefile
 
 Makefile: $(srcdir)/Makefile.in
-	cd $(top_builddir); ./config.status device/lib/ez80_z80/Makefile
+	cd $(top_builddir); ./config.status device/lib/r3ka/Makefile
+

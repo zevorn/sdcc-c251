@@ -537,7 +537,7 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
   if(SKIP_IC2(ic))
     return(true);
 
-  bool exstk = (should_omit_frame_ptr || (currFunc && currFunc->stack > 127) || IS_SM83);
+  bool exstk = (should_omit_frame_ptr || (currFunc && currFunc->stack > 127));
 
   //std::cout << "Ainst_ok at " << G[i].ic->key << ": A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
 
@@ -555,28 +555,23 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
 
   // For some iCodes, we can handle anything.
   if(ic->op == '~' || ic->op == IPUSH || ic->op == SEND || ic->op == LABEL || ic->op == GOTO ||
-    ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND ||
-    ic->op == GETBYTE || ic->op == GETWORD ||
+    ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND || ic->op == UNARYMINUS && IS_FLOAT (operandType (ic->left)) || ic->op == '!' ||
+    ic->op == EQ_OP || ic->op == NE_OP ||
+    ic->op == GETABIT || ic->op == GETBYTE || ic->op == GETWORD ||
+    ic->op == IFX ||
     ic->op == ROT && (getSize(operandType(IC_RESULT (ic))) == 1 || operand_in_reg(result, ia, i, G) && IS_OP_LITERAL (IC_RIGHT (ic)) && operandLitValueUll (IC_RIGHT (ic)) * 2 == bitsForType (operandType (IC_LEFT (ic)))) ||
-    ic->op == LEFT_OP ||
-    ic->op == RECEIVE || ic->op == '=' && !POINTER_SET (ic) || ic->op == CAST)
+    ic->op == LEFT_OP || ic->op == RIGHT_OP ||
+    ic->op == RECEIVE || ic->op == '=' && !POINTER_SET (ic) || ic->op == CAST || ic->op == GET_VALUE_AT_ADDRESS)
     return(true);
 
-  if (ic->op == RIGHT_OP && getSize(operandType(result)) == 1 && IS_OP_LITERAL(right))
-    return(true);
-
-  // Can use non-destructive cp on == and < (> might swap operands).
-  if((ic->op == EQ_OP || (ic->op == '<' || ic->op == '>') && SPEC_USIGN(getSpec(operandType(left))) && SPEC_USIGN(getSpec(operandType(right)))) &&
+  // Can use non-destructive cp on < (> might swap operands).
+  if(((ic->op == '<' || ic->op == '>') && SPEC_USIGN(getSpec(operandType(left))) && SPEC_USIGN(getSpec(operandType(right)))) &&
     getSize(operandType(IC_LEFT(ic))) == 1 && ifxForOp (IC_RESULT(ic), ic) && operand_in_reg(left, REG_A, ia, i, G) &&
     (IS_OP_LITERAL (right) || operand_in_reg(right, REG_C, ia, i, G) || operand_in_reg(right, REG_B, ia, i, G) || operand_in_reg(right, REG_E, ia, i, G) || operand_in_reg(right, REG_D, ia, i, G) || operand_in_reg(right, REG_H, ia, i, G) || operand_in_reg(right, REG_L, ia, i, G)))
     return(true);
 
   const cfg_dying_t &dying = G[i].dying;
   const bool dying_A = result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end();
-
-  if ((ic->op == EQ_OP || ic->op == NE_OP) && getSize(operandType(ic->left)) == 1 && (operand_in_reg(left, REG_A, ia, i, G) || operand_in_reg(right, REG_A, ia, i, G)) &&
-    (ifxForOp (ic->result, ic) || dying_A))
-    return(true);
 
   if((ic->op == '+' || ic->op == '-' && !operand_in_reg(right, REG_A, ia, i, G) || ic->op == UNARYMINUS && !IS_SM83) &&
     getSize(operandType(IC_RESULT(ic))) == 1 && dying_A)
@@ -594,28 +589,10 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
         return(true);
     }
 
-  // First two bytes of input may be in A.
-  if(ic->op == IFX && dying_A && (getSize(operandType(left)) >= 1 &&
-    operand_byte_in_reg(left, 0, REG_A, a, i, G) || getSize(operandType(left)) >= 2 && !IS_FLOAT (operandType(left)) && operand_byte_in_reg(left, 1, REG_A, a, i, G)))
-    return(true);
-
-  // Can test register via inc / dec.
-  if(ic->op == IFX && getSize(operandType(left)) == 1 &&
-    (operand_byte_in_reg(left, 0, REG_B, a, i, G) || operand_byte_in_reg(left, 0, REG_C, a, i, G) || operand_byte_in_reg(left, 0, REG_D, a, i, G) || operand_byte_in_reg(left, 0, REG_E, a, i, G) || operand_byte_in_reg(left, 0, REG_H, a, i, G) || operand_byte_in_reg(left, 0, REG_L, a, i, G)))
-    return(true);
-
-  // Last byte of output may be in A.
-  if(ic->op == GET_VALUE_AT_ADDRESS && IS_ITEMP(result) && operand_byte_in_reg(result, getSize(operandType(IC_RESULT(ic))) - 1, REG_A, a, i, G))
-    return(true);
-
   // inc / dec does not affect a.
   if ((ic->op == '+' || ic->op == '-') && IS_OP_LITERAL(right) && ulFromVal (OP_VALUE_CONST (right)) <= 2 &&
     (getSize(operandType(IC_RESULT(ic))) == 2 && operand_is_pair(IC_RESULT(ic), a, i, G) || getSize(operandType(IC_RESULT(ic))) == 1 && operand_in_reg(result, ia, i, G) && operand_in_reg(result, ia, i, G)))
     return(true);
-
-  if(ic->op == GET_VALUE_AT_ADDRESS) // Any register can be assigned from (hl) and (iy), so we don't need to go through a then.
-    return(!IS_BITVAR(getSpec(operandType(result))) &&
-    (getSize(operandType(result)) == 1 || operand_is_pair(left, a, i, G) && (operand_in_reg(left, REG_L, ia, i, G) && !ulFromVal (OP_VALUE_CONST (right)) || operand_in_reg(left, REG_IYL, ia, i, G) && ulFromVal (OP_VALUE_CONST (right)) <= 127)));
 
   if(ic->op == '=' && POINTER_SET (ic) && // Any register can be assigned to (hl) and (iy), so we don't need to go through a then.
     !(IS_BITVAR(getSpec(operandType (result))) || IS_BITVAR(getSpec(operandType (right)))) &&
@@ -627,9 +604,6 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
     operand_in_reg(right, REG_A, ia, i, G) && getSize(operandType(right)) != 1 ||
     operand_in_reg(result, REG_A, ia, i, G) && getSize(operandType(result)) != 1)
     return(false);
-
-  if(ic->op == '!' && getSize(operandType(left)) <= 2 && dying_A)
-    return(true);
 
   if(ic->op == '=' && POINTER_SET (ic))
     return(dying_A || !(IS_BITVAR(getSpec(operandType (result))) || IS_BITVAR(getSpec(operandType (right)))));
@@ -649,22 +623,17 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
   // Last use of operand in A.
   if(input_in_A && dying_A)
     {
-      if(ic->op != IFX &&
-        ic->op != RETURN &&
-        !((ic->op == RIGHT_OP || ic->op == LEFT_OP) &&
-          (IS_OP_LITERAL(right) || operand_in_reg(right, REG_A, ia, i, G) || getSize(operandType(IC_RESULT(ic))) == 1 && ia.registers[REG_B][1] < 0)) &&
-        !((ic->op == '=' || ic->op == CAST) && !(IY_RESERVED && POINTER_SET(ic))) &&
+      if(ic->op != RETURN &&
+        !(ic->op == '=' && !(IY_RESERVED && POINTER_SET(ic))) &&
         !(ic->op == '*' && (IS_ITEMP(IC_LEFT(ic)) || IS_OP_LITERAL(IC_LEFT(ic))) && (IS_ITEMP(IC_RIGHT(ic)) || IS_OP_LITERAL(IC_RIGHT(ic)))) &&
-        !((ic->op == '-' || ic->op == '+' || ic->op == EQ_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
+        !((ic->op == '-' || ic->op == '+') && IS_OP_LITERAL(IC_RIGHT(ic))))
         {
           //std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
           return(false);
         }
     }
   // A is used, and has to be preserved for later use.
-  else if(input_in_A &&
-         ic->op != IFX &&
-         ic->op != JUMPTABLE)
+  else if(input_in_A && ic->op != JUMPTABLE)
     {
       //std::cout << "Intermediate use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
       return(false);
@@ -675,15 +644,13 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
       !POINTER_GET(ic) &&
       ic->op != '+' &&
       ic->op != '-' &&
+      ic->op != UNARYMINUS &&
       (ic->op != '*' || !IS_OP_LITERAL(IC_LEFT(ic)) && !IS_OP_LITERAL(right)) &&
-      ic->op != GET_VALUE_AT_ADDRESS &&
       ic->op != '=' &&
-      ic->op != EQ_OP &&
       ic->op != '<' &&
       ic->op != '>' &&
       ic->op != CALL &&
-      ic->op != PCALL &&
-      !((ic->op == LEFT_OP || ic->op == RIGHT_OP) && IS_OP_LITERAL(right)))
+      ic->op != PCALL)
     {
       //std::cout << "First use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
       return(false);
@@ -699,10 +666,11 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 {
   const iCode *ic = G[i].ic;
 
-  bool exstk = (should_omit_frame_ptr || (currFunc && currFunc->stack > 127) || IS_SM83);
+  bool exstk = (should_omit_frame_ptr || (currFunc && currFunc->stack > 127));
 
   const i_assignment_t &ia = a.i_assignment;
 
+  bool unused_A = (ia.registers[REG_A][1] < 0);
   bool unused_L = (ia.registers[REG_L][1] < 0);
   bool unused_H = (ia.registers[REG_H][1] < 0);
 
@@ -718,6 +686,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   const operand *right = IC_RIGHT(ic);
   const operand *result = IC_RESULT(ic);
 
+  bool result_in_A = operand_in_reg(result, REG_A, ia, i, G);
   bool result_in_L = operand_in_reg(result, REG_L, ia, i, G);
   bool result_in_H = operand_in_reg(result, REG_H, ia, i, G);
   bool result_in_HL = result_in_L || result_in_H;
@@ -727,10 +696,12 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   bool input_in_HL = input_in_L || input_in_H;
 
   const cfg_dying_t &dying = G[i].dying;
-  
+
+  bool dying_A = result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end();
   bool dying_L = result_in_L || dying.find(ia.registers[REG_L][1]) != dying.end() || dying.find(ia.registers[REG_L][0]) != dying.end();
   bool dying_H = result_in_H || dying.find(ia.registers[REG_H][1]) != dying.end() || dying.find(ia.registers[REG_H][0]) != dying.end();
 
+  bool result_only_A = (result_in_A || unused_A || dying_A);
   bool result_only_HL = (result_in_L || unused_L || dying_L) && (result_in_H || unused_H || dying_H);
 
 #if 0
@@ -746,6 +717,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   // For some iCodes, code generation can handle anything.
   if(ic->op == '~' || ic->op == CALL || ic->op == RETURN || ic->op == LABEL || ic->op == GOTO ||
     ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND ||
+    ic->op == ADDRESS_OF ||
     ic->op == GETBYTE || ic->op == GETWORD ||
     ic->op == ROT && (getSize(operandType(IC_RESULT(ic))) == 1 || operand_in_reg(result, ia, i, G) && IS_OP_LITERAL (IC_RIGHT (ic)) && operandLitValueUll (IC_RIGHT (ic)) * 2 == bitsForType (operandType (IC_LEFT (ic)))) ||
     !((IS_SM83 || IY_RESERVED) && (operand_on_stack(result, a, i, G) || operand_on_stack(right, a, i, G))) && (ic->op == '=' && !POINTER_SET (ic) || ic->op == CAST) ||
@@ -836,8 +808,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   // HL overwritten by result.
   if(result_only_HL && !POINTER_SET(ic) &&
-      (ic->op == ADDRESS_OF ||
-       ic->op == GET_VALUE_AT_ADDRESS ||
+      (ic->op == GET_VALUE_AT_ADDRESS ||
        ic->op == '+' ||
        ic->op == '*' ||
        ic->op == '=' ||
@@ -860,7 +831,8 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
        !operand_on_stack(result, a, i, G))))
     return(true);
 
-  if(result && IS_SYMOP(result) && isOperandInDirSpace(IC_RESULT(ic)))
+  if(result && IS_SYMOP(result) && isOperandInDirSpace(result) &&
+    (getSize(operandType(ic->result)) > 1 || isOperandEqual(left, ic->result) || isOperandEqual(right, ic->result) || !result_only_A))
     return(false);
 
   if((input_in_HL || !result_only_HL) && left && IS_SYMOP(left) && isOperandInDirSpace(IC_LEFT(ic)))
@@ -869,10 +841,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if((input_in_HL || !result_only_HL) && right && IS_SYMOP(right) && isOperandInDirSpace(IC_RIGHT(ic)))
     return(false);
 
-  // Operations that leave HL alone.
-  if(ic->op == IFX)
-    return(true);
-  if(SKIP_IC2(ic))
+  if(ic->op == IFX || SKIP_IC2(ic)) // Operations that leave HL alone.
     return(true);
   if(ic->op == IPUSH) // Can handle anything.
     return(true);
@@ -1571,11 +1540,12 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
 template <class G_t>
 static bool omit_frame_ptr(const G_t &G)
 {
-  if(IS_SM83 || IY_RESERVED || z80_opts.noOmitFramePtr)
-    return(false);
-
-  if(options.omitFramePtr)
+  // We have to omit the frame poitner if there is no useable ix.
+  if(IS_SM83 || IS_TLCS870 || options.omitFramePtr)
     return(true);
+
+  if(IY_RESERVED || z80_opts.noOmitFramePtr)
+    return(false);
 
   signed char omitcost = -10; // Overhead for setting up frame pointer is 10 bytes of code
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
@@ -1596,7 +1566,7 @@ static bool omit_frame_ptr(const G_t &G)
       if(o && IS_SYMOP(o) && OP_SYMBOL_CONST(o)->_isparm && !IS_REGPARM (OP_SYMBOL_CONST(o)->etype))
         omitcost += 6;
 
-      if(omitcost > 20) // Chosen greater than zero, since the peephole optimizer often can optimize the use of iy into use of hl, reducing the cost.
+      if(omitcost >= 21) // Chosen greater than zero, since the peephole optimizer often can optimize the use of iy into use of hl, reducing the cost.
         return(false);
     }
 

@@ -7,7 +7,7 @@
 void
 f (void)
 {
-#if defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka)
+#if defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k)
   __asm
   ldp hl,(hl)         ; ED 6C
   ldp hl,(ix)         ; DD 6C

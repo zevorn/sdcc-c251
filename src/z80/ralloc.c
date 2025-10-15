@@ -112,6 +112,21 @@ reg_info z80_regs[] = {
   {REG_CND, CND_IDX, "c", 1}
 };
 
+reg_info r4k_regs[] = {
+  {REG_GPR, A_IDX, "a", 1},
+  {REG_GPR, C_IDX, "c", 1},
+  {REG_GPR, B_IDX, "b", 1},
+  {REG_GPR, E_IDX, "e", 1},
+  {REG_GPR, D_IDX, "d", 1},
+  {REG_GPR, L_IDX, "l", 1},
+  {REG_GPR, H_IDX, "h", 1},
+  {REG_GPR, IYL_IDX, "iyl", 1},
+  {REG_GPR, IYH_IDX, "iyh", 1},
+  {REG_GPR, K_IDX, "k", 1},
+  {REG_GPR, J_IDX, "j", 1},
+  {REG_CND, CND_IDX, "c", 1}
+};
+
 reg_info *regsZ80;
 
 /** Number of usable registers (all but C) */

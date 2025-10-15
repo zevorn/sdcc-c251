@@ -677,9 +677,12 @@ OPT_DISABLE_DS400
 OPT_DISABLE_DS390
 OPT_DISABLE_R800
 OPT_DISABLE_Z80N
-OPT_DISABLE_EZ80_Z80
+OPT_DISABLE_EZ80
 OPT_DISABLE_TLCS90
 OPT_DISABLE_SM83
+OPT_DISABLE_R6K
+OPT_DISABLE_R5K
+OPT_DISABLE_R4K
 OPT_DISABLE_R3KA
 OPT_DISABLE_R2KA
 OPT_DISABLE_R2K
@@ -799,9 +802,12 @@ enable_z180_port
 enable_r2k_port
 enable_r2ka_port
 enable_r3ka_port
+enable_r4k_port
+enable_r5k_port
+enable_r6k_port
 enable_sm83_port
 enable_tlcs90_port
-enable_ez80_z80_port
+enable_ez80_port
 enable_z80n_port
 enable_r800_port
 enable_ds390_port
@@ -1490,9 +1496,12 @@ Optional Features:
   --disable-r2k-port      Excludes the Rabbit 2000 port
   --disable-r2ka-port     Excludes the Rabbit 2000A port
   --disable-r3ka-port     Excludes the Rabbit 3000A port
+  --disable-r4k-port      Excludes the Rabbit 4000 port
+  --disable-r5k-port      Excludes the Rabbit 5000 port
+  --disable-r6k-port      Excludes the Rabbit 6000 port
   --disable-sm83-port     Excludes the SM83 port
   --disable-tlcs90-port   Excludes the TLCS-90 port
-  --disable-ez80_z80-port Excludes the EZ80-Z80 port
+  --disable-ez80-port     Excludes the eZ80 port
   --disable-z80n-port     Excludes the Z80N port
   --disable-r800-port     Excludes the R800 port
   --disable-ds390-port    Excludes the DS390 port
@@ -8795,6 +8804,81 @@ printf "%s\n" "#define OPT_DISABLE_R3KA $OPT_DISABLE_R3KA" >>confdefs.h
   fi
 
 
+  # Check whether --enable-r4k-port was given.
+if test ${enable_r4k_port+y}
+then :
+  enableval=$enable_r4k_port;
+fi
+
+
+  if test "$enable_r4k_port" = "no"; then
+    OPT_DISABLE_R4K=1
+  else
+    enable_r4k_port="yes"
+    OPT_DISABLE_R4K=0
+  fi
+
+
+printf "%s\n" "#define OPT_DISABLE_R4K $OPT_DISABLE_R4K" >>confdefs.h
+
+
+
+  echo z80 >>ports.all
+  if test $OPT_DISABLE_R4K = 0; then
+    echo z80 >>ports.build
+  fi
+
+
+  # Check whether --enable-r5k-port was given.
+if test ${enable_r5k_port+y}
+then :
+  enableval=$enable_r5k_port;
+fi
+
+
+  if test "$enable_r5k_port" = "no"; then
+    OPT_DISABLE_R5K=1
+  else
+    enable_r5k_port="yes"
+    OPT_DISABLE_R5K=0
+  fi
+
+
+printf "%s\n" "#define OPT_DISABLE_R5K $OPT_DISABLE_R5K" >>confdefs.h
+
+
+
+  echo z80 >>ports.all
+  if test $OPT_DISABLE_R5K = 0; then
+    echo z80 >>ports.build
+  fi
+
+
+  # Check whether --enable-r6k-port was given.
+if test ${enable_r6k_port+y}
+then :
+  enableval=$enable_r6k_port;
+fi
+
+
+  if test "$enable_r6k_port" = "no"; then
+    OPT_DISABLE_R6K=1
+  else
+    enable_r6k_port="yes"
+    OPT_DISABLE_R6K=0
+  fi
+
+
+printf "%s\n" "#define OPT_DISABLE_R6K $OPT_DISABLE_R6K" >>confdefs.h
+
+
+
+  echo z80 >>ports.all
+  if test $OPT_DISABLE_R6K = 0; then
+    echo z80 >>ports.build
+  fi
+
+
   # Check whether --enable-sm83-port was given.
 if test ${enable_sm83_port+y}
 then :
@@ -8845,27 +8929,27 @@ printf "%s\n" "#define OPT_DISABLE_TLCS90 $OPT_DISABLE_TLCS90" >>confdefs.h
   fi
 
 
-  # Check whether --enable-ez80_z80-port was given.
-if test ${enable_ez80_z80_port+y}
+  # Check whether --enable-ez80-port was given.
+if test ${enable_ez80_port+y}
 then :
-  enableval=$enable_ez80_z80_port;
+  enableval=$enable_ez80_port;
 fi
 
 
-  if test "$enable_ez80_z80_port" = "no"; then
-    OPT_DISABLE_EZ80_Z80=1
+  if test "$enable_ez80_port" = "no"; then
+    OPT_DISABLE_EZ80=1
   else
-    enable_ez80_z80_port="yes"
-    OPT_DISABLE_EZ80_Z80=0
+    enable_ez80_port="yes"
+    OPT_DISABLE_EZ80=0
   fi
 
 
-printf "%s\n" "#define OPT_DISABLE_EZ80_Z80 $OPT_DISABLE_EZ80_Z80" >>confdefs.h
+printf "%s\n" "#define OPT_DISABLE_EZ80 $OPT_DISABLE_EZ80" >>confdefs.h
 
 
 
   echo z80 >>ports.all
-  if test $OPT_DISABLE_EZ80_Z80 = 0; then
+  if test $OPT_DISABLE_EZ80 = 0; then
     echo z80 >>ports.build
   fi
 
@@ -9911,22 +9995,22 @@ if test $OPT_DISABLE_PIC16 = 0 && test $OPT_DISABLE_NON_FREE = 0; then
 
 fi
 
-if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0 || test $OPT_DISABLE_SM83 = 0 || test $OPT_DISABLE_TLCS90 = 0 || test $OPT_DISABLE_EZ80_Z80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
+if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0 || test $OPT_DISABLE_R4K = 0 || test $OPT_DISABLE_R5K = 0 || test $OPT_DISABLE_R6K = 0 || test $OPT_DISABLE_SM83 = 0 || test $OPT_DISABLE_TLCS90 = 0 || test $OPT_DISABLE_EZ80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
   ac_config_files="$ac_config_files src/z80/Makefile"
 
 fi
 
-if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_EZ80_Z80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
+if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_EZ80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
   ac_config_files="$ac_config_files sdas/asz80/Makefile"
 
-  test $OPT_DISABLE_DEVICE_LIB = 0 && ac_config_files="$ac_config_files device/lib/z80/Makefile device/lib/z180/Makefile device/lib/ez80_z80/Makefile device/lib/z80n/Makefile device/lib/r800/Makefile"
+  test $OPT_DISABLE_DEVICE_LIB = 0 && ac_config_files="$ac_config_files device/lib/z80/Makefile device/lib/z180/Makefile device/lib/ez80/Makefile device/lib/z80n/Makefile device/lib/r800/Makefile"
 
 fi
 
-if test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0; then
+if test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0 || test $OPT_DISABLE_R4K = 0 || test $OPT_DISABLE_R5K = 0 || test $OPT_DISABLE_R6K = 0; then
   ac_config_files="$ac_config_files sdas/asrab/Makefile"
 
-  test $OPT_DISABLE_DEVICE_LIB = 0 && ac_config_files="$ac_config_files device/lib/r2k/Makefile device/lib/r2ka/Makefile device/lib/r3ka/Makefile"
+  test $OPT_DISABLE_DEVICE_LIB = 0 && ac_config_files="$ac_config_files device/lib/r2k/Makefile device/lib/r2ka/Makefile device/lib/r3ka/Makefile device/lib/r4k/Makefile device/lib/r5k/Makefile device/lib/r6k/Makefile"
 
 fi
 
@@ -10740,13 +10824,16 @@ do
     "sdas/asz80/Makefile") CONFIG_FILES="$CONFIG_FILES sdas/asz80/Makefile" ;;
     "device/lib/z80/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/z80/Makefile" ;;
     "device/lib/z180/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/z180/Makefile" ;;
-    "device/lib/ez80_z80/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/ez80_z80/Makefile" ;;
+    "device/lib/ez80/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/ez80/Makefile" ;;
     "device/lib/z80n/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/z80n/Makefile" ;;
     "device/lib/r800/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/r800/Makefile" ;;
     "sdas/asrab/Makefile") CONFIG_FILES="$CONFIG_FILES sdas/asrab/Makefile" ;;
     "device/lib/r2k/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/r2k/Makefile" ;;
     "device/lib/r2ka/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/r2ka/Makefile" ;;
     "device/lib/r3ka/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/r3ka/Makefile" ;;
+    "device/lib/r4k/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/r4k/Makefile" ;;
+    "device/lib/r5k/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/r5k/Makefile" ;;
+    "device/lib/r6k/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/r6k/Makefile" ;;
     "sdas/astlcs90/Makefile") CONFIG_FILES="$CONFIG_FILES sdas/astlcs90/Makefile" ;;
     "device/lib/tlcs90/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/tlcs90/Makefile" ;;
     "sdas/asgb/Makefile") CONFIG_FILES="$CONFIG_FILES sdas/asgb/Makefile" ;;
@@ -11780,9 +11867,12 @@ sdcc ${VERSION} is now configured for
     r2k                 ${enable_r2k_port}
     r2ka                ${enable_r2ka_port}
     r3ka                ${enable_r3ka_port}
+    r4k                 ${enable_r4k_port}
+    r5k                 ${enable_r5k_port}
+    r6k                 ${enable_r6k_port}
     sm83                ${enable_sm83_port}
     tlcs90              ${enable_tlcs90_port}
-    ez80_z80            ${enable_ez80_z80_port}
+    ez80                ${enable_ez80_port}
     z80n                ${enable_z80n_port}
     r800                ${enable_r800_port}
     stm8                ${enable_stm8_port}
@@ -11863,9 +11953,12 @@ sdcc ${VERSION} is now configured for
     r2k                 ${enable_r2k_port}
     r2ka                ${enable_r2ka_port}
     r3ka                ${enable_r3ka_port}
+    r4k                 ${enable_r4k_port}
+    r5k                 ${enable_r5k_port}
+    r6k                 ${enable_r6k_port}
     sm83                ${enable_sm83_port}
     tlcs90              ${enable_tlcs90_port}
-    ez80_z80            ${enable_ez80_z80_port}
+    ez80                ${enable_ez80_port}
     z80n                ${enable_z80n_port}
     r800                ${enable_r800_port}
     stm8                ${enable_stm8_port}

@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------------------
-   r3ka.h - definitions on the built in I/O ports for the Rabbit 3000A
+   r3ka.h - definitions of the built in I/O ports for the Rabbit 3000A
             for use with SDCC
 
    Copyright (C) 2020, Philipp Klaus Krause <pkk AT spth.de>
@@ -68,7 +68,7 @@ _RABREG(0x0420, EDMR);   // Enable Dual Mode Register
 
 _RABREG(0x0440, WPCR);   // Write Protect Control Register
 
-_RABREG(0x0444, STKKCR); // Stack Limit Control Register
+_RABREG(0x0444, STKCR);  // Stack Limit Control Register
 _RABREG(0x0445, STKLLR); // Stack Low Limit Register
 _RABREG(0x0446, STKHLR); // Stack High Limit Register
 

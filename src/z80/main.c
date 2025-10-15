@@ -3,6 +3,7 @@
 
   Michael Hope <michaelh@juju.net.nz> 2001
   Copyright (C) 2021, Sebastian 'basxto' Riedel <sdcc@basxto.de>
+  Copyright (v) 2025, Philipp Klaus Krause philipp@colecovision.eu
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -46,6 +47,8 @@
 #define OPTION_NMOS_Z80         "--nmos-z80"
 #define OPTION_SDCCCALL         "--sdcccall"
 #define OPTION_ALLOW_UNDOC_INST "--allow-undocumented-instructions"
+#define OPTION_SMALL_MODEL      "--model-small"
+#define OPTION_MEDIUM_MODEL     "--model-medium"
 
 static char _z80_defaultRules[] = {
 #include "peeph.rul"
@@ -67,10 +70,10 @@ static char _sm83_defaultRules[] = {
 #include "peeph.rul"
 };
 
-static char _ez80_z80_defaultRules[] = {
+static char _ez80_defaultRules[] = {
 #include "peeph.rul"
 #include "peeph-z80.rul"
-#include "peeph-ez80_z80.rul"
+#include "peeph-ez80.rul"
 };
 
 static char _z80n_defaultRules[] = {
@@ -118,6 +121,25 @@ static OPTION _z80_options[] = {
   {0, OPTION_NMOS_Z80,        &z80_opts.nmosZ80, "Generate workaround for NMOS Z80 when saving IFF2"},
   {0, OPTION_SDCCCALL,        &options.sdcccall, "Set ABI version for default calling convention", CLAT_INTEGER},
   {0, OPTION_ALLOW_UNDOC_INST,&options.allow_undoc_inst, "Allow use of undocumented instructions"},
+  {0, NULL}
+};
+
+static OPTION _rab_options[] = {
+  {0, OPTION_CALLEE_SAVES_BC, &z80_opts.calleeSavesBC, "Force a called function to always save BC"},
+  {0, OPTION_BO,              NULL, "<num> use code bank <num>"},
+  {0, OPTION_BA,              NULL, "<num> use data bank <num>"},
+  {0, OPTION_ASM,             NULL, "Define assembler name (rgbds/asxxxx/isas/z80asm/gas)"},
+  {0, OPTION_CODE_SEG,        &options.code_seg, "<name> use this name for the code segment", CLAT_STRING},
+  {0, OPTION_CONST_SEG,       &options.const_seg, "<name> use this name for the const segment", CLAT_STRING},
+  {0, OPTION_DATA_SEG,        &options.data_seg, "<name> use this name for the data segment", CLAT_STRING},
+  {0, OPTION_NO_STD_CRT0,     &options.no_std_crt0, "Do not link default crt0.rel"},
+  {0, OPTION_RESERVE_IY,      &z80_opts.reserveIY, "Do not use IY (incompatible with --fomit-frame-pointer)"},
+  {0, OPTION_FRAMEPOINTER,    &z80_opts.noOmitFramePtr, "Do not omit frame pointer"},
+  {0, OPTION_EMIT_EXTERNS,    NULL, "Emit externs list in generated asm"},
+  {0, OPTION_LEGACY_BANKING,  &z80_opts.legacyBanking, "Use legacy method to call banked functions"},
+  {0, OPTION_SDCCCALL,        &options.sdcccall, "Set ABI version for default calling convention", CLAT_INTEGER},
+  {0, OPTION_SMALL_MODEL,     NULL, "16-bit address space for both data and code (default)"},
+  {0, OPTION_MEDIUM_MODEL,    NULL, "16-bit address space for data, 24-bit for code"},
   {0, NULL}
 };
 
@@ -169,8 +191,47 @@ static char *_keywords[] = {
   "z88dk_fastcall",
   "z88dk_callee",
   "smallc",
+  "dynamicc",
   "z88dk_shortcall",
   "z88dk_params_offset",
+  NULL
+};
+
+static char *_keywordsez80[] = {
+  "sfr",
+  "nonbanked",
+  "banked",
+  "at",
+  "_naked",
+  "critical",
+  "interrupt",
+  "z88dk_fastcall",
+  "z88dk_callee",
+  "smallc",
+  "dynamicc",
+  "z88dk_shortcall",
+  "z88dk_params_offset",
+  "far",
+  "xdata",
+  NULL
+};
+
+static char *_keywordsrab[] = {
+  "sfr",
+  "nonbanked",
+  "banked",
+  "at",
+  "_naked",
+  "critical",
+  "interrupt",
+  "z88dk_fastcall",
+  "z88dk_callee",
+  "smallc",
+  "dynamicc",
+  "z88dk_shortcall",
+  "z88dk_params_offset",
+  "far",
+  "xdata",
   NULL
 };
 
@@ -184,6 +245,7 @@ static char *_keywordsgb[] = {
   "interrupt",
   "z88dk_callee",
   "smallc",
+  "dynamicc",
   NULL
 };
 
@@ -197,6 +259,9 @@ static char *_keywordstlcs90[] = {
   "z88dk_fastcall",
   "z88dk_callee",
   "smallc",
+  "dynamicc",
+  "far",
+  "xdata",
   NULL
 };
 
@@ -217,6 +282,7 @@ static builtins _z80_builtins[] = {
 
 extern reg_info sm83_regs[];
 extern reg_info z80_regs[];
+extern reg_info r4k_regs[];
 extern void z80_init_asmops (void);
 extern reg_info *regsZ80;
 
@@ -287,6 +353,36 @@ _r3ka_init (void)
 }
 
 static void
+_r4k_init (void)
+{
+  z80_opts.sub = SUB_R4K;
+  asm_addTree (&_asxxxx_r2k);
+
+  regsZ80 = r4k_regs;
+  z80_init_asmops ();
+}
+
+static void
+_r5k_init (void)
+{
+  z80_opts.sub = SUB_R5K;
+  asm_addTree (&_asxxxx_r2k);
+
+  regsZ80 = r4k_regs;
+  z80_init_asmops ();
+}
+
+static void
+_r6k_init (void)
+{
+  z80_opts.sub = SUB_R6K;
+  asm_addTree (&_asxxxx_r2k);
+
+  regsZ80 = r4k_regs;
+  z80_init_asmops ();
+}
+
+static void
 _sm83_init (void)
 {
   z80_opts.sub = SUB_SM83;
@@ -306,9 +402,9 @@ _tlcs90_init (void)
 }
 
 static void
-_ez80_z80_init (void)
+_ez80_init (void)
 {
-  z80_opts.sub = SUB_EZ80_Z80;
+  z80_opts.sub = SUB_EZ80;
   switch (_G.asmType)
     {
     case ASM_TYPE_GAS:
@@ -826,6 +922,19 @@ _setValues (void)
 static void
 _finaliseOptions (void)
 {
+  if (IS_RAB && options.model == MODEL_MEDIUM)
+    {
+      port->s.funcptr_size = 3;
+      port->stack.call_overhead = 3;
+      port->jumptableCost.maxCount = 0;
+    }
+  else if (IS_RAB && options.model == MODEL_LARGE)
+    {
+      wassertl (IS_R4K || IS_R5K || IS_R6K, "Large memory model not supported on Rabbits earlier than Rabbit 4000");
+      port->s.funcptr_size = 4;
+      port->stack.call_overhead = 4;
+      port->jumptableCost.maxCount = 0;
+    }
   port->mem.default_local_map = data;
   port->mem.default_globl_map = data;
   if (IS_SM83)
@@ -859,7 +968,7 @@ _setDefaultOptions (void)
   options.float_rent = 1;
   options.noRegParams = 0;
   /* Default code and data locations. */
-  options.code_loc = 0x200;
+  options.code_loc = IS_RAB ? 0x400 : 0x200;
   options.allow_undoc_inst = false;
 
   if (IS_SM83)
@@ -924,23 +1033,27 @@ static int
 _getRegByName (const char *name)
 {
   if (!strcmp (name, "a"))
-    return 0;
+    return A_IDX;
   if (!strcmp (name, "c"))
-    return 1;
+    return C_IDX;
   if (!strcmp (name, "b"))
-    return 2;
+    return B_IDX;
   if (!strcmp (name, "e"))
-    return 3;
+    return E_IDX;
   if (!strcmp (name, "d"))
-    return 4;
+    return D_IDX;
   if (!strcmp (name, "l"))
-    return 5;
+    return L_IDX;
   if (!strcmp (name, "h"))
-    return 6;
+    return H_IDX;
   if (!strcmp (name, "iyl"))
-    return 7;
+    return IYL_IDX;
   if (!strcmp (name, "iyh"))
-    return 8;
+    return IYH_IDX;
+  if (!strcmp (name, "k"))
+    return K_IDX;
+  if (!strcmp (name, "j"))
+    return J_IDX;
   return -1;
 }
 
@@ -956,7 +1069,7 @@ _z80_genAssemblerStart (FILE * of)
 
   if (TARGET_IS_Z180)
     fprintf (of, "\t.hd64\n");
-  else if (TARGET_IS_R3KA)
+  else if (TARGET_IS_R3KA || TARGET_IS_R4K || TARGET_IS_R5K || TARGET_IS_R6K) // Todo: adjust when planned changes in assembler are implemented!
     fprintf (of, "\t.r3k\n");
   else if (TARGET_IS_EZ80)
     fprintf (of, "\t.ez80\n");
@@ -966,7 +1079,57 @@ _z80_genAssemblerStart (FILE * of)
     fprintf (of, "\t.r800\n");
   else if (TARGET_IS_Z80 && options.allow_undoc_inst)
     fprintf (of, "\t.allow_undocumented\n");
+  else if (TARGET_IS_TLCS90)
+    fprintf (of, "\tby = 0xffed\n");
+}
 
+#define RAB_INTERRUPTS_COUNT (IS_R2K ? 16 : 32) // The Rabbit 2000A to Rabbit 2000C also have just 16 internal interrupts, but the r2ka port is also used for the Rabbit 3000.
+const char *rab_int_names[32] = {
+  "periodic interrupt", "secondary watchdog", "rst 0x10", "rst 0x18", "rst 0x20", "rst 0x28", "syscall", "rst 0x38", "slave port",
+  "write protect violation", "timer A", "timer B", "serial port A", "serial port B", "serial port C", "serial port D",
+  "network port C (WiFi)", "network port D (USB)", "-", "fima", "fimb", "i2c", "a/d converter", "pwm",
+  "sys/user mode violation", "quadrature decoder", "input capture", "stack limit violation", "serial port E", "serial port F", "network port B (Ethernet)", "timer C"};
+
+static int
+rab_genIVT(struct dbuf_s * oBuf, symbol ** intTable, int intCount)
+{
+  dbuf_tprintf (oBuf, "\tGCSR\t.equ\t0x00 ; Global control / status register\n");
+  dbuf_tprintf (oBuf, "\t.area	_IIVT (ABS)\n");
+  dbuf_printf (oBuf, "\n");
+
+  if(intCount > RAB_INTERRUPTS_COUNT)
+    {
+      werror(E_INT_BAD_INTNO, intCount - 1);
+      intCount = RAB_INTERRUPTS_COUNT;
+    }
+    
+  for (int i = 0; i < intCount; i++)
+    {
+      dbuf_printf (oBuf, "\t.org\t0x%04x ; int %d - %s\n", (unsigned int)(0x200 + i * 0x10), i, rab_int_names[i]);
+      if (interrupts[i]) // User-supplied interrupt handler
+        dbuf_printf (oBuf, "\tjp %s\n", interrupts[i]->rname);
+      else if (i == 0) // Default handler for periodic interrupt
+        {
+          dbuf_printf (oBuf, "\tipres\n");
+          dbuf_printf (oBuf, "\tpush\taf\n");
+	  dbuf_printf (oBuf, "\tioi\n");
+	  dbuf_printf (oBuf, "\tld\ta, (GCSR) ; clear interrupt\n");
+	  dbuf_printf (oBuf, "\tpop\taf\n");
+          dbuf_printf (oBuf, "\tret\n");
+        }
+      else if (i >= 2 && i <= 7) // rst or syscall
+        {
+          dbuf_printf (oBuf, "\tret\n");
+        }
+      else
+        {
+          dbuf_printf (oBuf, "\tipres\n");
+          dbuf_printf (oBuf, "\tret\n");
+        }
+      dbuf_printf (oBuf, "\n");
+    }
+
+  return true;
 }
 
 static bool
@@ -995,6 +1158,10 @@ _hasNativeMulFor (iCode *ic, sym_link *left, sym_link *right)
   // Rabbits have signed 16x16->32 multiplication, which is broken on original Rabbit 2000.
   else if (IS_RAB && !IS_R2K && getSize (left) == 2 && getSize(right) == 2 &&
     (result_size == 2 || result_size <= 4 && !IS_UNSIGNED (left) && !IS_UNSIGNED (right)))
+    return(true);
+  // Later Rabbits also have unsigned 16x16->32 multiplication.
+  else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && getSize (left) == 2 && getSize (right) == 2 &&
+    (result_size <= 4 && IS_UNSIGNED (left) && IS_UNSIGNED (right)))
     return(true);
   // The R800 has unsigned 16x16->32 multiplication.
   else if (IS_R800 && getSize (left) == 2 && getSize (right) == 2 &&
@@ -1098,9 +1265,12 @@ static const char *const _libs_z180[] = { "z180", NULL, };
 static const char *const _libs_r2k[] = { "r2k", NULL, };
 static const char *const _libs_r2ka[] = { "r2ka", NULL, };
 static const char *const _libs_r3ka[] = { "r3ka", NULL, };
+static const char *const _libs_r4k[] = { "r4k", NULL, };
+static const char *const _libs_r5k[] = { "r5k", NULL, };
+static const char *const _libs_r6k[] = { "r6k", NULL, };
 static const char *const _libs_tlcs90[] = { "tlcs90", NULL, };
 static const char *const _libs_sm83[] = { "sm83", NULL, };
-static const char *const _libs_ez80_z80[] = { "ez80_z80", NULL, };
+static const char *const _libs_ez80[] = { "ez80", NULL, };
 static const char *const _libs_z80n[] = { "z80n", NULL, };
 static const char *const _libs_r800[] = { "r800", NULL, };
 
@@ -1160,6 +1330,7 @@ PORT z80_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",
     "GSINIT",                   /* static initialization */
@@ -1169,9 +1340,9 @@ PORT z80_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    NULL,                       // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -1233,6 +1404,8 @@ PORT z80_port =
   0,                            /* no CSE cost estimation yet */
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -1294,6 +1467,7 @@ PORT z180_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",
     "GSINIT",
@@ -1303,9 +1477,9 @@ PORT z180_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    NULL,                       // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -1367,6 +1541,8 @@ PORT z180_port =
   0,                            /* no CSE cost estimation yet */
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -1381,9 +1557,9 @@ PORT r2k_port =
   NULL,                         /* Processor name */
   {
     glue,
-    FALSE,
-    NO_MODEL,
-    NO_MODEL,
+    true,                       // Compiler generates (internal) ivt.
+    MODEL_SMALL | MODEL_MEDIUM,
+    MODEL_SMALL,
     NULL,                       /* model == target */
   },
   {                             /* Assembler */
@@ -1416,7 +1592,7 @@ PORT r2k_port =
     z80canSplitReg,
   },
   /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, _BitInt (in bits) */
-  { 1, 2, 2, 4, 8, 2, 2, 2, 2, 2, 1, 4, 64 },
+  { 1, 2, 2, 4, 8, 2, 3, 2, 2, 2, 1, 4, 64 },
   /* tags for generic pointers */
   { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
   {
@@ -1426,7 +1602,8 @@ PORT r2k_port =
     "DATA",
     NULL,                       /* idata */
     NULL,                       /* pdata */
-    NULL,                       /* xdata */
+    "XDATA",                    // xdata
+    "XCONST",                   // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",
     "GSINIT",
@@ -1436,9 +1613,9 @@ PORT r2k_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    "XABS (ABS)",               // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -1467,7 +1644,7 @@ PORT r2k_port =
   "_",
   _r2k_init,
   _parseOptions,
-  _z80_like_options,
+  _rab_options,
   NULL,
   _finaliseOptions,
   _setDefaultOptions,
@@ -1475,10 +1652,10 @@ PORT r2k_port =
   _getRegName,
   _getRegByName,
   NULL,
-  _keywords,
+  _keywordsrab,
   _z80_genAssemblerStart,
   NULL,                         /* no genAssemblerEnd */
-  0,                            /* no local IVT generation code */
+  rab_genIVT,
   0,                            /* no genXINIT code */
   NULL,                         /* genInitStartup */
   _reset_regparm,
@@ -1496,10 +1673,12 @@ PORT r2k_port =
   1,                            /* transform >= to ! < */
   1,                            /* transform != to !(a == b) */
   0,                            /* leave == */
-  FALSE,                        /* Array initializer support. */
+  false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // __far is not a subspace of generic.
+  true,                         // generic is a subspace of __far.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -1514,9 +1693,9 @@ PORT r2ka_port =
   NULL,                         /* Processor name */
   {
     glue,
-    FALSE,
-    NO_MODEL,
-    NO_MODEL,
+    true,                       // Compiler generates (internal) ivt.
+    MODEL_SMALL | MODEL_MEDIUM,
+    MODEL_SMALL,
     NULL,                       /* model == target */
   },
   {                             /* Assembler */
@@ -1550,7 +1729,7 @@ PORT r2ka_port =
     z80canSplitReg,
   },
   /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, BitInt (in bits) */
-  { 1, 2, 2, 4, 8, 2, 2, 2, 2, 2, 1, 4, 64 },
+  { 1, 2, 2, 4, 8, 2, 3, 2, 2, 2, 1, 4, 64 },
   /* tags for generic pointers */
   { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
   {
@@ -1560,7 +1739,8 @@ PORT r2ka_port =
     "DATA",
     NULL,                       /* idata */
     NULL,                       /* pdata */
-    NULL,                       /* xdata */
+    "XDATA",                    // xdata
+    "XCONST",                   // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",
     "GSINIT",
@@ -1570,9 +1750,9 @@ PORT r2ka_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    "XABS (ABS)",               // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -1587,7 +1767,7 @@ PORT r2ka_port =
   { 
     -1,                         /* shifts never use support routines */
     false,                      /* do not use support routine for int x int -> long multiplication */
-    false,                      /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
+    true,                       // Use support routine for unsigned long x unsigned char -> unsigned long long multiplication.
   },
   { z80_emitDebuggerSymbol },
   {
@@ -1601,7 +1781,7 @@ PORT r2ka_port =
   "_",
   _r2ka_init,
   _parseOptions,
-  _z80_like_options,
+  _rab_options,
   NULL,
   _finaliseOptions,
   _setDefaultOptions,
@@ -1609,10 +1789,10 @@ PORT r2ka_port =
   _getRegName,
   _getRegByName,
   NULL,
-  _keywords,
+  _keywordsrab,
   _z80_genAssemblerStart,
   NULL,                         /* no genAssemblerEnd */
-  0,                            /* no local IVT generation code */
+  rab_genIVT,
   0,                            /* no genXINIT code */
   NULL,                         /* genInitStartup */
   _reset_regparm,
@@ -1630,10 +1810,12 @@ PORT r2ka_port =
   1,                            /* transform >= to ! < */
   1,                            /* transform != to !(a == b) */
   0,                            /* leave == */
-  FALSE,                        /* Array initializer support. */
+  false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // __far is not a subspace of generic.
+  true,                         // generic is a subspace of __far.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -1648,9 +1830,9 @@ PORT r3ka_port =
   NULL,                         /* Processor name */
   {
     glue,
-    FALSE,
-    NO_MODEL,
-    NO_MODEL,
+    true,                       // Compiler generates (internal) ivt.
+    MODEL_SMALL | MODEL_MEDIUM,
+    MODEL_SMALL,
     NULL,                       /* model == target */
   },
   {                             /* Assembler */
@@ -1684,7 +1866,7 @@ PORT r3ka_port =
     z80canSplitReg,
   },
   /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, BitInt (in bits) */
-  { 1, 2, 2, 4, 8, 2, 2, 2, 2, 2, 1, 4, 64 },
+  { 1, 2, 2, 4, 8, 2, 3, 2, 2, 2, 1, 4, 64 },
   /* tags for generic pointers */
   { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
   {
@@ -1694,7 +1876,8 @@ PORT r3ka_port =
     "DATA",
     NULL,                       /* idata */
     NULL,                       /* pdata */
-    NULL,                       /* xdata */
+    "XDATA",                    // xdata
+    "XCONST",                   // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",
     "GSINIT",
@@ -1704,9 +1887,146 @@ PORT r3ka_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    "XABS (ABS)",               // xabs_name
+    "DABS (ABS)",               // iabs_name
+    "INITIALIZED",              /* name of segment for initialized variables */
+    "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
+    NULL,
+    NULL,
+    1,                          /* CODE  is read-only */
+    false,                      // unqualified pointers cannot point to __sfr.
+    1                           /* No fancy alignments supported. */
+  },
+  { NULL, NULL },
+  1,                            /* ABI revision */
+  { -1, 0, 0, 4, 0, 2, 0 },
+  { 
+    -1,                         /* shifts never use support routines */
+    false,                      /* do not use support routine for int x int -> long multiplication */
+    true,                       // Use support routine for unsigned long x unsigned char -> unsigned long long multiplication.
+  },
+  { z80_emitDebuggerSymbol },
+  {
+    8000,                       /* maxCount */
+    2,                          /* sizeofElement */
+    {6, 7, 8},                  /* sizeofMatchJump[] - Assumes operand allocated to registers */
+    {6, 9, 15},                 /* sizeofRangeCompare[] - Assumes operand allocated to registers*/
+    1,                          /* sizeofSubtract - Assumes use of a single inc or dec */
+    8,                          /* sizeofDispatch - Assumes operand allocated to register e or c*/
+  },
+  "_",
+  _r3ka_init,
+  _parseOptions,
+  _rab_options,
+  NULL,
+  _finaliseOptions,
+  _setDefaultOptions,
+  z80_assignRegisters,
+  _getRegName,
+  _getRegByName,
+  NULL,
+  _keywordsrab,
+  _z80_genAssemblerStart,
+  NULL,                         /* no genAssemblerEnd */
+  rab_genIVT,
+  0,                            /* no genXINIT code */
+  NULL,                         /* genInitStartup */
+  _reset_regparm,
+  _reg_parm,
+  _process_pragma,
+  NULL,
+  _hasNativeMulFor,
+  hasExtBitOp,                  /* hasExtBitOp */
+  oclsExpense,                  /* oclsExpense */
+  TRUE,
+  TRUE,                         /* little endian */
+  0,                            /* leave lt */
+  0,                            /* leave gt */
+  1,                            /* transform <= to ! > */
+  1,                            /* transform >= to ! < */
+  1,                            /* transform != to !(a == b) */
+  0,                            /* leave == */
+  false,                        /* Array initializer support. */
+  0,                            /* no CSE cost estimation yet */
+  _z80_builtins,                /* builtin functions */
+  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // __far is not a subspace of generic.
+  true,                         // generic is a subspace of __far.
+  1,                            /* reset labelKey to 1 */
+  1,                            /* globals & local statics allowed */
+  9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
+  PORT_MAGIC
+};
+
+PORT r4k_port =
+{
+  TARGET_ID_R4K,
+  "r4k",
+  "Rabbit 4000",                // Target name
+  NULL,                         /* Processor name */
+  {
+    glue,
+    true,                       // Compiler generates (internal) ivt.
+    MODEL_SMALL | MODEL_MEDIUM | MODEL_LARGE,
+    MODEL_SMALL,
+    NULL,                       /* model == target */
+  },
+  {                             /* Assembler */
+    _r2kAsmCmd,
+    NULL,
+    "-plosgffwy",               /* Options with debug */
+    "-plosgffw",                /* Options without debug */
+    0,
+    ".asm"
+  },
+  {                             /* Linker */
+    _z80LinkCmd,                //NULL,
+    NULL,                       //LINKCMD,
+    NULL,
+    ".rel",
+    1,
+    _crt,                       /* crt */
+    _libs_r4k,                  // libs
+  },
+  {                             /* Peephole optimizer */
+    _r2k_defaultRules,
+    z80instructionSize,
+    0,
+    0,
+    0,
+    z80notUsed,
+    z80canAssign,
+    z80notUsedFrom,
+    z80symmParmStack,
+    z80canJoinRegs,
+    z80canSplitReg,
+  },
+  /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, BitInt (in bits) */
+  { 1, 2, 2, 4, 8, 2, 3, 2, 2, 2, 1, 4, 64 },
+  /* tags for generic pointers */
+  { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
+  {
+    "XSEG",
+    "STACK",
+    "CODE",
+    "DATA",
+    NULL,                       /* idata */
+    NULL,                       /* pdata */
+    "XDATA",                    // xdata
+    "XCONST",                   // xconst
+    NULL,                       /* bit */
+    "RSEG (ABS)",
+    "GSINIT",
+    NULL,                       /* overlay */
+    "GSFINAL",
+    "HOME",
+    NULL,                       /* xidata */
+    NULL,                       /* xinit */
+    NULL,                       /* const_name */
+    "CABS (ABS)",               // cabs_name
+    "XABS (ABS)",               // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -1733,9 +2053,9 @@ PORT r3ka_port =
     8,                          /* sizeofDispatch - Assumes operand allocated to register e or c*/
   },
   "_",
-  _r3ka_init,
+  _r4k_init,
   _parseOptions,
-  _z80_like_options,
+  _rab_options,
   NULL,
   _finaliseOptions,
   _setDefaultOptions,
@@ -1743,10 +2063,10 @@ PORT r3ka_port =
   _getRegName,
   _getRegByName,
   NULL,
-  _keywords,
+  _keywordsrab,
   _z80_genAssemblerStart,
   NULL,                         /* no genAssemblerEnd */
-  0,                            /* no local IVT generation code */
+  rab_genIVT,
   0,                            /* no genXINIT code */
   NULL,                         /* genInitStartup */
   _reset_regparm,
@@ -1764,10 +2084,286 @@ PORT r3ka_port =
   1,                            /* transform >= to ! < */
   1,                            /* transform != to !(a == b) */
   0,                            /* leave == */
-  FALSE,                        /* Array initializer support. */
+  false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // __far is not a subspace of generic.
+  true,                         // generic is a subspace of __far.
+  1,                            /* reset labelKey to 1 */
+  1,                            /* globals & local statics allowed */
+  9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
+  PORT_MAGIC
+};
+
+PORT r5k_port =
+{
+  TARGET_ID_R5K,
+  "r5k",
+  "Rabbit 5000",                // Target name
+  NULL,                         /* Processor name */
+  {
+    glue,
+    true,                       // Compiler generates (internal) ivt.
+    MODEL_SMALL | MODEL_MEDIUM | MODEL_LARGE,
+    MODEL_SMALL,
+    NULL,                       /* model == target */
+  },
+  {                             /* Assembler */
+    _r2kAsmCmd,
+    NULL,
+    "-plosgffwy",               /* Options with debug */
+    "-plosgffw",                /* Options without debug */
+    0,
+    ".asm"
+  },
+  {                             /* Linker */
+    _z80LinkCmd,                //NULL,
+    NULL,                       //LINKCMD,
+    NULL,
+    ".rel",
+    1,
+    _crt,                       /* crt */
+    _libs_r5k,                  // libs
+  },
+  {                             /* Peephole optimizer */
+    _r2k_defaultRules,
+    z80instructionSize,
+    0,
+    0,
+    0,
+    z80notUsed,
+    z80canAssign,
+    z80notUsedFrom,
+    z80symmParmStack,
+    z80canJoinRegs,
+    z80canSplitReg,
+  },
+  /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, BitInt (in bits) */
+  { 1, 2, 2, 4, 8, 2, 3, 2, 2, 2, 1, 4, 64 },
+  /* tags for generic pointers */
+  { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
+  {
+    "XSEG",
+    "STACK",
+    "CODE",
+    "DATA",
+    NULL,                       /* idata */
+    NULL,                       /* pdata */
+    "XDATA",                    // xdata
+    "XCONST",                   // xconst
+    NULL,                       /* bit */
+    "RSEG (ABS)",
+    "GSINIT",
+    NULL,                       /* overlay */
+    "GSFINAL",
+    "HOME",
+    NULL,                       /* xidata */
+    NULL,                       /* xinit */
+    NULL,                       /* const_name */
+    "CABS (ABS)",               // cabs_name
+    "XABS (ABS)",               // xabs_name
+    "DABS (ABS)",               // iabs_name
+    "INITIALIZED",              /* name of segment for initialized variables */
+    "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
+    NULL,
+    NULL,
+    1,                          /* CODE  is read-only */
+    false,                      // unqualified pointers cannot point to __sfr.
+    1                           /* No fancy alignments supported. */
+  },
+  { NULL, NULL },
+  1,                            /* ABI revision */
+  { -1, 0, 0, 4, 0, 2, 0 },
+  { 
+    -1,                         /* shifts never use support routines */
+    false,                      /* do not use support routine for int x int -> long multiplication */
+    false,                      /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
+  },
+  { z80_emitDebuggerSymbol },
+  {
+    8000,                       /* maxCount */
+    2,                          /* sizeofElement */
+    {6, 7, 8},                  /* sizeofMatchJump[] - Assumes operand allocated to registers */
+    {6, 9, 15},                 /* sizeofRangeCompare[] - Assumes operand allocated to registers*/
+    1,                          /* sizeofSubtract - Assumes use of a single inc or dec */
+    8,                          /* sizeofDispatch - Assumes operand allocated to register e or c*/
+  },
+  "_",
+  _r5k_init,
+  _parseOptions,
+  _rab_options,
+  NULL,
+  _finaliseOptions,
+  _setDefaultOptions,
+  z80_assignRegisters,
+  _getRegName,
+  _getRegByName,
+  NULL,
+  _keywordsrab,
+  _z80_genAssemblerStart,
+  NULL,                         /* no genAssemblerEnd */
+  rab_genIVT,
+  0,                            /* no genXINIT code */
+  NULL,                         /* genInitStartup */
+  _reset_regparm,
+  _reg_parm,
+  _process_pragma,
+  NULL,
+  _hasNativeMulFor,
+  hasExtBitOp,                  /* hasExtBitOp */
+  oclsExpense,                  /* oclsExpense */
+  TRUE,
+  TRUE,                         /* little endian */
+  0,                            /* leave lt */
+  0,                            /* leave gt */
+  1,                            /* transform <= to ! > */
+  1,                            /* transform >= to ! < */
+  1,                            /* transform != to !(a == b) */
+  0,                            /* leave == */
+  false,                        /* Array initializer support. */
+  0,                            /* no CSE cost estimation yet */
+  _z80_builtins,                /* builtin functions */
+  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // __far is not a subspace of generic.
+  true,                         // generic is a subspace of __far.
+  1,                            /* reset labelKey to 1 */
+  1,                            /* globals & local statics allowed */
+  9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
+  PORT_MAGIC
+};
+
+PORT r6k_port =
+{
+  TARGET_ID_R6K,
+  "r6k",
+  "Rabbit 6000",                // Target name
+  NULL,                         /* Processor name */
+  {
+    glue,
+    true,                       // Compiler generates (internal) ivt.
+    MODEL_SMALL | MODEL_MEDIUM | MODEL_LARGE,
+    MODEL_SMALL,
+    NULL,                       /* model == target */
+  },
+  {                             /* Assembler */
+    _r2kAsmCmd,
+    NULL,
+    "-plosgffwy",               /* Options with debug */
+    "-plosgffw",                /* Options without debug */
+    0,
+    ".asm"
+  },
+  {                             /* Linker */
+    _z80LinkCmd,                //NULL,
+    NULL,                       //LINKCMD,
+    NULL,
+    ".rel",
+    1,
+    _crt,                       /* crt */
+    _libs_r6k,                  // libs
+  },
+  {                             /* Peephole optimizer */
+    _r2k_defaultRules,
+    z80instructionSize,
+    0,
+    0,
+    0,
+    z80notUsed,
+    z80canAssign,
+    z80notUsedFrom,
+    z80symmParmStack,
+    z80canJoinRegs,
+    z80canSplitReg,
+  },
+  /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, BitInt (in bits) */
+  { 1, 2, 2, 4, 8, 2, 3, 2, 2, 2, 1, 4, 64 },
+  /* tags for generic pointers */
+  { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
+  {
+    "XSEG",
+    "STACK",
+    "CODE",
+    "DATA",
+    NULL,                       /* idata */
+    NULL,                       /* pdata */
+    "XDATA",                    // xdata
+    "XCONST",                   // xconst
+    NULL,                       /* bit */
+    "RSEG (ABS)",
+    "GSINIT",
+    NULL,                       /* overlay */
+    "GSFINAL",
+    "HOME",
+    NULL,                       /* xidata */
+    NULL,                       /* xinit */
+    NULL,                       /* const_name */
+    "CABS (ABS)",               // cabs_name
+    "XABS (ABS)",               // xabs_name
+    "DABS (ABS)",               // iabs_name
+    "INITIALIZED",              /* name of segment for initialized variables */
+    "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
+    NULL,
+    NULL,
+    1,                          /* CODE  is read-only */
+    false,                      // unqualified pointers cannot point to __sfr.
+    1                           /* No fancy alignments supported. */
+  },
+  { NULL, NULL },
+  1,                            /* ABI revision */
+  { -1, 0, 0, 4, 0, 2, 0 },
+  { 
+    -1,                         /* shifts never use support routines */
+    false,                      /* do not use support routine for int x int -> long multiplication */
+    false,                      /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
+  },
+  { z80_emitDebuggerSymbol },
+  {
+    8000,                       /* maxCount */
+    2,                          /* sizeofElement */
+    {6, 7, 8},                  /* sizeofMatchJump[] - Assumes operand allocated to registers */
+    {6, 9, 15},                 /* sizeofRangeCompare[] - Assumes operand allocated to registers*/
+    1,                          /* sizeofSubtract - Assumes use of a single inc or dec */
+    8,                          /* sizeofDispatch - Assumes operand allocated to register e or c*/
+  },
+  "_",
+  _r6k_init,
+  _parseOptions,
+  _rab_options,
+  NULL,
+  _finaliseOptions,
+  _setDefaultOptions,
+  z80_assignRegisters,
+  _getRegName,
+  _getRegByName,
+  NULL,
+  _keywordsrab,
+  _z80_genAssemblerStart,
+  NULL,                         /* no genAssemblerEnd */
+  rab_genIVT,
+  0,                            /* no genXINIT code */
+  NULL,                         /* genInitStartup */
+  _reset_regparm,
+  _reg_parm,
+  _process_pragma,
+  NULL,
+  _hasNativeMulFor,
+  hasExtBitOp,                  /* hasExtBitOp */
+  oclsExpense,                  /* oclsExpense */
+  TRUE,
+  TRUE,                         /* little endian */
+  0,                            /* leave lt */
+  0,                            /* leave gt */
+  1,                            /* transform <= to ! > */
+  1,                            /* transform >= to ! < */
+  1,                            /* transform != to !(a == b) */
+  0,                            /* leave == */
+  false,                        /* Array initializer support. */
+  0,                            /* no CSE cost estimation yet */
+  _z80_builtins,                /* builtin functions */
+  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // __far is not a subspace of generic.
+  true,                         // generic is a subspace of __far.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -1831,6 +2427,7 @@ PORT sm83_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst
     NULL,                       /* bit */
     "RSEG",
     "GSINIT",
@@ -1840,9 +2437,9 @@ PORT sm83_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    NULL,                       // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -1904,6 +2501,8 @@ PORT sm83_port =
   0,                            /* no CSE cost estimation yet */
   NULL,                         /* no builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   7,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -1954,7 +2553,7 @@ PORT tlcs90_port =
     z80canSplitReg,
   },
   /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, BitInt (in bits) */
-  { 1, 2, 2, 4, 8, 2, 2, 2, 2, 2, 1, 4, 64 },
+  { 1, 2, 2, 4, 8, 2, 3, 2, 2, 2, 1, 4, 64 },
   /* tags for generic pointers */
   { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
   {
@@ -1964,7 +2563,8 @@ PORT tlcs90_port =
     "DATA",
     NULL,                       /* idata */
     NULL,                       /* pdata */
-    NULL,                       /* xdata */
+    "XDATA",                    // xdata
+    "XCONST",                   // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",
     "GSINIT",                   /* static initialization */
@@ -1974,9 +2574,9 @@ PORT tlcs90_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    NULL,                       // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -2038,17 +2638,19 @@ PORT tlcs90_port =
   0,                            /* no CSE cost estimation yet */
   0,                            /* no builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // __far is not a subspace of generic.
+  true,                         // generic is a subspace of __far.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
   PORT_MAGIC
 };
 
-PORT ez80_z80_port =
+PORT ez80_port =
 {
   TARGET_ID_EZ80,
-  "ez80_z80",
-  "eZ80-Z80",                   /* Target name */
+  "ez80",
+  "Zilog eZ80",                 // Target name
   NULL,                         /* Processor name */
   {
     glue,
@@ -2072,10 +2674,10 @@ PORT ez80_z80_port =
     ".rel",
     1,
     _crt,                       /* crt */
-    _libs_ez80_z80,             /* libs */
+    _libs_ez80,             /* libs */
   },
   {                             /* Peephole optimizer */
-    _ez80_z80_defaultRules,
+    _ez80_defaultRules,
     z80instructionSize,
     NULL,
     NULL,
@@ -2088,7 +2690,7 @@ PORT ez80_z80_port =
     z80canSplitReg,
   },
   /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, BitInt (in bits) */
-  { 1, 2, 2, 4, 8, 2, 2, 2, 2, 2, 1, 4, 64 },
+  { 1, 2, 2, 4, 8, 2, 3, 2, 2, 2, 1, 4, 64 },
   /* tags for generic pointers */
   { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
   {
@@ -2098,7 +2700,8 @@ PORT ez80_z80_port =
     "DATA",
     NULL,                       /* idata */
     NULL,                       /* pdata */
-    NULL,                       /* xdata */
+    "XDATA",                    // xdata
+    "XCONST",                   // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",
     "GSINIT",
@@ -2108,9 +2711,9 @@ PORT ez80_z80_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    NULL,                       // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -2137,7 +2740,7 @@ PORT ez80_z80_port =
     7,                          /* sizeofDispatch - Assumes operand allocated to register e or c*/
   },
   "_",
-  _ez80_z80_init,
+  _ez80_init,
   _parseOptions,
   _z80_like_options,
   NULL,
@@ -2147,7 +2750,7 @@ PORT ez80_z80_port =
   _getRegName,
   _getRegByName,
   NULL,
-  _keywords,
+  _keywordsez80,
   _z80_genAssemblerStart,
   NULL,                         /* no genAssemblerEnd */
   0,                            /* no local IVT generation code */
@@ -2172,6 +2775,8 @@ PORT ez80_z80_port =
   0,                            /* no CSE cost estimation yet */
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // __far is not a subspace of generic.
+  true,                         // generic is a subspace of __far.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -2233,6 +2838,7 @@ PORT z80n_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",
     "GSINIT",
@@ -2242,9 +2848,9 @@ PORT z80n_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    NULL,                       // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -2306,6 +2912,8 @@ PORT z80n_port =
   0,                            /* no CSE cost estimation yet */
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -2367,6 +2975,7 @@ PORT r800_port =
     NULL,                       /* idata */
     NULL,                       /* pdata */
     NULL,                       /* xdata */
+    NULL,                       // xconst
     NULL,                       /* bit */
     "RSEG (ABS)",
     "GSINIT",
@@ -2376,9 +2985,9 @@ PORT r800_port =
     NULL,                       /* xidata */
     NULL,                       /* xinit */
     NULL,                       /* const_name */
-    "CABS (ABS)",               /* cabs_name */
-    "DABS (ABS)",               /* xabs_name */
-    NULL,                       /* iabs_name */
+    "CABS (ABS)",               // cabs_name
+    NULL,                       // xabs_name
+    "DABS (ABS)",               // iabs_name
     "INITIALIZED",              /* name of segment for initialized variables */
     "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
     NULL,
@@ -2440,6 +3049,8 @@ PORT r800_port =
   0,                            /* no CSE cost estimation yet */
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

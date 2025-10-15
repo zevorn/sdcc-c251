@@ -31,10 +31,11 @@ memmap *xstack = NULL;          /* xternal stack data          */
 memmap *istack = NULL;          /* internal stack              */
 memmap *code = NULL;            /* code segment                */
 memmap *data = NULL;            /* internal data upto 128      */
-memmap *initialized = NULL;     /* initialized data, such as initialized, nonzero globals or local statics. */
-memmap *initializer = NULL;     /* a copz of the values for the initialized data from initialized in code space */
+memmap *initialized = NULL;     // initialized data, such as initialized, nonzero globals or local statics.
+memmap *initializer = NULL;     // a copy of the values for the initialized data from initialized in code space
 memmap *pdata = NULL;           /* paged external data         */
 memmap *xdata = NULL;           /* external data               */
+memmap *xconst = NULL;          // constant data in __far/__xdata space
 memmap *xidata = NULL;          /* the initialized xdata       */
 memmap *xinit = NULL;           /* the initializers for xidata */
 memmap *idata = NULL;           /* internal data upto 256      */
@@ -43,7 +44,7 @@ memmap *statsg = NULL;          /* the constant data segment   */
 memmap *c_abs = NULL;           /* constant absolute data      */
 memmap *x_abs = NULL;           /* absolute xdata/pdata        */
 memmap *i_abs = NULL;           /* absolute idata upto 256     */
-memmap *d_abs = NULL;           /* absolute data upto 128      */
+memmap *d_abs = NULL;           /* absolute data upto 128 (mcs51) or 64 K (z80-related) */
 memmap *sfr = NULL;             /* register space              */
 memmap *reg = NULL;             /* register space              */
 memmap *sfrbit = NULL;          /* sfr bit space               */
@@ -145,7 +146,7 @@ initMem (void)
      DEBUG-NAME     -   'C'
      POINTER-TYPE   -   CPOINTER
    */
-  code = allocMap (0, 1, 0, 0, 0, 1, options.code_loc, CODE_NAME, 'C', CPOINTER);
+  code = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 1, options.code_loc, CODE_NAME, 'C', CPOINTER);
 
   /* home  segment ;
      SFRSPACE       -   NO
@@ -157,7 +158,7 @@ initMem (void)
      DEBUG-NAME     -   'C'
      POINTER-TYPE   -   CPOINTER
    */
-  home = allocMap (0, 1, 0, 0, 0, 1, options.code_loc, HOME_NAME, 'C', CPOINTER);
+  home = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 1, options.code_loc, HOME_NAME, 'C', CPOINTER);
 
   /* Static segment (code for variables );
      SFRSPACE       -   NO
@@ -169,7 +170,7 @@ initMem (void)
      DEBUG-NAME     -   'D'
      POINTER-TYPE   -   CPOINTER
    */
-  statsg = allocMap (0, 1, 0, 0, 0, 1, 0, STATIC_NAME, 'D', CPOINTER);
+  statsg = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 1, 0, STATIC_NAME, 'D', CPOINTER);
 
   /* Constant Absolute Data segment (for variables );
      SFRSPACE       -   NO
@@ -181,7 +182,7 @@ initMem (void)
      DEBUG-NAME     -   'D'
      POINTER-TYPE   -   CPOINTER
    */
-  c_abs = allocMap (0, 1, 0, 0, 0, 1, 0, CABS_NAME, 'D', CPOINTER);
+  c_abs = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 1, 0, CABS_NAME, 'D', CPOINTER);
 
   /* Data segment - internal storage segment ;
      SFRSPACE       -   NO
@@ -248,6 +249,8 @@ initMem (void)
   xdata = allocMap (0, 1, 0, 0, 0, 0, options.xdata_loc, XDATA_NAME, 'F', FPOINTER);
   xidata = allocMap (0, 1, 0, 0, 0, 0, 0, XIDATA_NAME, 'F', FPOINTER);
   xinit = allocMap (0, 1, 0, 0, 0, 1, 0, XINIT_NAME, 'C', CPOINTER);
+  if (TARGET_RABBIT_LIKE || TARGET_IS_EZ80 || TARGET_IS_TLCS90)
+    xconst = allocMap (0, 1, 0, 0, 0, 1, 0, XCONST_NAME, 'F', FPOINTER);
 
   /* Absolute external storage segment ;
      SFRSPACE       -   NO
@@ -259,7 +262,8 @@ initMem (void)
      DEBUG-NAME     -   'F'
      POINTER-TYPE   -   FPOINTER
    */
-  x_abs = allocMap (0, 1, 0, 0, 0, 0, options.xdata_loc, XABS_NAME, 'F', FPOINTER);
+  // The !TARGET_Z80_LIKE is an ugly hack here. But SDCC puts global variables with __at into x_abs, while they shouldn't be in far space for z80 (and related, except maybe for Rabbits).
+  x_abs = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 0, options.xdata_loc, XABS_NAME, 'F', FPOINTER);
 
   /* Indirectly addressed internal data segment
      SFRSPACE       -   NO
@@ -347,7 +351,6 @@ initMem (void)
 
   /* the unknown map */
   generic = allocMap (0, 0, 0, 0, 0, 0, 0, DATA_NAME, ' ', GPOINTER);
-
 }
 
 /*-----------------------------------------------------------------*/
@@ -441,6 +444,18 @@ defaultOClass (symbol *sym)
         }
       break;
     case S_XDATA:
+      if ((TARGET_RABBIT_LIKE || TARGET_IS_EZ80 || TARGET_IS_TLCS90) && (sym->level == 0 || SPEC_STAT(sym->etype)) && !SPEC_ABSA (sym->etype))
+        {
+          sym_link *t = sym->type;
+          while (IS_ARRAY (t))
+            t = t->next;
+          if (IS_CONSTANT (t))
+            {
+              SPEC_OCLS (sym->etype) = xconst;
+              break;
+            }
+        }
+
       /* absolute initialized global */
       if (sym->ival && SPEC_ABSA (sym->etype))
         {
@@ -590,7 +605,7 @@ allocGlobal (symbol *sym)
           if (sym->ival && SPEC_ABSA (sym->etype))
             {
               /* absolute initialized global */
-              SPEC_OCLS (sym->etype) = x_abs;
+              SPEC_OCLS (sym->etype) = TARGET_Z80_LIKE ? d_abs : x_abs;
             }
           else if (sym->ival && sym->level == 0 && port->mem.initialized_name)
             {
@@ -621,7 +636,7 @@ allocGlobal (symbol *sym)
 /* allocParms - parameters are always passed on stack              */
 /*-----------------------------------------------------------------*/
 void
-allocParms (value *val, bool smallc)
+allocParms (value *val, bool smallc, bool dynamicc)
 {
   value *lval;
   int pNum = 1;
@@ -631,7 +646,7 @@ allocParms (value *val, bool smallc)
     {
       for (lval = val; lval; lval = lval->next)
       {
-        if (IS_REGPARM (lval->etype))
+        if (IS_REGPARM (lval->etype) && !dynamicc)
           continue;
         stackParamSizeAdjust += getSize (lval->type) + (getSize (lval->type) == 1);
       }
@@ -652,7 +667,8 @@ allocParms (value *val, bool smallc)
       /* if this a register parm then allocate
          it as a local variable by adding it
          to the first block we see in the body */
-      if (IS_REGPARM (lval->etype))
+      if (IS_REGPARM (lval->etype) &&
+        !dynamicc) // DynamicC passes all parameters on the stack, even the ones that are in a register, too.
         continue;
 
       /* mark it as my parameter */
@@ -662,7 +678,10 @@ allocParms (value *val, bool smallc)
       /* if automatic variables r 2b stacked */
       if (options.stackAuto || IFFUNC_ISREENT (currFunc->type))
         {
-          int paramsize = getSize (lval->type) + (getSize (lval->type) == 1 && smallc) + (getSize (lval->type) % 2 && TARGET_PDK_LIKE);
+          int paramsize = getSize (lval->type) +
+            (getSize (lval->type) == 1 && (smallc || dynamicc && !IS_STRUCT (lval->type))) +
+            (getSize (lval->type) == 3 && dynamicc && IS_FARPTR (lval->type)) +
+            (getSize (lval->type) % 2 && TARGET_PDK_LIKE);
 
           if (lval->sym)
             lval->sym->onStack = 1;

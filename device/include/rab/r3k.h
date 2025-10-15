@@ -1,8 +1,8 @@
 /*-------------------------------------------------------------------------
-   r3k.h - definitions on the built in I/O ports for the Rabbit 3000
+   r3k.h - definitions of the built in I/O ports for the Rabbit 3000
            for use with SDCC
 
-   Copyright (C) 2020, Philipp Klaus Krause <pkk AT spth.de>
+   Copyright (C) 2020-2025, Philipp Klaus Krause <pkk AT spth.de>
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -30,10 +30,6 @@
 #ifndef __R3K_H__
 #define __R3K_H__ 1
 
-#ifndef _RABREG
-#define _RABREG(addr, reg) __sfr __at(addr) reg
-#endif
-
 #include "r2kc.h"
 
 _RABREG(0x0D, GPSCR); // Global Power Save Control Register
@@ -59,9 +55,25 @@ _RABREG(0x4D, PGFR);  // Port G Function Register
 _RABREG(0x4E, PGDCR); // Port G Drive Control Register
 _RABREG(0x4F, PGDDR); // Port G Data Direction Register
 
-// TODO: Input capture registers, section 20.1.2 of the Rabbit 3000 User manual.
+_RABREG(0x56, ICCSR); // Input Capture Control/Status Register
+_RABREG(0x57, ICSR);  // Input Capture Control Register
+_RABREG(0x58, ICT1R); // Input Capture Trigger 1 Register
+_RABREG(0x59, ICS1R); // Input Capture Source 1 Register
+_RABREG(0x5A, ICL1R); // Input Capture LSB 1 Register
+_RABREG(0x5B, ICM1R); // Input Capture MSB 1 Register
+_RABREG(0x5C, ICT2R); // Input Capture Trigger 2 Register
+_RABREG(0x5D, ICS2R); // Input Capture Source 2 Register
+_RABREG(0x5E, ICL2R); // Input Capture LSB 2 Register
+_RABREG(0x5F, ICM2R); // Input Capture MSB 2 Register
 
-// TODO: PWM registers, section 22.1.2 of the Rabbit 3000 User manual.
+_RABREG(0x88, PWL0R); // PWM LSB 0 Register
+_RABREG(0x89, PWM0R); // PWM MSB 0 Register
+_RABREG(0x8A, PWL1R); // PWM LSB 1 Register
+_RABREG(0x8B, PWM1R); // PWM MSB 1 Register
+_RABREG(0x8C, PWL2R); // PWM LSB 2 Register
+_RABREG(0x8D, PWM2R); // PWM MSB 2 Register
+_RABREG(0x8E, PWL3R); // PWM LSB 3 Register
+_RABREG(0x8F, PWM3R); // PWM MSB 3 Register
 
 _RABREG(0x90, QDCSR); // Quad Decode Ctrl/Status Register
 _RABREG(0x91, QDCR);  // Quad Decode Control Register

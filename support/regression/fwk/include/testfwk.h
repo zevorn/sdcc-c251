@@ -54,7 +54,7 @@ void __printf(const char *szFormat, ...);
 #define __reentrant
 #endif
 
-#if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka) || defined(__SDCC_sm83) || defined(__SDCC_tlcs90) || defined(__SDCC_ez80_z80) || defined(__SDCC_z80n) || defined(__SDCC_r800)
+#if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k) || defined(__SDCC_sm83) || defined(__SDCC_tlcs90) || defined(__SDCC_ez80) || defined(__SDCC_z80n) || defined(__SDCC_r800)
 #define __data
 #define __idata
 #define __pdata
@@ -64,6 +64,7 @@ void __printf(const char *szFormat, ...);
 #define __far
 #define __reentrant
 #else
+#define __dynamicc
 #define __smallc
 #define __z88dk_fastcall
 #ifndef __SDCC_stm8

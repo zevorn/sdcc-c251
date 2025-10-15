@@ -746,6 +746,7 @@ PORT mos6502_port =
       NULL,                     /* idata */
       NULL,                     /* pdata */
       "BSS",                    /* xdata */
+      NULL,                     // xconst_name
       NULL,                     /* bit */
       "RSEG    (ABS)",          /* reg */
       "GSINIT",                 /* static initialization */
@@ -839,6 +840,8 @@ PORT mos6502_port =
     cseCostEstimation,          /* CSE cost estimation */
     NULL,                       /* no builtin functions */
     GPOINTER,                   /* treat unqualified pointers as "generic" pointers */
+    true,
+    false,
     1,                          /* reset labelKey to 1 */
     1,                          /* globals & local statics allowed */
     3,                          /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -915,6 +918,7 @@ PORT mos65c02_port =
       NULL,                     // idata
       NULL,                     // pdata
       "BSS",                    // xdata
+      NULL,                     // xconst_name
       NULL,                     // bit
       "RSEG    (ABS)",          // reg
       "GSINIT",                 // static initialization
@@ -1008,6 +1012,8 @@ PORT mos65c02_port =
     cseCostEstimation,          /* CSE cost estimation */
     NULL,                       /* no builtin functions */
     GPOINTER,                   /* treat unqualified pointers as "generic" pointers */
+    true,
+    false,
     1,                          /* reset labelKey to 1 */
     1,                          /* globals & local statics allowed */
     3,                          /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
