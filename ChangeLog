@@ -1,5 +1,9 @@
 2025-10-15 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* Merge rabbit branch.
+
+2025-10-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* sdcc/support/regression/tests/dynamiccstructret.c.in:
 	  Disable a test for targets where it fails for known reasons.
 
