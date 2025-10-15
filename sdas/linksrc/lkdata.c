@@ -63,6 +63,10 @@ char	rb[NINPUT];	/*	LST file text line being
 			 */
 int	oflag;		/*	Output file type flag
 			 */
+char	*outnam;	/*	Pointer to -o+ output file name
+			 */
+char	*outext;	/*	Pointer to -o+ output file extension
+			 */
 int	objflg;		/*	Linked file/library object output flag
 			 */
 
@@ -97,8 +101,6 @@ int	line;		/*	current line number
 int	page;		/*	current page number
 			 */
 int	lop;		/*	current line number on page
-			 */
-time_t	curtim;		/*	pointer to the current time string
 			 */
 int	pass;		/*	linker pass number
 			 */
@@ -145,10 +147,8 @@ a_uint	p_mask;		/*	Page Mask
 			 */
 int	gline;		/*	Read a LST line flag
 			 */
-
 int	gcntr;		/*	Bytes processed in LST line
-			*/
-
+			 */
 int	hline;		/*	Read a HLR line flag
 			 */
 int	listing;	/*	Assembled line listing bits
@@ -160,8 +160,8 @@ int	bytcnt;		/*	Assenbled bytes for this line
 int	bgncnt;		/*	Assembled bytes for this line
 			 */
 char	eqt_id[128];	/*	Area name for this ELIST line
-			 */			
-			 
+			 */
+
 /* sdld specific */
 char    *optsdcc;
 char    *optsdcc_module;
@@ -225,7 +225,6 @@ struct	lfile	*lfp;	/*	pointer to current lfile structure
 			 *	being processed by parse()
 			 */
 FILE	*ofp = NULL;	/*	Output file handle
-			 *	for word formats
 			 */
 
 #if NOICE
@@ -323,12 +322,13 @@ struct	head	*hp;	/*	Pointer to the current
  *		int	b_flag;		Bank flags
  *		char *	b_fspec;	Bank File Specification
  *		FILE *	b_ofp;		Bank File Handle
+ *		char *	b_ofspec;	Bank Output File Specification
  *		int	b_oflag;	Bank has output flag
  *		int	b_rtaflg	Bank First Output flag
  *	};
  */
 struct	bank	bank[1] = {
-    {	NULL,	"",	"",	0,	0,	0,	0,	"",	NULL,	0,	1	}
+    {	NULL,	"",	"",	0,	0,	0,	0,	"",	NULL,	"",	0,	1	}
 };
 
 struct	bank	*bankp = &bank[0];
@@ -349,7 +349,7 @@ struct	bank	*bp;	/*	Pointer to the current
  *	in at the end of the first pass through the REL files.
  *	The area structure also contains a link to the bank
  *	this area is a part of and a data output file handle
- *	pointer which is loaded from from the bank structure.
+ *	pointer which is loaded from the bank structure.
  *	As A directives are read from the REL files a linked
  *	list of unique area structures is created by placing a
  *	link to the new area structure in the previous area structure.
@@ -430,13 +430,13 @@ struct	sym *symhash[NHASH]; /*	array of pointers to NHASH
 			      */
 /*
  *	The struct base contains a pointer to a
- *	base definition string and a link to the next
- *	base structure.
+ *	base definition string and a link to the
+ *	next base structure.
  *
  *	struct	base
  *	{
- *		struct	base  *b_base;		Base link
- *		char	      *b_strp;		String pointer
+ *		struct	base  *link;		Base link ? TODO F
+ *		char	      *strp;		String pointer ? TODO F
  *	};
  */
 struct	base	*basep;	/*	The pointer to the first
@@ -444,6 +444,16 @@ struct	base	*basep;	/*	The pointer to the first
 			 */
 struct	base	*bsp;	/*	Pointer to the current
 			 *	base structure
+			 */
+struct	base *a_basep;	/*	Pointer to the first
+		 	*	area base structure
+		 	*/
+struct	base *a_bsp;	/*	Pointer to the current
+			 *	area base structure
+			 */
+
+struct	base *b_basep;	/*	Pointer to the first
+		 	*	bank base structure
 			 */
 
 /*
@@ -671,4 +681,4 @@ char    ccase[256] = {
         '\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
         '\360', '\361', '\362', '\363', '\364', '\365', '\366', '\367',
         '\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377'
-};
+};	

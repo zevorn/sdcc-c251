@@ -39,7 +39,7 @@
  * Local Definitions
  */
 
-#define VERSION "V03.00/V05.40 + sdld"
+#define VERSION "V05.41 +- sdld.251014"
 #define	COPYRIGHT "2021"
 
 /*
@@ -93,27 +93,27 @@
  */
 
 /*)BUILD
-        $(PROGRAM) =    ASLINK
-        $(INCLUDE) =    ASLINK.H
-        $(FILES) = {
-                LKMAIN.C
-                LKLEX.C
-                LKAREA.C
-                LKBANK.C
-                LKHEAD.C
-                LKSYM.C
-                LKEVAL.C
-                LKDATA.C
-                LKLIST.C
-                LKNOICE.C
-                LKSDCDB.C
-                LKRLOC.C
-                LKRLOC3.C
-                LKLIBR.C
-                LKOUT.C
-                LKS19.C
-        }
-        $(STACK) = 2000
+	$(PROGRAM) =	ASLINK
+	$(INCLUDE) =	ASLINK.H
+	$(FILES) = {
+		LKMAIN.C
+		LKLEX.C
+		LKAREA.C
+		LKBANK.C
+		LKHEAD.C
+		LKSYM.C
+		LKEVAL.C
+		LKDATA.C
+		LKLIST.C
+		LKNOICE.C
+		LKSDCDB.C
+		LKRLOC.C
+		LKRLOC3.C
+		LKRLOC4.C
+		LKLIBR.C
+		LKOUT.C
+	}
+	$(STACK) = 2000
 */
 
 #undef	VOID
@@ -216,7 +216,7 @@
  */
 
 #define NCPS    PATH_MAX        /* characters per symbol */
-#define NINPUT  PATH_MAX        /* Input buffer size */
+#define NINPUT  PATH_MAX        /* Input buffer size TODOJJS: see if somt. too small on Win*/
 #define	NHASH	     (1 << 6)	/* Buckets in hash table */
 #define	HMASK	    (NHASH - 1)	/* Hash mask */
 #define	NLPP		60	/* Lines per page */
@@ -244,25 +244,29 @@
 #define	CYCNT_END	']'	/* Cycle count end   delimiter */
 
 /*
+ * Default Page Length Mask  (not used in sdld)
+ */
+#define	DEFAULT_PMASK	0xFF	/* 256 Element Boundary / Length */ 
+
+/*
  * Internal ASxxxx Version Variable
  */
 extern	int	ASxxxx_VERSION;
 
-
 /*
- *      ASLINK - Version 3 Definitions
+ *	ASLINK - Version 3 Definitions
  */
 
 /*
- *      The "A3_" area constants define values used in
- *      generating the assembler area output data.
+ *	The "A3_" area constants define values used in
+ *	generating the assembler area output data.
  *
  * Area flags
  *
- *         7     6     5     4     3     2     1     0
- *      +-----+-----+-----+-----+-----+-----+-----+-----+
- *      |     |     |     | PAG | ABS | OVR |     |     |
- *      +-----+-----+-----+-----+-----+-----+-----+-----+
+ *	   7     6     5     4     3     2     1     0
+ *	+-----+-----+-----+-----+-----+-----+-----+-----+
+ *	|     |     |     | PAG | ABS | OVR |     |     |
+ *	+-----+-----+-----+-----+-----+-----+-----+-----+
  */
 
 #define	A3_CON		000		/* concatenate */
@@ -365,22 +369,26 @@ extern	int	ASxxxx_VERSION;
 #define R_BYT3  0x100           /* if R3_BYTE is set, this is a
                                  * 3 byte address, of which
                                  * the linker must select one byte.
-                                 */
+				 */
 #define R_HIB   0x200           /* If R3_BYTE & R_BYT3 are set, linker
                                  * will select byte 3 of the relocated
                                  * 24 bit address.
-                                 */
+				 */
 
 #define R_BIT   0x400           /* Linker will convert from byte-addressable
                                  * space to bit-addressable space.
-                                 */
+				 */
 
 #define R_ESCAPE_MASK   0xf0    /* Used to escape relocation modes
                                  * greater than 0xff in the .rel
                                  * file.
-                                 */
+				 */
 /* end sdld specific */
 
+
+/*
+ *	ASLINK - Version 4 Definitions
+ */
 
 /*
  *	The "A4_" area constants define values used in
@@ -554,117 +562,117 @@ struct	head
 };
 
 /*
- *      The MODE structure contains the specification of one of the
- *      assemblers' relocation modes.  Each assembler must specify
- *      at least one relocation mode.  The relocation specification
- *      allows arbitrarily defined active bits and bit positions.
- *      The 32 element arrays are indexed from 0 to 31.
- *      Index 0 corresponds to bit 0, ..., and 31 corresponds to bit 31
- *      of a normal integer value.
+ *	The MODE structure contains the specification of one of the
+ *	assemblers' relocation modes.  Each assembler must specify
+ *	at least one relocation mode.  The relocation specification
+ *	allows arbitrarily defined active bits and bit positions.
+ *	The 32 element arrays are indexed from 0 to 31.
+ *	Index 0 corresponds to bit 0, ..., and 31 corresponds to bit 31
+ *	of a normal integer value.
  *
- *      The value an array element defines if the normal integer bit is
- *      active (bit <7> is set, 0x80) and what destination bit
- *      (bits <4:0>, 0 - 31) should be loaded with this normal
- *      integer bit.
+ *	The value an array element defines if the normal integer bit is
+ *	active (bit <7> is set, 0x80) and what destination bit
+ *	(bits <4:0>, 0 - 31) should be loaded with this normal
+ *	integer bit.
  *
- *      The specification for a 32-bit integer:
+ *	The specification for a 32-bit integer:
  *
- *      char mode_[32] = {
- *              0x80,   0x81,   0x82,   0x83,   0x84,   0x85,   0x86,   0x87,
- *              0x88,   0x89,   0x8A,   0x8B,   0x8C,   0x8D,   0x8E,   0x8F,
- *              0x90,   0x91,   0x92,   0x93,   0x94,   0x95,   0x96,   0x97,
- *              0x98,   0x99,   0x9A,   0x9B,   0x9C,   0x9D,   0x9E,   0x9F
- *      };
- *
- *
- *      The specification for the 11-bit 8051 addressing mode:
- *
- *      char mode_[32] = {
- *              0x80,   0x81,   0x82,   0x83,   0x84,   0x85,   0x86,   0x87,
- *              0x8D,   0x8E,   0x8F,   0x0B,   0x0C,   0x0D,   0x0E,   0x0F,
- *              0x10,   0x11,   0x12,   0x13,   0x14,   0x15,   0x16,   0x17,
- *              0x18,   0x19,   0x1A,   0x1B,   0x1C,   0x1D,   0x1E,   0x1F
- *      };
+ *	char mode_[32] = {
+ *		0x80,	0x81,	0x82,	0x83,	0x84,	0x85,	0x86,	0x87,
+ *		0x88,	0x89,	0x8A,	0x8B,	0x8C,	0x8D,	0x8E,	0x8F,
+ *		0x90,	0x91,	0x92,	0x93,	0x94,	0x95,	0x96,	0x97,
+ *		0x98,	0x99,	0x9A,	0x9B,	0x9C,	0x9D,	0x9E,	0x9F
+ *	};
  *
  *
- *      m_def is the bit relocation definition array.
- *      m_flag indicates that bit position swapping is required.
- *      m_dbits contains the active bit positions for the output.
- *      m_sbits contains the active bit positions for the input.
+ *	The specification for the 11-bit 8051 addressing mode:
+ *
+ *	char mode_[32] = {
+ *		0x80,	0x81,	0x82,	0x83,	0x84,	0x85,	0x86,	0x87,
+ *		0x8D,	0x8E,	0x8F,	0x0B,	0x0C,	0x0D,	0x0E,	0x0F,
+ *		0x10,	0x11,	0x12,	0x13,	0x14,	0x15,	0x16,	0x17,
+ *		0x18,	0x19,	0x1A,	0x1B,	0x1C,	0x1D,	0x1E,	0x1F
+ *	};
+ *
+ *
+ *	m_def is the bit relocation definition array.
+ *	m_flag indicates that bit position swapping is required.
+ *	m_dbits contains the active bit positions for the output.
+ *	m_sbits contains the active bit positions for the input.
  */
-struct  mode
+struct	mode
 {
-        char    m_def[32];      /* Bit Relocation Definition */
-        int     m_flag;         /* Bit Swapping Flag */
-        a_uint  m_dbits;        /* Destination Bit Mask */
-        a_uint  m_sbits;        /* Source Bit Mask */
+	char 	m_def[32];	/* Bit Relocation Definition */
+	int	m_flag;		/* Bit Swapping Flag */
+	a_uint	m_dbits;	/* Destination Bit Mask */
+	a_uint	m_sbits;	/* Source Bit Mask */
 };
 
 /*
- *      The bank structure contains the parameter values for a
- *      specific program or data bank.  The bank structure
- *      is a linked list of banks.  The initial default bank
- *      is unnamed and is defined in lkdata.c, the next bank structure
- *      will be linked to this structure through the structure
- *      element 'struct bank *b_bp'.  The structure contains the
- *      bank name, the bank base address (default = 0), the bank size
- *      (default = 0, whole addressing space), the bank mapping,
- *      and the file name suffix. (default is none)  These optional
- *      parameters are from  the .bank assembler directive.
- *      The bank structure also contains the bank data output
- *      file specification, file handle pointer and the
- *      bank first output flag.
+ *	The bank structure contains the parameter values for a
+ *	specific program or data bank.  The bank structure
+ *	is a linked list of banks.  The initial default bank
+ *	is unnamed and is defined in lkdata.c, the next bank structure
+ *	will be linked to this structure through the structure
+ *	element 'struct bank *b_bp'.  The structure contains the
+ *	bank name, the bank base address (default = 0), the bank size
+ *	(default = 0, whole addressing space), the bank mapping,
+ *	and the file name suffix. (default is none)  These optional
+ *	parameters are from  the .bank assembler directive.
+ *	The bank structure also contains the bank data output
+ *	file specification, file handle pointer and the
+ *	bank first output flag.
  */
-struct  bank
+struct	bank
 {
-        struct  bank *b_bp;     /* Bank link */
-        char *  b_id;           /* Bank Name */
-        char *  b_fsfx;         /* Bank File Suffix / File Specification */
-        a_uint  b_base;         /* Bank base address */
-        a_uint  b_size;         /* Bank size */
-        a_uint  b_map;          /* Bank mapping */
-        int     b_flag;         /* Bank flags */
-        char *  b_fspec;        /* Bank File Specification */
-        FILE *  b_ofp;          /* Bank File Handle */
-        char *  b_ofspec;       /* Bank Output File Specification */
-        int     b_oflag;        /* Bank has output flag */
-        int     b_rtaflg;       /* Bank First Output flag */
+	struct	bank *b_bp;	/* Bank link */
+	char *	b_id;		/* Bank Name */
+	char *	b_fsfx;		/* Bank File Suffix / File Specification */
+	a_uint	b_base;		/* Bank base address */
+	a_uint	b_size;		/* Bank size */
+	a_uint	b_map;		/* Bank mapping */
+	int	b_flag;		/* Bank flags */
+	char *	b_fspec;	/* Bank File Specification */
+	FILE *	b_ofp;		/* Bank File Handle */
+	char *	b_ofspec;	/* Bank Output File Specification */
+	int	b_oflag;	/* Bank has output flag */
+	int	b_rtaflg;	/* Bank First Output flag */
 };
 
-#define B_BASE  0001            /* 'base' address specified */
-#define B_SIZE  0002            /* 'size' of bank specified */
-#define B_FSFX  0004            /* File suffix specified */
-#define B_MAP   0010            /* Mapped Bank Flag */
+#define B_BASE	0001		/* 'base' address specified */
+#define B_SIZE	0002		/* 'size' of bank specified */
+#define	B_FSFX	0004		/* File suffix specified */
+#define	B_MAP	0010		/* Mapped Bank Flag */
 
 /*
- *      A structure area is created for each 'unique' data/code
- *      area definition found as the REL files are read.  The
- *      struct area contains the name of the area, a flag byte
- *      which contains the area attributes (REL/CON/OVR/ABS),
- *      the area base address set flag byte (-b option), and the
- *      area base address and total size which will be filled
- *      in at the end of the first pass through the REL files.
- *      The area structure also contains a link to the bank
- *      this area is a part of and a data output file handle
- *      pointer which is loaded from from the bank structure.
- *      As A directives are read from the REL files a linked
- *      list of unique area structures is created by placing a
- *      link to the new area structure in the previous area structure.
+ *	A structure area is created for each 'unique' data/code
+ *	area definition found as the REL files are read.  The
+ *	struct area contains the name of the area, a flag byte
+ *	which contains the area attributes (REL/CON/OVR/ABS),
+ *	the area base address set flag byte (-b option), and the
+ *	area base address and total size which will be filled
+ *	in at the end of the first pass through the REL files.
+ *	The area structure also contains a link to the bank
+ *	this area is a part of and a data output file handle
+ *	pointer which is loaded from from the bank structure.
+ *	As A directives are read from the REL files a linked
+ *	list of unique area structures is created by placing a
+ *	link to the new area structure in the previous area structure.
  */
-struct  area
+struct	area
 {
-        struct  area    *a_ap;  /* Area link */
-        struct  areax   *a_axp; /* Area extension link */
-        struct  bank    *a_bp;  /* Bank link */
-        FILE *  a_ofp;          /* Area File Handle */
-        a_uint  a_addr;         /* Beginning address of area */
-        a_uint  a_size;         /* Total size of the area */
-        int     a_bset;         /* Area base address set */
+	struct	area	*a_ap;	/* Area link */
+	struct	areax	*a_axp;	/* Area extension link */
+	struct	bank	*a_bp;	/* Bank link */
+	FILE *	a_ofp;		/* Area File Handle */
+	a_uint	a_addr;		/* Beginning address of area */
+	a_uint	a_size;		/* Total size of the area */
+	int	a_bset;		/* Area base address set */
 /* sdld specific */
         a_uint  a_unaloc;       /* Total number of unallocated bytes, for error reporting */
 /* end sdld specific */
-        int     a_flag;         /* Flags */
-        char *  a_id;           /* Name */
+	int	a_flag;		/* Flags */
+	char *	a_id;		/* Name */
 /* sdld specific */
         char    *a_image;       /* Something for hc08/lkelf */
         char    *a_used;        /* Something for hc08/lkelf */
@@ -673,198 +681,199 @@ struct  area
 };
 
 /*
- *      An areax structure is created for every A directive found
- *      while reading the REL files.  The struct areax contains a
- *      link to the 'unique' area structure referenced by the A
- *      directive and to the head structure this area segment is
- *      a part of.  The size of this area segment as read from the
- *      A directive is placed in the areax structure.  The beginning
- *      address of this segment will be filled in at the end of the
- *      first pass through the REL files.  As A directives are read
- *      from the REL files a linked list of areax structures is
- *      created for each unique area.  The final areax linked
- *      list has at its head the 'unique' area structure linked
- *      to the linked areax structures (one areax structure for
- *      each A directive for this area).
+ *	An areax structure is created for every A directive found
+ *	while reading the REL files.  The struct areax contains a
+ *	link to the 'unique' area structure referenced by the A
+ *	directive and to the head structure this area segment is
+ *	a part of.  The size of this area segment as read from the
+ *	A directive is placed in the areax structure.  The beginning
+ *	address of this segment will be filled in at the end of the
+ *	first pass through the REL files.  As A directives are read
+ *	from the REL files a linked list of areax structures is
+ *	created for each unique area.  The final areax linked
+ *	list has at its head the 'unique' area structure linked
+ *	to the linked areax structures (one areax structure for
+ *	each A directive for this area).
  */
-struct  areax
+struct	areax
 {
-        struct  areax   *a_axp; /* Area extension link */
-        struct  area    *a_bap; /* Base area link */
-        struct  head    *a_bhp; /* Base header link */
-        a_uint  a_addr;         /* Beginning address of section */
-        a_uint  a_size;         /* Size of the area in section */
+	struct	areax	*a_axp;	/* Area extension link */
+	struct	area	*a_bap;	/* Base area link */
+	struct	head	*a_bhp;	/* Base header link */
+	a_uint	a_addr;		/* Beginning address of section */
+	a_uint	a_size;		/* Size of the area in section */
+	a_uint	a_bndry;	/* Boundary for this A directive not used in SDLD */
 };
 
 /*
- *      A sym structure is created for every unique symbol
- *      referenced/defined while reading the REL files.  The
- *      struct sym contains the symbol's name, a flag value
- *      (not used in this linker), a symbol type denoting
- *      referenced/defined, and an address which is loaded
- *      with the relative address within the area in which
- *      the symbol was defined.  The sym structure also
- *      contains a link to the area where the symbol was defined.
- *      The sym structures are linked into linked lists using
- *      the symbol link element.
+ *	A sym structure is created for every unique symbol
+ *	referenced/defined while reading the REL files.  The
+ *	struct sym contains the symbol's name, a flag value
+ *	set to inhibit map output, a symbol type denoting
+ *	referenced/defined, and an address which is loaded
+ *	with the relative address within the area in which
+ *	the symbol was defined.  The sym structure also
+ *	contains a link to the area where the symbol was defined.
+ *	The sym structures are linked into linked lists using
+ *	the symbol link element.   flag value not used in sdld
  */
-struct  sym
+struct	sym
 {
-        struct  sym     *s_sp;  /* Symbol link */
-        struct  areax   *s_axp; /* Symbol area link */
-        char    s_type;         /* Symbol subtype */
-        char    s_flag;         /* Flag byte */
-        a_uint  s_addr;         /* Address */
-        char    *s_id;          /* Name (JLH) */
-        char    *m_id;          /* Module symbol define in */
+	struct	sym	*s_sp;	/* Symbol link */
+	struct	areax	*s_axp;	/* Symbol area link */
+	char	s_type;		/* Symbol subtype */
+	char	s_flag;		/* Flag byte */
+	a_uint	s_addr;		/* Address */
+	char	*s_id;		/* Name (JLH) */
+	char	*m_id;		/* Module symbol define in */
 };
 
 /*
- *      The structure lfile contains a pointer to a
- *      file specification string, an index which points
- *      to the file name (past the 'path'), the file type,
- *      an object output flag, and a link to the next
- *      lfile structure.
+ *	The structure lfile contains a pointer to a
+ *	file specification string, an index which points
+ *	to the file name (past the 'path'), the file type,
+ *	an object output flag, and a link to the next
+ *	lfile structure.
  */
-struct  lfile
+struct	lfile
 {
-        struct  lfile   *f_flp; /* lfile link */
-        int     f_type;         /* File type */
-        char    *f_idp;         /* Pointer to file spec */
-        int     f_idx;          /* Index to file name */
-        int     f_obj;          /* Object output flag */
+	struct	lfile	*f_flp;	/* lfile link */
+	int	f_type;		/* File type */
+	char	*f_idp;		/* Pointer to file spec */
+	int	f_idx;		/* Index to file name */
+	int	f_obj;		/* Object output flag */
 };
 
 /*
- *      The struct base contains a pointer to a
- *      base definition string and a link to the next
- *      base structure.
+ *	The struct base contains a pointer to a
+ *	base definition string and a link to the next
+ *	base structure.
  */
-struct  base
+struct	base
 {
-        struct  base  *b_base;  /* Base link */
-        char          *b_strp;  /* String pointer */
+	struct	base  *b_base;	/* Base link */
+	char	      *b_strp;	/* String pointer */
 };
 
 /*
- *      The struct globl contains a pointer to a
- *      global definition string and a link to the next
- *      global structure.
+ *	The struct globl contains a pointer to a
+ *	global definition string and a link to the next
+ *	global structure.
  */
-struct  globl
+struct	globl
 {
-        struct  globl *g_globl; /* Global link */
-        char          *g_strp;  /* String pointer */
+	struct	globl *g_globl;	/* Global link */
+	char	      *g_strp;	/* String pointer */
 };
 
 /*
- *      A structure sdp is created for each 'unique' paged
- *      area definition found as the REL files are read.
- *      As P directives are read from the REL files a linked
- *      list of unique sdp structures is created by placing a
- *      link to the new sdp structure in the previous area structure.
+ *	A structure sdp is created for each 'unique' paged
+ *	area definition found as the REL files are read.
+ *	As P directives are read from the REL files a linked
+ *	list of unique sdp structures is created by placing a
+ *	link to the new sdp structure in the previous area structure.
  */
-struct  sdp
+struct	sdp
 {
-        struct  area  *s_area;  /* Paged Area link */
-        struct  areax *s_areax; /* Paged Area Extension Link */
-        a_uint  s_addr;         /* Page address offset */
+	struct	area  *s_area;	/* Paged Area link */
+	struct	areax *s_areax;	/* Paged Area Extension Link */
+	a_uint	s_addr;		/* Page address offset */
 };
 
 /*
- *      The structure rerr is loaded with the information
- *      required to report an error during the linking
- *      process.  The structure contains an index value
- *      which selects the areax structure from the header
- *      areax structure list, a mode value which selects
- *      symbol or area relocation, the base address in the
- *      area section, an area/symbol list index value, and
- *      an area/symbol offset value.
+ *	The structure rerr is loaded with the information
+ *	required to report an error during the linking
+ *	process.  The structure contains an index value
+ *	which selects the areax structure from the header
+ *	areax structure list, a mode value which selects
+ *	symbol or area relocation, the base address in the
+ *	area section, an area/symbol list index value, and
+ *	an area/symbol offset value.
  */
-struct  rerr
+struct	rerr
 {
-        int     aindex;         /* Linking area */
-        int     mode;           /* Relocation mode */
-        a_uint  rtbase;         /* Base address in section */
-        int     rindex;         /* Area/Symbol reloaction index */
-        a_uint  rval;           /* Area/Symbol offset value */
+	int	aindex;		/* Linking area */
+	int	mode;		/* Relocation mode */
+	a_uint	rtbase;		/* Base address in section */
+	int	rindex;		/* Area/Symbol reloaction index */
+	a_uint	rval;		/* Area/Symbol offset value */
 };
 
 /*
- *      The structure lbpath is created for each library
- *      path specification input by the -k option.  The
- *      lbpath structures are linked into a list using
- *      the next link element.
+ *	The structure lbpath is created for each library
+ *	path specification input by the -k option.  The
+ *	lbpath structures are linked into a list using
+ *	the next link element.
  */
 struct lbpath {
-        struct  lbpath  *next;
-        char            *path;
+	struct	lbpath	*next;
+	char		*path;
 };
 
 /*
- *      The structure lbname is created for all combinations of the
- *      library path specifications (input by the -k option) and the
- *      library file specifications (input by the -l option) that
- *      lead to an existing file.  The element path points to
- *      the path string, element libfil points to the library
- *      file string, and the element libspc is the concatenation
- *      of the valid path and libfil strings.
+ *	The structure lbname is created for all combinations of the
+ *	library path specifications (input by the -k option) and the
+ *	library file specifications (input by the -l option) that
+ *	lead to an existing file.  The element path points to
+ *	the path string, element libfil points to the library
+ *	file string, and the element libspc is the concatenation
+ *	of the valid path and libfil strings.
  *
- *      The lbpath structures are linked into a list
- *      using the next link element.
+ *	The lbpath structures are linked into a list
+ *	using the next link element.
  *
- *      Each library file contains a list of object files
- *      that are contained in the particular library. e.g.:
+ *	Each library file contains a list of object files
+ *	that are contained in the particular library. e.g.:
  *
- *              \iolib\termio
- *              \inilib\termio
+ *		\iolib\termio
+ *		\inilib\termio
  *
- *      Only one specification per line is allowed.
+ *	Only one specification per line is allowed.
  */
 struct lbname {
-        struct  lbname  *next;
-        char            *path;
-        char            *libfil;
-        char            *libspc;
-        int             f_obj;
+	struct	lbname	*next;
+	char		*path;
+	char		*libfil;
+	char		*libspc;
+	int		f_obj;
 };
 
 /*
- *      The function fndsym() searches through all combinations of the
- *      library path specifications (input by the -k option) and the
- *      library file specifications (input by the -l option) that
- *      lead to an existing file for a symbol definition.
+ *	The function fndsym() searches through all combinations of the
+ *	library path specifications (input by the -k option) and the
+ *	library file specifications (input by the -l option) that
+ *	lead to an existing file for a symbol definition.
  *
- *      The structure lbfile is created for the first library
- *      object file which contains the definition for the
- *      specified undefined symbol.
+ *	The structure lbfile is created for the first library
+ *	object file which contains the definition for the
+ *	specified undefined symbol.
  *
- *      The element libspc points to the library file path specification
- *      and element relfil points to the object file specification string.
- *      The element filspc is the complete path/file specification for
- *      the library file to be imported into the linker.  The f_obj
- *      flag specifies if the object code from this file is
- *      to be output by the linker.  The file specification
- *      may be formed in one of two ways:
+ *	The element libspc points to the library file path specification
+ *	and element relfil points to the object file specification string.
+ *	The element filspc is the complete path/file specification for
+ *	the library file to be imported into the linker.  The f_obj
+ *	flag specifies if the object code from this file is
+ *	to be output by the linker.  The file specification
+ *	may be formed in one of two ways:
  *
- *      (1)     If the library file contained an absolute
- *              path/file specification then this becomes filspc.
- *              (i.e. C:\...)
+ *	(1)	If the library file contained an absolute
+ *		path/file specification then this becomes filspc.
+ *		(i.e. C:\...)
  *
- *      (2)     If the library file contains a relative path/file
- *              specification then the concatenation of the path
- *              and this file specification becomes filspc.
- *              (i.e. \...)
+ *	(2)	If the library file contains a relative path/file
+ *		specification then the concatenation of the path
+ *		and this file specification becomes filspc.
+ *		(i.e. \...)
  *
- *      The lbpath structures are linked into a list
- *      using the next link element.
+ *	The lbpath structures are linked into a list
+ *	using the next link element.
  */
 struct lbfile {
-        struct  lbfile  *next;
-        char            *libspc;
-        char            *relfil;
-        char            *filspc;
-        int             f_obj;
+	struct	lbfile	*next;
+	char		*libspc;
+	char		*relfil;
+	char		*filspc;
+	int		f_obj;
 /* sdld specific */
         long            offset;
         unsigned int    type;
@@ -872,244 +881,271 @@ struct lbfile {
 };
 
 /*
- *      External Definitions for all Global Variables
+ *	External Definitions for all Global Variables
  */
 
-extern  char    *_abs_;         /*      = { ".  .ABS." };
-                                 */
-extern  int     lkerr;          /*      ASLink error flag
-                                 */
-extern  char    *ip;            /*      pointer into the REL file
-                                 *      text line in ib[]
-                                 */
-extern  char    ib[NINPUT];     /*      REL file text line
-                                 */
-extern  char    *rp;            /*      pointer into the LST file
-                                 *      text line in rb[]
-                                 */
-extern  char    rb[NINPUT];     /*      LST file text line being
-                                 *      address relocated
-                                 */
-extern  char    ctype[];        /*      array of character types, one per
+extern	char	*_abs_;		/*	= { ".  .ABS." };
+				 */
+extern	int	lkerr;		/*	ASLink error flag
+				 */
+extern	char	*ip;		/*	pointer into the REL file
+				 *	text line in ib[]
+				 */
+extern	char	ib[NINPUT];	/*	REL file text line
+				 */
+extern	char	*rp;		/*	pointer into the LST file
+				 *	text line in rb[]
+				 */
+extern	char	rb[NINPUT];	/*	LST file text line being
+				 *	address relocated
+				 */
+extern	char	ctype[];	/*	array of character types, one per
                                  *      ASCII/OEM character
-                                 */
+				 */
 
 /*
- *      Character Type Definitions
+ *	Character Type Definitions
  */
-#define SPACE   '\000'
-#define ETC     '\000'
-#define LETTER  '\001'
-#define DIGIT   '\002'
-#define BINOP   '\004'
-#define RAD2    '\010'
-#define RAD8    '\020'
-#define RAD10   '\040'
-#define RAD16   '\100'
-#define ILL     '\200'
+#define	SPACE	'\000'
+#define ETC	'\000'
+#define	LETTER	'\001'
+#define	DIGIT	'\002'
+#define	BINOP	'\004'
+#define	RAD2	'\010'
+#define	RAD8	'\020'
+#define	RAD10	'\040'
+#define	RAD16	'\100'
+#define	ILL	'\200'
 
-#define DGT2    DIGIT|RAD16|RAD10|RAD8|RAD2
-#define DGT8    DIGIT|RAD16|RAD10|RAD8
-#define DGT10   DIGIT|RAD16|RAD10
-#define LTR16   LETTER|RAD16
+#define	DGT2	DIGIT|RAD16|RAD10|RAD8|RAD2
+#define	DGT8	DIGIT|RAD16|RAD10|RAD8
+#define	DGT10	DIGIT|RAD16|RAD10
+#define	LTR16	LETTER|RAD16
 
-extern  char    afspec[];       /*      The filespec created by afile()
-                                 */
-extern  char    ccase[];        /*      an array of characters which
-                                 *      perform the case translation function
-                                 */
+extern	char	afspec[];	/*	The filespec created by afile()
+				 */
+extern	char	ccase[];	/*	an array of characters which
+				 *	perform the case translation function
+				 */
 
-extern  struct  lfile   *filep; /*      The pointers (lfile *) filep,
-                                 *      (lfile *) cfp, and (FILE *) sfp
-                                 *      are used in conjunction with
-                                 *      the routine nxtline() to read
-                                 *      aslink commands from
-                                 *      (1) the standard input or
-                                 *      (2) or a command file
-                                 *      and to read the REL files
-                                 *      sequentially as defined by the
-                                 *      aslink input commands.
-                                 *
-                                 *      The pointer *filep points to the
-                                 *      beginning of a linked list of
-                                 *      lfile structures.
-                                 */
-extern  struct  lfile   *cfp;   /*      The pointer *cfp points to the
-                                 *      current lfile structure
-                                 */
-extern  struct  lfile   *startp;/*      aslink startup file structure
-                                 */
-extern  struct  lfile   *linkp; /*      pointer to first lfile structure
-                                 *      containing an input REL file
-                                 *      specification
-                                 */
-extern  struct  lfile   *lfp;   /*      pointer to current lfile structure
-                                 *      being processed by parse()
-                                 */
-extern  struct  head    *headp; /*      The pointer to the first
-                                 *      head structure of a linked list
-                                 */
-extern  struct  head    *hp;    /*      Pointer to the current
-                                 *      head structure
-                                 */
-extern  struct  bank    *bankp; /*      The pointer to the first
-                                 *      bank structure of a linked list
-                                 */
-extern  struct  bank    *bp;    /*      Pointer to the current
-                                 *      bank structure
-                                 */
-extern  struct  area    *areap; /*      The pointer to the first
-                                 *      area structure of a linked list
-                                 */
-extern  struct  area    *ap;    /*      Pointer to the current
-                                 *      area structure
-                                 */
-extern  struct  areax   *axp;   /*      Pointer to the current
-                                 *      areax structure
-                                 */
-extern  struct  sym *symhash[NHASH]; /* array of pointers to NHASH
-                                      * linked symbol lists
-                                      */
-extern  struct  base    *basep; /*      The pointer to the first
-                                 *      base structure
-                                 */
-extern  struct  base    *bsp;   /*      Pointer to the current
-                                 *      base structure
-                                 */
-extern  struct  globl   *globlp;/*      The pointer to the first
-                                 *      globl structure
-                                 */
-extern  struct  globl   *gsp;   /*      Pointer to the current
-                                 *      globl structure
-                                 */
-extern  struct  sdp     sdp;    /*      Base Paged structure
-                                 */
-extern  struct  rerr    rerr;   /*      Structure containing the
-                                 *      linker error information
-                                 */
-extern  FILE    *nbofp;         /*      Non Banked Linker Output
-                                 *      File Handle
-                                 */
-extern  FILE    *ofp;           /*      Linker Output file handle
-                                 */
-
-#if NOICE
-extern  FILE    *jfp;           /*      NoICE output file handle
-                                 */
-#endif
-
-extern  FILE    *mfp;           /*      Map output file handle
-                                 */
-extern  FILE    *rfp;           /*      File handle for output
-                                 *      address relocated ASxxxx
-                                 *      listing file
-                                 */
-extern  FILE    *sfp;           /*      The file handle sfp points to the
-                                 *      currently open file
-                                 */
-extern  FILE    *tfp;           /*      File handle for input
-                                 *      ASxxxx listing file
-                                 */
-
-#if SDCDB
-extern  FILE    *yfp;           /*      SDCDB output file handle
-                                 */
-#endif
-
-extern  int     oflag;          /*      Output file type flag
-                                 */
-extern  int     objflg;         /*      Linked file/library object output flag
-                                 */
+extern	struct	lfile	*filep;	/*	The pointers (lfile *) filep,
+				 *	(lfile *) cfp, and (FILE *) sfp
+				 *	are used in conjunction with
+				 *	the routine nxtline() to read
+				 *	aslink commands from
+				 *	(1) the standard input or
+				 *	(2) or a command file
+				 *	and to read the REL files
+				 *	sequentially as defined by the
+				 *	aslink input commands.
+				 *
+				 *	The pointer *filep points to the
+				 *	beginning of a linked list of
+				 *	lfile structures.
+				 */
+extern	struct	lfile	*cfp;	/*	The pointer *cfp points to the
+				 *	current lfile structure
+				 */
+extern	struct	lfile	*startp;/*	aslink startup file structure
+				 */
+extern	struct	lfile	*linkp;	/*	pointer to first lfile structure
+				 *	containing an input REL file
+				 *	specification
+				 */
+extern	struct	lfile	*lfp;	/*	pointer to current lfile structure
+				 *	being processed by parse()
+				 */
+extern	struct	head	*headp;	/*	The pointer to the first
+				 *	head structure of a linked list
+				 */
+extern	struct	head	*hp;	/*	Pointer to the current
+				 *	head structure
+				 */
+extern	struct	bank	*bankp;	/*	The pointer to the first
+				 *	bank structure of a linked list
+				 */
+extern	struct	bank	*bp;	/*	Pointer to the current
+				 *	bank structure
+				 */
+extern	struct	area	*areap;	/*	The pointer to the first
+				 *	area structure of a linked list
+				 */
+extern	struct	area	*ap;	/*	Pointer to the current
+				 *	area structure
+				 */
+extern	struct	areax	*axp;	/*	Pointer to the current
+				 *	areax structure
+				 */
+extern	struct	sym *symhash[NHASH]; /*	array of pointers to NHASH
+				      *	linked symbol lists
+				      */
+extern	struct	base	*basep;	/*	The pointer to the first
+				 *	base structure
+				 */
+extern	struct	base	*bsp;	/*	Pointer to the current
+				 *	base structure
+				 */
+extern	struct	globl	*globlp;/*	The pointer to the first
+				 *	globl structure
+				 */
+extern	struct	globl	*gsp;	/*	Pointer to the current
+				 *	globl structure
+				 */
+extern	struct	sdp	sdp;	/*	Base Paged structure
+				 */
+extern	struct	rerr	rerr;	/*	Structure containing the
+				 *	linker error information
+				 */
+extern	FILE	*nbofp;		/*	Non Banked Linker Output
+				 *	File Handle
+				 */
+extern	FILE	*ofp;		/*	Linker Output file handle
+				 */
 
 #if NOICE
-extern  int     jflag;          /*      -j, enable NoICE Debug output
-                                 */
+extern	FILE	*jfp;		/*	NoICE output file handle
+				 */
 #endif
 
-extern  int     mflag;          /*      Map output flag
-                                 */
-extern  int     xflag;          /*      Map file radix type flag
-                                 */
+extern	FILE	*mfp;		/*	Map output file handle
+				 */
+extern	FILE	*rfp;		/*	File handle for output
+				 *	address relocated ASxxxx
+				 *	listing file
+				 */
+extern	FILE	*sfp;		/*	The file handle sfp points to the
+				 *	currently open file
+				 */
+extern	FILE	*tfp;		/*	File handle for input
+				 *	ASxxxx listing file
+				 */
+extern	FILE	*hfp;		/*	File handle for input ASxxxx
+				 *	.lst to .rst hint file  (n.u.sdld)
+				 */
 
 #if SDCDB
-extern  int     yflag;          /*      -y, enable SDCC Debug output
-                                 */
+extern	FILE	*yfp;		/*	SDCDB output file handle
+				 */
 #endif
 
-extern  int     pflag;          /*      print linker command file flag
-                                 */
-extern  int     uflag;          /*      Listing relocation flag
-                                 */
-extern  int     wflag;          /*      Enable wide format listing
-                                 */
+extern	int	oflag;		/*	Output file type flag
+				 */
+extern	int	o1flag;		/*	Output legacy Intel Hex flag
+				 *	Start address record type set to 1 (n.u.sdld)
+				 */
+extern	int	objflg;		/*	Linked file/library object output flag
+				 */
+
+#if NOICE
+extern	int	jflag;		/*	-j, enable NoICE Debug output
+				 */
+#endif
+
+extern	int	mflag;		/*	Map output flag
+				 */
+extern	int	m1flag;		/*	Include linker generated
+				 *	symbols in map file (n.u.sdld)
+				 */
+extern	int	xflag;		/*	Map file radix type flag
+				 */
+
+#if SDCDB
+extern	int	yflag;		/*	-y, enable SDCC Debug output
+				 */
+#endif
+
+extern	int	pflag;		/*	print linker command file flag
+				 */
+extern	int	uflag;		/*	Listing relocation flag
+				 */
+extern	int	wflag;		/*	Enable wide format listing
+				 */
 extern  int     zflag;          /*      Disable symbol case sensitivity
-                                 */
-extern  int     radix;          /*      current number conversion radix:
-                                 *      2 (binary), 8 (octal), 10 (decimal),
-                                 *      16 (hexadecimal)
-                                 */
-extern  int     line;           /*      current line number
-                                 */
-extern  int     page;           /*      current page number
-                                 */
-extern  int     lop;            /*      current line number on page
-                                 */
-extern  int     pass;           /*      linker pass number
-                                 */
-extern  a_uint  pc;             /*      current relocation address
-                                 */
-extern  int     pcb;            /*      current bytes per pc word
-                                 */
-extern  int     rtcnt;          /*      count of elements in the
-                                 *      rtval[] and rtflg[] arrays
-                                 */
-extern  a_uint  rtval[];        /*      data associated with relocation
-                                 */
-extern  int     rtflg[];        /*      indicates if rtval[] value is
-                                 *      to be sent to the output file.
-                                 */
-extern  int     rterr[];        /*      indicates if rtval[] value should
-                                 *      be flagged as a relocation error.
-                                 */
-extern  char    rtbuf[];        /*      S19/IHX output buffer
-                                 */
-extern  struct  bank *rtabnk;   /*      rtbuf[] processing
-                                 */
-extern  int     rtaflg;         /*      rtbuf[] processing
-                                 */
-extern  a_uint  rtadr0;         /*
-                                 */
-extern  a_uint  rtadr1;         /*
-                                 */
-extern  a_uint  rtadr2;         /*
-                                 */
-extern  int     obj_flag;       /*      Linked file/library object output flag
-                                 */
-extern  int     a_bytes;        /*      REL file T Line address length
-                                 */
-extern  int     hilo;           /*      REL file byte ordering
-                                 */
-extern  a_uint  a_mask;         /*      Address Mask
-                                 */
-extern  a_uint  s_mask;         /*      Sign Mask
-                                 */
-extern  a_uint  v_mask;         /*      Value Mask
-                                 */
-extern  int     gline;          /*      LST file relocation active
-                                 *      for current line
-                                 */
-extern  int     gcntr;          /*      LST file relocation active
-                                 *      counter
-                                 */
-extern  struct lbpath *lbphead; /*      pointer to the first
-                                 *      library path structure
-                                 */
-extern  struct lbname *lbnhead; /*      pointer to the first
-                                 *      library name structure
-                                 */
-extern  struct lbfile *lbfhead; /*      pointer to the first
-                                 *      library file structure
-                                 */
+				 */
+extern	int	radix;		/*	current number conversion radix:
+				 *	2 (binary), 8 (octal), 10 (decimal),
+				 *	16 (hexadecimal)
+				 */
+extern	int	line;		/*	current line number
+				 */
+extern	int	page;		/*	current page number
+				 */
+extern	int	lop;		/*	current line number on page
+				 */
+extern	int	pass;		/*	linker pass number
+				 */
+extern	a_uint	pc;		/*	current relocation address
+				 */
+extern	int	pcb;		/*	current bytes per pc word
+				 */
+extern	int	rtcnt;		/*	count of elements in the
+				 *	rtval[] and rtflg[] arrays
+				 */
+extern	a_uint	rtval[];	/*	data associated with relocation
+				 */
+extern	int	rtflg[];	/*	indicates if rtval[] value is
+				 *	to be sent to the output file.
+				 */
+extern	int	rterr[];	/*	indicates if rtval[] value should
+				 *	be flagged as a relocation error.
+				 */
+extern	char	rtbuf[];	/*	S19/IHX output buffer
+				 */
+extern	struct	bank *rtabnk;	/*	rtbuf[] processing
+				 */
+extern	int	rtaflg;		/*	rtbuf[] processing
+				 */
+extern	a_uint	rtadr0;		/*
+				 */
+extern	a_uint	rtadr1;		/*
+				 */
+extern	a_uint	rtadr2;		/*
+				 */
+extern	int	obj_flag;	/*	Linked file/library object output flag
+				 */
+extern	int	a_bytes;	/*	REL file T Line address length
+				 */
+extern	int	hilo;		/*	REL file byte ordering
+				 */
+extern	a_uint	a_mask;		/*	Address Mask
+				 */
+extern	a_uint	s_mask;		/*	Sign Mask
+				 */
+extern	a_uint	v_mask;		/*	Value Mask
+				 */
+extern	a_uint	p_mask;		/*	Page Mask  n.u.sdld!
+				 */
+extern	int	gline;		/*	Read a LST line flag
+				 */
+extern	int	gcntr;		/*	Bytes processed in LST line
+				 */
+/* sdld: gline: LST file relocation active for current line
+         gcntr: LST file relocation active 
+   n.u.sdld: 
+      hline, listing, lmode, bytcnt, bgncnt, eqt_id
+*/
+extern	int	hline;		/*	Read a HLR line flag
+				 */
+extern	int	listing;	/*	Assembled line listing bits
+				 */
+extern	int	lmode;		/*	Assembled line listing mode
+				 */
+extern	int	bytcnt;		/*	Assembled bytes for this line
+				 */
+extern	int	bgncnt;		/*	Assembled bytes for this line
+				 */
+extern	char	eqt_id[128];	/*	Area name for this ELIST line
+				 */
+extern	struct lbpath *lbphead;	/*	pointer to the first
+				 *	library path structure
+				 */
+extern	struct lbname *lbnhead;	/*	pointer to the first
+				 *	library name structure
+				 */
+extern	struct lbfile *lbfhead;	/*	pointer to the first
+				 *	library file structure
+				 */
+
 /* sdld specific */
 extern  int     sflag;          /*      JCF: Memory usage output flag
                                  */
@@ -1154,91 +1190,99 @@ extern	char *		strrchr();
 
 /* Program function definitions */
 
-#ifdef  OTHERSYSTEM
+#ifdef	OTHERSYSTEM
 
 /* lkmain.c */
-extern  FILE *          afile(char *fn, char *ft, int wf);
-extern  VOID            bassav(void);
-extern  int             fndidx(char *str);
-extern  int             fndext(char *str);
-extern  VOID            gblsav(void);
-extern  int             intsiz(void);
+extern	FILE *		afile(char *fn, char *ft, int wf);
+extern	VOID		bassav(void);
+extern	int		fndidx(char *str);
+extern	int		fndext(char *str);
+extern	VOID		gblsav(void);
+extern	int		intsiz(void);
 extern  VOID            iramsav(void);
 extern  VOID            xramsav(void);
 extern  VOID            codesav(void);
 extern  VOID            iramcheck(void);
 extern  VOID            link_main(void);
-extern  VOID            lkexit(int i);
-extern  int             main(int argc, char *argv[]);
-extern  VOID            map(void);
+extern	VOID		lkexit(int i);
+extern	int		main(int argc, char *argv[]);
+extern	VOID		map(void);
 extern  VOID            sym(void);
-extern  int             parse(void);
-extern  VOID            doparse(void);
-extern  VOID            setarea(void);
-extern  VOID            setgbl(void);
+extern	int		parse(void);
+extern	VOID		doparse(void);
+extern	VOID		setarea(void);
+extern	VOID		setgbl(void);
 extern  VOID            usage(int n);
 extern  VOID            copyfile (FILE *dest, FILE *src);
 
 /* lklex.c */
-extern  VOID            chopcrlf(char *str);
-extern  char            endline(void);
-extern  int             get(void);
-extern  VOID            getfid(char *str, int c);
-extern  VOID            getid(char *id, int c);
+extern	VOID		chopcrlf(char *str);
+extern	char		endline(void);
+extern	int		get(void);
+extern	VOID		getfid(char *str, int c);
+extern	VOID		getid(char *id, int c);
 extern  VOID            getSid(char *id);
-extern  int             getmap(int d);
-extern  int             getnb(void);
-extern  int             more(void);
-extern  int             nxtline(void);
-extern  VOID            skip(int c);
-extern  VOID            unget(int c);
+extern	int		getmap(int d);
+extern	int		getnb(void);
+extern	int		more(void);
+extern	int		nxtline(void);
+extern	VOID		skip(int c);
+extern	VOID		unget(int c);
 
 /* lkarea.c */
-extern  VOID            lkparea(char *id);
-extern  VOID            lnkarea(void);
+extern	VOID		lkparea(char *id);
+extern	VOID		lnkarea(void);
 extern  VOID            lnkarea2(void);
-extern  VOID            newarea(void);
+extern	VOID		newarea(void);
 
 /* lkbank.c */
-extern  VOID            chkbank(FILE *fp);
-extern  VOID            lkfclose(void);
-extern  VOID            lkfopen(void);
-extern  VOID            lkpbank(char * id);
-extern  VOID            newbank(void);
-extern  VOID            setbank(void);
+extern	VOID		chkbank(FILE *fp);
+extern	VOID		lkfclose(void);
+extern	VOID		lkfopen(void);
+extern	VOID		lkpbank(char * id);
+extern	VOID		newbank(void);
+extern	VOID		setbank(void);
 
 /* lkhead.c */
-extern  VOID            module(void);
-extern  VOID            newhead(void);
-extern  VOID            newmode(void);
+extern	VOID		module(void);
+extern	VOID		newhead(void);
+extern	VOID		newmode(void);
 
 /* lksym.c */
-extern  int             hash(char *p, int cflag);
-extern  struct  sym *   lkpsym(char *id, int f);
-extern  char *          new(unsigned int n);
-extern  struct  sym *   newsym(void);
-extern  char *          strsto(char *str);
-extern  VOID            symdef(FILE *fp);
-extern  int             symeq(char *p1, char *p2, int cflag);
-extern  VOID            syminit(void);
-extern  VOID            symmod(FILE *fp, struct sym *tsp);
-extern  a_uint          symval(struct sym *tsp);
+extern	int		hash(char *p, int cflag);
+extern	struct	sym *	lkpsym(char *id, int f);
+extern	char *		new(unsigned int n);
+extern	struct	sym *	newsym(void);
+extern	char *		strsto(char *str);
+extern	VOID		symdef(FILE *fp);
+extern	int		symeq(char *p1, char *p2, int cflag);
+extern	VOID		syminit(void);
+extern	VOID		symmod(FILE *fp, struct sym *tsp);
+extern	a_uint		symval(struct sym *tsp);
 
 /* lkeval.c */
-extern  int             digit(int c, int r);
-extern  a_uint          eval(void);
-extern  a_uint          expr(int n);
-extern  int             oprio(int c);
-extern  a_uint          term(void);
+extern	int		digit(int c, int r);
+extern	a_uint		eval(void);
+extern	a_uint		expr(int n);
+extern	int		oprio(int c);
+extern	a_uint		term(void);
 
 /* lklist.c */
-extern  int             dgt(int rdx, char *str, int n);
-extern  VOID            newpag(FILE *fp);
-extern  VOID            slew(struct area *xp, struct bank *yp);
-extern  VOID            lstarea(struct area *xp, struct bank *yp);
-extern  VOID            lkulist(int i);
-extern  VOID            lkalist(a_uint cpc);
-extern  VOID            lklist(a_uint cpc, int v, int err);
+extern	int		dgt(int rdx, char *str, int n);
+extern	int		gethlr(int nhline); /*n.u.sdld*/
+extern	int		getlst(int ngline); /*n.u.sdld*/
+extern	VOID		newpag(FILE *fp);
+extern	VOID		slew(struct area *xp, struct bank *yp);
+extern	VOID		lstarea(struct area *xp, struct bank *yp);
+extern	VOID		lkulist(int i);
+extern	VOID		lklist(a_uint cpc, int v, int err);
+extern	VOID		lkalist(a_uint cpc);
+extern	VOID		hlrlist(a_uint cpc, int v, int err); /*n.u.sdld*/
+extern	VOID		hlralist(a_uint cpc); 		/*n.u.sdld*/
+extern	VOID		hlrelist(void);			/*n.u.sdld*/
+extern	VOID		hlrclist(a_uint cpc, int v); 	/*n.u.sdld*/
+extern	VOID		setgh(void);			/*n.u.sdld*/
+extern	VOID		lsterr(int err);		/*n.u.sdld*/
 
 /* lknoice.c */
 extern	VOID		NoICEfopen(void);
@@ -1254,19 +1298,20 @@ extern	VOID		DefineLine(char *lineString, a_uint value, struct bank *yp);
 extern	VOID		PagedAddress(a_uint value, struct bank *yp);
 
 /* lksdcdb.c */
-extern  VOID            SDCDBfopen(void);
-extern  VOID            SDCDBcopy(char * str);
-extern  VOID            DefineSDCDB(char *name, a_uint value);
+extern	VOID		SDCDBfopen(void);
+extern	VOID		SDCDBcopy(char * str);
+extern	VOID		DefineSDCDB(char *name, a_uint value);
 
 /* lkrloc.c */
-extern  a_uint          adb_1b(a_uint v, int i);
-extern  a_uint          adb_2b(a_uint v, int i);
-extern  a_uint          adb_3b(a_uint v, int i);
-extern  a_uint          adb_4b(a_uint v, int i);
-extern  a_uint          adb_xb(a_uint v, int i);
-extern  a_uint          evword(void);
-extern  VOID            prntval(FILE *fptr, a_uint v);
-extern  VOID            reloc(int c);
+extern	a_uint		adb_1b(a_uint v, int i);
+extern	a_uint		adb_2b(a_uint v, int i);
+extern	a_uint		adb_3b(a_uint v, int i);
+extern	a_uint		adb_4b(a_uint v, int i);
+extern	a_uint		adb_xb(a_uint v, int i);
+extern	a_uint		adw_xb(int x, a_uint v, int i); /*n.u.sdld*/
+extern	a_uint		evword(void);
+extern	VOID		prntval(FILE *fptr, a_uint v);
+extern	VOID		reloc(int c);
 
 /* lkrloc3.c */
 extern  a_uint          adb_bit(a_uint v, int i);
@@ -1274,28 +1319,52 @@ extern  a_uint          adb_24_bit(a_uint v, int i);
 extern  a_uint          adb_24_hi(a_uint v, int i);
 extern  a_uint          adb_24_mid(a_uint v, int i);
 extern  a_uint          adb_24_lo(a_uint v, int i);
-extern  a_uint          adb_hi(a_uint  v, int i);
-extern  a_uint          adb_lo(a_uint  v, int i);
-extern  char *          errmsg3[];
-extern  VOID            errdmp3(FILE *fptr, char *str);
-extern  VOID            erpdmp3(FILE *fptr, char *str);
-extern  VOID            rele3(void);
-extern  VOID            reloc3(int c);
-extern  VOID            relt3(void);
-extern  VOID            relr3(void);
-extern  VOID            relp3(void);
-extern  VOID            relerr3(char *str);
-extern  VOID            relerp3(char *str);
+extern	a_uint		adb_hi(a_uint v, int i);
+extern	a_uint		adb_lo(a_uint v, int i);
+extern	char *		errmsg3[];
+extern	VOID		errdmp3(FILE *fptr, char *str);
+extern	VOID		erpdmp3(FILE *fptr, char *str);
+extern	VOID		rele3(void);
+extern	VOID		reloc3(int c);
+extern	VOID		relt3(void);
+extern	VOID		relr3(void);
+extern	VOID		relp3(void);
+extern	VOID		relerr3(char *str);
+extern	VOID		relerp3(char *str);
 extern  int             vpdkinst(int inst, int addr, int ver);
+
+/* lkrloc4.c */ /*n.u.sdld*/
+extern	a_uint		adb_byte(int p, a_uint v, int i);
+extern	char *		errmsg4[];
+extern	VOID		errdmp4(FILE *fptr, char *str);
+extern	VOID		erpdmp4(FILE *fptr, char *str);
+extern	a_uint		gtb_1b(int i);
+extern	a_uint		gtb_2b(int i);
+extern	a_uint		gtb_3b(int i);
+extern	a_uint		gtb_4b(int i);
+extern	a_uint		gtb_xb(int i);
+extern	a_uint		lkmerge(a_uint val, int r, a_uint v);
+extern	a_uint		ptb_1b(a_uint v, int i);
+extern	a_uint		ptb_2b(a_uint v, int i);
+extern	a_uint		ptb_3b(a_uint v, int i);
+extern	a_uint		ptb_4b(a_uint v, int i);
+extern	a_uint		ptb_xb(a_uint v, int i);
+extern	VOID		rele4(void);
+extern	VOID		reloc4(int c);
+extern	VOID		relt4(void);
+extern	VOID		relr4(void);
+extern	VOID		relp4(void);
+extern	VOID		relerr4(char *str);
+extern	VOID		relerp4(char *str);
 
 /* lklibr.c */
 extern  int             addfile(char *path, char *libfil);
-extern  VOID            addlib(void);
-extern  VOID            addpath(void);
-extern  int             fndsym(char *name);
-extern  VOID            library(void);
-extern  VOID            loadfile(char *filspc);
-extern  VOID            search(void);
+extern	VOID		addlib(void);
+extern	VOID		addpath(void);
+extern	int		fndsym(char *name);
+extern	VOID		library(void);
+extern	VOID		loadfile(char *filspc);
+extern	VOID		search(void);
 
 /* lkout.c */
 extern	VOID		lkout(int i);
@@ -1307,12 +1376,9 @@ extern	VOID		sflush(void);
 extern	VOID		dbx(int i);
 extern	VOID		dflush(void);
 
-/* lks19.c */
-extern  VOID            s19(int i);
-extern  VOID            sflush(void);
 
 /* EEP: lkelf.c */
-extern  VOID            elf();
+extern  VOID            elf(int i);
 
 /* JCF: lkmem.c */
 extern int summary(struct area * xp);
@@ -1331,5 +1397,7 @@ extern int as_strcmpi(const char *s1, const char *s2);
 extern int as_strncmpi(const char *s1, const char *s2, size_t n);
 
 #else
+
+/* not used by sdld */
 
 #endif

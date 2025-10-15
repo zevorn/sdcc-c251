@@ -1,7 +1,7 @@
 /* lkbank.c */
 
 /*
- *  Copyright (C) 2001-2014  Alan R. Baldwin
+ *  Copyright (C) 2001-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,17 +31,17 @@
  *	loads the module name into the current head structure.
  *
  *	lkbank.c contains the following functions:
- *		VOID	newbank()
- *		VOID	lkpbank()
- *		VOID	setbank()
- *		VOID	chkbank()
- *		VOID	lkfopen()
- *		VOID	lkfclose()
+ *		void	newbank()
+ *		void	lkpbank()
+ *		void	setbank()
+ *		void	chkbank()
+ *		void	lkfopen()
+ *		void	lkfclose()
  *
  *	lkbank.c contains no local variables.
  */
 
-/*)Function	VOID	newbank()
+/*)Function	void	newbank(void)
  * 
  *	The function newbank() creates and/or modifies bank
  *	structures for each B directive read from
@@ -66,14 +66,15 @@
  *		head	*hp		Pointer to the current
  *				 	head structure
  *		int	lkerr		error flag
+ *		a_uint	a_mask		masking value
  *
  *	functions called:
  *		a_uint	eval()		lkeval.c
- *		VOID	exit()		c_library
+ *		void	exit()		c_library
  *		int	fprintf()	c_library
- *		VOID	getid()		lklex.c
- *		VOID	lkpbank()	lkbank.c
- *		VOID	skip()		lklex.c
+ *		void	getid()		lklex.c
+ *		void	lkpbank()	lkbank.c
+ *		void	skip()		lklex.c
  *
  *	side effects:
  *		The bank structure is created and
@@ -97,8 +98,8 @@
  *   `-------------------------------------------------- bp->b_id
  *
  */
-VOID
-newbank()
+void
+newbank(void)
 {
 	int i;
 	a_uint v;
@@ -107,7 +108,7 @@ newbank()
 	struct bank **hblp;
 
 	if (headp == NULL) {
-		fprintf(stderr, "No header defined\n");
+		fprintf(stderr, "?ASlink-Error-No header defined\n");
 		lkexit(ER_FATAL);
 	}
 	/*
@@ -129,7 +130,7 @@ newbank()
 				bp->b_base = v;
 			} else {
 				if (v && (bp->b_base != v)) {
-					fprintf(stderr, "Conflicting address in bank %s\n", id);
+					fprintf(stderr, "?ASlink-Error-Conflicting address in bank %s\n", id);
 					lkerr++;
 				}
 			}
@@ -143,7 +144,7 @@ newbank()
 				bp->b_size = v;
 			} else {
 				if (v && (bp->b_size != v)) {
-					fprintf(stderr, "Conflicting size in bank %s\n", id);
+					fprintf(stderr, "?ASlink-Error-Conflicting size in bank %s\n", id);
 					lkerr++;
 				}
 			}
@@ -157,7 +158,7 @@ newbank()
 				bp->b_map = v;
 			} else {
 				if (v && (bp->b_map != v)) {
-					fprintf(stderr, "Conflicting mapping in bank %s\n", id);
+					fprintf(stderr, "?ASlink-Error-Conflicting mapping in bank %s\n", id);
 					lkerr++;
 				}
 			}
@@ -171,7 +172,7 @@ newbank()
 				bp->b_flag = i;
 			} else {
 				if (i && (bp->b_flag != i)) {
-					fprintf(stderr, "Conflicting flags in bank %s\n", id);
+					fprintf(stderr, "?ASlink-Error-Conflicting flags in bank %s\n", id);
 					lkerr++;
 				}
 			}
@@ -186,7 +187,7 @@ newbank()
 					bp->b_fsfx = strsto(id);
 				} else {
 					if (!symeq(bp->b_fsfx, id, 1)) {
-						fprintf(stderr, "Conflicting fsfx in bank %s\n", id);
+						fprintf(stderr, "?ASlink-Error-Conflicting fsfx in bank %s\n", id);
 						lkerr++;
 					}
 				}
@@ -204,11 +205,11 @@ newbank()
 			return;
 		}
 	}
-	fprintf(stderr, "Header bank list overflow\n");
+	fprintf(stderr, "?ASlink-Error-Header bank list overflow\n");
 	lkexit(ER_FATAL);
 }
 
-/*)Function	VOID	lkpbank(id)
+/*)Function	void	lkpbank(id)
  *
  *		char *	id		pointer to the bank name string
  *
@@ -218,16 +219,16 @@ newbank()
  *	i86 format output is set.
  *
  *	local variables:
- *		area *	tbp		pointer to a bank structure
+ *		bank *	tbp		pointer to a bank structure
  *
  *	global variables:
  *		bank	*bp		Pointer to the current
  *				 	bank structure
- *		bank	*bankp		The pointer to the first
+ *		bank	*bankp		Pointer to the first
  *				 	bank structure of a linked list
  *
  *	functions called:
- *		VOID *	new()		lksym()
+ *		void *	new()		lksym.c
  *		char *	strsto()	lksym.c
  *		int	symeq()		lksym.c
  *
@@ -237,9 +238,8 @@ newbank()
  *		will terminate the linker.
  */
 
-VOID
-lkpbank(id)
-char *id;
+void
+lkpbank(char *id)
 {
 	struct bank *tbp;
 
@@ -260,7 +260,7 @@ char *id;
 }
 
 
-/*)Function	VOID	setbank()
+/*)Function	void	setbank(void)
  *
  *	The function setbank() sets the base address of the bank by
  *	finding the the first area in the bank and initializing the
@@ -298,8 +298,8 @@ char *id;
  *		areas linked to bank[0].
  */
 
-VOID
-setbank()
+void
+setbank(void)
 {
 	a_uint base;
 	int bytes;
@@ -347,7 +347,7 @@ setbank()
 }
 
 
-/*)Function	VOID	chkbank(fp)
+/*)Function	void	chkbank(fp)
  *
  *		FILE	*fp		file handle
  *
@@ -378,9 +378,8 @@ setbank()
  *		Bank size may be flagged.
  */
 
-VOID
-chkbank(fp)
-FILE *fp;
+void
+chkbank(FILE *fp)
 {
 	a_uint alow, ahigh, blimit, bytes;
 
@@ -419,7 +418,7 @@ FILE *fp;
 }
 
 
-/*)Function	VOID	lkfopen()
+/*)Function	void	lkfopen(void)
  *
  *	The function lkfopen() scans the bank/area structures to
  *	open output data files for banks with any data.  Files
@@ -465,8 +464,8 @@ FILE *fp;
  *		All data output files are opened.
  */
 
-VOID
-lkfopen()
+void
+lkfopen(void)
 {
 	int idx;
 	char * frmt;
@@ -595,7 +594,7 @@ lkfopen()
 }
 
 
-/*)Function	VOID	lkfclose()
+/*)Function	void	lkfclose(void)
  *
  *	The function lkfclose() scans the bank structures to
  *	close all open data output files.
@@ -619,8 +618,8 @@ lkfopen()
  *		All open data output files are closed.
  */
 
-VOID
-lkfclose()
+void
+lkfclose(void)
 {
 	struct bank *tbp;
 

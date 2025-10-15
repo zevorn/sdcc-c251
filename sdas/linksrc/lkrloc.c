@@ -53,9 +53,9 @@
  *
  */
 
-/*)Function VOID        reloc(c)
+/*)Function	VOID	reloc(c)
  *
- *                      int c           process code
+ *		int c			process code
  *
  *	The function reloc() calls the proper version
  *	of the linker code.
@@ -89,7 +89,7 @@ int c;
 //              break;
 
 	default:
-		fprintf(stderr, "Internal Version Error");
+		fprintf(stderr, "?ASlink-Error-Internal Version Error");
 		lkexit(ER_FATAL);
 		break;
 	}
@@ -108,7 +108,7 @@ int c;
  *		hilo			byte ordering parameter
  *
  *	called functions:
- *              int eval()              lkeval.c
+ *		int	eval()		lkeval.c
  *
  *	side effects:
  *		Relocation text line is scanned to combine
@@ -442,7 +442,7 @@ int i;
 	return (j);
 }
 
-/*)Function VOID prntval(fptr, v)
+/*)Function	VOID	prntval(fptr, v)
  *
  *		FILE	*fptr		output file handle
  *		a_uint	v		value to output

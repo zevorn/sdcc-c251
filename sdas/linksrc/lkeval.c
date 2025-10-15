@@ -1,7 +1,7 @@
 /* lkeval.c */
 
 /*
- *  Copyright (C) 1989-2014  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@
  *	lkeval.c contains no local/static variables
  */
 
-/*)Function	a_uint	eval()
+/*)Function	a_uint	eval(void)
  *
  *	The function eval() evaluates a character string to a
  *	numerical value.
@@ -69,7 +69,7 @@
  *		int	digit()		lkeval.c
  *		int	get()		lklex.c
  *		int	getnb()		lklex.c
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		Input test is scanned and evaluated to a
@@ -77,7 +77,7 @@
  */
 
 a_uint
-eval()
+eval(void)
 {
 	int c, v;
 	a_uint n;
@@ -122,12 +122,12 @@ eval()
  *		FILE *	stderr		c_library
  *
  *	functions called:
- *		VOID	expr()		lkeval.c
+ *		void	expr()		lkeval.c
  *		int	fprintf()	c_library
  *		int	getnb()		lklex.c
  *		int	oprio()		lkeval.c
- *		VOID	term()		lkeval.c
- *		VOID	unget()		lklex.c
+ *		void	term()		lkeval.c
+ *		void	unget()		lklex.c
  *
  *
  *	side effects:
@@ -136,8 +136,7 @@ eval()
  */
 
 a_uint
-expr (n)
-int n;
+expr (int n)
 {
 	int c, p;
 	a_uint v, ve;
@@ -147,7 +146,7 @@ int n;
 		if ((p = oprio(c)) <= n)
 			break;
 		if ((c == '>' || c == '<') && c != get()) {
-			fprintf(stderr, "Invalid expression");
+			fprintf(stderr, "?ASlink-Error-Invalid expression");
 			lkerr++;
 			return(v);
 		}
@@ -214,7 +213,7 @@ int n;
 	return(v);
 }
 
-/*)Function	a_uint	term()
+/*)Function	a_uint	term(void)
  *
  *	The function term() evaluates a single constant
  *	or symbol value prefaced by any unary operator
@@ -242,15 +241,15 @@ int n;
  *
  *	functions called:
  *		int	digit()		lkeval.c
- *		VOID	expr()		lkeval.c
+ *		void	expr()		lkeval.c
  *		int	fprintf()	c_library
  *		int	get()		lklex.c
- *		VOID	getid()		lklex.c
+ *		void	getid()		lklex.c
  *		int	getmap()	lklex.c
  *		int	getnb()		lklex.c
  *		sym *	lkpsym()	lksym.c
  *		a_uint	symval()	lksym.c
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		An arithmetic term is evaluated by scanning input text.
@@ -269,7 +268,7 @@ term(void)
 	if (c == '(') {
 		v = expr(0);
 		if (getnb() != ')') {
-			fprintf(stderr, "Missing delimiter");
+			fprintf(stderr, "?ASlink-Error-Missing delimiter");
 			lkerr++;
 		}
 		return(v);
@@ -349,14 +348,14 @@ term(void)
 	if (ctype[c] & LETTER) {
 		getid(id, c);
 		if ((sp = lkpsym(id, 0)) == NULL) {
-			fprintf(stderr, "Undefined symbol %s\n", id);
+			fprintf(stderr, "?ASlink-Error-Undefined symbol %s\n", id);
 			lkerr++;
 			return(0);
 		} else {
 			return(symval(sp));
 		}
 	}
-	fprintf(stderr, "Unknown operator %c\n", c);
+	fprintf(stderr, "?ASlink-Error-Unknown operator %c\n", c);
 	lkerr++;
 	return(0);
 }
@@ -385,8 +384,7 @@ term(void)
  */
 
 int
-digit(c, r)
-int c, r;
+digit(int c, int r)
 {
 	if (r == 16) {
 		if (ctype[c] & RAD16) {
@@ -433,8 +431,7 @@ int c, r;
  */
  
 int
-oprio(c)
-int c;
+oprio(int c)
 {
 	if (c == '*' || c == '/' || c == '%')
 		return (10);

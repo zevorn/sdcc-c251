@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 #include <sys/types.h>
 #include <string.h>
-
+#include <time.h>
 
 #ifdef _WIN32
 typedef unsigned short mode_t;

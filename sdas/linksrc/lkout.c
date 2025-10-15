@@ -181,7 +181,7 @@ lkflush()
  *
  *      Load Address Field   -  This  field  consists  of the four ascii
  *                              characters which result from  converting
- *                              the  the  binary value of the address in
+ *                              the binary value of the address in
  *                              which to begin loading this record.  The
  *                              order is as follows:
  *
@@ -198,9 +198,10 @@ lkflush()
  *
  *      Record Type Field    -  This  field  identifies the record type,
  *                              which is either 0 for data records,  1
- *                              for an End of File record, 3 for a
- *				start address, or 4 for a
- *				segment record.  It consists
+ *                              for an End of File record, (? 3 for a
+ *                              start address, or 4 for a
+ *                              segment record), 5 for an 
+ *				extended start address. It consists
  *                              of two ascii characters, with  the  high
  *                              digit of the record type first, followed
  *                              by the low digit of the record type.
@@ -332,22 +333,21 @@ int i;
 		if (sp && (sp->s_axp->a_bap->a_ofp == ofp)) {
 			symadr = symval(sp);
                         chksum =  0x04;
-                        chksum += 0x05;
+				chksum += 0x05;
                         chksum += symadr;
                         chksum += symadr >> 8;
                         chksum += symadr >> 16;
                         chksum += symadr >> 24;
-#ifdef	LONGINT
+ #ifdef	LONGINT
                         fprintf(ofp, ":04000005%08lX%02lX\n", symadr, (~chksum + 1) & 0x00ff);
-#else
+ #else
                         fprintf(ofp, ":04000005%08X%02X\n", symadr, (~chksum + 1) & 0x00ff);
 #endif
 		}
 
-		fprintf(ofp, ":00000001FF\n");
+			fprintf(ofp, ":00000001FF\n");
 	}
 }
-
 
 /*)Function	iflush()
  *
@@ -630,16 +630,16 @@ int i;
 #ifdef	LONGINT
 		switch(a_bytes) {
 		default:
-		case 2: frmt = "S9%02X%04lX"; addr = symadr & 0x0000ffffl; break;
-		case 3: frmt = "S8%02X%06lX"; addr = symadr & 0x00ffffffl; break;
-		case 4: frmt = "S7%02X%08lX"; addr = symadr & 0xffffffffl; break;
+		case 2: frmt = "S9%02X%04lX"; addr = symadr & 0x0000FFFFl; break;
+		case 3: frmt = "S8%02X%06lX"; addr = symadr & 0x00FFFFFFl; break;
+		case 4: frmt = "S7%02X%08lX"; addr = symadr & 0xFFFFFFFFl; break;
 		}
 #else
 		switch(a_bytes) {
 		default:
-		case 2: frmt = "S9%02X%04X"; addr = symadr & 0x0000ffff; break;
-		case 3: frmt = "S8%02X%06X"; addr = symadr & 0x00ffffff; break;
-		case 4: frmt = "S7%02X%08X"; addr = symadr & 0xffffffff; break;
+		case 2: frmt = "S9%02X%04X"; addr = symadr & 0x0000FFFF; break;
+		case 3: frmt = "S8%02X%06X"; addr = symadr & 0x00FFFFFF; break;
+		case 4: frmt = "S7%02X%08X"; addr = symadr & 0xFFFFFFFF; break;
 		}
 #endif
 		fprintf(ofp, frmt, reclen, addr);
@@ -720,30 +720,30 @@ sflush()
 #ifdef	LONGINT
 	switch(a_bytes) {
 	default:
-	case 2: frmt = "S1%02X%04lX"; addr = rtadr0 & 0x0000ffffl; break;
-	case 3: frmt = "S2%02X%06lX"; addr = rtadr0 & 0x00ffffffl; break;
-	case 4: frmt = "S3%02X%08lX"; addr = rtadr0 & 0xffffffffl; break;
+	case 2: frmt = "S1%02X%04lX"; addr = rtadr0 & 0x0000FFFFl; break;
+	case 3: frmt = "S2%02X%06lX"; addr = rtadr0 & 0x00FFFFFFl; break;
+	case 4: frmt = "S3%02X%08lX"; addr = rtadr0 & 0xFFFFFFFFl; break;
 	}
 #else
 	switch(a_bytes) {
 	default:
-	case 2: frmt = "S1%02X%04X"; addr = rtadr0 & 0x0000ffff; break;
-	case 3: frmt = "S2%02X%06X"; addr = rtadr0 & 0x00ffffff; break;
-	case 4: frmt = "S3%02X%08X"; addr = rtadr0 & 0xffffffff; break;
+	case 2: frmt = "S1%02X%04X"; addr = rtadr0 & 0x0000FFFF; break;
+	case 3: frmt = "S2%02X%06X"; addr = rtadr0 & 0x00FFFFFF; break;
+	case 4: frmt = "S3%02X%08X"; addr = rtadr0 & 0xFFFFFFFF; break;
 	}
 #endif
 	fprintf(ofp, frmt, reclen, addr);
 	for (i=0; i<max; i++) {
 		chksum += rtbuf[i];
-		fprintf(ofp, "%02X", rtbuf[i] & 0x00ff);
+		fprintf(ofp, "%02X", rtbuf[i] & 0x00FF);
 	}
 	/*
 	 * 1's complement
 	 */
 #ifdef	LONGINT
-	fprintf(ofp, "%02lX\n", (~chksum) & 0x00ff);
+	fprintf(ofp, "%02lX\n", (~chksum) & 0x00FF);
 #else
-	fprintf(ofp, "%02X\n", (~chksum) & 0x00ff);
+	fprintf(ofp, "%02X\n", (~chksum) & 0x00FF);
 #endif
 	rtadr0 = rtadr1;
 }

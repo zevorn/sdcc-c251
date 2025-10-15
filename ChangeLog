@@ -1,3 +1,28 @@
+2025-10-14 Janko Stamenović
+	* sdas/linksrc/aslink.h
+	  sdas/linksrc/lkar.h
+	  sdas/linksrc/lkarea.c
+	  sdas/linksrc/lkbank.c
+	  sdas/linksrc/lkdata.c
+	  sdas/linksrc/lkeval.c
+	  sdas/linksrc/lkhead.c
+	  sdas/linksrc/lklex.c
+	  sdas/linksrc/lklibr.c
+	  sdas/linksrc/lklist.c
+	  sdas/linksrc/lkmain.c
+	  sdas/linksrc/lknoice.c
+	  sdas/linksrc/lkout.c
+	  sdas/linksrc/lkrloc.c
+	  sdas/linksrc/lkrloc3.c
+	  sdas/linksrc/lksym.c
+	  One more sdld rebase step towards upstream
+
+2025-10-14 Janko Stamenović
+
+	* sdas/linksrc/aslink.h
+	  sdas/linksrc/lklib.c
+	  gcc15 sdld compatibilty, lklib loadfile_lib remove fclose on null
+
 2025-09-28 Janko Stamenović
 
 	* sdas/linksrc/lkar.c

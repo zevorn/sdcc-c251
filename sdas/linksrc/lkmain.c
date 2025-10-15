@@ -1139,8 +1139,7 @@ parse()
 
 				default:
                                 err:
-					fprintf(stderr,
-                                            "Unknown option -%c ignored\n", c);
+					fprintf(stderr, "?ASlink-Warning-Unkown option -%c ignored\n", c);
 					break;
 				}
 			}
@@ -1165,7 +1164,7 @@ parse()
                         lfp->f_idp = strsto(fid);
 			lfp->f_obj = objflg;
 		} else {
-                        fprintf(stderr, "Invalid input\n");
+			fprintf(stderr, "?ASlink-Error-Invalid input character\n");
 			lkexit(ER_FATAL);
 		}
 	}
@@ -1369,12 +1368,12 @@ setgbl()
 			sp = lkpsym(id, 0);
 			if (sp == NULL) {
 				fprintf(stderr,
-				"No definition of symbol %s\n", id);
+				"?ASlink-Error-No definition of symbol %s\n", id);
 				lkerr++;
 			} else {
 				if (sp->s_type & S_DEF) {
 					fprintf(stderr,
-					"Redefinition of symbol %s\n", id);
+					"?ASlink-Error-Redefinition of symbol %s\n", id);
 					lkerr++;
 					sp->s_axp = NULL;
 				}
@@ -1382,7 +1381,7 @@ setgbl()
 				sp->s_type |= S_DEF;
 			}
 		} else {
-			fprintf(stderr, "No '=' in global expression");
+			fprintf(stderr, "?ASlink-Error-No '=' in global expression");
 			lkerr++;
 		}
 		gsp = gsp->g_globl;
@@ -1483,7 +1482,7 @@ int wf;
 	/*
          * Select Read/Write/Binary Write
 	 */
-        switch(wf) {
+        switch(wf & 3) {
 	default:
 	case 0:	frmt = "r";	break;
 	case 1:	frmt = "w";	break;
@@ -1494,7 +1493,7 @@ int wf;
 #endif
 	}
         if ((fp = fopen(afspec, frmt)) == NULL && strcmp(ft,"adb") != 0) { /* Do not complain for optional adb files */
-                fprintf(stderr, "?ASlink-Error-<cannot %s> : \"%s\"\n", wf?"create":"open", afspec);
+                fprintf(stderr, "?ASlink-Error-<cannot %s> : \"%s\"\n", (frmt[0] == 'w')?"create":"open", afspec);
 		lkerr++;
 	}
 	return (fp);

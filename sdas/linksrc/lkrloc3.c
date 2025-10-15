@@ -102,7 +102,7 @@ int c;
 		break;
 
 	default:
-		fprintf(stderr, "Undefined Relocation Operation\n");
+		fprintf(stderr, "?ASlink-Error-Undefined Relocation Operation\n");
 		lkerr++;
 		break;
 
@@ -196,6 +196,7 @@ relt3()
  *	 	5.  bit 4 signed(0x00)/unsigned(0x10) byte data
  *	 	6.  bit 5 normal(0x00)/page '0'(0x20) reference
  *	 	7.  bit 6 normal(0x00)/page 'nnn'(0x40) reference
+ *		8.  bit 7 LSB(0x00)/MSB(0x80) byte
  *
  *	2.  n2  is  a byte index into the corresponding (i.e.  pre-
  *	 	ceeding) T line data (i.e.  a pointer to the data to be
@@ -223,21 +224,31 @@ relt3()
  *		a_uint	relv		relocation final value
  *		int	rindex		symbol / area index
  *		a_uint	rtbase		base code address
+ *		a_uint	rtbofst		rtbase code offset
  *		a_uint	rtofst		rtval[] index offset
- *              int rtp                 index into T data
- *              sym **s                 pointer to array of symbol pointers
+ *		int	rtp		index into T data
+ *		sym	**s		pointer to array of symbol pointers
  *
  *	global variables:
+ *		int	a_bytes		T Line Address Bytes
+ *		area	*ap	        pointer to the area structure
  *		head	*hp		pointer to the head structure
  *		int	lkerr		error flag
+ *		int	oflag		output type flag
+ *		FILE	*ofp	        object output file handle
  *		a_uint	pc		relocated base address
  *		int	pcb	        bytes per instruction word
  *		rerr	rerr		linker error structure
+ *		bank	*rtabnk	        current bank structure
+ *		int	rtaflg		current bank structure flags
+ *		struct	sdp		paging structure
  *		FILE	*stderr		standard error device
+ *		int	uflag		relocation listing flag
  *
  *	called functions:
  *		a_uint	adb_1b()	lkrloc.c
  *		a_uint	adb_2b()	lkrloc.c
+ *		a_uint	adb_xb()	lkrloc.c
  *		a_uint	adb_lo()	lkrloc3.c
  *		a_uint	adb_hi()	lkrloc3.c
  * sdld specific
@@ -247,8 +258,7 @@ relt3()
  *		a_uint	evword()	lkrloc.c
  *		int	eval()		lkeval.c
  *		int	fprintf()	c_library
- *              VOID    ihx()           lkihx.c
- *              VOID    s19()           lks19.c
+ *		VOID	lkout()		lkout.c
  *		VOID	lkulist		lklist.c
  *		int	more()		lklex.c
  *		VOID	relerr3()	lkrloc3.c
@@ -281,7 +291,7 @@ relr3()
 	 * Verify Area Mode
 	 */
         if (eval() != (R3_WORD | R3_AREA) || eval()) {
-		fprintf(stderr, "R input error\n");
+		fprintf(stderr, "?ASlink-Error-R input error\n");
 		lkerr++;
 		return;
 	}
@@ -291,7 +301,7 @@ relr3()
 	 */
 	aindex = (int) evword();
 	if (aindex >= hp->h_narea) {
-		fprintf(stderr, "R area error\n");
+		fprintf(stderr, "?ASlink-Error-R area error\n");
 		lkerr++;
 		return;
 	}
@@ -321,7 +331,7 @@ relr3()
 	/*
 	 * Relocate address
 	 */
-        pc = adb_xb(a[aindex]->a_addr, 0);
+	pc  = adb_xb(a[aindex]->a_addr, 0);
 
 	/*
 	 * Number of 'bytes' per PC address
@@ -353,7 +363,7 @@ relr3()
 		 */
 		if (mode & R3_SYM) {
 			if (rindex >= hp->h_nsym) {
-				fprintf(stderr, "R symbol error\n");
+				fprintf(stderr, "?ASlink-Error-R symbol error\n");
 				lkerr++;
 				return;
 			}
@@ -367,7 +377,7 @@ relr3()
 /* end sdld specific */
                 else {
 			if (rindex >= hp->h_narea) {
-				fprintf(stderr, "R area error\n");
+				fprintf(stderr, "?ASlink-Error-R area error\n");
 				lkerr++;
 				return;
 			}
@@ -386,13 +396,13 @@ relr3()
 		}
 
 		/*
-                 * R3_PAG0 or R3_PAG addressing
-		 */
-                if (mode & (R3_PAG0 | R3_PAG)) {
-                        paga  = sdp.s_area->a_addr;
-                        pags  = sdp.s_addr;
-                        reli -= paga + pags;
-		}
+			 * R3_PAG0 or R3_PAG addressing
+			 */
+			if (mode & (R3_PAG0|R3_PAG)) {
+				paga  = sdp.s_area->a_addr;
+				pags  = sdp.s_addr;
+				reli -= paga + pags;
+			}
 
 
                 /* pdk instruction fusion */
@@ -544,19 +554,19 @@ relr3()
                                 relv = adb_1b(reli, rtp);
 			}
                 } else if (IS_R_J11(mode)) {
-			/*
-                         * JLH: 11 bit jump destination for 8051.
-                         * Forms two byte instruction with
-                         * op-code bits in the MIDDLE!
-                         * rtp points at 3 byte locus:
-                         * first two will get the address,
-                         * third one has raw op-code
-                        */
+				/*
+				 * JLH: 11 bit jump destination for 8051.
+				 * Forms two byte instruction with
+				 * op-code bits in the MIDDLE!
+				 * rtp points at 3 byte locus:
+				 * first two will get the address,
+				 * third one has raw op-code
+				 */
 
-			/*
-                         * Calculate absolute destination
-                         * relv must be on same 2K page as pc
-                        */
+				/*
+				 * Calculate absolute destination
+				 * relv must be on same 2K page as pc
+				 */
                         relv = adb_2b(reli, rtp);
 
                         if ((relv & ~((a_uint) 0x000007FF)) !=
@@ -564,50 +574,57 @@ relr3()
 					error = 6;
 			}
 
-			/*
-                         * Merge MSB with op-code,
-                         * ignoring top 5 bits of address.
-                         * Then hide the op-code.
-                        */
+				/*
+				 * Merge MSB with op-code,
+				 * ignoring top 5 bits of address.
+				 * Then hide the op-code.
+				 */
                         rtval[rtp] = ((rtval[rtp] & 0x07)<<5) | rtval[rtp+2];
                         rtflg[rtp + 2] = 0;
-                        rtofst += 1;
+				rtofst += 1;
 		}
                 else if (IS_R_J19(mode)) {
-			/*
-                         * BK: 19 bit jump destination for DS80C390.
-                         * Forms four byte instruction with
-                         * op-code bits in the MIDDLE!
-                         * rtp points at 4 byte locus:
-                         * first three will get the address,
-                         * fourth one has raw op-code
-			 */
+				/*
+				 * BK: 19 bit jump destination for DS80C390.
+				 * Forms four byte instruction with
+				 * op-code bits in the MIDDLE!
+				 * rtp points at 4 byte locus:
+				 * first three will get the address,
+				 * fourth one has raw op-code
+				 */
                         relv = adb_3b(reli, rtp);
 
-			/*
-                         * Calculate absolute destination
-                         *  relv must be on same 512K page as pc
-                        */
-                        if ((relv & ~((a_uint) 0x0007FFFF)) !=
-                            ((pc + rtp - rtofst) & ~((a_uint) 0x0007FFFF))) {
-                                error = 7;
-			}
+				/*
+				 * Calculate absolute destination
+				 * relv must be on same 512K page as pc
+				 */
+#ifdef	LONGINT
+				if ((relv & ~((a_uint) 0x0007FFFFl)) !=
+				   ((pc + rtp - rtofst) & ~((a_uint) 0x0007FFFFl))) {
+					error = 7;
+				}
+#else
+				if ((relv & ~((a_uint) 0x0007FFFF)) !=
+				   ((pc + rtp - rtofst) & ~((a_uint) 0x0007FFFF))) {
+					error = 7;
+				}
+#endif
 
-			/*
-                         * Merge MSB with op-code,
-                         * ignoring top 5 bits of address.
-                         * Then hide the op-code.
-                        */
+				/*
+				 * Merge MSB with op-code,
+				 * ignoring top 5 bits of address.
+				 * Then hide the op-code.
+				 */
                         rtval[rtp] = ((rtval[rtp] & 0x07)<<5) | rtval[rtp+3];
                         rtflg[rtp + 3] = 0;
-                        rtofst += 1;
+				rtofst += 1;
 		}
                 else if (IS_C24(mode))
                 {
-			/*
-                         * 24 bit destination
-			 */
-                        relv = adb_3b(reli, rtp);
+				/*
+				 * 24 bit destination
+				 */
+				relv = adb_3b(reli, rtp);
 			}
                 else
                 {
@@ -773,7 +790,7 @@ relp3()
 	 * Verify Area Mode
 	 */
         if (eval() != (R3_WORD | R3_AREA) || eval()) {
-		fprintf(stderr, "P input error\n");
+		fprintf(stderr, "?ASlink-Error-P input error\n");
 		lkerr++;
 	}
 
@@ -782,7 +799,7 @@ relp3()
 	 */
 	aindex = (int) evword();
 	if (aindex >= hp->h_narea) {
-		fprintf(stderr, "P area error\n");
+		fprintf(stderr, "?ASlink-Error-P area error\n");
 		lkerr++;
 		return;
 	}
@@ -800,14 +817,14 @@ relp3()
 		 */
 		if (mode & R3_SYM) {
 			if (rindex >= hp->h_nsym) {
-				fprintf(stderr, "P symbol error\n");
+				fprintf(stderr, "?ASlink-Error-P symbol error\n");
 				lkerr++;
 				return;
 			}
 			relv = symval(s[rindex]);
 		} else {
 			if (rindex >= hp->h_narea) {
-				fprintf(stderr, "P area error\n");
+				fprintf(stderr, "?ASlink-Error-P area error\n");
 				lkerr++;
 				return;
 			}
@@ -821,7 +838,7 @@ relp3()
 	 */
         aindex = (int) adb_2b(0, 2);
 	if (aindex >= hp->h_narea) {
-		fprintf(stderr, "P area error\n");
+		fprintf(stderr, "?ASlink-Error-P area error\n");
 		lkerr++;
 		return;
 	}

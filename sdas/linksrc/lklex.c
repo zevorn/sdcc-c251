@@ -1,7 +1,7 @@
 /* lklex.c */
 
 /*
- *  Copyright (C) 1989-2014  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,22 +30,22 @@
  *	functions used to scan the text lines from the .rel files.
  *
  *	lklex.c contains the following functions:
- *		VOID	chopcrlf()
+ *		void	chopcrlf()
  *		char	endline()
  *		int	get()
- *		VOID	getfid()
- *		VOID	getid()
+ *		void	getfid()
+ *		void	getid()
  *		int	getmap()
  *		int	getnb()
  *		int	more()
  *		int	nxtline()
- *		VOID	skip()
- *		VOID	unget()
+ *		void	skip()
+ *		void	unget()
  *
  *	lklex.c contains no local variables.
  */
 
-/*)Function	VOID	getid(id,c)
+/*)Function	void	getid(id, c)
  *
  *		char *	id		a pointer to a string of
  *					maximum length NCPS-1
@@ -77,7 +77,7 @@
  *	called functions:
  *		int	get()		lklex.c
  *		int	getnb()		lklex.c
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		use of getnb(), get(), and unget() updates the
@@ -85,10 +85,8 @@
  *		input text line.
  */
 
-VOID
-getid(id, c)
-int c;
-char *id;
+void
+getid(char *id, int c)
 {
 	char *p;
 
@@ -199,10 +197,8 @@ getSid (char *id)
  *		the position in the current input text line.
  */
 
-VOID
-getfid(str, c)
-int c;
-char *str;
+void
+getfid(char *str, int c)
 {
 	char *p;
 
@@ -234,7 +230,7 @@ char *str;
 	}
 }
 
-/*)Function	int	getnb()
+/*)Function	int	getnb(void)
  *
  *	The function getnb() scans the current input text
  *	line returning the first character not a SPACE or TAB.
@@ -254,7 +250,7 @@ char *str;
  */
 
 int
-getnb()
+getnb(void)
 {
 	int c;
 
@@ -263,7 +259,9 @@ getnb()
 	return (c);
 }
 
-/*)Function	VOID	skip(c)
+/*)Function	void	skip(c)
+ *
+ *		int	c
  *
  *	The function skip() scans the input text skipping all
  *	letters and digits.
@@ -279,15 +277,14 @@ getnb()
  *	functions called:
  *		int	get()		lklex.c
  *		int	getnb()		lklex.c
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		Input letters and digits are skipped.
  */
 
-VOID
-skip(c)
-int c;
+void
+skip(int c)
 {
 	if (c < 0)
 		c = getnb();
@@ -295,7 +292,7 @@ int c;
 	unget(c);
 }
 
-/*)Function	int	get()
+/*)Function	int	get(void)
  *
  *	The function get() returns the next character in the
  *	input text line, at the end of the line a
@@ -319,7 +316,7 @@ int c;
  */
 
 int
-get()
+get(void)
 {
 	int c;
 
@@ -328,7 +325,7 @@ get()
         return (c & 0x00FF);
 }
 
-/*)Function	VOID	unget(c)
+/*)Function	void	unget(c)
  *
  *		int	c		value of last character
  *					read from input text line
@@ -356,9 +353,8 @@ get()
  *		ip decremented by 1 character position
  */
 
-VOID
-unget(c)
-int c;
+void
+unget(int c)
 {
 	if (c != 0)
 		--ip;
@@ -388,7 +384,7 @@ int c;
  *
  *	called functions:
  *		int	get()		lklex.c
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		use of get() updates the global pointer ip the position
@@ -396,8 +392,7 @@ int c;
  */
 
 int
-getmap(d)
-int d;
+getmap(int d)
 {
 	int c, n, v;
 
@@ -451,7 +446,7 @@ int d;
 	return (c);
 }
 
-/*)Function	int	nxtline()
+/*)Function	int	nxtline(void)
  *
  *	The function nxtline() reads a line of input text from a
  *	.rel source text file, a .lnk command file or from stdin.
@@ -491,13 +486,13 @@ int d;
  *              int     obj_flag        linked file/library object output flag
  *
  *	called functions:
- *		VOID	chopcrlf()	lklex.c
+ *		void	chopcrlf()	lklex.c
  *		FILE *	afile()		lkmain.c
  *		int	fclose()	c_library
  *		char *	fgets()		c_library
  *		int	fprintf()	c_library
- *		VOID	lkulist()	lklist.c
- *		VOID	lkexit()	lkmain.c
+ *		void	lkulist()	lklist.c
+ *		void	lkexit()	lkmain.c
  *
  *	side effects:
  *		The input stream is scanned.  The .rel files will be
@@ -505,7 +500,7 @@ int d;
  */
 
 int
-nxtline()
+nxtline(void)
 {
 	int ftype;
 	char *fid;
@@ -534,11 +529,11 @@ loop:   if (pflag && cfp && cfp->f_type == F_STD)
 				sfp = stdin;
 			} else
 			if (ftype == F_LNK) {
-                                sfp = afile(fid, strrchr(fid, FSEPX) ? "" : "lnk", 0);
+                                sfp = afile(fid, strrchr(fid, FSEPX) ? "" : "lnk", 0); // TODO F: 8
 			} else
 			if (ftype == F_REL) {
 				obj_flag = cfp->f_obj;
-				sfp = afile(fid, "", 0);
+				sfp = afile(fid, "", 0); // ? TODO F: 8
 				if (sfp && (obj_flag == 0)) {
                                         if (uflag && (pass != 0)) {
                                                 if (is_sdld())
@@ -560,10 +555,11 @@ loop:   if (pflag && cfp && cfp->f_type == F_STD)
 
 				gline = 1;
 			} else {
-				fprintf(stderr, "Invalid file type\n");
+				fprintf(stderr, "?ASlink-Error-Internal nxtline(ftype) error\n");
 				lkexit(ER_FATAL);
 			}
 			if (sfp == NULL) {
+				fprintf(stderr, "?ASlink-Error-Internal nxtline(sfp) error\n");
 				lkexit(ER_FATAL);
 			}
 			goto loop;
@@ -576,7 +572,7 @@ loop:   if (pflag && cfp && cfp->f_type == F_STD)
 	return (1);
 }
 
-/*)Function	int	more()
+/*)Function	int	more(void)
  *
  *	The function more() scans the input text line
  *	skipping white space (SPACES and TABS) and returns a (0)
@@ -592,7 +588,7 @@ loop:   if (pflag && cfp && cfp->f_type == F_STD)
  *
  *	called functions:
  *		int	getnb()		lklex.c
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		use of getnb() and unget() updates the global pointer ip
@@ -612,7 +608,7 @@ static int isHex(int c)
 }
 
 int
-more()
+more(void)
 {
 	int c;
 
@@ -623,7 +619,7 @@ more()
 	return( (c == '\0' || c == ';') ? 0 : 1 );
 }
 
-/*)Function	char	endline()
+/*)Function	char	endline(void)
  *
  *	The function endline() scans the input text line
  *	skipping white space (SPACES and TABS) and returns the next
@@ -646,7 +642,7 @@ more()
  */
 
 char
-endline()
+endline(void)
 {
 	int c;
 
@@ -654,7 +650,7 @@ endline()
 	return( (c == '\0' || c == ';') ? 0 : c );
 }
 
-/*)Function	VOID	chopcrlf(str)
+/*)Function	void	chopcrlf(str)
  *
  *		char	*str		string to chop
  *
@@ -675,9 +671,8 @@ endline()
  *		All CR and LF characters removed.
  */
 
-VOID
-chopcrlf(str)
-char *str;
+void
+chopcrlf(char *str)
 {
 	char *p;
 	char c;

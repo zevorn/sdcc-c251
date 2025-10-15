@@ -229,7 +229,6 @@ loadfile_lib (struct lbfile *lbfh)
   else
     {
       fprintf (stderr, "?ASlink-Error-Opening library '%s'\n", lbfh->filspc);
-      fclose (fp);
       lkexit (1);
     }
 }

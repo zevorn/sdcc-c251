@@ -1,7 +1,7 @@
 /* lkarea.c */
 
 /*
- *  Copyright (C) 1989-2017  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,10 +22,6 @@
  * Kent, Ohio  44240
  */
 
-/*
- * 02-Apr-98 JLH: add code to link 8051 data spaces
- */
-
 #include "aslink.h"
 
 /*)Module	lkarea.c
@@ -35,16 +31,16 @@
  *	from the .rel file(s).
  *
  *	lkarea.c contains the following functions:
- *		VOID	lnkarea()
- *		VOID	lnksect()
- *		VOID	lkparea()
- *		VOID	newarea()
- *		VOID	setarea()
+ *		void	lnkarea()
+ *		void	lnksect()
+ *		void	lkparea()
+ *		void	newarea()
+ *		void	setarea()
  *
  *	lkarea.c contains no global variables.
  */
 
-/*)Function	VOID	newarea()
+/*)Function	void	newarea(void)
  * 
  *	The function newarea() creates and/or modifies area
  *	and areax structures for each A directive read from
@@ -88,11 +84,11 @@
  *
  *	functions called:
  *		a_uint	eval()		lkeval.c
- *		VOID	exit()		c_library
+ *		void	exit()		c_library
  *		int	fprintf()	c_library
- *		VOID	getid()		lklex.c
- *		VOID	lkparea()	lkarea.c
- *		VOID	skip()		lklex.c
+ *		void	getid()		lklex.c
+ *		void	lkparea()	lkarea.c
+ *		void	skip()		lklex.c
  *
  *	side effects:
  *		The area and areax structures are created and
@@ -114,8 +110,8 @@
  *   `---------------------------------  ap->a_id
  *
  */
-VOID
-newarea()
+void
+newarea(void)
 {
 	a_uint i;
 	int k, narea;
@@ -124,7 +120,7 @@ newarea()
 	char id[NCPS];
 
 	if (headp == NULL) {
-		fprintf(stderr, "No header defined\n");
+		fprintf(stderr, "?ASlink-Error-No header defined\n");
 		lkexit(ER_FATAL);
 	}
 	/*
@@ -153,7 +149,7 @@ newarea()
 		i = eval();
                 if ((!is_sdld() || TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_GB) &&
                         i && (ap->a_flag != i)) {
-                        fprintf(stderr, "Conflicting flags in area %8s\n", id);
+                        fprintf(stderr, "?ASlink-Error-Conflicting flags in area %8s\n", id);
 			lkerr++;
 		}
 	}
@@ -175,11 +171,11 @@ newarea()
 			return;
 		}
 	}
-	fprintf(stderr, "Header area list overflow\n");
+	fprintf(stderr, "?ASlink-Error-Header area list overflow\n");
 	lkexit(ER_FATAL);
 }
 
-/*)Function	VOID	lkparea(id)
+/*)Function	void	lkparea(id)
  *
  *		char *	id		pointer to the area name string
  *
@@ -203,7 +199,7 @@ newarea()
  *				 	areax structure
  *
  *	functions called:
- *		VOID *	new()		lksym()
+ *		void *	new()		lksym()
  *		char *	strsto()	lksym.c
  *		int	symeq()		lksym.c
  *
@@ -213,9 +209,8 @@ newarea()
  *		will terminate the linker.
  */
 
-VOID
-lkparea(id)
-char *id;
+void
+lkparea(char *id)
 {
 	struct area *tap;
 	struct areax *taxp;
@@ -253,7 +248,7 @@ char *id;
                 ap->a_addr = 0;
 }
 
-/*)Function	VOID	lnkarea()
+/*)Function	void	lnkarea(void)
  *
  *	The function lnkarea() resolves all area addresses.
  *	The function evaluates each area structure (and all
@@ -325,7 +320,7 @@ char *id;
  *
  *	functions called:
  *		int	fprintf()	c_library
- *		VOID	lnksect()	lkarea.c
+ *		void	lnksect()	lkarea.c
  *		symbol *lkpsym()	lksysm.c
  *		char *	strncpy()	c_library
  *		int	symeq()		lksysm.c
@@ -340,13 +335,13 @@ char *id;
 unsigned long codemap6808[2048];
 /* end sdld6808 specific */
 /* sdld specific */
-VOID lnksect(struct area *tap);
+void lnksect(struct area *tap);
 /* end sdld specific */
 /*
  * Resolve all bank/area addresses.
  */
-VOID
-lnkarea()
+void
+lnkarea(void)
 {
         /* sdld specific */
         a_uint rloc[4] = { 0, 0, 0, 0 };
@@ -537,7 +532,7 @@ a_uint find_empty_space(a_uint start, a_uint size, char *id, unsigned long *map,
                 mask = -(1 << (start & 0x1F));
 
                 if (j > map_size) {
-                        fprintf(stderr, "internal memory limit is exceeded for %s; memory size = 0x%06X, address = 0x%06X\n", id, map_size << 5, start + size - 1);
+                        fprintf(stderr, "?ASlink-Error-internal memory limit is exceeded for %s; memory size = 0x%06X, address = 0x%06X\n", id, map_size << 5, start + size - 1);
                         break;
 		}
                 else {
@@ -586,12 +581,12 @@ a_uint allocate_space(a_uint start, a_uint size, char *id, unsigned long *map,  
         map_size /= sizeof(*map); /* Convert from bytes to number of elements */
 
         if (j > map_size) {
-                fprintf(stderr, "internal memory limit is exceeded for %s; memory size = 0x%06X, address = 0x%06X\n", id, map_size << 5, start + size - 1);
+                fprintf(stderr, "?ASlink-Error-internal memory limit is exceeded for %s; memory size = 0x%06X, address = 0x%06X\n", id, map_size << 5, start + size - 1);
 	}
         else {
                 while (i < j) {
                         if (map[i] & mask) {
-                                fprintf(stderr, "memory overlap near 0x%X for %s\n", a, id);
+                                fprintf(stderr, "?ASlink-Error-memory overlap near 0x%X for %s\n", a, id);
 			}
                         map[i++] |= mask;
                         mask = 0xFFFFFFFF;
@@ -607,7 +602,7 @@ a_uint allocate_space(a_uint start, a_uint size, char *id, unsigned long *map,  
 }
 /* end sdld specific */
 
-/*)Function	VOID	lnksect(tap)
+/*)Function	void	lnksect(tap)
  *
  *		area *	tap		pointer to an area structure
  *
@@ -633,9 +628,8 @@ a_uint allocate_space(a_uint start, a_uint size, char *id, unsigned long *map,  
  *              and linked into the structures.
  */
 
-VOID
-lnksect(tap)
-struct area *tap;
+void
+lnksect(struct area *tap)
 {
 	a_uint size, addr;
 	struct areax *taxp;
@@ -703,14 +697,14 @@ struct area *tap;
                 ((tap->a_addr & 0xFFFFFF00) != ((addr-1) & 0xFFFFFF00)))
         {
                 fprintf(stderr,
-                        "\n?ASlink-Warning-Paged Area %s Boundary Error\n",
+                        "\n?ASlink-Error-Paged Area %s Boundary Error\n",
                         tap->a_id);
                 lkerr++;
 	}
 }
 
 
-/*)Function	VOID	setarea()
+/*)Function	void	setarea(void)
  *
  *	The function setarea() scans the base address lines in the
  *	basep structure, evaluates the arguments, and sets the beginning
@@ -736,7 +730,7 @@ struct area *tap;
  *	 functions called:
  *		a_uint	expr()		lkeval.c
  *		int	fprintf()	c_library
- *		VOID	getid()		lklex.c
+ *		void	getid()		lklex.c
  *		int	getnb()		lklex.c
  *		int	symeq()		lksym.c
  *
@@ -744,8 +738,8 @@ struct area *tap;
  *		The base address of an area is set.
  */
 
-VOID
-setarea()
+void
+setarea(void)
 {
 	a_uint v;
 	char id[NCPS];
@@ -762,14 +756,14 @@ setarea()
 			}
 			if (ap == NULL) {
 				fprintf(stderr,
-                                "ASlink-Warning-No definition of area %s\n", id);
+                                "ASlink-Error-No definition of area %s\n", id);
 				lkerr++;
 			} else {
 				ap->a_addr = v;
 				ap->a_bset = 1;
 			}
 		} else {
-                        fprintf(stderr, "ASlink-Warning-No '=' in base expression");
+                        fprintf(stderr, "ASlink-Error-No '=' in base expression");
 			lkerr++;
 		}
 		bsp = bsp->b_base;
@@ -787,7 +781,7 @@ a_uint dram_start = 0;
 a_uint iram_start = 0;
 
 /*Modified version of the functions for packing variables in internal data memory*/
-VOID lnkarea2 (void)
+void lnkarea2 (void)
 {
         a_uint rloc[4]={0, 0, 0, 0};
         a_uint gs_size = 0;
@@ -1164,7 +1158,7 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                         if (idatamap[j] == ' ')
                                                 idatamap[j] = 'A';
                                         else
-                                                fprintf(stderr, "memory overlap at 0x%X for %s\n", j, tap->a_id);
+                                                fprintf(stderr, "?ASlink-Error-memory overlap at 0x%X for %s\n", j, tap->a_id);
 				}
 			}
                         else if (locIndex == 1)
@@ -1306,7 +1300,7 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                 ((tap->a_addr & 0xFFFFFF00) != ((addr-1) & 0xFFFFFF00)))
         {
                 fprintf(stderr,
-                        "\n?ASlink-Warning-Paged Area %s Boundary Error\n",
+                        "\n?ASlink-Error-Paged Area %s Boundary Error\n",
                         tap->a_id);
                 lkerr++;
 	}

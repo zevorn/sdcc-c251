@@ -1,7 +1,7 @@
 /* lknoice.c */
 
 /*
- *  Copyright (C) 1989-2014  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
  * 30-Jan-98 JLH add page to DefineNoICE for 8051
  *  2-Feb-98 JLH Allow optional .nest on local vars - C scoping rules...
  * 27-May-01 ARB Updated for ASxxxx V4
+ *  5-Mar-25 ARB Changed 'level' to unsigned int
  */
 
 #include "aslink.h"
@@ -41,17 +42,17 @@
  *	required to create a NoICE debug file.
  *
  *	lknoice.c contains the following functions:
- *		VOID	NoICEfopen()
- *		VOID	NoICEmagic()
- *		VOID	DefineNoICE()
- *		VOID	DefineGlobal()
- *		VOID	DefineScoped()
- *		VOID	DefineFile()
- *		VOID	DefineFunction()
- *		VOID	DefineStaticFunction()
- *		VOID	DefineEndFunction()
- *		VOID	DefineLine()
- *		VOID	PagedAddress()
+ *		void	NoICEfopen()
+ *		void	NoICEmagic()
+ *		void	DefineNoICE()
+ *		void	DefineGlobal()
+ *		void	DefineScoped()
+ *		void	DefineFile()
+ *		void	DefineFunction()
+ *		void	DefineStaticFunction()
+ *		void	DefineEndFunction()
+ *		void	DefineLine()
+ *		void	PagedAddress()
  *
  *	lknoice.c contains these local variables:
  *		struct noicebn *noicebnp	pointer to linked structure of
@@ -71,7 +72,7 @@ static char currentFile[NCPS];
 static char currentFunction[NCPS];
 
 
-/*)Function	VOID	NoICEfopen()
+/*)Function	void	NoICEfopen(void)
  * 
  *	The function NoICEfile() opens the NoICE output file
  *	and sets the map flag, mflag, to create a map file.
@@ -88,7 +89,7 @@ static char currentFunction[NCPS];
  *
  *	functions called:
  *		FILE *	afile()		lkmain.c
- *		VOID	lkexit()	lkmain.c
+ *		void	lkexit()	lkmain.c
  *
  *	side effects:
  *		The NoICE output file is opened.
@@ -96,7 +97,8 @@ static char currentFunction[NCPS];
  *		terminate the linker.
  */
 
-VOID NoICEfopen(void)
+void
+NoICEfopen(void)
 {
 	if (jflag) {
 		jfp = afile(linkp->f_idp, "noi", 1);
@@ -108,7 +110,7 @@ VOID NoICEfopen(void)
 }
 
 
-/*)Function	VOID	NoICEmagic()
+/*)Function	void	NoICEmagic(void)
  * 
  *	The function NoICEmagic() passes any "magic Comments"
  *	to the NoICE output file.  Magic comments are those
@@ -130,8 +132,8 @@ VOID NoICEfopen(void)
  *		FILE *	jfp		NoICE Debug File handle
  *
  *	functions called:
- *		VOID	getid()		lklex.c
- *		VOID *	new()		lksym.c
+ *		void	getid()		lklex.c
+ *		void *	new()		lksym.c
  *		int	fprintf()	c_library
  *		char *	strrchr()	c_library
  *		char *	strsto()	lksym.c
@@ -143,7 +145,8 @@ VOID NoICEfopen(void)
  *		file names is created.
  */
 
-VOID NoICEmagic(void)
+void
+NoICEmagic(void)
 {
 	char id[NCPS];
 	char *p1, *p2;
@@ -190,7 +193,7 @@ VOID NoICEmagic(void)
 }
 
 
-/*)Function	VOID	DefineNoIC()
+/*)Function	void	DefineNoIC(name, value, yp)
  * 
  *		char *		name	pointer to the symbol string
  *		a_uint		value	value of symbol
@@ -205,7 +208,7 @@ VOID NoICEmagic(void)
  *	local variables:
  *		int	j		parsed argument count
  *		int	k		parsed argument count
- *		int	level		function level
+ *		unsigned int level	function level
  *		char	token1[]	parsed string
  *		char	token2[]	parsed string
  *		char	token2[]	parsed string
@@ -217,14 +220,14 @@ VOID NoICEmagic(void)
  *		FILE *	jfp		NoICE Debug File handle
  *
  *	functions called:
- *		VOID	DefineFile()		lknoice.c
- *		VOID	DefineFunction()	lknoice.c
- *		VOID	DefineStaticFunction()	lknoice.c
- *		VOID	DefineEndFunction()	lknoice.c
- *		VOID	DefineScoped()		lknoice.c
- *		VOID	DefineLine()		lknoice.c
- *		VOID	DefineGlobal()		lknoice.c
- *		VOID	PagedAddress()		lknoice.c
+ *		void	DefineFile()		lknoice.c
+ *		void	DefineFunction()	lknoice.c
+ *		void	DefineStaticFunction()	lknoice.c
+ *		void	DefineEndFunction()	lknoice.c
+ *		void	DefineScoped()		lknoice.c
+ *		void	DefineLine()		lknoice.c
+ *		void	DefineGlobal()		lknoice.c
+ *		void	PagedAddress()		lknoice.c
  *		int	sprintf()		c_library
  *		int	sscanf()		c_library
  *		int	symeq()			lksym.c
@@ -234,13 +237,15 @@ VOID NoICEmagic(void)
  *		into the output file.
  */
 
-void DefineNoICE( char *name, a_uint value, struct bank *yp )
+void
+DefineNoICE( char *name, a_uint value, struct bank *yp )
 {
 	char token1[NCPS];			/* parse for file.function.symbol */
 	char token2[NCPS];
 	char token3[NCPS];
 	char sep1, sep2;
-	int  j, k, level;
+	int  j, k;
+	unsigned int level;
 	struct noicefn *np;
 
 	/* no output if file is not open */
@@ -333,7 +338,7 @@ void DefineNoICE( char *name, a_uint value, struct bank *yp )
 }
 
 
-/*)Function	VOID	DefineGlobal()
+/*)Function	void	DefineGlobal(name, value, yp)
  * 
  *		char *		name	pointer to the symbol string
  *		a_uint		value	value of symbol
@@ -350,21 +355,22 @@ void DefineNoICE( char *name, a_uint value, struct bank *yp )
  *
  *	functions called:
  *		int	fprintf()	c_library
- *		VOID	PagedAddress()	lknoice.c
+ *		void	PagedAddress()	lknoice.c
  *
  *	side effects:
  *		A global symbol definition is
  *		placed in the .noi debug file.
  */
 
-void DefineGlobal( char *name, a_uint value, struct bank *yp )
+void
+DefineGlobal( char *name, a_uint value, struct bank *yp )
 {
 	fprintf( jfp, "DEF %s ", name );
 	PagedAddress( value, yp );
 }
 
 
-/*)Function	VOID	DefineScoped()
+/*)Function	void	DefineScoped(name, value, yp)
  * 
  *		char *		name	pointer to the symbol string
  *		a_uint		value	value of symbol
@@ -381,21 +387,22 @@ void DefineGlobal( char *name, a_uint value, struct bank *yp )
  *
  *	functions called:
  *		int	fprintf()	c_library
- *		VOID	PagedAddress()	lknoice.c
+ *		void	PagedAddress()	lknoice.c
  *
  *	side effects:
  *		A scoped symbol definition is
  *		placed in the .noi debug file.
  */
 
-void DefineScoped( char *name, a_uint value, struct bank *yp )
+void
+DefineScoped( char *name, a_uint value, struct bank *yp )
 {
 	fprintf( jfp, "DEFS %s ", name );
 	PagedAddress( value, yp );
 }
 
 
-/*)Function	VOID	DefineFile()
+/*)Function	void	DefineFile(name, value, yp)
  * 
  *		char *		name	pointer to the symbol string
  *		a_uint		value	value of symbol
@@ -412,7 +419,7 @@ void DefineScoped( char *name, a_uint value, struct bank *yp )
  *
  *	functions called:
  *		int	fprintf()	c_library
- *		VOID	PagedAddress()	lknoice.c
+ *		void	PagedAddress()	lknoice.c
  *		char *	strcpy()	c_library
  *		int	symeq()		lksym.c
  *
@@ -421,7 +428,8 @@ void DefineScoped( char *name, a_uint value, struct bank *yp )
  *		placed in the .noi debug file.
  */
 
-void DefineFile( char *name, a_uint value, struct bank *yp )
+void
+DefineFile( char *name, a_uint value, struct bank *yp )
 {
 	if (symeq( name, currentFile, 1 ) == 0)
 	{
@@ -439,7 +447,7 @@ void DefineFile( char *name, a_uint value, struct bank *yp )
 }
 
 
-/*)Function	VOID	DefineFunction()
+/*)Function	void	DefineFunction(name, value, yp)
  * 
  *		char *		name	pointer to the symbol string
  *		a_uint		value	value of symbol
@@ -458,7 +466,7 @@ void DefineFile( char *name, a_uint value, struct bank *yp )
  *
  *	functions called:
  *		int	fprintf()	c_library
- *		VOID	PagedAddress()	lknoice.c
+ *		void	PagedAddress()	lknoice.c
  *		char *	strcpy()	c_library
  *		int	symeq()		lksym.c
  *
@@ -467,7 +475,8 @@ void DefineFile( char *name, a_uint value, struct bank *yp )
  *		placed in the .noi debug file.
  */
 
-void DefineFunction( char *name, a_uint value, struct bank *yp )
+void
+DefineFunction( char *name, a_uint value, struct bank *yp )
 {
 	if (symeq( name, currentFunction, 1 ) == 0)
 	{
@@ -487,7 +496,7 @@ void DefineFunction( char *name, a_uint value, struct bank *yp )
 }
 
 
-/*)Function	VOID	DefineStaticFunction()
+/*)Function	void	DefineStaticFunction(name, value, yp)
  * 
  *		char *		name	pointer to the symbol string
  *		a_uint		value	value of symbol
@@ -506,7 +515,7 @@ void DefineFunction( char *name, a_uint value, struct bank *yp )
  *
  *	functions called:
  *		int	fprintf()	c_library
- *		VOID	PagedAddress()	lknoice.c
+ *		void	PagedAddress()	lknoice.c
  *		char *	strcpy()	c_library
  *		int	symeq()		lksym.c
  *
@@ -515,7 +524,8 @@ void DefineFunction( char *name, a_uint value, struct bank *yp )
  *		placed in the .noi debug file.
  */
 
-void DefineStaticFunction( char *name, a_uint value, struct bank *yp )
+void
+DefineStaticFunction( char *name, a_uint value, struct bank *yp )
 {
 	if (symeq( name, currentFunction, 1 ) == 0)
 	{
@@ -535,7 +545,7 @@ void DefineStaticFunction( char *name, a_uint value, struct bank *yp )
 }
 
 
-/*)Function	VOID	DefineEndFunction()
+/*)Function	void	DefineEndFunction(name, value, yp)
  * 
  *		char *		name	pointer to the symbol string
  *		a_uint		value	value of symbol
@@ -552,7 +562,7 @@ void DefineStaticFunction( char *name, a_uint value, struct bank *yp )
  *
  *	functions called:
  *		int	fprintf()	c_library
- *		VOID	PagedAddress()	lknoice.c
+ *		void	PagedAddress()	lknoice.c
  *		char *	strcpy()	c_library
  *		int	symeq()		lksym.c
  *
@@ -561,7 +571,8 @@ void DefineStaticFunction( char *name, a_uint value, struct bank *yp )
  *		placed in the .noi debug file.
  */
 
-void DefineEndFunction( a_uint value, struct bank *yp )
+void
+DefineEndFunction( a_uint value, struct bank *yp )
 {
 	if (currentFunction[0] != 0)
 	{
@@ -580,7 +591,7 @@ void DefineEndFunction( a_uint value, struct bank *yp )
 }
 
 
-/*)Function	VOID	DefineLine()
+/*)Function	void	DefineLine(name, value, yp)
  * 
  *		char *		name	pointer to the symbol string
  *		a_uint		value	value of symbol
@@ -598,7 +609,7 @@ void DefineEndFunction( a_uint value, struct bank *yp )
  *
  *	functions called:
  *		int	fprintf()	c_library
- *		VOID	PagedAddress()	lknoice.c
+ *		void	PagedAddress()	lknoice.c
  *		int	digit()		lkeval.c
  *
  *	side effects:
@@ -606,7 +617,8 @@ void DefineEndFunction( a_uint value, struct bank *yp )
  *		placed in the .noi debug file.
  */
 
-void DefineLine( char *lineString, a_uint value, struct bank *yp )
+void
+DefineLine( char *lineString, a_uint value, struct bank *yp )
 {
 	int indigit, lineNumber;
 
@@ -620,7 +632,7 @@ void DefineLine( char *lineString, a_uint value, struct bank *yp )
 }
 
 
-/*)Function	VOID	PagedAddress()
+/*)Function	void	PagedAddress(value, yp)
  * 
  *		a_uint		value	value of symbol
  *		struct bank *	yp	pointer to associated bank
@@ -644,7 +656,8 @@ void DefineLine( char *lineString, a_uint value, struct bank *yp )
  *		line placed in the .noi debug file.
  */
 
-void PagedAddress( a_uint value, struct bank *yp )
+void
+PagedAddress( a_uint value, struct bank *yp )
 {
 	if (yp->b_flag & B_MAP) {
 		fprintf( jfp, "%X:0x%X\n", yp->b_map, value );

@@ -1,7 +1,7 @@
 /* lklibr.c */
 
 /*
- *  Copyright (C) 1989-2018  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 #include "lkrel.h"
 #include "lklibr.h"
 
-/*)Module   lklibr.c
+/*)Module	lklibr.c
  *
  *	The module lklibr.c contains the functions which
  *	(1) specify the path(s) to library files [.LIB]
@@ -48,13 +48,13 @@
  *	    and link the module containing this symbol
  *
  *	lklibr.c contains the following functions:
- *		VOID	addpath()
- *		VOID	addlib()
- *		VOID	addfile()
- *		VOID	search()
- *		VOID	fndsym()
- *		VOID	library()
- *		VOID	loadfile()
+ *		void	addpath()
+ *		void	addlib()
+ *		void	addfile()
+ *		void	search()
+ *		void	fndsym()
+ *		void	library()
+ *		void	loadfile()
  *
  */
 
@@ -75,7 +75,7 @@ struct aslib_target *aslib_targets[] = {
   &aslib_target_lib,
 };
 
-/*)Function	VOID	addpath()
+/*)Function	void	addpath(void)
  *
  *	The function addpath() creates a linked structure containing
  *	the paths to various object module library files.
@@ -90,17 +90,17 @@ struct aslib_target *aslib_targets[] = {
  *
  *	 functions called:
  *		int	getnb()		lklex.c
- *		VOID *	new()		lksym.c
+ *		void *	new()		lksym.c
  *		int	strlen()	c_library
  *		char *	strcpy()	c_library
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		An lbpath structure may be created.
  */
 
-VOID
-addpath()
+void
+addpath(void)
 {
 	struct lbpath *lbph, *lbp;
 
@@ -118,7 +118,7 @@ addpath()
 	strcpy(lbph->path, ip);
 }
 
-/*)Function	VOID	addlib()
+/*)Function	void	addlib(void)
  *
  *	The function addlib() tests for the existance of a
  *	library path structure to determine the method of
@@ -136,17 +136,17 @@ addpath()
  *      ip a pointer to the library name
  *
  *	 functions called:
- *		VOID	addfile()	lklibr.c
+ *		void	addfile()	lklibr.c
  *		int	getnb()		lklex.c
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		The function addfile() may add the file to
  *		the library search list.
  */
 
-VOID
-addlib()
+void
+addlib(void)
 {
 	struct lbpath *lbph;
   int foundcount = 0;
@@ -170,7 +170,7 @@ addlib()
     }
 }
 
-/*)Function int addfile(path,libfil)
+/*)Function	int	addfile(path, libfil)
  *
  *      char    *path       library path specification
  *      char    *libfil     library file specification
@@ -200,10 +200,10 @@ addlib()
  *
  *   functions called:
  *      int     getnb()     lklex.c
- *      VOID *  new()       lksym.c
+ *      void *  new()       lksym.c
  *      int     strlen()    c_library
  *      char *  strcpy()    c_library
- *      VOID    unget()     lklex.c
+ *      void    unget()     lklex.c
  *
  *  side effects:
  *      An lbname structure may be created.
@@ -214,11 +214,11 @@ addlib()
  */
 
 int
-addfile (char *path, char *libfil)
+addfile(char *path, char *libfil)
 {
-  FILE *fp;
-  char *str, *strend;
-  struct lbname *lbnh, *lbn;
+	FILE *fp;
+	char *str, *strend;
+	struct lbname *lbnh, *lbn;
 #ifdef  OTHERSYSTEM
   int libfilinc = 0;
 #endif
@@ -323,7 +323,7 @@ addfile (char *path, char *libfil)
     }
 }
 
-/*)Function	VOID	search()
+/*)Function	void	search(void)
  *
  *	The function search() looks through all the symbol tables
  *	at the end of pass 1.  If any undefined symbols are found
@@ -354,8 +354,8 @@ addfile (char *path, char *libfil)
  *		containing the symbol will be imported and linked.
  */
 
-VOID
-search()
+void
+search(void)
 {
 	struct sym *sp;
 	int i,symfnd;
@@ -392,75 +392,74 @@ search()
 	}
 }
 
-/*)Function VOID    fndsym(name)
+/*)Function	void	fndsym(name)
  *
- *      char    *name       symbol name to find
+ *		char	*name		symbol name to find
  *
- *  The function fndsym() searches through all combinations of the
- *  library path specifications (input by the -k option) and the
- *  library file specifications (input by the -l option) that
- *  lead to an existing file.
+ *	The function fndsym() searches through all combinations of the
+ *	library path specifications (input by the -k option) and the
+ *	library file specifications (input by the -l option) that
+ *	lead to an existing file.
  *
- *  The file specification may be formed in one of two ways:
+ *	The file specification may be formed in one of two ways:
  *
- *  (1) If the library file contained an absolute
- *      path/file specification then this becomes filspc.
- *      (i.e. C:\...)
+ *	(1)	If the library file contained an absolute
+ *		path/file specification then this becomes filspc.
+ *		(i.e. C:\...)
  *
- *  (2) If the library file contains a relative path/file
- *      specification then the concatenation of the path
- *      and this file specification becomes filspc.
- *      (i.e. \...)
+ *	(2)	If the library file contains a relative path/file
+ *		specification then the concatenation of the path
+ *		and this file specification becomes filspc.
+ *		(i.e. \...)
  *
- *  The structure lbfile is created for the first library
- *  object file which contains the definition for the
- *  specified undefined symbol.
+ *	The structure lbfile is created for the first library
+ *	object file which contains the definition for the
+ *	specified undefined symbol.
  *
- *  If the library file [.LIB] contains file specifications for
- *  non existant files, no errors are returned.
+ *	If the library file [.LIB] contains file specifications for
+ *	non existant files, no errors are returned.
  *
- *  local variables:
- *      char    buf[]       [.REL] file input line
- *      char    c           [.REL] file input character
- *      FILE    *fp         file handle for object file
- *      lbfile  *lbf        temporary pointer
- *      lbfile  *lbfh       pointer to lbfile structure
- *      FILE    *libfp      file handle for library file
- *      lbname  *lbnh       pointer to lbname structure
- *      char    *path       file specification path
- *      char    relfil[]    [.REL] file specification
- *      char    *str        combined path and file specification
- *      char    symname[]   [.REL] file symbol string
+ *	local variables:
+ *		char	buf[]		[.REL] file input line
+ *		char	c		[.REL] file input character
+ *		FILE	*fp		file handle for object file
+ *		lbfile	*lbf		temporary pointer
+ *		lbfile	*lbfh		pointer to lbfile structure
+ *		FILE	*libfp		file handle for library file
+ *		lbname	*lbnh		pointer to lbname structure
+ *		char	*path		file specification path
+ *		char	relfil[]	[.REL] file specification
+ *		char	*str		combined path and file specification
+ *		char	symname[]	[.REL] file symbol string
  *
- *  global variables:
- *      lbname  *lbnhead    The pointer to the first
- *                          name structure
- *      lbfile  *lbfhead    The pointer to the first
- *                          file structure
- *      int     obj_flag    linked file/library object output flag
+ *	global variables:
+ *		lbname	*lbnhead	The pointer to the first
+ *				 	name structure
+ *		lbfile	*lbfhead	The pointer to the first
+ *				 	file structure
+ *		int	obj_flag	linked file/library object output flag
  *
- *   functions called:
- *      int     fclose()    c_library
- *      FILE    *fopen()    c_library
- *      VOID    free()      c_library
- *      int     getnb()     lklex.c
- *      VOID    lkexit()    lkmain.c
- *      VOID    loadfile()  lklibr.c
- *      VOID *  new()       lksym.c
- *      char *  sprintf()   c_library
- *      int     sscanf()    c_library
- *      char *  strcat()    c_library
- *      char *  strchr()    c_library
- *      char *  strcpy()    c_library
- *      int     strlen()    c_library
- *      int     strncmp()   c_library
- *      VOID    unget()     lklex.c
+ *	 functions called:
+ *		int	fclose()	c_library
+ *		FILE	*fopen()	c_library
+ *		void	free()		c_library
+ *		void	lkexit()	lkmain.c
+ *		void	loadfile()	lklibr.c
+ *		void *	malloc()	c_library
+ *		char *	sprintf()	c_library
+ *		int	sscanf()	c_library
+ *		char *	strcat()	c_library
+ *		char *	strchr()	c_library
+ *		char *	strcpy()	c_library
+ *		int	strlen()	c_library
+ *		int	strncmp()	c_library
+ *		void	unget()		lklex.c
  *
- *  side effects:
- *      If the symbol is found then a new lbfile structure
- *      is created and added to the linked list of lbfile
- *      structures.  The file containing the found symbol
- *      is linked.
+ *	side effects:
+ *		If the symbol is found then a new lbfile structure
+ *		is created and added to the linked list of lbfile
+ *		structures.  The file containing the found symbol
+ *		is linked.
  */
 
 #ifdef INDEXLIB
@@ -812,7 +811,7 @@ fndsym (const char *name)
 }
 #endif /* INDEXLIB */
 
-/*)Function	VOID	library()
+/*)Function	void	library(void)
  *
  *	The function library() links all the library object files
  *	contained in the lbfile structures.
@@ -825,14 +824,14 @@ fndsym (const char *name)
  *		int	obj_flag	linked file/library object output flag
  *
  *	 functions called:
- *		VOID	loadfile	lklibr.c
+ *		void	loadfile	lklibr.c
  *
  *	side effects:
  *		Links all files contained in the lbfile structures.
  */
 
-VOID
-library()
+void
+library(void)
 {
 	struct lbfile *lbfh;
 
