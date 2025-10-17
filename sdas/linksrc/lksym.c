@@ -1,7 +1,7 @@
 /* lksym.c */
 
 /*
- *  Copyright (C) 1989-2014  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,10 +40,10 @@
  *		char *	new()
  *		sym *	newsym()
  *		char *	strsto()
- *		VOID	symdef()
+ *		void	symdef()
  *		int	symeq()
- *		VOID	syminit()
- *		VOID	symmod()
+ *		void	syminit()
+ *		void	symmod()
  *		a_uint	symval()
  *
  *	lksym.c contains the static variables:
@@ -52,7 +52,7 @@
  *	used by the string store function.
  */
 
-/*)Function	VOID	syminit()
+/*)Function	void	syminit(void)
  *
  *	The function syminit() is called to clear the hashtable.
  *
@@ -71,8 +71,8 @@
  *		(1)	The symbol hash tables are cleared
  */
 
-VOID
-syminit()
+void
+syminit(void)
 {
 	struct sym **spp;
 
@@ -81,7 +81,7 @@ syminit()
 		*spp++ = NULL;
 }
 
-/*)Function	sym *	newsym()
+/*)Function	sym *	newsym(void)
  *
  *	The function newsym() is called to evaluate the symbol
  *	definition/reference directive from the .rel file(s).
@@ -114,7 +114,7 @@ syminit()
  *
  *	functions called:
  *		a_uint	eval()		lkeval.c
- *		VOID	exit()		c_library
+ *		void	exit()		c_library
  *		int	fprintf()	c_library
  *              char    getSid()        lklex.c
  *		int	get()		lklex.c
@@ -140,7 +140,7 @@ syminit()
  *
  */
 struct sym *
-newsym()
+newsym(void)
 {
 	a_uint ev;
 	int c, i, nsym;
@@ -200,7 +200,7 @@ newsym()
 	return(NULL);
 }
 
-/*)Function	sym *	lkpsym(id,f)
+/*)Function	sym *	lkpsym(id, f)
  *
  *		char *	id		symbol name string
  *		int	f		f == 0, lookup only
@@ -233,9 +233,7 @@ newsym()
  */
 
 struct sym *
-lkpsym(id, f)
-char *id;
-int f;
+lkpsym(char *id, int f)
 {
 	struct sym *sp;
 	int h;
@@ -278,8 +276,7 @@ int f;
  */
 
 a_uint
-symval(tsp)
-struct sym *tsp;
+symval(struct sym *tsp)
 {
 	a_uint val;
 
@@ -290,7 +287,7 @@ struct sym *tsp;
 	return(val);
 }
 
-/*)Function	VOID	symdef(fp)
+/*)Function	void	symdef(fp)
  *
  *		FILE *	fp		file handle for output
  *
@@ -317,9 +314,8 @@ struct sym *tsp;
  *		Undefined variables have their areas set to "_CODE".
  */
 
-VOID
-symdef(fp)
-FILE *fp;
+void
+symdef(FILE *fp)
 {
 	struct sym *sp;
 	int i;
@@ -336,7 +332,7 @@ FILE *fp;
 	}
 }
 
-/*)Function	VOID	symmod(fp,tsp)
+/*)Function	void	symmod(fp, tsp)
  *
  *		FILE *	fp		output file handle
  *		sym *	tsp		pointer to a symbol structure
@@ -366,10 +362,8 @@ FILE *fp;
  *		Error output generated.
  */
 
-VOID
-symmod(fp, tsp)
-FILE *fp;
-struct sym *tsp;
+void
+symmod(FILE *fp, struct sym *tsp)
 {
 	int i;
 	struct sym **p;
@@ -421,9 +415,7 @@ struct sym *tsp;
  */
 
 int
-symeq(p1, p2, cflag)
-char *p1, *p2;
-int cflag;
+symeq(char *p1, char *p2, int cflag)
 {
 	int n;
 
@@ -474,9 +466,7 @@ int cflag;
  */
 
 int
-hash(p, cflag)
-char *p;
-int cflag;
+hash(char *p, int cflag)
 {
 	int h;
 
@@ -497,8 +487,6 @@ int cflag;
 	return (h&HMASK);
 }
 
-#if	decus
-
 /*)Function	char *	strsto(str)
  *
  *		char *	str		pointer to string to save
@@ -511,162 +499,7 @@ int cflag;
  *		jhartman@compuserve.com
  *
  *	local variables:
- *              int     l               string length + 8
- *		char *	p		string location
- *
- *	global variables:
- *		none
- *
- *	functions called:
- *		char *	new()		assym.c
- *		char *	strncpy()	c_library
- *
- *	side effects:
- *		Space allocated for string, string copied
- *		to space.  Out of Space terminates linker.
- */
-
-char *
-strsto(str)
-char *str;
-{
-	int  l;
-	char *p;
-
-	/*
-         * What we need, including a null, and maybe some extra space for strcat().
-	 */
-        l = strlen(str) + 8;
-	p = (char *) new (l);
-
-	/*
-	 * Copy the name and terminating null.
-	 */
-	strncpy(p, str, l);
-	return(p);
-}
-
-/*
- * This code is optimized for the PDP-11 (decus)
- * which has a limited program space of 56K Bytes !
- * Short strings and small structures are allocated
- * from a memory hunk in new() to reduce the overhead
- * from allocations directly by malloc().  Longer
- * allocations are made directly by malloc.
- * PDP-11 addressing requires that variables
- * are allocated on a word boundary, (strings donot
- * have this restriction,) all allocations will have
- * at most 1 extra byte to maintain the word boundary
- * requirement.
- */
-
-/*)Function	char *	new(n)
- *
- *		unsigned int	n	allocation size in bytes
- *
- *	The function new() allocates n bytes of space and returns
- *	a pointer to this memory.  If no space is available the
- *	linker is terminated.
- *
- *	Allocate space for "str", copy str into new space.
- *	Return a pointer to the allocated string.
- *
- *	This function based on code by
- *		John L. Hartman
- *		jhartman@compuserve.com
- *
- *	local variables:
- *		int	bytes		bytes remaining in buffer area
- *		int	i		loop counter
- *		char *	p		pointer to head of copied string
- *		char *	pnext		next location in buffer area
- *		char *	q		a general pointer
- *
- *	global variables:
- *		none
- *
- *	functions called:
- *		int	fprintf()	c_library
- *		VOID *	malloc()	c_library
- *
- *	side effects:
- *		Memory is allocated, if allocation fails
- *		the linker is terminated.
- */
-
-/*
- * To avoid wasting memory headers on small allocations, we
- * allocate a big chunk and parcel it out as required.
- * These static variables remember our hunk.
- */
-
-#define	STR_SPC	1024
-#define	STR_MIN	16
-static	char *	pnext = NULL;
-static	int	bytes = 0;
-
-char *
-new(n)
-unsigned int n;
-{
-	char *p,*q;
-	unsigned int i;
-
-	/*
-	 * Always an even byte count
-	 */
-	n = (n+1) & 0xFFFE;
-
-	if (n > STR_MIN) {
-		/*
-		 * For allocations larger than
-		 * most structures and short strings
-		 * allocate the space directly.
-		 */
-		p = (char *) malloc(n);
-	} else {
-		/*
-		 * For smaller structures and
-		 * strings allocate from the hunk.
-		 */
-		if (n > bytes) {
-			/*
-			 * No space.  Allocate a new hunk.
-			 * We lose the pointer to any old hunk.
-			 * We don't care, as the pieces are never deleted.
-			*/
-			pnext = (char *) malloc (STR_SPC);
-			bytes = STR_SPC;
-		}
-		p = pnext;
-		pnext += n;
-		bytes -= n;
-	}
-	if (p == NULL) {
-		fprintf(stderr, "?ASlink-Error-Out of space!\n");
-		lkexit(ER_FATAL);
-	}
-	for (i=0,q=p; i<n; i++) {
-		*q++ = 0;
-	}
-	return (p);
-}
-
-#else
-
-/*)Function	char *	strsto(str)
- *
- *		char *	str		pointer to string to save
- *
- *	Allocate space for "str", copy str into new space.
- *	Return a pointer to the allocated string.
- *
- *	This function based on code by
- *		John L. Hartman
- *		jhartman@compuserve.com
- *
- *	local variables:
- *              int     l               string length + 8
+ *		int	l		string length + 1
  *		int	bytes		bytes remaining in buffer area
  *		char *	p		pointer to head of copied string
  *		char *	pnext		next location in buffer area
@@ -694,8 +527,7 @@ static	char *	pnext = NULL;
 static	int	bytes = 0;
 
 char *
-strsto(str)
-char *str;
+strsto(char *str)
 {
 	int  l;
 	char *p;
@@ -744,7 +576,7 @@ char *str;
  *
  *	functions called:
  *		int	fprintf()	c_library
- *		VOID *	malloc()	c_library
+ *		void *	malloc()	c_library
  *
  *	side effects:
  *		Memory is allocated, if allocation fails
@@ -752,8 +584,7 @@ char *str;
  */
 
 char *
-new(n)
-unsigned int n;
+new(unsigned int n)
 {
 	char *p,*q;
 	unsigned int i;
@@ -768,4 +599,3 @@ unsigned int n;
 	return (p);
 }
 
-#endif

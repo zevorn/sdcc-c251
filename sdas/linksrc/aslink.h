@@ -1212,7 +1212,7 @@ extern	int		parse(void);
 extern	VOID		doparse(void);
 extern	VOID		setarea(void);
 extern	VOID		setgbl(void);
-extern  VOID            usage(int n);
+extern  void            usage(int n);
 extern  VOID            copyfile (FILE *dest, FILE *src);
 
 /* lklex.c */
