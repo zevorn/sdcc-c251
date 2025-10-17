@@ -1,7 +1,7 @@
 /* lksdcdb.c */
 
 /*
- *  Copyright (C) 2001-2014  Alan R. Baldwin
+ *  Copyright (C) 2001-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,12 +32,12 @@
  *	required to create a SDCDB debug file.
  *
  *	lksdcdb.c contains the following functions:
- *		VOID	SDCDBfopen()
- *		VOID	SDCDBcopy()
- *		VOID	DefineSDCDB()
+ *		void	SDCDBfopen()
+ *		void	SDCDBcopy()
+ *		void	DefineSDCDB()
  */
 
-/*)Function	VOID	SDCDBfopen()
+/*)Function	void	SDCDBfopen(void)
  * 
  *	The function SDCDBfopen() opens the SDCDB output file
  *	and sets the map flag, mflag, to create a map file.
@@ -54,7 +54,7 @@
  *
  *	functions called:
  *		FILE *	afile()		lkmain.c
- *		VOID	lkexit()	lkmain.c
+ *		void	lkexit()	lkmain.c
  *
  *	side effects:
  *		The SDCDB output file is opened.
@@ -62,7 +62,7 @@
  *		terminate the linker.
  */
 
-VOID SDCDBfopen(void)
+void SDCDBfopen(void)
 {
 	if (yflag) {
 		SaveLinkedFilePath(linkp->f_idp);	//Must be the first one...
@@ -75,11 +75,11 @@ VOID SDCDBfopen(void)
 }
 
 
-/*)Function	VOID	SDCDBcopy()
+/*)Function	void	SDCDBcopy()
  * 
  *		char *	str		pointer to the file spec
  *
- *	The function SDCDBcopy() copies an existing adb file
+ *	The function SDCDBcopy() copies an existing cdb file
  *	into the linker cdb file.
  *
  * 	The function is called from lklex.c and lklibr.c
@@ -103,8 +103,7 @@ VOID SDCDBfopen(void)
  *		the linker cdb output file.
  */
 
-VOID SDCDBcopy(str)
-char * str;
+void SDCDBcopy(char *str)
 {
 	FILE * xfp;
 
@@ -121,7 +120,7 @@ char * str;
 }
 
 
-/*)Function	VOID	DefineSDCDB()
+/*)Function	void	DefineSDCDB(name, value)
  * 
  *		char *	name		pointer to the symbol string
  *		a_uint	value		value of symbol
@@ -148,9 +147,7 @@ char * str;
  *		into the output file.
  */
 
-VOID DefineSDCDB(name, value)
-char *name;
-a_uint value;
+void DefineSDCDB(char *name, a_uint value)
 {
 	int  j;
 	char *p1;
