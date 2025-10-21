@@ -11,7 +11,7 @@
 
 
 #if !defined(__BORLANDC__) && !defined(_MSC_VER)
-#define DEBUGpc(fmt,...)  DEBUGpic16_emitcode("; =:=", "%s:%s:%d: " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define DEBUGpc(fmt,...)  DEBUGpic16_emitcode("; =:=", "%s:%s:%d: " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 #else
 #define DEBUGpc           1 ? (void)0 : printf
 #endif

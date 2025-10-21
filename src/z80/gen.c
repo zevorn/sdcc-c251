@@ -3573,6 +3573,7 @@ static void pointPairToAop (PAIR_ID pairId, const asmop *aop, int offset)
       wassertl (!IS_SM83 && !IS_TLCS870, "The SM83 and TLCS-870 don't have a non-extended stack");
 
     case AOP_EXSTK:
+      ;
       int abso = aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
 
       if ((_G.pairs[pairId].last_type == AOP_STK || _G.pairs[pairId].last_type == AOP_EXSTK) && abs (_G.pairs[pairId].offset - abso) < (_G.preserveCarry ? 5 : 3))
@@ -3838,6 +3839,7 @@ aopGet (asmop *aop, int offset, bool bit16)
 
         case AOP_EXSTK:
         case AOP_STK:
+          ;
           int sp_offset = aop->aopu.aop_stk + offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0) + _G.stack.pushed + _G.stack.offset;
 
           if (IS_TLCS90 && !sp_offset) // Try to use (sp) addressing mode.
@@ -4087,6 +4089,7 @@ aopPut (asmop *aop, const char *s, int offset)
 
     case AOP_EXSTK:
     case AOP_STK:
+      ;
       int sp_offset = aop->aopu.aop_stk + offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0) + _G.stack.pushed + _G.stack.offset;
       if (IS_TLCS90 && !sp_offset)
         {
@@ -5822,7 +5825,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           spillPair (pair);
           continue;
         }
-#if 0 // Looks like by just supplies the upper address bits, i.e. we could do a 16-bit read only if the destiantion is 16-bit aligned.
+#if 0 // Looks like by just supplies the upper address bits, i.e. we could do a 16-bit read only if the destination is 16-bit aligned.
       else if (i + 1 < size && IS_TLCS90 && result->type == AOP_FDIR && source->type == AOP_FDIR && (hl_dead || de_dead || bc_dead))
         {
           PAIR_ID pair = hl_dead ? PAIR_HL : de_dead ? PAIR_DE : PAIR_BC;
@@ -5903,7 +5906,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
               wassert (getPairId_o(source, soffset + i) != PAIR_IY);
               if (!iy_dead)
                 _push (PAIR_IY);
-              //emit2 ("ld (by), #((%s + %d) >> 16)", result->aopu.aop_dir, roffset + i); todo: fix once 1930 is fixed!
+              //emit2 ("ld (by), #((%s + %d) >> 16)", result->aopu.aop_dir, roffset + i); todo: fix once #1930 is fixed!
               emit2 ("ld (by), #0");
               cost (3, 10);
               emit2 ("ld iy, #(%s + %d)", result->aopu.aop_dir, roffset + i);
@@ -5928,7 +5931,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
         {
           if (!a_dead)
             _push (PAIR_AF);
-          //emit2 ("ld a, #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i); todo: fix once 1930 is fixed!
+          //emit2 ("ld a, #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i); todo: fix once #1930 is fixed!
           emit2 ("ld a, #0");
           cost (2, 4);
           if (iy_dead && aopInReg (result, roffset + i, IYL_IDX))
@@ -5954,7 +5957,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           bool via_e = aopInReg (source, soffset + i, A_IDX);
           if (via_e)
             emit3 (A_LD, ASMOP_E, ASMOP_A);
-          //emit2 ("ld a, #((%s + %d) >> 16)", result->aopu.aop_dir, soffset + i); todo: fix once 1930 is fixed!
+          //emit2 ("ld a, #((%s + %d) >> 16)", result->aopu.aop_dir, soffset + i); todo: fix once #1930 is fixed!
           emit2 ("ld a, #0");
           cost (2, 4);
           emit2 ("ldp hl, (%s + %d)", result->aopu.aop_dir, roffset + i);
@@ -7277,20 +7280,20 @@ genIpush (const iCode *ic)
           d = 4;
         }
       else if (size >= 2 && getPairId_o (ic->left->aop, size - 2) != PAIR_INVALID)
-          {
-            emit3w_o (A_PUSH, ic->left->aop, size - 2, 0, 0);
-            d = 2;
-          }
-        else if (size >= 4 && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) &&
-          (ic->left->aop->type == AOP_STK || ic->left->aop->type == AOP_IY) && (bc_free && de_free || jk_free && hl_free ))
-          {
-            bool use_bcde = bc_free && de_free ;
-            genMove_o (use_bcde ? ASMOP_BCDE : ASMOP_JKHL, 0, ic->left->aop, size - 4, 4, a_free, hl_free, de_free, iy_free, true);
-            emit2 (use_bcde ? "push bcde" : "push jkhl");
-            cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
-            d = 4;
-          }
-        else if (size >= 2 &&
+        {
+          emit3w_o (A_PUSH, ic->left->aop, size - 2, 0, 0);
+          d = 2;
+        }
+      else if (size >= 4 && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) &&
+        (ic->left->aop->type == AOP_STK || ic->left->aop->type == AOP_IY) && (bc_free && de_free || jk_free && hl_free ))
+        {
+          bool use_bcde = bc_free && de_free ;
+          genMove_o (use_bcde ? ASMOP_BCDE : ASMOP_JKHL, 0, ic->left->aop, size - 4, 4, a_free, hl_free, de_free, iy_free, true);
+          emit2 (use_bcde ? "push bcde" : "push jkhl");
+          cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
+          d = 4;
+        }
+      else if (size >= 2 &&
           (hl_free || de_free || bc_free ||
           aopInReg (IC_LEFT (ic)->aop, size - 1, B_IDX) && c_free || b_free && aopInReg (IC_LEFT (ic)->aop, size - 2, C_IDX) ||
           aopInReg (IC_LEFT (ic)->aop, size - 1, D_IDX) && e_free || d_free && aopInReg (IC_LEFT (ic)->aop, size - 2, E_IDX) ||
@@ -7439,23 +7442,23 @@ genIpush (const iCode *ic)
            cost2 (1, 1, 1, 1, 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
            d = 1;
          }
-       else if (d_free)
-         {
-           genMove_o (ASMOP_D, 0, IC_LEFT (ic)->aop, size - 1, 1, a_free, h_free && l_free, d_free && e_free, iyh_free && iyl_free, true);
-           emit3w (A_PUSH, ASMOP_DE, 0);
-           emit2 ("inc sp");
-           cost2 (1, 1, 1, 1, 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
-           d = 1;
-         }
-       else if (b_free)
-         {
-           genMove_o (ASMOP_B, 0, IC_LEFT (ic)->aop, size - 1, 1, a_free, h_free && l_free, d_free && e_free, iyh_free && iyl_free, true);
-           emit3w (A_PUSH, ASMOP_BC, 0);
-           emit2 ("inc sp");
-           cost2 (1, 1, 1, 1, 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
-           d = 1;
-         }
-     else if ((IS_Z80N || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && ic->left->aop->type == AOP_LIT)
+      else if (d_free)
+        {
+          genMove_o (ASMOP_D, 0, IC_LEFT (ic)->aop, size - 1, 1, a_free, h_free && l_free, d_free && e_free, iyh_free && iyl_free, true);
+          emit3w (A_PUSH, ASMOP_DE, 0);
+          emit2 ("inc sp");
+          cost2 (1, 1, 1, 1, 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
+          d = 1;
+        }
+      else if (b_free)
+        {
+          genMove_o (ASMOP_B, 0, IC_LEFT (ic)->aop, size - 1, 1, a_free, h_free && l_free, d_free && e_free, iyh_free && iyl_free, true);
+          emit3w (A_PUSH, ASMOP_BC, 0);
+          emit2 ("inc sp");
+          cost2 (1, 1, 1, 1, 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
+          d = 1;
+        }
+      else if ((IS_Z80N || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && ic->left->aop->type == AOP_LIT)
         {
           emit2 ("push !immedword", (unsigned)(byteOfVal (ic->left->aop->aopu.aop_lit, size - 1) << 8));
           cost2 (4, -1, -1, -1, 23, -1, 15, 16, -1, -1, -1, -1, -1, -1, -1);
@@ -7561,12 +7564,20 @@ genPointerPush (const iCode *ic)
     {
       if (i + 1 < size && isRegDead (BC_IDX, ic))
         {
-          emit2 ("ld b, !*hl");
-          cost2 (1, 2, 2, 2, 7, 6, 5, 5, 8, 6, 3, 4, 3, 2, 2);
-          emit2 ("dec hl");
-          cost2 (1, 1, 1, 1, 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
-          emit2 ("ld c, !*hl");
-          cost2 (1, 2, 2, 2, 7, 6, 5, 5, 8, 6, 3, 4, 3, 2, 2);
+          if (IS_TLCS || IS_EZ80)
+            {
+              emit3w (A_DEC, ASMOP_HL, 0);
+              emit2 ("ld bc, (hl)");
+              cost2 (2, 2, 2, 2, -1, -1, -1, -1, -1, 8, 4, 4, 4, 4, -1);
+            }
+          else
+            {
+              emit2 ("ld b, !*hl");
+              cost2 (1, 2, 2, 2, 7, 6, 5, 5, 8, 6, 3, 4, 3, 2, 2);
+              emit3w (A_DEC, ASMOP_HL, 0);
+              emit2 ("ld c, !*hl");
+              cost2 (1, 2, 2, 2, 7, 6, 5, 5, 8, 6, 3, 4, 3, 2, 2);
+            }
           emit3w (A_PUSH, ASMOP_BC, 0);
           _G.stack.pushed += 2;
           i += 2;
@@ -7591,7 +7602,7 @@ genPointerPush (const iCode *ic)
   if (swap_de && !IS_SM83)
     emit3w (A_EX, ASMOP_DE, ASMOP_HL);
 
-  freeAsmop (IC_LEFT (ic), 0);
+  freeAsmop (ic->left, 0);
 }
 
 /* This is quite unfortunate */

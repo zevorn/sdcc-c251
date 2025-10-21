@@ -33,15 +33,15 @@
 #include "ralloc.h"
 
 #define FENTRY do {                                                                     \
-        /*fprintf (stderr, "%s:%u:%s: *{*\n", __FILE__, __LINE__, __FUNCTION__);*/      \
+        /*fprintf (stderr, "%s:%u:%s: *{*\n", __FILE__, __LINE__, __func__);*/      \
         if (options.debug || debug_verbose) {                                           \
-                emitpComment ("; %s:%u:%s *{*", __FILE__, __LINE__, __FUNCTION__);      \
+                emitpComment ("; %s:%u:%s *{*", __FILE__, __LINE__, __func__);      \
         }                                                                               \
 } while (0)
 #define FEXIT do {                                                                      \
-        /*fprintf (stderr, "%s:%u:%s: *}*\n", __FILE__, __LINE__, __FUNCTION__);*/      \
+        /*fprintf (stderr, "%s:%u:%s: *}*\n", __FILE__, __LINE__, __func__);*/      \
         if (options.debug || debug.verbose) {                                           \
-                emitpComment ("; %s:%u:%s *}*", __FILE__, __LINE__, __FUNCTION__);      \
+                emitpComment ("; %s:%u:%s *}*", __FILE__, __LINE__, __func__);      \
         }                                                                               \
 } while (0)
 
@@ -136,7 +136,7 @@ extern unsigned fReturnSizePic;
 
 int pic14_getDataSize(operand *op);
 void emitpcode_real(PIC_OPCODE poc, pCodeOp *pcop);
-#define emitpcode(poc,pcop)     do { if (options.debug || debug_verbose) { emitpComment (" >>> %s:%d:%s", __FILE__, __LINE__, __FUNCTION__); } emitpcode_real(poc,pcop); } while(0)
+#define emitpcode(poc,pcop)     do { if (options.debug || debug_verbose) { emitpComment (" >>> %s:%d:%s", __FILE__, __LINE__, __func__); } emitpcode_real(poc,pcop); } while(0)
 void emitpComment (const char *fmt, ...);
 void emitpLabel(int key);
 void pic14_emitcode (const char *inst, const char *fmt, ...);

@@ -1245,10 +1245,10 @@ doparse(void)
  *
  *	 functions called:
  *		int	getnb()		lklex.c
- *		VOID *	new()		lksym.c
+ *		void *	new()		lksym.c
  *		int	strlen()	c_library
  *		char *	strcpy()	c_library
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		The basep structure is created.
@@ -1572,7 +1572,7 @@ fndext(char * str)
 }
 
 /* sdld specific */
-/*)Function     VOID    iramsav()
+/*)Function     void    iramsav()
  *
  *      The function iramsav() stores the size of the chip's internal RAM.
  *      This is used after linking to check that variable assignment to this
@@ -1590,14 +1590,14 @@ fndext(char * str)
  *
  *	 functions called:
  *		int	getnb()		lklex.c
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *		a_uint	expr()		lkeval.c
  *
  *	side effects:
  *              The iram_size may be modified.
  */
 
-VOID
+void
 iramsav()
 {
   unget(getnb());
@@ -1610,7 +1610,7 @@ iramsav()
 }
 
 /*Similar to iramsav but for xram memory*/
-VOID
+void
 xramsav()
 {
   unget(getnb());
@@ -1621,7 +1621,7 @@ xramsav()
 }
 
 /*Similar to iramsav but for code memory*/
-VOID
+void
 codesav()
 {
   unget(getnb());
@@ -1632,7 +1632,7 @@ codesav()
 }
 
 
-/*)Function     VOID    iramcheck()
+/*)Function     void    iramcheck()
  *
  *      The function iramcheck() is used at the end of linking to check that
  *      the internal RAM area wasn't overflowed by too many variable
@@ -1653,7 +1653,7 @@ codesav()
  *	side effects:
  */
 
-VOID
+void
 iramcheck()
 {
   register unsigned int last_addr;

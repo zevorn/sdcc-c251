@@ -38,30 +38,6 @@ static struct
 #define D(_a, _s)
 #endif
 
-/** noOverLap - will iterate through the list looking for over lap
- */
-static int
-noOverLap (set *itmpStack, symbol *fsym)
-{
-  symbol *sym;
-
-  for (sym = setFirstItem (itmpStack); sym; sym = setNextItem (itmpStack))
-    {
-      if (bitVectBitValue (sym->clashes, fsym->key))
-        return 0;
-#if 0
-      // if sym starts before (or on) our end point
-      // and ends after (or on) our start point,
-      // it is an overlap.
-      if (sym->liveFrom <= fsym->liveTo && sym->liveTo >= fsym->liveFrom)
-        {
-          return 0;
-        }
-#endif
-    }
-  return 1;
-}
-
 /*-----------------------------------------------------------------*/
 /* createStackSpil - create a location on the stack to spil        */
 /*-----------------------------------------------------------------*/
@@ -71,7 +47,7 @@ createStackSpil (symbol * sym)
   symbol *sloc = NULL;
   struct dbuf_s dbuf;
 
-  D (D_ALLOC, ("createStackSpil: for sym %p %s (old currFunc->stack %ld)\n", sym, sym->name, (long)(currFunc->stack)));
+  D (D_ALLOC, ("createStackSpil: for sym %p %s (old currFunc->stack %ld)\n", (void *)sym, sym->name, (long)(currFunc->stack)));
 
   dbuf_init (&dbuf, 128);
   dbuf_printf (&dbuf, "sloc%d", _G.slocNum++);
@@ -192,11 +168,11 @@ regTypeNum (void)
 
           /* if not then we require registers */
           D (D_ALLOC,
-             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, sym->type));
+             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, (void *)(sym->type)));
           sym->nRegs =
             ((IS_AGGREGATE (sym->type)
               || sym->isptr) ? getSize (sym->type = aggrToPtr (sym->type, FALSE)) : getSize (sym->type));
-          D (D_ALLOC, ("regTypeNum: setting nRegs of %s (%p) to %u\n", sym->name, sym, sym->nRegs));
+          D (D_ALLOC, ("regTypeNum: setting nRegs of %s (%p) to %u\n", sym->name, (void *)sym, sym->nRegs));
 
           D (D_ALLOC, ("regTypeNum: setup to assign regs sym %p\n", (void *)sym));
 
@@ -491,7 +467,7 @@ packRegisters (eBBlock * ebp)
 
   for (iCode *ic = ebp->sch; ic; ic = ic->next)
     {
-      D (D_ALLOC, ("packRegisters: looping on ic %p\n", ic));
+      D (D_ALLOC, ("packRegisters: looping on ic %p\n", (void *)ic));
 
       /* Safe: address of a true sym is always constant. */
       /* if this is an itemp & result of a address of a true sym
@@ -600,7 +576,7 @@ serialRegMark (eBBlock ** ebbs, int count)
             {
               symbol *sym = OP_SYMBOL (IC_RESULT (ic));
 
-              D (D_ALLOC, ("serialRegAssign: in loop on result %p %s\n", sym, sym->name));
+              D (D_ALLOC, ("serialRegAssign: in loop on result %p %s\n", (void *)sym, sym->name));
 
               if (sym->isspilt && sym->usl.spillLoc) // todo: Remove once remat is supported!
                 {

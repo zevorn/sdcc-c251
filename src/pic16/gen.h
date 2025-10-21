@@ -147,7 +147,7 @@ extern unsigned pic16_fReturnSizePic;
 
 int pic16_getDataSize(operand *op);
 void pic16_emitpcode_real(PIC_OPCODE poc, pCodeOp *pcop);
-#define pic16_emitpcode(poc,pcop)	do { if (pic16_pcode_verbose) pic16_emitpcomment ("%s:%u(%s):", __FILE__, __LINE__, __FUNCTION__); pic16_emitpcode_real(poc,pcop); } while(0)
+#define pic16_emitpcode(poc,pcop)	do { if (pic16_pcode_verbose) pic16_emitpcomment ("%s:%u(%s):", __FILE__, __LINE__, __func__); pic16_emitpcode_real(poc,pcop); } while(0)
 void pic16_emitpLabel(int key);
 void pic16_emitcode (char *inst,char *fmt, ...);
 void DEBUGpic16_emitcode (char *inst,char *fmt, ...);
@@ -210,16 +210,16 @@ int inWparamList(char *s);
 #define DUMP_FUNCTION_EXIT	0
 
 #if DUMP_FUNCTION_ENTRY
-#define FENTRY	if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __FUNCTION__)
-#define FENTRY2 if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __FUNCTION__)
+#define FENTRY	if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __func__)
+#define FENTRY2 if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __func__)
 #else
 #define FENTRY
 #define FENTRY2
 #endif
 
 #if DUMP_FUNCTION_EXIT
-#define FEXIT	if(pic16_options.debgen&2)pic16_emitpcomment("; **}", "%d %s", __LINE__, __FUNCTION__)
-#define FEXIT2	if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __FUNCTION__)
+#define FEXIT	if(pic16_options.debgen&2)pic16_emitpcomment("; **}", "%d %s", __LINE__, __func__)
+#define FEXIT2	if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __func__)
 #else
 #define FEXIT
 #define FEXIT2
