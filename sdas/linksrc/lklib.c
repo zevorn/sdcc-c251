@@ -60,12 +60,10 @@ buildlibraryindex_lib (struct lbname *lbnh, FILE * libfp, pmlibraryfile This, in
       if (lbnh->path != NULL)
         {
           strcpy (str, lbnh->path);
-#ifdef  OTHERSYSTEM
           if ((*str != '\0') && (str[strlen (str) - 1] != '/') && (str[strlen (str) - 1] != LKDIRSEP))
             {
               strcat (str, LKDIRSEPSTR);
             }
-#endif
         }
       else
         str[0] = '\0';
@@ -135,12 +133,10 @@ fndsym_lib (const char *name, struct lbname *lbnh, FILE * libfp, int type)
       if (lbnh->path != NULL)
         {
           strcpy (str, lbnh->path);
-#ifdef  OTHERSYSTEM
           if ((*str != '\0') && (str[strlen (str) - 1] != '/') && (str[strlen (str) - 1] != LKDIRSEP))
             {
               strcat (str, LKDIRSEPSTR);
             }
-#endif
         }
       else
         str[0] = '\0';
@@ -191,7 +187,7 @@ fndsym_lib (const char *name, struct lbname *lbnh, FILE * libfp, int type)
 }
 #endif
 
-/*)Function VOID    loadfile_lib(filspc)
+/*)Function void    loadfile_lib(filspc)
  *
  *      char    *filspc     library object file specification
  *
@@ -209,14 +205,14 @@ fndsym_lib (const char *name, struct lbname *lbnh, FILE * libfp, int type)
  *      int     fclose()    c_library
  *      char    *lk_readnl()  lk_readnl.c
  *      FILE *  fopen()     c_library
- *      VOID    link_main() lkmain.c
+ *      void    link_main() lkmain.c
  *      int     strlen()    c_library
  *
  *  side effects:
  *      If file exists it is linked.
  */
 
-static VOID
+static void
 loadfile_lib (struct lbfile *lbfh)
 {
   FILE *fp;

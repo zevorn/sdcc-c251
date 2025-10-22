@@ -39,15 +39,13 @@ enum target {
   TARGET_ID_F8,
   TARGET_ID_F8L,
   TARGET_ID_PIC14,
-  TARGET_ID_PIC16,
-  TARGET_ID_AVR      
+  TARGET_ID_PIC16    
 };
 
 /* Macro to test the target we are compiling for.
    Can only be used after SDCCmain has defined the port
  */
 #define TARGET_IS_MCS51    (port->id == TARGET_ID_MCS51)
-#define TARGET_IS_AVR      (port->id == TARGET_ID_AVR)
 #define TARGET_IS_DS390    (port->id == TARGET_ID_DS390)
 #define TARGET_IS_DS400    (port->id == TARGET_ID_DS400)
 #define TARGET_IS_Z80      (port->id == TARGET_ID_Z80)
@@ -497,9 +495,6 @@ extern PORT z80n_port;
 #endif
 #if !OPT_DISABLE_R800
 extern PORT r800_port;
-#endif
-#if !OPT_DISABLE_AVR
-extern PORT avr_port;
 #endif
 #if !OPT_DISABLE_DS390
 extern PORT ds390_port;

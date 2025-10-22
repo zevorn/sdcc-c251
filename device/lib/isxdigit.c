@@ -33,7 +33,7 @@
 
 int isxdigit (int c)
 {
-#if defined ( __SDCC_sm83 ) || defined ( __SDCC_z80 ) ||  defined ( __SDCC_z80n ) ||  defined ( __SDCC_z180 ) ||  defined ( __SDCC_ez80_z80 ) ||  defined ( __SDCC_mos6502 ) 
+#if defined ( __SDCC_sm83 ) || defined ( __SDCC_z80 ) ||  defined ( __SDCC_z80n ) ||  defined ( __SDCC_z180 ) ||  defined ( __SDCC_ez80 ) ||  defined ( __SDCC_mos6502 ) 
   if((c & 0xff00) != 0)
     return 0;
   return ((unsigned char)c >= '0' && (unsigned char)c <= '9' || (unsigned char)c >= 'a' && (unsigned char)c <= 'f' || (unsigned char)c >= 'A' && (unsigned char)c <= 'F');

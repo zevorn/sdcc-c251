@@ -841,10 +841,10 @@ ${Section} "SDCC STM8 large model library" SEC26
   File "${DEV_ROOT}\lib\stm8-large\*.*"
 ${SectionEnd}
 
-${Section} "SDCC EZ80_Z80 library" SEC27
+${Section} "SDCC eZ80 library" SEC27
   SectionIn 1 2
-  SetOutPath "$INSTDIR\lib\ez80_z80"
-  File "${DEV_ROOT}\lib\ez80_z80\*.*"
+  SetOutPath "$INSTDIR\lib\ez80"
+  File "${DEV_ROOT}\lib\ez80\*.*"
 ${SectionEnd}
 
 ${Section} "SDCC PDK13 library" SEC28
@@ -949,7 +949,7 @@ LangString DESC_SEC23 ${LANG_ENGLISH} "SDCC STM8 medium model library"
 LangString DESC_SEC24 ${LANG_ENGLISH} "SDCC TLCS90 library"
 LangString DESC_SEC25 ${LANG_ENGLISH} "SDCC library sources"
 LangString DESC_SEC26 ${LANG_ENGLISH} "SDCC STM8 large model library"
-LangString DESC_SEC27 ${LANG_ENGLISH} "SDCC EZ80_Z80 library"
+LangString DESC_SEC27 ${LANG_ENGLISH} "SDCC eZ80 library"
 LangString DESC_SEC28 ${LANG_ENGLISH} "SDCC PDK13 library"
 LangString DESC_SEC29 ${LANG_ENGLISH} "SDCC PDK14 library"
 LangString DESC_SEC30 ${LANG_ENGLISH} "SDCC PDK15 library"
@@ -1128,10 +1128,10 @@ ${Section} Uninstall SECUNINSTALL
 
   Delete "$INSTDIR\lib\src\r3ka\*.s"
 
-  Delete "$INSTDIR\lib\src\ez80_z80\*.s"
-  Delete "$INSTDIR\lib\src\ez80_z80\ez80_z80.lib"
-  Delete "$INSTDIR\lib\src\ez80_z80\README"
-  Delete "$INSTDIR\lib\src\ez80_z80\Makefile"
+  Delete "$INSTDIR\lib\src\ez80\*.s"
+  Delete "$INSTDIR\lib\src\ez80\ez80.lib"
+  Delete "$INSTDIR\lib\src\ez80\README"
+  Delete "$INSTDIR\lib\src\ez80\Makefile"
 
   Delete "$INSTDIR\lib\src\ds390\*.c"
   Delete "$INSTDIR\lib\src\ds390\libds390.lib"
@@ -1222,8 +1222,8 @@ ${Section} Uninstall SECUNINSTALL
   Delete "$INSTDIR\lib\r3ka\*.rel"
   Delete "$INSTDIR\lib\r3ka\*.lib"
 
-  Delete "$INSTDIR\lib\ez80_z80\*.rel"
-  Delete "$INSTDIR\lib\ez80_z80\*.lib"
+  Delete "$INSTDIR\lib\ez80\*.rel"
+  Delete "$INSTDIR\lib\ez80\*.lib"
 
   Delete "$INSTDIR\lib\small\*.lib"
 
@@ -1378,7 +1378,7 @@ ${Section} Uninstall SECUNINSTALL
   RMDir "$INSTDIR\lib\src\r2k"
   RMDir "$INSTDIR\lib\src\r2ka"
   RMDir "$INSTDIR\lib\src\r3ka"
-  RMDir "$INSTDIR\lib\src\ez80_z80"
+  RMDir "$INSTDIR\lib\src\ez80"
   RMDir "$INSTDIR\lib\src\ds390\examples"
   RMDir "$INSTDIR\lib\src\ds390"
   RMDir "$INSTDIR\lib\src\ds400"
@@ -1410,7 +1410,7 @@ ${Section} Uninstall SECUNINSTALL
   RMDir "$INSTDIR\lib\r2k"
   RMDir "$INSTDIR\lib\r2ka"
   RMDir "$INSTDIR\lib\r3ka"
-  RMDir "$INSTDIR\lib\ez80_z80"
+  RMDir "$INSTDIR\lib\ez80"
   RMDir "$INSTDIR\lib\small"
   RMDir "$INSTDIR\lib\medium"
   RMDir "$INSTDIR\lib\large"

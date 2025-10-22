@@ -303,7 +303,7 @@ z80SpillThis (symbol * sym)
   if (!(sym->remat || sym->usl.spillLoc) || (sym->usl.spillLoc && !sym->usl.spillLoc->onStack)) // z80 port currently only supports on-stack spill locations in code generation.
     createStackSpil (sym);
   else
-    D (D_ALLOC, ("Already has spilllocation %p, %s\n", sym->usl.spillLoc, sym->usl.spillLoc->name));
+    D (D_ALLOC, ("Already has spilllocation %p, %s\n", (void *)(sym->usl.spillLoc), sym->usl.spillLoc->name));
 
   /* mark it as spilt & put it in the spilt set */
   sym->isspilt = sym->spillA = 1;
@@ -533,7 +533,7 @@ regTypeNum (void)
 
           /* if not then we require registers */
           D (D_ALLOC,
-             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, sym->type));
+             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, (void *)(sym->type)));
           sym->nRegs =
             ((IS_AGGREGATE (sym->type)
               || sym->isptr) ? getSize (sym->type = aggrToPtr (sym->type, FALSE)) : getSize (sym->type));

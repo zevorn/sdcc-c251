@@ -219,34 +219,28 @@ addfile(char *path, char *libfil)
 	FILE *fp;
 	char *str, *strend;
 	struct lbname *lbnh, *lbn;
-#ifdef  OTHERSYSTEM
   int libfilinc = 0;
-#endif
 
   if (path != NULL)
     {
       str = (char *) new (strlen (path) + strlen (libfil) + 6);
       strcpy (str, path);
       strend = str + strlen(str) - 1;
-#ifdef  OTHERSYSTEM
       if (strlen (str) && (*strend != '/') && (*strend != LKDIRSEP))
         {
           strcat (str, LKDIRSEPSTR);
 	}
-#endif
     }
   else
     {
       str = (char *) new (strlen (libfil) + 5);
     }
 
-#ifdef  OTHERSYSTEM
   if ((libfil[0] == '/') || (libfil[0] == LKDIRSEP))
     {
       libfil++;
       libfilinc = 1;
     }
-#endif
 
   strcat (str, libfil);
   if (strchr (libfil, FSEPX) == NULL)
@@ -258,10 +252,8 @@ addfile(char *path, char *libfil)
   if (fp == NULL)
     {
       /*Ok, that didn't work.  Try with the 'libfil' name only */
-#ifdef  OTHERSYSTEM
       if (libfilinc)
         libfil--;
-#endif
       fp = fopen (libfil, "rb");
       if (fp != NULL)
         {

@@ -123,7 +123,7 @@ regTypeNum (void)
 
           /* if not then we require registers */
           D (D_ALLOC,
-             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, sym->type));
+             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, (void *)(sym->type)));
           sym->nRegs =
             ((IS_AGGREGATE (sym->type)
               || sym->isptr) ? getSize (sym->type = aggrToPtr (sym->type, FALSE)) : getSize (sym->type));

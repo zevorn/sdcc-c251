@@ -346,7 +346,7 @@ static int _cmpSymByAddr(const void *p1, const void *p2)
 }
 /* end sdld specific */
 
-/*)Function	VOID	lstarea(xp, yp)
+/*)Function	void	lstarea(xp, yp)
  *
  *		area *	xp		pointer to an area structure
  *		bank *	yp		pointer to a  bank structure

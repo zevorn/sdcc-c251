@@ -102,7 +102,7 @@ getid(char *id, int c)
 	*p++ = 0;
 }
 
-/*)Function     VOID    getSid (char *id)
+/*)Function     void    getSid (char *id)
  *
  *		char *	id		a pointer to a string of
  *					maximum length NCPS-1
@@ -130,7 +130,7 @@ getid(char *id, int c)
  *	called functions:
  *		int	get()		lklex.c
  *		int	getnb()		lklex.c
- *		VOID	unget()		lklex.c
+ *		void	unget()		lklex.c
  *
  *	side effects:
  *		use of getnb(), get(), and unget() updates the
@@ -138,7 +138,7 @@ getid(char *id, int c)
  *		input text line.
  */
 
-VOID
+void
 getSid (char *id)
 {
 	int c;
@@ -155,7 +155,7 @@ getSid (char *id)
 	*p++ = 0;
 }
 
-/*)Function	VOID	getfid(str,c)
+/*)Function	void	getfid(str,c)
  *
  *		char *	str		a pointer to a string of
  *					maximum length FILSPC-1

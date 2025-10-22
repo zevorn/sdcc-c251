@@ -1,4 +1,4 @@
-# libc/ez80_z80 Makefile
+# libc/ez80 Makefile
 
 VPATH  = @srcdir@
 srcdir = @srcdir@

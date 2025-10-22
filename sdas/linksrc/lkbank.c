@@ -455,7 +455,7 @@ chkbank(FILE *fp)
  *		FILE *	afile()		lkmain.c
  *		int	fclose()	c_library
  *		int	fprintf()	c_library
- *		VOID	lkexit()	lkmain.c
+ *		void	lkexit()	lkmain.c
  *		char *	strcpy()	c_library
  *		char *	strsto()	lksym.c
  *		char *	symeq()		lksym.c
@@ -611,7 +611,7 @@ lkfopen(void)
  *		FILE *	stderr		Standard Error Output handle
  *
  *	functions called:
- *		VOID	lkout()		lkout.c
+ *		void	lkout()		lkout.c
  *		int	fclose()	c_library
  *
  *	side effects:

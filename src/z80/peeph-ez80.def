@@ -1,4 +1,4 @@
-// peeph-ez80_z80.def - eZ80_Z80 specific peephole rules
+// peeph-ez80.def - eZ80 specific peephole rules
 //
 // (c) Philipp Klaus Krause (pkk@spth.de, philipp@colecovision.eu) 2006 - 2020
 //

@@ -1,4 +1,4 @@
-# Regression test specification for the ez80_z80 target running with uCsim
+# Regression test specification for the ez80 target running with uCsim
 
 EMU_PORT_FLAG = -tez80
 

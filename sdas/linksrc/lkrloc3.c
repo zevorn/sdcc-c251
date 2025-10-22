@@ -251,8 +251,8 @@ relt3(void)
  *		a_uint	adb_lo()	lkrloc3.c
  *		a_uint	adb_hi()	lkrloc3.c
  * sdld specific
- *              VOID    elf()           lkelf.c
- *              VOID    gb()            lkgb.c
+ *              void    elf()           lkelf.c
+ *              void    gb()            lkgb.c
  * end sdld specific
  *		a_uint	evword()	lkrloc.c
  *		int	eval()		lkeval.c
@@ -1419,7 +1419,7 @@ int i;
 	return (j);
 }
 
-/*)Function VOID              vpdkinst(inst, addr, ver)
+/*)Function void              vpdkinst(inst, addr, ver)
  *
  *              int inst        instruction
  *              int addr        address
