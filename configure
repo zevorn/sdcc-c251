@@ -659,7 +659,6 @@ OPT_DISABLE_SDCPP
 OPT_DISABLE_PACKIHX
 OPT_DISABLE_DEVICE_LIB
 OPT_DISABLE_UCSIM
-OPT_DISABLE_AVR
 OPT_DISABLE_F8L
 OPT_DISABLE_F8
 OPT_DISABLE_MOS65C02
@@ -9382,13 +9381,8 @@ printf "%s\n" "#define OPT_DISABLE_F8L $OPT_DISABLE_F8L" >>confdefs.h
   fi
 
 
-# Unsupported targets
+# Example for a port disabled by default, in case all the above are enabled by default:
 ####AC_DO_PORT_ENABLER(avr,   avr,   AVR,   [Includes the AVR port (disabled by default)])
-OPT_DISABLE_AVR=1
-
-printf "%s\n" "#define OPT_DISABLE_AVR ${OPT_DISABLE_AVR}" >>confdefs.h
-
-
 
 
   # Check whether --enable-ucsim was given.
@@ -9943,8 +9937,6 @@ test $OPT_DISABLE_SDBINUTILS = 0 && subdirs="$subdirs support/sdbinutils"
 
 ac_config_files="$ac_config_files doc/Makefile"
 
-
-####test $OPT_DISABLE_AVR = 0 && AC_CONFIG_FILES([src/avr/Makefile])
 
 if test $OPT_DISABLE_DS390 = 0 || test $OPT_DISABLE_DS400; then
   ac_config_files="$ac_config_files src/ds390/Makefile sdas/as8xcxxx/Makefile"

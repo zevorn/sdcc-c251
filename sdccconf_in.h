@@ -109,9 +109,6 @@
 /* XXX */
 #undef NON_FREE_LIB_DIR_SUFFIX
 
-/* Define to 1 to disable the AVR port */
-#undef OPT_DISABLE_AVR
-
 /* XXX */
 #undef OPT_DISABLE_DEVICE_LIB
 
@@ -126,6 +123,9 @@
 
 /* XXX */
 #undef OPT_DISABLE_F8
+
+/* XXX */
+#undef OPT_DISABLE_F8L
 
 /* XXX */
 #undef OPT_DISABLE_HC08

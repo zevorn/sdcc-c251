@@ -1,3 +1,32 @@
+2025-10-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Makefile.common.in,
+	  aclocal.m4,
+	  configure,
+	  configure.ac,
+	  device/lib/Makefile.in,
+	  device/non-free/lib/Makefile.in,
+	  sdcc_vc.h.in,
+	  sdccconf_in.h,
+	  src/SDCCmain.c,
+	  src/clean.mk,
+	  src/port.h,
+	  src/avr:
+	  Remove nearly all remains of the avr port.
+
+2025-10-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/include/stdbit.h,
+	  device/lib/Makefile.in,
+	  device/lib/clean.mk,
+	  device/lib/ez80/Makefile.in,
+	  device/lib/isspace.c,
+	  device/lib/isxdigit.c,
+	  src/z80/peeph-ez80.def,
+	  support/regression/ports/ucez80/spec.mk,
+	  support/scripts/sdcc.nsi:
+	  Some cleanup for the ez80_z80 port to ez80 port change.
+	  
 2025-10-21 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/pdk/ralloc.c,
@@ -29,9 +58,6 @@
 
 	* src/z80/gen.c:
 	  Improve passing of struct/union parameters for tlcs, ez80.
-
-2025-10-17 Janko Stamenović
-	  Fixing previous ChangeLog file references
 
 2025-10-17 Janko Stamenović
 

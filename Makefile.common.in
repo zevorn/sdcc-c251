@@ -45,7 +45,6 @@ include_dir_suffix = @include_dir_suffix@
 lib_dir_suffix     = @lib_dir_suffix@
 
 # Modules to enable/disable
-OPT_DISABLE_AVR         = @OPT_DISABLE_AVR@
 OPT_DISABLE_DS390       = @OPT_DISABLE_DS390@
 OPT_DISABLE_DS400       = @OPT_DISABLE_DS400@
 OPT_DISABLE_HC08        = @OPT_DISABLE_HC08@

@@ -808,11 +808,8 @@ AC_DO_PORT(mos65c02, mos6502,MOS65C02, [Excludes the MOS65C02 port])
 AC_DO_PORT(f8,       f8,     F8,       [Excludes the f8 port])
 AC_DO_PORT(f8l,      f8,     F8L,      [Excludes the f8l port])
 
-# Unsupported targets
+# Example for a port disabled by default, in case all the above are enabled by default:
 ####AC_DO_PORT_ENABLER(avr,   avr,   AVR,   [Includes the AVR port (disabled by default)])
-OPT_DISABLE_AVR=1
-AC_DEFINE_UNQUOTED(OPT_DISABLE_AVR, ${OPT_DISABLE_AVR}, [Define to 1 to disable the AVR port])
-AC_SUBST(OPT_DISABLE_AVR)
 
 AC_DO_DISABLER(ucsim,      UCSIM,      [Disables configuring and building of ucsim])
 AC_DO_DISABLER(device-lib, DEVICE_LIB, [Disables building device libraries])
@@ -860,8 +857,6 @@ test $OPT_DISABLE_UCSIM   = 0 && AC_CONFIG_SUBDIRS(sim/ucsim)
 test $OPT_DISABLE_SDCDB   = 0 && AC_CONFIG_SUBDIRS(debugger/mcs51)
 test $OPT_DISABLE_SDBINUTILS = 0 && AC_CONFIG_SUBDIRS(support/sdbinutils)
 AC_CONFIG_FILES([doc/Makefile])
-
-####test $OPT_DISABLE_AVR = 0 && AC_CONFIG_FILES([src/avr/Makefile])
 
 if test $OPT_DISABLE_DS390 = 0 || test $OPT_DISABLE_DS400; then
   AC_CONFIG_FILES([src/ds390/Makefile
