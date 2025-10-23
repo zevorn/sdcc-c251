@@ -1534,6 +1534,19 @@ addSymChain (symbol ** symHead)
             elemsFromIval = DCL_ELEM (sym->type) = getNelements (sym->type, sym->ival);
         }
 
+      if (IS_EXTERN (sym->etype) && sym->level) // This is really a block-scope name for a file-scope object.
+        {
+          long saveLevel = sym->level;
+          sym->level = 0;
+          csym = findSymWithLevel (SymbolTab, sym);
+          if (csym && compareType (csym->type, sym->type, sym->level) != 1) // Check type only, not linkage.
+            {
+              werror (E_EXTERN_MISMATCH, sym->name);
+              werrorfl (csym->fileDef, csym->lineDef, E_PREVIOUS_DEF);
+            }
+          sym->level = saveLevel;
+        }
+
       /* if already exists in the symbol table on the same level, ignoring sublevels */
       if ((csym = findSymWithLevel (SymbolTab, sym)) && csym->level / LEVEL_UNIT == sym->level / LEVEL_UNIT)
         {
@@ -1546,7 +1559,7 @@ addSymChain (symbol ** symHead)
             {
               /* If the previous definition was for an array with incomplete
                  type, and the new definition has completed the type, update
-                 the original type to match (or the otehr way round) */
+                 the original type to match (or the other way round) */
               if (IS_ARRAY (csym->type) && IS_ARRAY (sym->type))
                 {
                   if (!DCL_ELEM (csym->type) && DCL_ELEM (sym->type))
