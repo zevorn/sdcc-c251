@@ -746,7 +746,7 @@ newiTempLabel (const char *s)
   itmplbl->isitmp = 1;
   itmplbl->islbl = 1;
   itmplbl->key = labelKey++;
-  addSym (LabelTab, itmplbl, itmplbl->name, 0, 0, 0);
+  addSym (LabelTab, itmplbl, itmplbl->name, 0, 0, false);
   return itmplbl;
 }
 
@@ -767,7 +767,7 @@ newiTempLoopHeaderLabel (bool pre)
   itmplbl->isitmp = 1;
   itmplbl->islbl = 1;
   itmplbl->key = labelKey++;
-  addSym (LabelTab, itmplbl, itmplbl->name, 0, 0, 0);
+  addSym (LabelTab, itmplbl, itmplbl->name, 0, 0, false);
   return itmplbl;
 }
 

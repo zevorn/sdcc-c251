@@ -347,6 +347,7 @@ enum {
   E_ATOMIC_FUNCTION             = 317, /* _Atomic function */
   E_ATOMIC_SPEC_ATOMIC          = 318, /* _Atomic specifier on atomic type */
   E_ATOMIC_SPEC_QUALIFIED       = 319, /* _Atomic specifier on qualified type */
+  E_BLOCK_SCOPE_EXTERN_INIT     = 320, /* block scope variable declared extern and intialized */
 
   /* don't touch this! */
   NUMBER_OF_ERROR_MESSAGES             /* Number of error messages */

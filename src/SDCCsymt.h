@@ -601,6 +601,7 @@ extern sym_link *validateLink (sym_link * l,
 
 /* forward declaration for the global vars */
 extern bucket *SymbolTab[];
+extern bucket *SymbolTabE[];
 extern bucket *StructTab[];
 extern bucket *TypedefTab[];
 extern bucket *LabelTab[];
@@ -733,11 +734,11 @@ void pointerTypes (sym_link *, sym_link *);
 void cdbStructBlock (int);
 void initHashT ();
 bucket *newBucket ();
-void addSym (bucket **, void *, char *, long, int, int checkType);
-void deleteSym (bucket **, void *, const char *);
-void *findSym (bucket **, void *, const char *);
-void *findSymWithLevel (bucket **, struct symbol *);
-void *findSymWithBlock (bucket **, struct symbol *, int, long);
+void addSym (bucket **, void *sym, char *name, long level, int block, bool checkType);
+void deleteSym (bucket **, void *sym, const char *sname);
+void *findSym (bucket **, void *sym, const char *sname);
+void *findSymWithLevel (bucket **, struct symbol *sym);
+void *findSymWithBlock (bucket **, struct symbol *sym, int, long);
 void changePointer (sym_link * p);
 void checkTypeSanity (sym_link * etype, const char *name);
 sym_link *typeFromStr (const char *);
