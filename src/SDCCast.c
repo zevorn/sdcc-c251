@@ -1523,9 +1523,14 @@ gatherAutoInit (symbol * autoChain)
   inInitMode = 1;
   for (sym = autoChain; sym; sym = sym->next)
     {
+      if (!sym->ival)
+        continue;
+
+      if (IS_EXTERN (sym->type))
+        werrorfl (sym->fileDef, sym->lineDef, E_BLOCK_SCOPE_EXTERN_INIT, sym->name);
+
       /* resolve the symbols in the ival */
-      if (sym->ival)
-        resolveIvalSym (sym->ival, sym->type);
+      resolveIvalSym (sym->ival, sym->type);
 
 #if 1
       /* if we are PIC14 or PIC16 port,
@@ -1534,7 +1539,7 @@ gatherAutoInit (symbol * autoChain)
        * and not S_CODE, don't emit in gs segment,
        * but allow glue.c:pic16emitRegularMap to put symbol
        * in idata section */
-      if (TARGET_PIC_LIKE && IS_STATIC (sym->etype) && sym->ival && SPEC_SCLS (sym->etype) != S_CODE)
+      if (TARGET_PIC_LIKE && IS_STATIC (sym->etype) && SPEC_SCLS (sym->etype) != S_CODE)
         {
           SPEC_SCLS (sym->etype) = S_DATA;
           continue;
@@ -1545,14 +1550,14 @@ gatherAutoInit (symbol * autoChain)
       /* initial value the code needs to be lifted */
       /* here to the main portion since they can be */
       /* initialized only once at the start    */
-      if (IS_STATIC (sym->etype) && sym->ival && SPEC_SCLS (sym->etype) != S_CODE)
+      if (IS_STATIC (sym->etype) && SPEC_SCLS (sym->etype) != S_CODE)
         {
           symbol *newSym;
 
           /* insert the symbol into the symbol table */
           /* with level = 0 & name = rname       */
           newSym = copySymbol (sym);
-          addSym (SymbolTab, newSym, newSym->rname, 0, 0, 1);
+          addSym (SymbolTab, newSym, newSym->rname, 0, 0, true);
 
           /* now lift the code to main */
           if (IS_AGGREGATE (sym->type))
@@ -1580,7 +1585,7 @@ gatherAutoInit (symbol * autoChain)
         }
 
       /* if there is an initial value */
-      if (sym->ival && SPEC_SCLS (sym->etype) != S_CODE)
+      if (SPEC_SCLS (sym->etype) != S_CODE)
         {
           initList *ilist = sym->ival;
 
@@ -3782,7 +3787,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
           SPEC_STAT (sym->etype) = 1;
           SPEC_ADDR (sym->etype) = SPEC_ADDR (AST_SYMBOL (tree->left->left)->etype) + element->offset;
           SPEC_ABSA (sym->etype) = 1;
-          addSym (SymbolTab, sym, sym->name, 0, 0, 0);
+          addSym (SymbolTab, sym, sym->name, 0, 0, false);
           allocGlobal (sym);
 
           AST_VALUE (tree) = symbolVal (sym);
@@ -4983,7 +4988,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
               SPEC_STAT (sym->etype) = 1;
               SPEC_ADDR (sym->etype) = floatFromVal (valFromType (RTYPE (tree)));
               SPEC_ABSA (sym->etype) = 1;
-              addSym (SymbolTab, sym, sym->name, 0, 0, 0);
+              addSym (SymbolTab, sym, sym->name, 0, 0, false);
               allocGlobal (sym);
 
               newTree->left = newAst_VALUE (symbolVal (sym));
@@ -6195,7 +6200,7 @@ createLabel (symbol * label, ast * stmnt)
   if ((csym = findSym (LabelTab, NULL, label->name)))
     werror (E_DUPLICATE_LABEL, label->name);
   else
-    addSym (LabelTab, label, label->name, label->level, 0, 0);
+    addSym (LabelTab, label, label->name, label->level, 0, false);
 
   label->isitmp = 1;
   label->islbl = 1;
@@ -7004,7 +7009,7 @@ fixupInline (ast * tree, long level)
         {
           decls->level = level;
           decls->block = currBlockno = thisBlockBlockno;
-          addSym (SymbolTab, decls, decls->name, decls->level, decls->block, 0);
+          addSym (SymbolTab, decls, decls->name, decls->level, decls->block, false);
 
           if (decls->ival)
             fixupInlineInDeclarators (decls->ival, level);
@@ -7107,7 +7112,7 @@ fixupInline (ast * tree, long level)
 
       label->key = labelKey++;
       /* Add this label back into the symbol table */
-      addSym (LabelTab, label, label->name, label->level, 0, 0);
+      addSym (LabelTab, label, label->name, label->level, 0, false);
     }
 
   if (IS_AST_OP (tree) && (tree->opval.op == BLOCK))
@@ -7151,7 +7156,7 @@ inlineAddDecl (symbol * sym, ast * block, int addSymTab, int toFront)
         *decl = sym;
 
       if (addSymTab)
-        addSym (SymbolTab, sym, sym->name, sym->level, sym->block, 0);
+        addSym (SymbolTab, sym, sym->name, sym->level, sym->block, false);
     }
 }
 

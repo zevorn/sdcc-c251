@@ -817,7 +817,7 @@ deallocParms (value *val)
           /*strncpyz (lval->name, buffer, sizeof(lval->name)); */
 
           addSym (SymbolTab, lval->sym, lval->sym->name,
-                  lval->sym->level, lval->sym->block, 1);
+                  lval->sym->level, lval->sym->block, true);
           lval->sym->_isparm = 1;
           if (!isinSet (operKeyReset, lval->sym))
             {
@@ -1040,7 +1040,7 @@ allocVariables (symbol *symChain)
             werror (E_DUPLICATE_TYPEDEF, sym->name);
 
           SPEC_EXTR (sym->etype) = 0;
-          addSym (TypedefTab, sym, sym->name, sym->level, sym->block, 0);
+          addSym (TypedefTab, sym, sym->name, sym->level, sym->block, false);
           continue;             /* go to the next one */
         }
       /* make sure it already exists */

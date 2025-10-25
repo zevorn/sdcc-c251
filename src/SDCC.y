@@ -513,7 +513,7 @@ declaration
                  sdef->level = NestLevel;
                  sdef->block = currBlockno;
                  sdef->tagsym = newSymbol (osdef->tagsym->name, NestLevel);
-                 addSym (StructTab, sdef, sdef->tag, sdef->level, currBlockno, 0);
+                 addSym (StructTab, sdef, sdef->tag, sdef->level, currBlockno, false);
                  uselessDecl = false;
                }
            }
@@ -826,7 +826,7 @@ struct_or_union_specifier
           if (!$3->tagsym)
             {
               /* no tag given, so new struct def for current scope */
-              addSym (StructTab, $3, $3->tag, $3->level, currBlockno, 0);
+              addSym (StructTab, $3, $3->tag, $3->level, currBlockno, false);
             }
           else
             {
@@ -845,14 +845,14 @@ struct_or_union_specifier
                     {
                       /* There is an existing struct def in an outer scope. */
                       /* Create new struct def for current scope */
-                      addSym (StructTab, $3, $3->tag, $3->level, currBlockno, 0);
+                      addSym (StructTab, $3, $3->tag, $3->level, currBlockno, false);
                     }
                 }
               else
                {
                  /* There is no existing struct def at all. */
                  /* Create new struct def for current scope */
-                 addSym (StructTab, $3, $3->tag, $3->level, currBlockno, 0);
+                 addSym (StructTab, $3, $3->tag, $3->level, currBlockno, false);
                }
             }
 
@@ -941,7 +941,7 @@ struct_or_union_specifier
           else
             {
               /* new struct def for current scope */
-              addSym (StructTab, $3, $3->tag, $3->level, currBlockno, 0);
+              addSym (StructTab, $3, $3->tag, $3->level, currBlockno, false);
             }
           $$ = newLink(SPECIFIER);
           SPEC_NOUN($$) = V_STRUCT;
@@ -1086,7 +1086,7 @@ enum_specifier
 
           /* add this to the enumerator table */
           if (!csym)
-              addSym (enumTab, $2, $2->name, $2->level, $2->block, 0);
+              addSym (enumTab, $2, $2->name, $2->level, $2->block, false);
           $$ = copyLinkChain(enumtype);
         }
      | ENUM identifier enum_type_specifier '{' enumerator_list enum_comma_opt '}'
@@ -1110,7 +1110,7 @@ enum_specifier
 
           /* add this to the enumerator table */
           if (!csym)
-              addSym (enumTab, $2, $2->name, $2->level, $2->block, 0);
+              addSym (enumTab, $2, $2->name, $2->level, $2->block, false);
           $$ = copyLinkChain(enumtype);
         }
    | ENUM identifier
@@ -2767,7 +2767,7 @@ opt_stag
           $$->level = NestLevel;
           $$->block = currBlockno;
           $$->tagsym = NULL;
-          //addSym (StructTab, $$, $$->tag, $$->level, currBlockno, 0);
+          //addSym (StructTab, $$, $$->tag, $$->level, currBlockno, false);
         }
    ;
 
@@ -2785,7 +2785,7 @@ stag
           //    $$ = newStruct($1->name);
           //    $$->level = NestLevel;
           //    $$->tagsym = $1;
-          //    //addSym (StructTab, $$, $$->tag, $$->level, currBlockno, 0);
+          //    //addSym (StructTab, $$, $$->tag, $$->level, currBlockno, false);
           //  }
         }
    ;
@@ -3164,7 +3164,7 @@ addressmod
        werrorfl (sym->fileDef, sym->lineDef, E_PREVIOUS_DEF);
      if (!findSymWithLevel (SymbolTab, $2))
        werror (E_ID_UNDEF, $2->name);
-     addSym (AddrspaceTab, $3, $3->name, $3->level, $3->block, 0);
+     addSym (AddrspaceTab, $3, $3->name, $3->level, $3->block, false);
      sym = findSymWithLevel (AddrspaceTab, $3);
      sym->addressmod[0] = findSymWithLevel (SymbolTab, $2);
      sym->addressmod[1] = 0;
@@ -3176,7 +3176,7 @@ addressmod
        werrorfl (sym->fileDef, sym->lineDef, E_PREVIOUS_DEF);
      if (!findSymWithLevel (SymbolTab, $2))
        werror (E_ID_UNDEF, $2->name);
-     addSym (AddrspaceTab, $4, $4->name, $4->level, $4->block, 0);
+     addSym (AddrspaceTab, $4, $4->name, $4->level, $4->block, false);
      sym = findSymWithLevel (AddrspaceTab, $4);
      sym->addressmod[0] = findSymWithLevel (SymbolTab, $2);
      sym->addressmod[1] = 0;

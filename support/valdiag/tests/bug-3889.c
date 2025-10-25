@@ -11,3 +11,23 @@ extern int c; /* ERROR */
 }
 #endif
 
+#ifdef TEST2
+void f(void) /* IGNORE */
+{
+extern int c; /* IGNORE */
+}
+char c; /* ERROR */
+#endif
+
+#ifdef TEST3
+void g(void) /* IGNORE */
+{
+  extern int x; /* IGNORE */
+}
+
+void h(void)
+{
+  extern char x; /* ERROR */
+}
+#endif
+

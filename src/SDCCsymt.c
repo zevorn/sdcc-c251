@@ -93,7 +93,8 @@ nounName (sym_link * sl)
   return "unknown";
 }
 
-bucket *SymbolTab[HASHTAB_SIZE];         /* the symbol    table  */
+bucket *SymbolTab[HASHTAB_SIZE];         // the symbol    table (all symbols)
+bucket *SymbolTabE[HASHTAB_SIZE];        // extern symbol table (for symbols declared with external linkage at block-scope before any declaration at file-scope)
 bucket *StructTab[HASHTAB_SIZE];         /* the structure table  */
 bucket *TypedefTab[HASHTAB_SIZE];        /* the typedef   table  */
 bucket *LabelTab[HASHTAB_SIZE];          /* the Label     table  */
@@ -109,7 +110,7 @@ initSymt (void)
   int i = 0;
 
   for (i = 0; i < HASHTAB_SIZE; i++)
-    SymbolTab[i] = StructTab[i] = (void *) NULL;
+    SymbolTab[i] = SymbolTabE[i] = StructTab[i] = NULL;
 }
 
 /*-----------------------------------------------------------------*/
@@ -142,7 +143,7 @@ hashKey (const char *s)
 /* addSym - adds a symbol to the hash Table                        */
 /*-----------------------------------------------------------------*/
 void
-addSym (bucket ** stab, void *sym, char *sname, long level, int block, int checkType)
+addSym (bucket ** stab, void *sym, char *sname, long level, int block, bool checkType)
 {
   int i;                        /* index into the hash Table */
   bucket *bp;                   /* temp bucket    *          */
@@ -1495,7 +1496,7 @@ arraySizes (sym_link *type, const char *name)
 /* addSymChain - adds a symbol chain to the symboltable             */
 /*------------------------------------------------------------------*/
 void
-addSymChain (symbol ** symHead)
+addSymChain (symbol **symHead)
 {
   symbol *sym;
   symbol *csym = NULL;
@@ -1538,13 +1539,31 @@ addSymChain (symbol ** symHead)
         {
           long saveLevel = sym->level;
           sym->level = 0;
-          csym = findSymWithLevel (SymbolTab, sym);
-          if (csym && compareType (csym->type, sym->type, sym->level) != 1) // Check type only, not linkage.
+          symbol *csym;
+
+          // Check type only, not linkage for now (there are some subtle aspects of linkage to be consideed here, a plain check against csym won't do).
+          if ((csym = findSymWithLevel (SymbolTab, sym)) && compareType (csym->type, sym->type, sym->level) != 1)
             {
               werror (E_EXTERN_MISMATCH, sym->name);
               werrorfl (csym->fileDef, csym->lineDef, E_PREVIOUS_DEF);
             }
+          else if ((csym = findSymWithLevel (SymbolTabE, sym)) && compareType (csym->type, sym->type, sym->level) != 1)
+            {
+              werror (E_EXTERN_MISMATCH, sym->name);
+              werrorfl (csym->fileDef, csym->lineDef, E_PREVIOUS_DEF);
+            }
+          else // No previous declaration at file-scope.
+            addSym (SymbolTabE, sym, sym->name, sym->level, sym->block, false);
           sym->level = saveLevel;
+        }
+      else if (!sym->level) // File-scope object. Check if it was declared at block scope before.
+        {
+          symbol *csym;
+          if ((csym = findSymWithLevel (SymbolTabE, sym)) && compareType (csym->type, sym->type, sym->level) != 1)
+            {
+              werror (E_EXTERN_MISMATCH, sym->name);
+              werrorfl (csym->fileDef, csym->lineDef, E_PREVIOUS_DEF);
+            }
         }
 
       /* if already exists in the symbol table on the same level, ignoring sublevels */
@@ -1668,7 +1687,7 @@ addSymChain (symbol ** symHead)
         }
 
       /* add new entry */
-      addSym (SymbolTab, sym, sym->name, sym->level, sym->block, 1);
+      addSym (SymbolTab, sym, sym->name, sym->level, sym->block, true);
     }
 }
 
@@ -3647,7 +3666,7 @@ checkFunction (symbol * sym, symbol * csym)
   sym->cdef = csym->cdef;
   deleteSym (SymbolTab, csym, csym->name);
   deleteFromSeg (csym);
-  addSym (SymbolTab, sym, sym->name, sym->level, sym->block, 1);
+  addSym (SymbolTab, sym, sym->name, sym->level, sym->block, true);
   if (IS_EXTERN (csym->etype) && !IS_EXTERN (sym->etype))
     {
       SPEC_EXTR (sym->etype) = 1;
