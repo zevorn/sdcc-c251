@@ -99,6 +99,9 @@ COMMON_SDCC = \
   abs.c \
   labs.c \
   llabs.c \
+  uabs.c \
+  ulabs.c \
+  ullabs.c \
   imaxabs.c \
   umaxabs.c \
   rand.c \

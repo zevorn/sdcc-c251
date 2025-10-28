@@ -1,3 +1,65 @@
+2025-10-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/MakeList:
+	  Disable memcpy-1.c test (which shall not compile for targets where size_t is less than 18 bits) for r800.
+
+2025-10-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge undefined branch.
+
+2025-10-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCmain.c,
+	  src/SDCCsymt.c,
+	  support/valdiag/tests/undefinedc23.c,
+	  support/regression/tests/gcc-torture-execute-930526-1.c:
+	  Implement N3244 resolution for C23 UB for extern inline declarations without definition in same translation unit.
+	* support/regression/MakeList:
+	  Disable test that won't work on targets with 16-bit int.
+	* .version,
+	  doc/sdccman.lyx:
+	  Document where C23 UB resolution affects SDCC compatibility with previous versions.
+
+2025-10-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCmem.c,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3244 resolution for C23 UB for objects with no linage of incomplete types.
+
+2025-10-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCerr.c
+	  src/SDCCerr.h,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3410 resolution for C23 UB on same identifier with internal and external linkage.
+
+2025-10-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx,
+	  src/SDCC.y,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCsymt.c,
+	  support/valdiag/tests/struct.c:
+	  Implement N3341 resolution for C23 UB on struct/union with unnamed members only, and fix relted diagnostics regarding unnamed struct/union members, including bug #3887.
+
+2025-10-25 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.y,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  support/regression/tests/bug-2031.c,
+	  support/regression/tests/bug-2983.c,
+	  support/regression/tests/undefinedc23.c,
+	  support/valdiag/tests/bug-3891.c:
+	  Fix bug #3891. Implement N3344 resolution for C23 UB.
+
 2025-10-25 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCC.y,
@@ -22,6 +84,20 @@
 	* src/SDCCsymt.c,
 	  support/valdiag/tests/bug-3889.c:
 	  Fix part of bug #3889.
+
+2025-10-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/valdiag/tests/undefinedc23.c:
+	  Test cases for N3341 resolution for C23 UB (which becomes implementation-defined).
+
+2025-10-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCsymt.c,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3623 resolution for C23 UB, (unless a custom crt0 is used).
 
 2025-10-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -54,6 +130,18 @@
 	  
 2025-10-21 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCCast.c,
+	  src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  support/regression/tests/undefinedc23.c,
+	  support/valdiag/tests/undefinedc23.c,
+	  support/regression/tests/bug-2031.c,
+	  support/regression/tests/bug-2983.c,
+	  support/regression/tests/offsetof.c:
+	  Implement N3712 resolution for C23 UB, while preserving SDCC implementation-defined behavior.
+
+2025-10-21 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/pdk/ralloc.c,
 	  src/pic14/gen.h,
 	  src/pic16/gen.h,
@@ -61,6 +149,19 @@
 	  src/stm8/ralloc.c,
 	  src/z80/ralloc.c:
 	  Code quality fixes inspired by GCC 15.2 -Wall -pedantic warnings.
+
+2025-10-21 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCsymt.c,
+	  src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3244 resolution for C23 UB on block scope function declaration with explicit storage-class specifier.
+
+2025-10-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/valdiag/tests/undefinedc23.c:
+	  Test cases for N3347, N3532, N3340, N3525 resolutions of C23 UB.
 
 2025-10-19 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -79,7 +180,7 @@
 	  sdas/linksrc/lkrloc3.c
 	  sdld rebased to V05.50.4, unchanged sdld behaviour
 
-2025-10-15 Philipp Klaus Krause <philipp@colecovision.eu>
+2025-10-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:
 	  Improve passing of struct/union parameters for tlcs, ez80.
@@ -94,6 +195,17 @@
 	  sdas/linksrc/lksdcdb.c
 	  sdas/linksrc/lksym.c
 	  One more sdld rebase step to upstream 
+
+2025-10-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/include/stdlib.h,
+	  device/lib/incl.mk,
+	  device/lib/umaxabs.c,
+	  device/lib/uabs.c,
+	  device/lib/ulabs.c,
+	  device/lib/ullabs.c,
+	  support/regression/tests/uabs.c:
+	  Implement N3349, as modified by N3577.
 
 2025-10-15 Philipp Klaus Krause <philipp@colecovision.eu>
 

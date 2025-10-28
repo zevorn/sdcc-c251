@@ -3062,6 +3062,10 @@ checkPtrCast (sym_link *newType, sym_link *orgType, bool implicit, bool orgIsNul
     {
       if (IS_PTR (orgType))     // from a pointer
         {
+          // UB up to C23, constraint violation in C2y (N3712), but we make it a warning only, so we can keep our implemenation-defined behavior.
+          if (IS_INTEGRAL (newType) && !IS_BOOLEAN (newType) && bitsForType (newType) < bitsForType (orgType))
+            errors += werror (W_PTR2INT_NOREPRESENT);
+          
           if (implicit)         // sneaky
             {
               if (IS_INTEGRAL (newType))

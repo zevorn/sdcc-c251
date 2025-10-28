@@ -119,13 +119,19 @@ EXCLUDE_mcs51-small += \
 # Fehlermeldung zu erhalten
 EXCLUDE_ARCH_mcs51 += \
 	gte_memcpy-1
-EXCLUDE_s08 += \
+EXCLUDE_ARCH_hc08 += \
 	gte_memcpy-1
 # fail
 EXCLUDE_hc08 += \
 	gte_memcpy-1
 # compile issue - test is malformed unless STACK_SIZE is defined
 EXCLUDE_ARCH_mos6502 += \
+	gte_memcpy-1
+EXCLUDE_stm8 += \
+	gte_memcpy-1
+EXCLUDE_ARCH_f8 += \
+	gte_memcpy-1
+EXCLUDE_ARCH_z80 += \
 	gte_memcpy-1
 
 # Failure
@@ -446,18 +452,18 @@ EXCLUDE_ucz80 += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucz80-unsafe-read += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucz80-undoc += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucz80-resiy += ${EXCLUDE_ARCH_z80}
+EXCLUDE_ucz80n += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucz180 += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucz180-resiy += ${EXCLUDE_ARCH_z80}
-EXCLUDE_ucz80n += ${EXCLUDE_ARCH_z80}
-EXCLUDE_ucgbz80 += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucr2k += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucr2ka += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucr3ka += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucr4k += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucr5k += ${EXCLUDE_ARCH_z80}
 EXCLUDE_ucr6k += ${EXCLUDE_ARCH_z80}
-EXCLUDE_ucez80 += ${EXCLUDE_ARCH_z80}
+EXCLUDE_ucgbz80 += ${EXCLUDE_ARCH_z80}
 EXCLUDE_tlcs90 += ${EXCLUDE_ARCH_z80}
+EXCLUDE_ucr800 += ${EXCLUDE_ARCH_z80}
 ###################################################
 EXCLUDE_mcs51-small += ${EXCLUDE_ARCH_mcs51}
 EXCLUDE_mcs51-small-stack-auto += ${EXCLUDE_ARCH_mcs51}
@@ -477,4 +483,10 @@ EXCLUDE_uc6502 += ${EXCLUDE_ARCH_mos6502}
 EXCLUDE_uc65c02 += ${EXCLUDE_ARCH_mos6502}
 EXCLUDE_uc6502-stack-auto += ${EXCLUDE_ARCH_mos6502}
 ###################################################
+EXCLUDE_f8 += ${EXCLUDE_ARCH_f8}
+EXCLUDE_f8l += ${EXCLUDE_ARCH_f8}
+###################################################
+EXCLUDE_hc08 += ${EXCLUDE_ARCH_hc08}
+EXCLUDE_s08 += ${EXCLUDE_ARCH_hc08}
+EXCLUDE_s08-stack-auto += ${EXCLUDE_ARCH_hc08}
 

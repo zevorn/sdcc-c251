@@ -134,6 +134,12 @@ long int labs(long int j);
 #ifdef __SDCC_LONGLONG
 long long int llabs(long long int j);
 #endif
+/* C2y Integer arithmetic functions */
+#if __STDC_VERSION__ > 202311L
+unsigned int uabs(int j);
+unsigned long int ulabs(unsigned long int j);
+unsigned long long int ullabs(long long int j);
+#endif
 
 typedef struct
 {

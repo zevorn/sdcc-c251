@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
-   umaxabs.c - computes absolute value of an intmax_t.
+   ulabs.c - computes absolute value of a long int.
 
-   Copyright (C) 2023, Benedikt Freisen, b.freisen@gmx.net
+   Copyright (C) 2025, Philipp Klaus Krause, philipp@colecovision.eu
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -26,9 +26,9 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#include <inttypes.h>
+#include <stdlib.h>
 
-uintmax_t umaxabs(intmax_t j)
+unsigned long int ulabs(long int j)
 {
   return (j < 0) ? -j : j; // Relies on SDCC implementation-defined behavior.
 }

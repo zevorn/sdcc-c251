@@ -710,7 +710,7 @@ sym_link *newBoolLink ();
 sym_link *newPtrDiffLink ();
 sym_link *newVoidLink ();
 int compareType (sym_link *, sym_link *, bool ignoreimplicitintrinsic);
-int compareTypeExact (sym_link *, sym_link *, long);
+int compareTypeExact (sym_link *, sym_link *, long level);
 int compareTypeInexact (sym_link *, sym_link *);
 int checkFunction (symbol *, symbol *);
 void cleanUpLevel (bucket **, long);
