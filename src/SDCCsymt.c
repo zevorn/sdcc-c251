@@ -1509,7 +1509,7 @@ addSymChain (symbol **symHead)
       changePointer (sym->type);
       checkTypeSanity (sym->etype, sym->name);
 #if 0
-      printf("addSymChain for %p %s level %ld\n", sym, sym->name, sym->level);
+      printf("addSymChain for %p %s level %ld extern %d\n", sym, sym->name, sym->level, IS_EXTERN (sym->etype));
 #endif
       arraySizes (sym->type, sym->name);
       if (IS_NORETURN (sym->etype))
@@ -1537,17 +1537,20 @@ addSymChain (symbol **symHead)
 
       if (IS_EXTERN (sym->etype) && sym->level) // This is really a block-scope name for a file-scope object.
         {
+          symbol *csym;
+          bool declaration_with_no_linkage_visible =
+            (csym = findSymWithLevel (SymbolTab, sym)) && csym->level && !IS_STATIC (csym->etype) && !IS_EXTERN (csym->type);
+
           long saveLevel = sym->level;
           sym->level = 0;
-          symbol *csym;
 
-          // Check type only, not linkage for now (there are some subtle aspects of linkage to be consideed here, a plain check against csym won't do).
-          if ((csym = findSymWithLevel (SymbolTab, sym)) && compareType (csym->type, sym->type, sym->level) != 1)
+          if ((csym = findSymWithLevel (SymbolTab, sym)) && // When a declaration with no linkage is visible, this is really extern, so check for linkage conflicts.
+            (declaration_with_no_linkage_visible ? compareTypeExact (csym->type, sym->type, sym->level) : compareType (csym->type, sym->type, true)) != 1)
             {
               werror (E_EXTERN_MISMATCH, sym->name);
               werrorfl (csym->fileDef, csym->lineDef, E_PREVIOUS_DEF);
             }
-          else if ((csym = findSymWithLevel (SymbolTabE, sym)) && compareType (csym->type, sym->type, sym->level) != 1)
+          else if ((csym = findSymWithLevel (SymbolTabE, sym)) && compareType (csym->type, sym->type, true)  != 1)
             {
               werror (E_EXTERN_MISMATCH, sym->name);
               werrorfl (csym->fileDef, csym->lineDef, E_PREVIOUS_DEF);
@@ -1559,7 +1562,7 @@ addSymChain (symbol **symHead)
       else if (!sym->level) // File-scope object. Check if it was declared at block scope before.
         {
           symbol *csym;
-          if ((csym = findSymWithLevel (SymbolTabE, sym)) && compareType (csym->type, sym->type, sym->level) != 1)
+          if ((csym = findSymWithLevel (SymbolTabE, sym)) && (compareType (csym->type, sym->type, true) != 1 || IS_STATIC (sym->type) && IS_EXTERN (csym->type)))
             {
               werror (E_EXTERN_MISMATCH, sym->name);
               werrorfl (csym->fileDef, csym->lineDef, E_PREVIOUS_DEF);
@@ -1597,6 +1600,12 @@ addSymChain (symbol **symHead)
                     FUNC_ARGS(sym->type) = FUNC_ARGS(csym->type);
                   FUNC_NOPROTOTYPE (csym->type) = false;
                   FUNC_NOPROTOTYPE (sym->type) = false;
+                }
+
+              if (IS_EXTERN (sym->etype) && IS_STATIC (csym->etype)) // Identifier declared with storage class extern while previous declaration with linkage is visible gets linkage of previous declaration.
+                {
+                  SPEC_STAT (sym->etype) = SPEC_STAT (csym->etype);
+                  SPEC_EXTR (sym->etype) = SPEC_EXTR (csym->etype);
                 }
 
 #if 0
@@ -1666,8 +1675,14 @@ addSymChain (symbol **symHead)
 
           if (csym->ival && !sym->ival)
             sym->ival = csym->ival;
+          sym->generated |= csym->generated;
 
-          if (!csym->cdef && !sym->cdef && IS_EXTERN (sym->etype))
+          if (IS_EXTERN (sym->etype) && IFFUNC_ISINLINE (csym->type))
+            {
+              FUNC_ISINLINE (sym->type) = FUNC_ISINLINE (csym->type);
+              sym->funcTree = csym->funcTree;
+            }
+          else if (!csym->cdef && !sym->cdef && IS_EXTERN (sym->etype))
             {
               /* if none of symbols is a compiler defined function
                  and at least one is not extern
@@ -1981,6 +1996,9 @@ promoteAnonStructs (int su, structdef * sdef)
           /* with the fields it contains and adjust all  */
           /* the offsets */
 
+          if (!options.std_c11 && !options.std_sdcc)
+            werrorfl (field->fileDef, field->lineDef, W_ANONYMOUS_STRUCT_C11);
+
           /* tagged anonymous struct/union is rejected here, though gcc allow it */
           if (SPEC_STRUCT (field->type)->tagsym != NULL)
             werrorfl (field->fileDef, field->lineDef, E_ANONYMOUS_STRUCT_TAG, SPEC_STRUCT (field->type)->tag);
@@ -2016,7 +2034,11 @@ promoteAnonStructs (int su, structdef * sdef)
           tofield = &subfield->next;
         }
       else
-        tofield = &field->next;
+        {
+          if (!*field->name && !IS_STRUCT (field->type) && !IS_BITFIELD (field->type))
+            werrorfl (field->fileDef, field->lineDef, E_UNAMED_STRUCT_MEMBER);
+          tofield = &field->next;
+        }
     }
 }
 
@@ -2044,6 +2066,14 @@ checkSClass (symbol *sym, int isProto)
     SPEC_SCLS (sym->etype) == S_AUTO && SPEC_STAT(sym->etype))
     {
       werrorfl (sym->fileDef, sym->lineDef, E_TWO_OR_MORE_STORAGE_CLASSES, sym->name);
+    }
+
+  // Function at block scope with storage-class specifier other than extern.
+  // UB up to C23, constraint violation from C2y.
+  if (sym->level && IS_FUNC (sym->type) &&
+    (IS_REGISTER (sym->etype) || SPEC_STAT (sym->etype)))
+    {
+      werrorfl (sym->fileDef, sym->lineDef, E_BLOCK_SCOPE_FUNC_SCLASS, sym->name);
     }
 
   /* type is literal can happen for enums change to auto */
@@ -2332,6 +2362,14 @@ checkDecl (symbol * sym, int isProto)
   checkSClass (sym, isProto);   /* check the storage class     */
   changePointer (sym->type);    /* change pointers if required */
   arraySizes (sym->type, sym->name);
+
+  // If no custom crt0 is used, the startup function is void main(void) or int main(void).
+  if (!sym->level && IS_FUNC (sym->type) && !strcmp (sym->name, "main") && !options.no_std_crt0)
+    {
+      if (FUNC_ARGS (sym->type) ||
+        (!IS_VOID (sym->type->next) && !IS_INT (sym->type->next)) || IS_LONG (sym->type->next) || IS_LONGLONG (sym->type->next))
+        werror (W_MAIN_TYPE); // This is just a warning, not an error, for those that put a custom crt0 into a custom stdlib, then use it without --no-std-crt0.
+    }
 
   if (IS_ARRAY (sym->type) && DCL_ARRAY_VLA (sym->type) && sym->ival && !sym->ival->isempty)
     werror (E_VLA_INIT);

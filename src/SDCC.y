@@ -1001,6 +1001,22 @@ member_declaration
           ignoreTypedefType = 0;
           $$ = $3;
         }
+   | attribute_specifier_sequence_opt specifier_qualifier_list ';'
+     {
+       symbol *sym = newSymbol ("", NestLevel);
+       sym_link *btype = copyLinkChain($2);
+       pointerTypes(sym->type, btype);
+       if (!sym->type)
+         {
+           sym->type = btype;
+           sym->etype = getSpec(sym->type);
+         }
+       else
+         addDecl (sym, 0, btype);
+       checkTypeSanity(sym->etype, sym->name);
+      ignoreTypedefType = 0;
+      $$ = sym;
+     }
    ;
 
 type_specifier_qualifier
@@ -1051,7 +1067,6 @@ member_declarator
           else
               $1->bitVar = bitsize;
         }
-   | { $$ = newSymbol ("", NestLevel); }
    ;
 
 enum_specifier
@@ -1680,16 +1695,23 @@ type_qualifier_list_opt
   ;
 
 parameter_type_list
-        : parameter_list
-        | parameter_list ',' ELLIPSIS { $1->vArgs = 1;}
+  : parameter_list
+  | parameter_list ',' ELLIPSIS
+         {
+           if (IS_VOID ($1->type))
+             werror (E_VOID_SHALL_BE_LONELY);
+           $1->vArgs = 1;
+         }
         ;
 
 parameter_list
    : parameter_declaration
    | parameter_list ',' parameter_declaration
          {
-            $3->next = $1;
-            $$ = $3;
+           if (IS_VOID ($1->type) || IS_VOID ($3->type))
+             werror (E_VOID_SHALL_BE_LONELY);
+           $3->next = $1;
+           $$ = $3;
          }
    ;
 
@@ -1699,13 +1721,13 @@ parameter_declaration
           symbol *loop;
 
           if (IS_SPEC ($1) && !IS_VALID_PARAMETER_STORAGE_CLASS_SPEC ($1))
-            {
-              werror (E_STORAGE_CLASS_FOR_PARAMETER, $2->name);
-            }
+            werror (E_STORAGE_CLASS_FOR_PARAMETER, $2->name);
           pointerTypes ($2->type, $1);
           if (IS_SPEC ($2->etype))
             SPEC_NEEDSPAR($2->etype) = 0;
           addDecl ($2, 0, $1);
+          if (IS_VOID ($2->type))
+            werror (E_VOID_SHALL_BE_LONELY);
           for (loop = $2; loop; loop->_isparm = 1, loop = loop->next)
             ;
           $$ = symbolVal ($2);
@@ -1739,10 +1761,12 @@ parameter_declaration
         }
    | declaration_specifiers  /* analogous to type_name */
         {
-          if (IS_SPEC ($1) && !IS_VALID_PARAMETER_STORAGE_CLASS_SPEC ($1))
-            {
-              werror (E_STORAGE_CLASS_FOR_PARAMETER, "type name");
-            }
+          if (IS_VOID ($1) &&
+            (SPEC_EXTR ($1) || SPEC_STAT ($1) || SPEC_SCLS ($1) == S_AUTO || SPEC_SCLS ($1) == S_REGISTER || // No storage class specifier allowed with void
+            SPEC_CONST ($1) || SPEC_RESTRICT ($1) || SPEC_VOLATILE ($1) || SPEC_ATOMIC ($1))) // No qualifier allowed with void
+            werror (E_VOID_SHALL_BE_LONELY);
+          else if (IS_SPEC ($1) && !IS_VALID_PARAMETER_STORAGE_CLASS_SPEC ($1))
+            werror (E_STORAGE_CLASS_FOR_PARAMETER, "type name");
 
           $$ = newValue ();
           $$->type = $1;

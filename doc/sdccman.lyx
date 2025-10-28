@@ -3214,6 +3214,16 @@ In 4.5.11,
  
 \end_layout
 
+\begin_layout Itemize
+In 4.5.12,
+ void parameters may no longer be named or qualified.
+\end_layout
+
+\begin_layout Itemize
+In 4.5.12,
+ struct/union members other than anoymous struct/union or bit-fields must be named.
+\end_layout
+
 \begin_layout Section
 System Requirements
 \end_layout
@@ -11168,7 +11178,64 @@ Environment
 \end_layout
 
 \begin_layout Itemize
-See SDCC source (and your own code if you use a custom crt0 for a target that supports it) for any information on the environment.
+When no custom crt0 is used (i.e.
+ the port does not support a custom crt0,
+ or the option 
+\series bold
+
+\begin_inset Index idx
+range none
+pageformat default
+status open
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-no-std-crt0
+\end_layout
+
+\end_inset
+
+
+\series default
+ is not used),
+ the name and type of the function called at program startup is 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+void main(void)
+\end_layout
+
+\end_inset
+
+ or 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+int main(void)
+\end_layout
+
+\end_inset
+
+.
+ Otherwise the name and type depends on the custom crt0.
+\end_layout
+
+\begin_layout Itemize
+See SDCC source (and your own code if you use a custom crt0 for a target that supports it) for any other information on the environment.
 \end_layout
 
 \begin_layout Subsubsection
@@ -11338,6 +11405,10 @@ bit-fields are allocated in the same order as they appear in the source.
 \begin_layout Itemize
 Non-bit-field members of structures are aligned on byte boundaries (i.e.
  there are no padding bytes).
+\end_layout
+
+\begin_layout Itemize
+structures do not need to have named members.
 \end_layout
 
 \begin_layout Itemize
