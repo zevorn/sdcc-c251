@@ -1,3 +1,27 @@
+2025-11-02 Janko Stamenović
+
+	* sdas/asxxsrc/asdata.c
+	  sdas/asxxsrc/asxxxx.h
+	  More rebasing sdas assemblers to the current upstream
+
+2025-10-30 Janko Stamenović
+
+	* sdas/asxxsrc/asdbg.c
+	  sdas/asxxsrc/aslex.c
+	  sdas/asxxsrc/asmcro.c
+	  sdas/asxxsrc/assubr.c
+	  Start rebasing sdas assemblers to the current upstream
+
+2025-10-29 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/undefinedc23.c:
+	  Fix test case header for test for C23 UB resolutions.
+
+2025-10-29 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Fix jump distance calculation for Z80N add rr, a.
+
 2025-10-29 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/MakeList:

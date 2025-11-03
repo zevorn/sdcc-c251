@@ -31,6 +31,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "utils.h"
 
 // local
+#include "glob.h"
 #include "t870ccl.h"
 
 
@@ -196,6 +197,14 @@ cl_t870c::make_cpu_hw(void)
 
 
 void
+cl_t870c::reset(void)
+{
+  cl_uc::reset();
+  PC= rom->read(0xffff) * 256 + rom->read(0xfffe);
+}
+
+
+void
 cl_t870c::print_regs(class cl_console_base *con)
 {
   con->dd_color("answer");
@@ -215,6 +224,79 @@ cl_t870c::print_regs(class cl_console_base *con)
 }
 
 
+struct dis_entry *
+cl_t870c::dis_tbl(void)
+{
+  return disass_t870c;
+}
+
+
+char *
+cl_t870c::disassc(t_addr addr, chars *comment)
+{
+  chars work= chars(), temp= chars(), fmt;
+  const char *b;
+  t_mem code, data= 0;
+  int i;
+  bool first;
+  
+  code= rom->get(addr);
+
+  i= 0;
+  while ((code & dis_tbl()[i].mask) != dis_tbl()[i].code &&
+	 dis_tbl()[i].mnemonic)
+    i++;
+  if (dis_tbl()[i].mnemonic == NULL)
+    {
+      return strdup("-- UNKNOWN/INVALID");
+    }
+  b= dis_tbl()[i].mnemonic;
+  
+  first= true;
+  for (i=0; b[i]; i++)
+    {
+      if ((b[i] == ' ') && first)
+	{
+	  first= false;
+	  while (work.len() < 8) work.append(' ');
+	}
+      if (b[i] == '\'')
+	{
+	  fmt= "";
+	  i++;
+	  while (b[i] && (b[i]!='\''))
+	    fmt.append(b[i++]);
+	  if (!b[i]) i--;
+	  if (fmt.empty())
+	    work.append("'");
+	  if ((fmt=="char8") == 0)
+	    {
+	      
+	    }
+	  continue;
+	}
+      if (b[i] == '%')
+	{
+	  b++;
+	  switch (b[i])
+	    {
+	    case 'd': // Rd
+	      break;
+	    default:
+	      temp= "?";
+	      break;
+	    }
+	  if (comment && temp.nempty())
+	    comment->append(temp);
+	}
+      else
+	work+= b[i];
+    }
+
+  return strdup(work.c_str());
+}
+
+
 /**************************************************************************/
 
 cl_t870c_cpu::cl_t870c_cpu(class cl_uc *auc):
@@ -226,8 +308,19 @@ cl_t870c_cpu::cl_t870c_cpu(class cl_uc *auc):
 int
 cl_t870c_cpu::init(void)
 {
+  class cl_var *v;
   cl_hw::init();
   psw= register_cell(uc->asd, 0x3f);
+  uc->vars->add(v= new cl_var(chars("sp_limit"), cfg,
+			      t870c_sp_limit,
+			      cfg_help(t870c_sp_limit)));
+  v->init();
+
+  uc->vars->add(v= new cl_var(chars("bootmode"), cfg,
+			      t870c_bootmode,
+			      cfg_help(t870c_bootmode)));
+  v->init();
+
   return 0;
 }
 
@@ -265,6 +358,13 @@ cl_t870c_cpu::conf_op(cl_memory_cell *cell, t_addr addr, t_mem *val)
 	uc->sp_limit= *val & 0xffff;
       return uc->sp_limit;
       break;
+    case t870c_bootmode:
+      if (val)
+	{
+	  *val= (*val)?1:0;
+	  // TODO: remap memories
+	}
+      break;
     default:
       if (val)
 	cell->set(*val);
@@ -278,7 +378,9 @@ cl_t870c_cpu::cfg_help(t_addr addr)
   switch (addr)
     {
     case t870c_sp_limit:
-      return "Stack overflows when SP reaches this limit";
+      return "Stack overflows when SP reaches this limit (uint, RW)";
+    case t870c_bootmode:
+      return "If true, CPU works in boot mode (bool, RW)";
     }
   return "Not used";
 }

@@ -112,14 +112,20 @@ public:
   virtual void decode_regs(void);
   virtual void make_memories(void);
   virtual void make_cpu_hw(void);
+  virtual void reset(void);
   virtual void print_regs(class cl_console_base *con);
+
+  virtual struct dis_entry *dis_tbl(void);
+  virtual char *disassc(t_addr addr, chars *comment);
+  virtual int longest_inst(void) { return 4; }
 };
 
 
 enum t870c_cpu_cfg
   {
-    t870c_sp_limit = 0,
-    t870c_nuof     = 1
+    t870c_sp_limit 	= 0,
+    t870c_bootmode	= 1,
+    t870c_nuof     	= 2
   };
   
 class cl_t870c_cpu: public cl_hw
