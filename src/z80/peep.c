@@ -1696,7 +1696,7 @@ int z80instructionSize(lineNode *pl)
   /* 16 bit add / subtract / and / or */
   if(IS_Z80N && lineIsInst (pl, "add") && (!STRNCASECMP(op0start, "bc", 2) || !STRNCASECMP(op0start, "de", 2) || !STRNCASECMP(op0start, "hl", 2))  && op1start[0] == '#')
     return(4);
-  else if(IS_Z80N && lineIsInst (pl, "add") && (!STRNCASECMP(op1start, "bc", 2) || !STRNCASECMP(op1start, "de", 2) || !STRNCASECMP(op1start, "hl", 2)) && !STRNCASECMP(op1start, "a", 1))
+  else if(IS_Z80N && lineIsInst (pl, "add") && (!STRNCASECMP(op0start, "bc", 2) || !STRNCASECMP(op0start, "de", 2) || !STRNCASECMP(op0start, "hl", 2)) && !STRNCASECMP(op1start, "a", 1))
     return(2);
   if((lineIsInst (pl, "add") || lineIsInst (pl, "adc") || lineIsInst (pl, "sbc") || IS_RAB && (lineIsInst (pl, "and") || lineIsInst (pl, "or")) ||
     (IS_R4K || IS_R5K || IS_R6K) && (lineIsInst (pl, "sub") || lineIsInst (pl, "cp"))) &&

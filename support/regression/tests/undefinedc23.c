@@ -1,9 +1,9 @@
-// undefinedc23.c
-// A lot of undefined behavior from C23 has been removed in C2y
-// Martin Uecker's "Ghosts and Demons" gives a good overview.
-// The numbering of the test cases below corresponds to the numbering therein.
-// In some cases, the resolution was to define the behavior,
-// or make it implemengtation-defined.
+/* undefinedc23.c
+   A lot of undefined behavior from C23 has been removed in C2y
+   Martin Uecker's "Ghosts and Demons" gives a good overview.
+   The numbering of the test cases below corresponds to the numbering therein.
+   In some cases, the resolution was to define the behavior,
+   or make it implemengtation-defined. */
 
 #include <testfwk.h>
 
