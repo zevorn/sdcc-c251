@@ -13,8 +13,8 @@
 #define vdu_next_set_fast2(value) VDPDataPortOut = value
 #define VDU_SPRITE_POSITION_TABLE_ADDRESS2 0x1B00
 
-#define __IO_VDP_DATA_OUT   #0xbe
-#define __IO_VDP_COMMAND    #0xbf
+#define __IO_VDP_DATA_OUT   0xbe
+#define __IO_VDP_COMMAND    0xbf
 
 #ifdef __SDCC_z80
 static volatile __sfr __at __IO_VDP_COMMAND VDPControlPort;

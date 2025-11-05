@@ -1129,13 +1129,13 @@ copyStr (const char *src, size_t *size)
             case '\?':
             case '\'':
             case '\"':
-            default:
+            default: // Just pass it on unmodified. This allows even non-UTF-8 extended ASCII source, which has non-ASCII chharacters in string literals, to pass here.
               c = *src;
               break;
             }
-          if (universal) // Encode one utf-32 character to utf-8
+          if (universal) // Encode one utf-32 character to utf-8. If outside of current UTF-8 standard range (UTF-8 up to 4 bytes), emit a warning, and encode according to 1993 UTF-8 standard s(UTF-8 up to 6 bytes).
             {
-              char s[5] = "\0\0\0\0";
+              char s[7] = "\0\0\0\0\0\0";
               if (c < 0x80)
                 s[0] = (char)c;
               else if (c < 0x800)
@@ -1149,12 +1149,33 @@ copyStr (const char *src, size_t *size)
                   s[1] = (c >> 6) & 0x3f  | 0x80;
                   s[2] = (c >> 0) & 0x3f  | 0x80;
                 }
-              else if (c < 0x110000)
+              else if (c < 0x200000)
                 {
+                  if (c >= 0x110000)
+                    werror (W_UNICODE_RANGE);
                   s[0] = (c >> 18) & 0x07 | 0xf0;
                   s[1] = (c >> 12) & 0x3f | 0x80;
                   s[2] = (c >> 6) & 0x3f  | 0x80;
                   s[3] = (c >> 0) & 0x3f  | 0x80;
+                }
+              else if (c < 0x200000)
+                {
+                  werror (W_UNICODE_RANGE);
+                  s[0] = (c >> 24) & 0x03 | 0xf8;
+                  s[1] = (c >> 18) & 0x3f | 0x80;
+                  s[2] = (c >> 12) & 0x3f | 0x80;
+                  s[3] = (c >> 6) & 0x3f  | 0x80;
+                  s[4] = (c >> 0) & 0x3f  | 0x80;
+                }
+              else if (c < 0x4000000)
+                {
+                  werror (W_UNICODE_RANGE);
+                  s[0] = (c >> 30) & 0x01 | 0xfc;
+                  s[1] = (c >> 24) & 0x3f | 0x80;
+                  s[2] = (c >> 18) & 0x3f | 0x80;
+                  s[3] = (c >> 12) & 0x3f | 0x80;
+                  s[4] = (c >> 6) & 0x3f  | 0x80;
+                  s[5] = (c >> 0) & 0x3f  | 0x80;
                 }
               else
                 wassert (0);

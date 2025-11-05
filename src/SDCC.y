@@ -2441,6 +2441,8 @@ external_declaration
                   SPEC_EXTR($1->etype) = 1;
                 }
             }
+          if ($1 && $1->type && IS_REGISTER (getSpec ($1->type)))
+            werror (W_REGISTER_EXTERNAL_DECL);
           addSymChain (&$1);
           allocVariables ($1);
           cleanUpLevel (SymbolTab, 1);

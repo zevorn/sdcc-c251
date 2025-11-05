@@ -1,8 +1,44 @@
+2025-11-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge undefined branch.
+
+2025-11-04 Janko Stamenović
+
+	* sdas/asxxsrc/asexpr.c
+	  sdas/asxxsrc/aslist.c
+	  sdas/asxxsrc/asmain.c
+	  sdas/asxxsrc/asout.c
+	  sdas/asxxsrc/assym.c
+	  sdas/asxxsrc/asxxxx.h
+	  Third rebasing sdas assemblers to the current upstream
+
+2025-11-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/bug-3791.c,
+	  support/valdiag/tests/bug-3791.c:
+	  Follow-up work on test cases after N3571 resolution for C23 UB.
+
+2025-11-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.y,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCsymt.c:
+	  Improvements for register storage class diagnostics in preparation for work on C23 UB for arrays with register storage class.
+
 2025-11-02 Janko Stamenović
 
 	* sdas/asxxsrc/asdata.c
 	  sdas/asxxsrc/asxxxx.h
 	  More rebasing sdas assemblers to the current upstream
+
+2025-10-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3481 resolution for C23 UB.
 
 2025-10-30 Janko Stamenović
 
@@ -11,6 +47,32 @@
 	  sdas/asxxsrc/asmcro.c
 	  sdas/asxxsrc/assubr.c
 	  Start rebasing sdas assemblers to the current upstream
+
+2025-10-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCutil.c,
+	  support/valdiag/tests/undefinedc23.c:
+	  Partially (UCN only) implement N3672 resolution for C23 UB.
+
+2025-10-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.lex,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  support/valdiag/tests/undefinedc23.c,
+	  .version,
+	  doc/sdccman.lyx:
+	  Revise implementation of N3571 resolution for C23 UB (on second thought the new diagnostic should be an error, since this is the lexer equivalent of a syntax error on the parser).
+
+2025-10-29 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.lex,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3571 resolution for C23 UB.
 
 2025-10-29 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -28,6 +90,11 @@
 	  Disable memcpy-1.c test (which shall not compile for targets where size_t is less than 18 bits) for ez80 and stm8.
 	* src/SDCCattr.c:
 	  Fix missing inclusion of string.h before use of strcmp.
+
+2025-10-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* sdcc/support/valdiag/tests/undefinedc23.c:
+	  Test case for N3479 resolution of C23 UB on token concatenation producing UCN.
 
 2025-10-28 Philipp Klaus Krause <philipp@colecovision.eu>
 

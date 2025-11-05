@@ -721,6 +721,14 @@ struct
      "object %s with no linkage of incomplete type", 0 },
   { E_EXTERN_INLINE_NO_DEF, ERROR_LEVEL_ERROR,
      "inline function %s declared with external linkage, but not defined in translation unit", 0 },
+  { E_STRAY_CHARACTER, ERROR_LEVEL_ERROR,
+     "stray character at column %d", 0 },
+  { W_UNICODE_RANGE, ERROR_LEVEL_WARNING,
+     "character out of unicode range", 0 },
+  { E_INCOMPLETE_TYPE_LVALUE, ERROR_LEVEL_ERROR,
+     "lvalue of incomplete type", 0 },
+  { W_REGISTER_EXTERNAL_DECL, ERROR_LEVEL_WARNING,
+     "storage class register on external declaration", 0 },
 };
 
 /* -------------------------------------------------------------------------------

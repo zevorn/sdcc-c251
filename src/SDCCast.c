@@ -4268,12 +4268,17 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
       /*----------------------------*/
       /*  address dereference       */
       /*----------------------------*/
-    case '*':                  /* can be unary  : if right is null then unary operation */
+    case '*':                  /* can be unary : if right is null then unary operation */
       if (!tree->right)
         {
           if (!IS_PTR (LTYPE (tree)) && !IS_ARRAY (LTYPE (tree)))
             {
               werrorfl (tree->filename, tree->lineno, E_PTR_REQD);
+              goto errorTreeReturn;
+            }
+          else if (IS_STRUCT (tree->left->ftype->next) && !getSize (tree->left->ftype->next))
+            {
+              werrorfl (tree->filename, tree->lineno, E_INCOMPLETE_TYPE_LVALUE);
               goto errorTreeReturn;
             }
 
