@@ -8,6 +8,11 @@ extern int a;
 _Static_assert(1 || a); /* ERROR(SDCC) */
 #endif
 
+#ifdef TEST3
+#define ASSEMBLE(uc1, uc2) uc1##uc2
+int ASSEMBLE(\u00, c4); /* ERROR */
+#endif
+
 #ifdef TEST4a
 char main(void); /* WARNING(SDCC) */
 #endif
@@ -18,6 +23,19 @@ long main(void); /* WARNING(SDCC) */
 
 #ifdef TEST4b
 void main(int); /* WARNING(SDCC) */
+#endif
+
+#ifdef TEST6
+void f(void) {
+int © rate = 100; /* ERROR */
+}
+#endif
+
+#ifdef TEST7a
+// Invalid multibyte character
+#include <wchar.h>
+const wchar_t wc = L'\U00110000'; /* WARNING */
+const char *ws = "\U00110000"; /* WARNING */
 #endif
 
 #ifdef TEST8a
@@ -60,6 +78,20 @@ int a1;
 {
 extern int a1; /* ERROR */
 }
+}
+#endif
+
+#ifdef TEST19
+struct f *p, *q;
+
+void g1(void)
+{
+  *p; /* ERROR */
+}
+
+void g3(void)
+{
+  *q = *p; /* ERROR */
 }
 #endif
 

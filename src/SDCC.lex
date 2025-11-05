@@ -358,7 +358,7 @@ static void checkCurrFile (const char *s);
       unput (ch);
     }
 }
-.                       { count (); }
+.                       { werror (E_STRAY_CHARACTER, column); count (); }
 %%
 
 /* flex 2.5.31 undefines yytext_ptr, so we have to define it again */

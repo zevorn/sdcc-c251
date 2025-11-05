@@ -2062,8 +2062,10 @@ checkSClass (symbol *sym, int isProto)
       SPEC_SCLS (sym->etype) = S_FIXED;
     }
 
-  if (SPEC_SCLS (sym->etype) == S_AUTO && SPEC_EXTR(sym->etype) ||
-    SPEC_SCLS (sym->etype) == S_AUTO && SPEC_STAT(sym->etype))
+  if (SPEC_SCLS (sym->etype) == S_AUTO && SPEC_EXTR (sym->etype) ||
+    SPEC_SCLS (sym->etype) == S_AUTO && SPEC_STAT (sym->etype) ||
+    SPEC_SCLS (sym->etype) == S_REGISTER && SPEC_EXTR (sym->etype) ||
+    SPEC_SCLS (sym->etype) == S_REGISTER && SPEC_STAT (sym->etype))
     {
       werrorfl (sym->fileDef, sym->lineDef, E_TWO_OR_MORE_STORAGE_CLASSES, sym->name);
     }

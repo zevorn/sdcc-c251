@@ -3224,6 +3224,11 @@ In 4.5.12,
  struct/union members other than anoymous struct/union or bit-fields must be named.
 \end_layout
 
+\begin_layout Itemize
+In 4.5.13,
+ stray non-ASCII characters in source files are an error instead of being silently ignored.
+\end_layout
+
 \begin_layout Section
 System Requirements
 \end_layout
