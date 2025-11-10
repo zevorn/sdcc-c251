@@ -102,7 +102,7 @@ void AccRsh (int shCount, bool sign)
     }
   else
     {
-      /* lsra is 2 cycles and 1 byte, so an unrolled loop is the      */
+      /* lsr a is 2 cycles and 1 byte, so an unrolled loop is the      */
       /* the fastest and shortest (shCount<6).            */
       for (i = 0; i < shCount; i++)
         emit6502op ("lsr", "a");
@@ -886,7 +886,7 @@ genRightShiftLiteral (operand * left, operand * result, int shCount, int sign)
   emitComment (TRACEGEN, __func__);
 
 
-  size = AOP_SIZE (left);
+    size = AOP_SIZE (left);
   /* test the LEFT size !!! */
   size = AOP_SIZE (result);
   emitComment (TRACEGEN|VVDBG, "  %s - result size=%d, left size=%d",
@@ -949,6 +949,7 @@ genRightShift (iCode * ic)
   bool sign;
   reg_info *countreg = NULL;
   int count_offset=0;
+  bool restore_a = false;
   bool restore_y = false;
   bool x_in_regtemp = false;
 
@@ -993,6 +994,12 @@ genRightShift (iCode * ic)
     aopResult = forceZeropageAop (AOP (result), sameRegs (AOP (left), AOP (result)));
 #endif
 
+  if (!m6502_reg_a->isDead && !IS_AOP_WITH_A (AOP (result)))
+    {
+      storeRegTemp(m6502_reg_a, true);
+      restore_a=true;
+    }
+   
   /* load the count register */
   if (m6502_reg_y->isDead && !IS_AOP_WITH_Y (AOP (result)) && !IS_AOP_WITH_Y (AOP (left)))
     countreg = m6502_reg_y;
@@ -1025,12 +1032,8 @@ genRightShift (iCode * ic)
   else if (!sameRegs (AOP (left), AOP(result)))
     {
       size = AOP_SIZE (result);
-      offset = 0;
-      while (size--)
-	{
+      for (offset=0; offset<size; offset++)
 	  transferAopAop (AOP (left), offset, AOP(result), offset);
-	  offset++;
-	}
     }
 
   tlbl = safeNewiTempLabel (NULL);
@@ -1057,7 +1060,7 @@ genRightShift (iCode * ic)
       count_offset=getLastTempOfs();
       pullOrFreeReg(m6502_reg_a, needpulla);
       emit6502op ("dec", TEMPFMT, count_offset);
-      // could keep it literal
+      // FIXME: could keep it literal
       dirtyRegTemp(getLastTempOfs() );
       emitBranch ("bmi", tlbl1);
     }
@@ -1096,9 +1099,7 @@ genRightShift (iCode * ic)
         rmwWithReg ("lsr", m6502_reg_a);
 
       for (offset = size - 2; offset >= 0; offset--)
-        {
-	  rmwWithAop ("ror", AOP (result), offset);
-        }
+        rmwWithAop ("ror", AOP (result), offset);
     }
 
   if (countreg)
@@ -1109,6 +1110,7 @@ genRightShift (iCode * ic)
   else
     {
       emit6502op("dec", TEMPFMT, count_offset );
+      // FIXME: could keep it literal
       dirtyRegTemp(getLastTempOfs() );
       emit6502op("bpl", "%05d$", safeLabelNum (tlbl));
     }
@@ -1134,6 +1136,8 @@ genRightShift (iCode * ic)
 
   if(restore_y)
     loadRegTemp(m6502_reg_y);
+  if(restore_a)
+    loadRegTemp(m6502_reg_a);
 
  release:
   freeAsmop (right, NULL);

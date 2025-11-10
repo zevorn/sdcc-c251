@@ -1,7 +1,7 @@
 /* z80mch.c */
 
 /*
- *  Copyright (C) 1993-2006  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,10 +31,10 @@
 #include "z80.h"
 
 char    *cpu    = "Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800";
-char    *dsft   = "asm";
+char	*dsft	= "asm";
 
-char    imtab[3] = { 0x46, 0x56, 0x5E };
-int     mchtyp;
+char	imtab[3] = { 0x46, 0x56, 0x5E };
+int	mchtyp;
 int     allow_undoc;
 
 static int ez80_adl = 0;
@@ -42,21 +42,21 @@ static int ez80_adl = 0;
 /*
  * Opcode Cycle Definitions
  */
-#define OPCY_SDP        ((char) (0xFF))
-#define OPCY_ERR        ((char) (0xFE))
+#define	OPCY_SDP	((char) (0xFF))
+#define	OPCY_ERR	((char) (0xFE))
 
 /*      OPCY_NONE       ((char) (0x80)) */
 /*      OPCY_MASK       ((char) (0x7F)) */
 
-#define OPCY_CPU        ((char) (0xFD))
+#define	OPCY_CPU	((char) (0xFD))
 
-#define UN      ((char) (OPCY_NONE | 0x00))
-#define P2      ((char) (OPCY_NONE | 0x01))
-#define P3      ((char) (OPCY_NONE | 0x02))
-#define P4      ((char) (OPCY_NONE | 0x03))
-#define P5      ((char) (OPCY_NONE | 0x04))
-#define P6      ((char) (OPCY_NONE | 0x05))
-#define P7      ((char) (OPCY_NONE | 0x06))
+#define	UN	((char) (OPCY_NONE | 0x00))
+#define	P2	((char) (OPCY_NONE | 0x01))
+#define	P3	((char) (OPCY_NONE | 0x02))
+#define	P4	((char) (OPCY_NONE | 0x03))
+#define	P5	((char) (OPCY_NONE | 0x04))
+#define	P6	((char) (OPCY_NONE | 0x05))
+#define	P7	((char) (OPCY_NONE | 0x06))
 
 #define PF      ((char) (OPCY_NONE | 0x10))
 
@@ -64,7 +64,7 @@ static int ez80_adl = 0;
  * Z80 Opcode Cycle Pages
  */
 
-static const char  z80pg1[256] = {
+static char  z80pg1[256] = {
 /*--*--* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 /*--*--* -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - */
 /*00*/   4,10, 7, 6, 4, 4, 7, 4, 4,11, 7, 6, 4, 4, 7, 4,
@@ -85,7 +85,7 @@ static const char  z80pg1[256] = {
 /*F0*/  11,10,10, 4,17,11, 7,11,11, 6,10, 4,17,P5, 7,11
 };
 
-static const char  z80pg2[256] = {  /* P2 == CB */
+static char  z80pg2[256] = {  /* P2 == CB */
 /*--*--* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 /*--*--* -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - */
 /*00*/   8, 8, 8, 8, 8, 8,15, 8, 8, 8, 8, 8, 8, 8,15, 8,
@@ -169,7 +169,7 @@ static const char  z80pg6[256] = {  /* P6 == FD CB &&  P6 == DD CB */
 /*F0*/  UN,UN,UN,UN,UN,UN,23,UN,UN,UN,UN,UN,UN,UN,23,UN
 };
 
-static const char *z80Page[7] = {
+static char *z80Page[7] = {
     z80pg1, z80pg2, z80pg3, z80pg4,
     z80pg3, z80pg6, z80pg6
 };
@@ -178,7 +178,7 @@ static const char *z80Page[7] = {
  * HD64180 / Z180  Opcode Cycle Pages
  */
 
-static const char  hd64pg1[256] = {
+static char  hd64pg1[256] = {
 /*--*--* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 /*--*--* -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - */
 /*00*/   3, 9, 7, 4, 4, 4, 6, 3, 4, 7, 6, 4, 4, 4, 6, 3,
@@ -199,7 +199,7 @@ static const char  hd64pg1[256] = {
 /*F0*/  10, 9, 9, 3,16,11, 6,11,10, 4, 9, 3,16,P5, 6,11
 };
 
-static const char  hd64pg2[256] = {  /* P2 == CB */
+static char  hd64pg2[256] = {  /* P2 == CB */
 /*--*--* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 /*--*--* -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - */
 /*00*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7,
@@ -213,14 +213,14 @@ static const char  hd64pg2[256] = {  /* P2 == CB */
 /*80*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7,
 /*90*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7,
 /*A0*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7,
-/*B0*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7,
+/*B0*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7, 
 /*C0*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7,
 /*D0*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7,
 /*E0*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7,
 /*F0*/   7, 7, 7, 7, 7, 7,13, 7, 7, 7, 7, 7, 7, 7,13, 7
 };
 
-static const char  hd64pg3[256] = {  /* P3 == DD */
+static char  hd64pg3[256] = {  /* P3 == DD */
 /*--*--* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 /*--*--* -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - */
 /*00*/  UN,UN,UN,UN,UN,UN,UN,UN,UN,10,UN,UN,UN,UN,UN,UN,
@@ -241,7 +241,7 @@ static const char  hd64pg3[256] = {  /* P3 == DD */
 /*F0*/  UN,UN,UN,UN,UN,UN,UN,UN,UN, 7,UN,UN,UN,UN,UN,UN
 };
 
-static const char  hd64pg4[256] = {  /* P4 == ED */
+static char  hd64pg4[256] = {  /* P4 == ED */
 /*--*--* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 /*--*--* -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - */
 /*00*/  12,13,UN,UN, 7,UN,UN,UN,12,13,UN,UN, 7,UN,UN,UN,
@@ -262,7 +262,7 @@ static const char  hd64pg4[256] = {  /* P4 == ED */
 /*F0*/  UN,UN,UN,UN,UN,UN,UN,UN,UN,UN,UN,UN,UN,UN,UN,UN
 };
 
-static const char  hd64pg5[256] = {  /* P5 == FD */
+static char  hd64pg5[256] = {  /* P5 == FD */
 /*--*--* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 /*--*--* -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - */
 /*00*/  UN,UN,UN,UN,UN,UN,UN,UN,UN,10,UN,UN,UN,UN,UN,UN,
@@ -283,7 +283,7 @@ static const char  hd64pg5[256] = {  /* P5 == FD */
 /*F0*/  UN,UN,UN,UN,UN,UN,UN,UN,UN, 7,UN,UN,UN,UN,UN,UN
 };
 
-static const char  hd64pg6[256] = {  /* P6 == DD CB */
+static char  hd64pg6[256] = {  /* P6 == DD CB */
 /*--*--* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 /*--*--* -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - */
 /*00*/  UN,UN,UN,UN,UN,UN,19,UN,UN,UN,UN,UN,UN,UN,19,UN,
@@ -304,7 +304,7 @@ static const char  hd64pg6[256] = {  /* P6 == DD CB */
 /*F0*/  UN,UN,UN,UN,UN,UN,19,UN,UN,UN,UN,UN,UN,UN,19,UN
 };
 
-static const char  hd64pg7[256] = {  /* P7 == FD CB */
+static char  hd64pg7[256] = {  /* P7 == FD CB */
 /*--*--* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 /*--*--* -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - */
 /*00*/  UN,UN,UN,UN,UN,UN,19,UN,UN,UN,UN,UN,UN,UN,19,UN,
@@ -325,7 +325,7 @@ static const char  hd64pg7[256] = {  /* P7 == FD CB */
 /*F0*/  UN,UN,UN,UN,UN,UN,19,UN,UN,UN,UN,UN,UN,UN,19,UN
 };
 
-static const char *hd64Page[7] = {
+static char *hd64Page[7] = {
     hd64pg1, hd64pg2, hd64pg3, hd64pg4,
     hd64pg5, hd64pg6, hd64pg7
 };
@@ -519,18 +519,17 @@ static const char *ez80Page[7] = {
 /*
  * Process a machine op.
  */
-VOID
-machine(mp)
-struct mne *mp;
+void
+machine(struct mne *mp)
 {
         int op, t1, t2, t3;
-        struct expr e1, e2;
+	struct expr e1, e2;
         int rf, sf, v1, v2;
 
-        clrexpr(&e1);
-        clrexpr(&e2);
-        op = (int) mp->m_valu;
-        rf = mp->m_type;
+	clrexpr(&e1);
+	clrexpr(&e2);
+	op = (int) mp->m_valu;
+	rf = mp->m_type;
         sf = mp->m_flag;
 
         /* check eZ80 flags in non-eZ80 mode and block such instruction */
@@ -541,20 +540,20 @@ struct mne *mp;
         case X_Z80:
                 if (rf > S_CPU)
                         rf = 0;
-                break;
+		break;
         case X_HD64:
                 if (rf > X_TSTIO)
                         rf = 0;
-                break;
+		break;
         case X_ZXN:
                 if (rf > S_CPU && rf < X_ZXN_INH2 && rf != X_TST && rf != X_MLT)
                         rf = 0;
-                break;
+		break;
         case X_EZ80:
                 if (rf >= X_ZXN_INH2 && rf < X_EZ_ADL) {
                         rf = 0;
-                        break;
-                }
+			break;
+		}
                 /* handle eZ80 suffix and write it as prefix byte */
                 if (ez80_adl) {
                         switch (sf) {
@@ -562,195 +561,195 @@ struct mne *mp;
                                 sf = M_SIL;
                         case M_SIL:
                                 outab (0x52);
-                                break;
+				break;
                         case M_IS:
                                 sf = M_LIS;
                         case M_LIS:
                                 outab (0x49);
-                                break;
+				break;
                         case M_L:
                         case M_IL:
                                 sf = M_LIL;
                         case M_LIL:
                                 outab (0x5B);
-                                break;
+				break;
                         case M_SIS:
                                 outab (0x40);
-                                break;
-                        }
-                } else {
+				break;
+			}
+		} else {
                         switch (sf) {
                         case M_S:
                         case M_IS:
                                 sf = M_SIS;
                         case M_SIS:
                                 outab (0x40);
-                                break;
+				break;
                         case M_L:
                                 sf = M_LIS;
                         case M_LIS:
                                 outab (0x49);
-                                break;
+				break;
                         case M_IL:
                                 sf = M_SIL;
                         case M_SIL:
                                 outab (0x52);
-                                break;
+				break;
                         case M_LIL:
                                 outab (0x5B);
-                                break;
-                        }
-                }
-                break;
+				break;
+			}
+		}
+		break;
 
         case X_R800:
                 if (rf > S_CPU && rf < X_Z280_MULTU)
                         rf = 0;
-                break;
+		break;
 
-        default:
+	default:
                 rf = 0;
-        }
+	}
 
-        switch (rf) {
+	switch (rf) {
 
-        case S_INH1:
-                outab(op);
-                break;
+	case S_INH1:
+		outab(op);
+		break;
 
-        case S_INH2:
-                outab(0xED);
-                outab(op);
-                break;
+	case S_INH2:
+		outab(0xED);
+		outab(op);
+		break;
 
-        case S_RET:
-                if (more()) {
+	case S_RET:
+		if (more()) {
                         /*
                          * ret  cc
                          */
-                        if ((v1 = admode(CND)) != 0) {
-                                outab(op | (v1<<3));
-                        } else {
-                                xerr('a', "Require condition code NZ, Z, NC, or C.");
-                        }
-                } else {
+			if ((v1 = admode(CND)) != 0) {
+				outab(op | (v1<<3));
+			} else {
+				xerr('a', "Require condition code NZ, Z, NC, or C.");
+			}
+		} else {
                         /*
                          * ret
                          */
-                        outab(0xC9);
-                }
-                break;
+			outab(0xC9);
+		}
+		break;
 
-        case S_PUSH:
-                /*
+	case S_PUSH:
+		/*
                  * push/pop af
-                 */
-                if (admode(R16X)) {
-                        outab(op+0x30);
-                        break;
-                } else
-                /*
+		 */
+		if (admode(R16X)) {
+			outab(op+0x30);
+			break;
+		} else
+		/*
                  * push/pop bc/de/hl/ix/iy      (not sp)
-                 */
-                if ((v1 = admode(R16)) != 0 && (v1 &= 0xFF) != SP) {
-                        if (v1 != gixiy(v1)) {
-                                outab(op+0x20);
-                                break;
-                        }
-                        outab(op | (v1<<4));
-                        break;
-                }
+		 */
+		if ((v1 = admode(R16)) != 0 && (v1 &= 0xFF) != SP) {
+			if (v1 != gixiy(v1)) {
+				outab(op+0x20);
+				break;
+			}
+			outab(op | (v1<<4));
+			break;
+		}
                 if (mchtyp == X_ZXN && op == 0xC5 && (t1 = addr(&e1)) == S_IMMED) {
                         // ZXN push is big-endian
-                        outab(0xED);
+			outab(0xED);
                         outab(0x8A);
                         // ASXXXX do not check for R_MSB/R_LSB for constants!!!
                         if (e1.e_flag==0 && e1.e_base.e_ap==NULL) {
                                 outab(hibyte(e1.e_addr));
                                 outab(lobyte(e1.e_addr));
-                        } else {
+			} else {
                                 outrb(&e1, R_MSB);
                                 outrb(&e1, R_LSB);
-                        }
-                        break;
-                }
+			}
+			break;
+		}
                 if (mchtyp == X_ZXN && op == 0xC1 && (v1 = admode(RX)) != 0 && (v1 &= 0xFF) == X) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0x8B);
-                        break;
-                }
-                xerr('a', "Only 16-Bit registers except SP.");
-                break;
+			break;
+		}
+		xerr('a', "Only 16-Bit registers except SP.");
+		break;
 
-        case S_RST:
-                v1 = (int) absexpr();
-                if (v1 & ~0x38) {
-                        xerr('a', "Allowed values: N * 0x08, N = 0 -> 7."); 
-                        v1 = 0;
-                }
-                outab(op|v1);
-                break;
+	case S_RST:
+		v1 = (int) absexpr();
+		if (v1 & ~0x38) {
+			xerr('a', "Allowed values: N * 0x08, N = 0 -> 7."); 
+			v1 = 0;
+		}
+		outab(op|v1);
+		break;
 
-        case S_IM:
-                expr(&e1, 0);
-                abscheck(&e1);
-                if (e1.e_addr > 2) {
-                        xerr('a', "Values of 0, 1, and 2 are valid.");
-                        e1.e_addr = 0;
-                }
-                outab(op);
-                outab(imtab[(int) e1.e_addr]);
-                break;
+	case S_IM:
+		expr(&e1, 0);
+		abscheck(&e1);
+		if (e1.e_addr > 2) {
+			xerr('a', "Values of 0, 1, and 2 are valid.");
+			e1.e_addr = 0;
+		}
+		outab(op);
+		outab(imtab[(int) e1.e_addr]);
+		break;
 
-        case S_BIT:
-                expr(&e1, 0);
-                t1 = 0;
-                v1 = (int) e1.e_addr;
-                if (v1 > 7) {
-                        ++t1;
-                        v1 &= 0x07;
-                }
-                op |= (v1<<3);
-                comma(1);
-                addr(&e2);
-                abscheck(&e1);
-                /*
+	case S_BIT:
+		expr(&e1, 0);
+		t1 = 0;
+		v1 = (int) e1.e_addr;
+		if (v1 > 7) {
+			++t1;
+			v1 &= 0x07;
+		}
+		op |= (v1<<3);
+		comma(1);
+		addr(&e2);
+		abscheck(&e1);
+		/*
                  * bit  b,(hl)
                  * bit  b,(ix+d)
                  * bit  b,(iy+d)
                  * bit  b,r
-                 */
-                if (genop(0xCB, op, &e2, 0) || t1)
-                        xerr('a', "Invalid Addressing Mode.");
-                break;
+		 */
+		if (genop(0xCB, op, &e2, 0) || t1)
+			xerr('a', "Invalid Addressing Mode.");
+		break;
 
         case S_RL_UNDOCD:
           if (!allow_undoc)
             xerr('a', "Undocumented instructions not enabled.");
 
-        case S_RL:
-                t1 = 0;
-                t2 = addr(&e2);
-                /*
+	case S_RL:
+		t1 = 0;
+		t2 = addr(&e2);
+		/*
                  * rl  (hl)
                  * rl  (ix+d)
                  * rl  (iy+d)
                  * rl  r
-                 */
-                if (more()) {
-                        if ((t2 != S_R8) || (e2.e_addr != A))
-                                ++t1;
-                        comma(1);
-                        clrexpr(&e2);
-                        t2 = addr(&e2);
-                }
-                if (genop(0xCB, op, &e2, 0) || t1)
-                        xerr('a', "Invalid Addressing Mode.");
-                break;
+		 */
+		if (more()) {
+			if ((t2 != S_R8) || (e2.e_addr != A))
+				++t1;
+			comma(1);
+			clrexpr(&e2);
+			t2 = addr(&e2);
+		}
+		if (genop(0xCB, op, &e2, 0) || t1)
+			xerr('a', "Invalid Addressing Mode.");
+		break;
 
-        case S_AND:
-        case S_SUB:
-                /*
+	case S_AND:
+	case S_SUB:
+		/*
                  * op  (hl)
                  * op  (ix+d)
                  * op  (iy+d)
@@ -760,10 +759,10 @@ struct mne *mp;
                  * op    ixh
                  * op    iyl
                  * op    iyh
-                 */
-                t1 = 0;
-                t2 = addr(&e2);
-                if (more()) {
+		 */
+		t1 = 0;
+		t2 = addr(&e2);
+		if (more()) {
                         /*
                          * op  a,(hl)
                          * op  a,(ix+d)
@@ -775,195 +774,195 @@ struct mne *mp;
                          * op  a,iyl
                          * op  a,iyh
                          */
-                        if ((t2 != S_R8) || (e2.e_addr != A))
-                                ++t1;
-                        comma(1);
-                        clrexpr(&e2);
-                        t2 = addr(&e2);
-                }
+			if ((t2 != S_R8) || (e2.e_addr != A))
+				++t1;
+			comma(1);
+			clrexpr(&e2);
+			t2 = addr(&e2);
+		}
 
                 if ((!t1) && allow_undoc && ((t2 == S_R8U1) || (t2 == S_R8U2))) {
                         /* undocumented instruction: and/sub  a,ixh|ixl|iyh|iyl */
                         outab( ((t2 == S_R8U1) ? 0xDD : 0xFD ) );
                         outab( op + e2.e_addr );
-                        break;
-                }
+			break;
+		}
 
-                /*
+		/*
                  * op  (hl)
                  * op  (ix+d)
                  * op  (iy+d)
                  * op  r
                  * op  n        [#n]
-                 *
+		 *
                  * op  a,(hl)
                  * op  a,(ix+d)
                  * op  a,(iy+d)
                  * op  a,r
                  * op  a,n      [a,#n]
-                 */
-                if (genop(0, op, &e2, 1) || t1)
-                        xerr('a', "Invalid Addressing Mode.");
-                break;
+		 */
+		if (genop(0, op, &e2, 1) || t1)
+			xerr('a', "Invalid Addressing Mode.");
+		break;
 
-        case S_ADD:
-        case S_ADC:
-        case S_SBC:
-                t1 = addr(&e1);
-                t2 = 0;
-                if (more()) {
-                        comma(1);
-                        t2 = addr(&e2);
-                }
-                if (t2 == 0) {
+	case S_ADD:
+	case S_ADC:
+	case S_SBC:
+		t1 = addr(&e1);
+		t2 = 0;
+		if (more()) {
+			comma(1);
+			t2 = addr(&e2);
+		}
+		if (t2 == 0) {
                         if (allow_undoc && ((t1 == S_R8U1) || (t1 == S_R8U2))) {
                                 /* undocumented instruction: add/adc/sbc  a,ixh|ixl|iyh|iyl */
                                 outab( ((t1 == S_R8U1) ? 0xDD : 0xFD ) );
                                 outab( op + e1.e_addr );
-                                break;
-                        }
+				break;
+			}
 
-                        if (genop(0, op, &e1, 1))
-                                xerr('a', "Invalid Addressing Mode.");
-                        break;
-                }
-                if ((t1 == S_R8) && (e1.e_addr == A)) {
+			if (genop(0, op, &e1, 1))
+				xerr('a', "Invalid Addressing Mode.");
+			break;
+		}
+		if ((t1 == S_R8) && (e1.e_addr == A)) {
 
                         if (allow_undoc && ((t2 == S_R8U1) || (t2 == S_R8U2))) {
                                 /* undocumented instruction: add/adc/sbc  a,ixh|ixl|iyh|iyl */
                                 outab( ((t2 == S_R8U1) ? 0xDD : 0xFD ) );
                                 outab( op + e2.e_addr );
-                                break;
-                        }
+				break;
+			}
 
-                        if (genop(0, op, &e2, 1))
-                                xerr('a', "Second argument: Invalid Addressing Mode.");
-                        break;
-                }
-                if ((t1 == S_R16) && (t2 == S_R16)) {
-                        if (rf == S_ADD)
-                                op = 0x09;
-                        if (rf == S_ADC)
-                                op = 0x4A;
-                        if (rf == S_SBC)
-                                op = 0x42;
-                        v1 = (int) e1.e_addr;
-                        v2 = (int) e2.e_addr;
+			if (genop(0, op, &e2, 1))
+				xerr('a', "Second argument: Invalid Addressing Mode.");
+			break;
+		}
+		if ((t1 == S_R16) && (t2 == S_R16)) {
+			if (rf == S_ADD)
+				op = 0x09;
+			if (rf == S_ADC)
+				op = 0x4A;
+			if (rf == S_SBC)
+				op = 0x42;
+			v1 = (int) e1.e_addr;
+			v2 = (int) e2.e_addr;
                         /*
                          * op  hl,bc
                          * op  hl,de
                          * op  hl,hl
                          * op  hl,sp
                          */
-                        if ((v1 == HL) && (v2 <= SP)) {
-                                if (rf != S_ADD)
-                                        outab(0xED);
-                                outab(op | (v2<<4));
-                                break;
-                        }
-                        if (rf != S_ADD) {
-                                xerr('a', "Only valid with ADD.");
-                                break;
-                        }
+			if ((v1 == HL) && (v2 <= SP)) {
+				if (rf != S_ADD)
+					outab(0xED);
+				outab(op | (v2<<4));
+				break;
+			}
+			if (rf != S_ADD) {
+				xerr('a', "Only valid with ADD.");
+				break;
+			}
                         /*
                          * add  ix,bc
                          * add  ix,de
                          * add  ix,ix
                          * add  ix,sp
                          */
-                        if ((v1 == IX) && (v2 != HL) && (v2 != IY)) {
-                                if (v2 == IX)
-                                        v2 = HL;
-                                outab(0xDD);
-                                outab(op | (v2<<4));
-                                break;
-                        }
+			if ((v1 == IX) && (v2 != HL) && (v2 != IY)) {
+				if (v2 == IX)
+					v2 = HL;
+				outab(0xDD);
+				outab(op | (v2<<4));
+				break;
+			}
                         /*
                          * add  iy,bc
                          * add  iy,de
                          * add  iy,iy
                          * add  iy,sp
                          */
-                        if ((v1 == IY) && (v2 != HL) && (v2 != IX)) {
-                                if (v2 == IY)
-                                        v2 = HL;
-                                outab(0xFD);
-                                outab(op | (v2<<4));
-                                break;
-                        }
-                }
+			if ((v1 == IY) && (v2 != HL) && (v2 != IX)) {
+				if (v2 == IY)
+					v2 = HL;
+				outab(0xFD);
+				outab(op | (v2<<4));
+				break;
+			}
+		}
                 if (mchtyp == X_ZXN && rf == S_ADD && t1 == S_R16) {
                         if (e1.e_addr == HL && t2 == S_R8 && e2.e_addr == A) {
-                                outab(0xED);
+				outab(0xED);
                                 outab(0x31);
-                                break;
-                        }
+				break;
+			}
                         if (e1.e_addr == DE && t2 == S_R8 && e2.e_addr == A) {
-                                outab(0xED);
+				outab(0xED);
                                 outab(0x32);
-                                break;
-                        }
+				break;
+			}
                         if (e1.e_addr == BC && t2 == S_R8 && e2.e_addr == A) {
-                                outab(0xED);
+				outab(0xED);
                                 outab(0x33);
-                                break;
-                        }
+				break;
+			}
                         if (e1.e_addr == HL && t2 == S_IMMED) {
-                                outab(0xED);
+				outab(0xED);
                                 outab(0x34);
                                 outrw(&e2, 0);
-                                break;
-                        }
+				break;
+			}
                         if (e1.e_addr == DE && t2 == S_IMMED) {
-                                outab(0xED);
+				outab(0xED);
                                 outab(0x35);
                                 outrw(&e2, 0);
-                                break;
-                        }
+				break;
+			}
                         if (e1.e_addr == BC && t2 == S_IMMED) {
-                                outab(0xED);
+				outab(0xED);
                                 outab(0x36);
                                 outrw(&e2, 0);
-                                break;
-                        }
-                }
-                xerr('a', "Invalid Addressing Mode.");
-                break;
+				break;
+			}
+		}
+		xerr('a', "Invalid Addressing Mode.");
+		break;
 
-        case S_LD:
-                /*
+	case S_LD:
+		/*
                  * Enumerated ld instructions:
-                 *
+		 *
                  * ld
                  * ld.l         ld.il           ld.lil
                  * ld.s         ld.is           ld.sis
-                 */
-                t1 = addr(&e1);
-                comma(1);
-                t2 = addr(&e2);
-                /*
+		 */
+		t1 = addr(&e1);
+		comma(1);
+		t2 = addr(&e2);
+		/*
                  * ld  r,g
                  * ld  r,n      (r,#n)
                  * ld  r,(hl)
                  * ld  r,(ix+d)
                  * ld  r,(iy+d)
-                 */
-                if (t1 == S_R8) {
+		 */
+		if (t1 == S_R8) {
                         /*
                          * ld  r,g
                          */
                         v1 = op | e1.e_addr<<3;
-                        if (genop(0, v1, &e2, 0) == 0)
-                                break;
+			if (genop(0, v1, &e2, 0) == 0)
+				break;
                         /*
                          * ld  r,n      (r,#n)
                          */
-                        if (t2 == S_IMMED) {
-                                outab((e1.e_addr<<3) | 0x06);
-                                outrb(&e2,0);
-                                break;
-                        }
-                }
+			if (t2 == S_IMMED) {
+				outab((e1.e_addr<<3) | 0x06);
+				outrb(&e2,0);
+				break;
+			}
+		}
 
                 if (allow_undoc &&
                     ((t1 == S_R8U1) || (t1 == S_R8U2)) &&
@@ -975,306 +974,306 @@ struct mne *mp;
                     break;
                   }
 
-                v1 = (int) e1.e_addr;
-                v2 = (int) e2.e_addr;
-                /*
+		v1 = (int) e1.e_addr;
+		v2 = (int) e2.e_addr;
+		/*
                  * ld  be,mn    [be,#mn]
                  * ld  de,mn    [de,#mn]
                  * ld  hl,mn    [hl,#mn]
                  * ld  sp,mn    [sp,#mn]
                  * ld  ix,mn    [ix,#mn]
                  * ld  iy,mn    [iy,#mn]
-                 */
-                if ((t1 == S_R16) && (t2 == S_IMMED)) {
-                        v1 = gixiy(v1);
-                        outab(0x01|(v1<<4));
+		 */
+		if ((t1 == S_R16) && (t2 == S_IMMED)) {
+			v1 = gixiy(v1);
+			outab(0x01|(v1<<4));
                         glilsis(sf, &e2);
-                        break;
-                }
+			break;
+		}
 
-                /*
+		/*
                  * ld  bc,(hl)
                  * ld  de,(hl)
                  * ld  hl,(hl)
                  * ld  ix,(hl)
                  * ld  iy,(hl)
-                 */
+		 */
                 if (mchtyp == X_EZ80 && (t1 == S_R16) && (t2 == S_IDHL)) {
                         if (v1 == SP) {
                                 aerr();
-                                break;
-                        }
-                        outab(0xED);
+				break;
+			}
+			outab(0xED);
                         if (v1 == IX) {
                                 outab(0x37);
                         } else
                         if (v1 == IY) {
                                 outab(0x31);
-                        } else {
+			} else {
                                 outab(7 + (v1 << 4));
-                        }
-                        break;
-                }
+			}
+			break;
+		}
 
-                /*
+		/*
                  * ld  (hl),bc
                  * ld  (hl),de
                  * ld  (hl),hl
                  * ld  (hl),ix
                  * ld  (hl),iy
-                 */
+		 */
                 if (mchtyp == X_EZ80 && (t2 == S_R16) && (t1 == S_IDHL)) {
                         if (v2 == SP) {
                                 aerr();
-                                break;
-                        }
-                        outab(0xED);
+				break;
+			}
+			outab(0xED);
                         if (v2 == IX) {
                                 outab(0x3f);
                         } else
                         if (v2 == IY) {
                                 outab(0x3e);
-                        } else {
+			} else {
                                 outab(0xf + (v2 << 4));
-                        }
-                        break;
-                }
+			}
+			break;
+		}
 
-                /*
+		/*
                  * ld  bc,(ix+d)        ld  bc,(iy+d)
                  * ld  de,(ix+d)        ld  de,(iy+d)
                  * ld  hl,(ix+d)        ld  hl,(iy+d)
                  * ld  ix,(ix+d)        ld  ix,(iy+d)
                  * ld  iy,(ix+d)        ld  iy,(iy+d)
-                 */
+		 */
                 if (mchtyp == X_EZ80 && (t1 == S_R16) && ((t2 == S_IDIX) || (t2 == S_IDIY))) {
                         if (v1 == SP) {
                                 xerr('a', "Only BC, DE, HL, IX and IY are allowed.");
-                                break;
-                        }
+				break;
+			}
                         if (t2 == S_IDIX) {
-                                outab(0xDD);
+				outab(0xDD);
                                 if (v1 == IX) {
                                         outab(0x37);
                                 } else
                                 if (v1 == IY) {
                                         outab(0x31);
-                                }
-                        } else {
-                                outab(0xFD);
+				}
+			} else {
+				outab(0xFD);
                                 if (v1 == IX) {
                                         outab(0x31);
                                 }else
                                 if (v1 == IY) {
                                         outab(0x37);
-                                }
-                        }
+				}
+			}
                         if ((v1 == BC) || (v1 == DE) || (v1 == HL))
                                 outab((v1 << 4) + 7);
                         outrb(&e2, R_SGND);
-                        break;
-                }
+			break;
+		}
 
-                /*
+		/*
                  * ld  (ix+d),bc        ld  (iy+d),bc
                  * ld  (ix+d),de        ld  (iy+d),de
                  * ld  (ix+d),hl        ld  (iy+d),hl
                  * ld  (ix+d),ix        ld  (iy+d),ix
                  * ld  (ix+d),iy        ld  (iy+d),iy
-                 */
+		 */
                 if (mchtyp == X_EZ80 && (t2 == S_R16) && ((t1 == S_IDIX) || (t1 == S_IDIY))) {
                         if (v2 == SP) {
                                 xerr('a', "Only BC, DE, HL, IX and IY are allowed.");
-                                break;
-                        }
+				break;
+			}
                         if (t1 == S_IDIX) {
-                                outab(0xDD);
+				outab(0xDD);
                                 if (v2 == IX) {
                                         outab(0x3F);
                                 } else
                                 if (v2 == IY) {
                                         outab(0x3E);
-                                }
-                        } else {
-                                outab(0xFD);
+				}
+			} else {
+				outab(0xFD);
                                 if (v2 == IX) {
                                         outab(0x3E);
                                 } else
                                 if (v2 == IY) {
                                         outab(0x3F);
-                                }
-                        }
+				}
+			}
                         if ((v2 == BC) || (v2 == DE) || (v2 == HL))
                                 outab((v2 << 4) + 0xf);
                         outrb(&e1, R_SGND);
-                        break;
-                }
+			break;
+		}
 
-                /*
+		/*
                  * ld  be,(mn)  [be,(#mn)]
                  * ld  de,(mn)  [de,(#mn)]
                  * ld  hl,(mn)  [hl,(#mn)]
                  * ld  sp,(mn)  [sp,(#mn)]
                  * ld  ix,(mn)  [ix,(#mn)]
                  * ld  iy,(mn)  [iy,(#mn)]
-                 */
-                if ((t1 == S_R16) && (t2 == S_INDM)) {
-                        if (gixiy(v1) == HL) {
-                                outab(0x2A);
-                        } else {
-                                outab(0xED);
-                                outab(0x4B | (v1<<4));
-                        }
+		 */
+		if ((t1 == S_R16) && (t2 == S_INDM)) {
+			if (gixiy(v1) == HL) {
+				outab(0x2A);
+			} else {
+				outab(0xED);
+				outab(0x4B | (v1<<4));
+			}
                         glilsis(sf, &e2);
-                        break;
-                }
-                /*
+			break;
+		}
+		/*
                  * ld  (mn),bc  [(#mn),bc]
                  * ld  (mn),de  [(#mn),de]
                  * ld  (mn),hl  [(#mn),hl]
                  * ld  (mn),sp  [(#mn),sp]
                  * ld  (mn),ix  [(#mn),ix]
                  * ld  (mn),iy  [(#mn),iy]
-                 */
-                if ((t1 == S_INDM) && (t2 == S_R16)) {
-                        if (gixiy(v2) == HL) {
-                                outab(0x22);
-                        } else {
-                                outab(0xED);
-                                outab(0x43 | (v2<<4));
-                        }
+		 */
+		if ((t1 == S_INDM) && (t2 == S_R16)) {
+			if (gixiy(v2) == HL) {
+				outab(0x22);
+			} else {
+				outab(0xED);
+				outab(0x43 | (v2<<4));
+			}
                         glilsis(sf, &e1);
-                        break;
-                }
-                /*
+			break;
+		}
+		/*
                  * ld  a,(mn)   [a,(#mn)]
-                 */
-                if ((t1 == S_R8) && (v1 == A) && (t2 == S_INDM)) {
-                        outab(0x3A);
-                        outrw(&e2, 0);
-                        break;
-                }
-                /*
+		 */
+		if ((t1 == S_R8) && (v1 == A) && (t2 == S_INDM)) {
+			outab(0x3A);
+			outrw(&e2, 0);
+			break;
+		}
+		/*
                  * ld  (mn),a   [(#mn),a]
-                 */
-                if ((t1 == S_INDM) && (t2 == S_R8) && (v2 == A)) {
-                        outab(0x32);
+		 */
+		if ((t1 == S_INDM) && (t2 == S_R8) && (v2 == A)) {
+			outab(0x32);
                         glilsis(sf, &e1);
-                        break;
-                }
-                /*
+			break;
+		}
+		/*
                  * ld  (hl),r
                  * ld  (ix+d),r
                  * ld  (iy+d),r
-                 */
-                if ((t2 == S_R8) && (gixiy(t1) == S_IDHL)) {
-                        outab(0x70|v2);
-                        if (t1 != S_IDHL)
-                                outrb(&e1, 0);
-                        break;
-                }
-                /*
+		 */
+		if ((t2 == S_R8) && (gixiy(t1) == S_IDHL)) {
+			outab(0x70|v2);
+			if (t1 != S_IDHL)
+				outrb(&e1, 0);
+			break;
+		}
+		/*
                  * ld  (hl),n           [(hl),#n]
                  * ld  (ix+d),n         [(ix+d),#n]
                  * ld  (iy+d),n         [(iy+d),#n]
-                 */
-                if ((t2 == S_IMMED) && (gixiy(t1) == S_IDHL)) {
-                        outab(0x36);
-                        if (t1 != S_IDHL)
-                                outrb(&e1, 0);
-                        outrb(&e2, 0);
-                        break;
-                }
-                /*
+		 */
+		if ((t2 == S_IMMED) && (gixiy(t1) == S_IDHL)) {
+			outab(0x36);
+			if (t1 != S_IDHL)
+				outrb(&e1, 0);
+			outrb(&e2, 0);
+			break;
+		}
+		/*
                  * ld  R,a
                  * ld  I,a
-                 */
-                if ((t1 == S_R8X) && (t2 == S_R8) && (v2 == A)) {
-                        outab(0xED);
-                        outab(v1);
-                        break;
-                }
-                /*
+		 */
+		if ((t1 == S_R8X) && (t2 == S_R8) && (v2 == A)) {
+			outab(0xED);
+			outab(v1);
+			break;
+		}
+		/*
                  * ld  MB,a
-                 */
+		 */
                 if ((t1 == S_R8MB) && (t2 == S_R8) && (v2 == A)) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0x6D);
-                        break;
-                }
-                /*
+			break;
+		}
+		/*
                  * ld  a,R
                  * ld  a,I
-                 */
-                if ((t1 == S_R8) && (v1 == A) && (t2 == S_R8X)) {
-                        outab(0xED);
-                        outab(v2|0x10);
-                        break;
-                }
-                /*
+		 */
+		if ((t1 == S_R8) && (v1 == A) && (t2 == S_R8X)) {
+			outab(0xED);
+			outab(v2|0x10);
+			break;
+		}
+		/*
                  * ld  a,R
                  * ld  a,I
-                 */
+		 */
                 if ((t1 == S_R8) && (v1 == A) && (t2 == S_R8MB)) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0x6E);
-                        break;
-                }
-                /*
+			break;
+		}
+		/*
                  * ld  sp,hl
                  * ld  sp,ix
                  * ld  sp,iy
-                 */
-                if ((t1 == S_R16) && (v1 == SP)) {
-                        if ((t2 == S_R16) && (gixiy(v2) == HL)) {
-                                outab(0xF9);
-                                break;
-                        }
-                }
-                /*
+		 */
+		if ((t1 == S_R16) && (v1 == SP)) {
+			if ((t2 == S_R16) && (gixiy(v2) == HL)) {
+				outab(0xF9);
+				break;
+			}
+		}
+		/*
                  * ld  a,(bc)
                  * ld  a,(de)
-                 */
-                if ((t1 == S_R8) && (v1 == A)) {
-                        if ((t2 == S_IDBC) || (t2 == S_IDDE)) {
-                                outab(0x0A | ((t2-S_INDR)<<4));
-                                break;
-                        }
-                }
-                /*
+		 */
+		if ((t1 == S_R8) && (v1 == A)) {
+			if ((t2 == S_IDBC) || (t2 == S_IDDE)) {
+				outab(0x0A | ((t2-S_INDR)<<4));
+				break;
+			}
+		}
+		/*
                  * ld  (bc),a
                  * ld  (de),a
-                 */
-                if ((t2 == S_R8) && (v2 == A)) {
-                        if ((t1 == S_IDBC) || (t1 == S_IDDE)) {
-                                outab(0x02 | ((t1-S_INDR)<<4));
-                                break;
-                        }
-                }
+		 */
+		if ((t2 == S_R8) && (v2 == A)) {
+			if ((t1 == S_IDBC) || (t1 == S_IDDE)) {
+				outab(0x02 | ((t1-S_INDR)<<4));
+				break;
+			}
+		}
 
-                /*
+		/*
                  * ld  hl,i
-                 */
+		 */
                 if ((t1 == S_R16) && (v1 == HL) && (t2 == S_R8X) && (v2 == I)) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0xD7);
-                        break;
-                }
-                /*
+			break;
+		}
+		/*
                  * ld  i,hl
-                 */
+		 */
                 if ((t2 == S_R16) && (v2 == HL) && (t1 == S_R8X) && (v1 == I)) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0xC7);
-                        break;
-                }
+			break;
+		}
 
-                /*
+		/*
                  * ld  r,ixl
                  * ld  r,ixh
                  * ld  r,iyl
                  * ld  r,iyh
-                 */
+		 */
                 if ( (t1 == S_R8) &&
                      allow_undoc &&
                      ((t2 == S_R8U1) || (t2 == S_R8U2)) )
@@ -1285,12 +1284,12 @@ struct mne *mp;
                     outab( (e1.e_addr << 3) | (0x40 + e2.e_addr) );
                     break;
                   }
-                /*
+		/*
                  * ld  ixl,r
                  * ld  ixh,r
                  * ld  iyl,r
                  * ld  iyh,r
-                 */
+		 */
                 if ( allow_undoc &&
                      ((t1 == S_R8U1) || (t1 == S_R8U2)) &&
                      (t2 == S_R8) )
@@ -1302,7 +1301,7 @@ struct mne *mp;
                     outab( (e1.e_addr << 3) | (0x40 + e2.e_addr) );
                     break;
                   }
-                /*
+		/*
                  * ld  ixh,ihx
                  * ld  ixh,ixl
                  * ld  ixl,ixh
@@ -1311,7 +1310,7 @@ struct mne *mp;
                  * ld  iyh,iyl
                  * ld  iyl,iyh
                  * ld  iyl,iyl
-                 */
+		 */
                 if ( allow_undoc &&
                      ((t1 == S_R8U1) &&  (t2 == S_R8U1) || (t1 == S_R8U2) &&  (t2 == S_R8U2)) )
                   {
@@ -1323,356 +1322,356 @@ struct mne *mp;
                   outab (0xED);
                   outab ((v1 == A) ? 0x6E : 0x6D);
                   break;
-                }
-                xerr('a', "Invalid Addressing Mode.");
-                break;
+		}
+		xerr('a', "Invalid Addressing Mode.");
+		break;
 
-        case S_EX:
-                t1 = addr(&e1);
-                comma(1);
-                t2 = addr(&e2);
-                if (t2 == S_R16) {
-                        v1 = (int) e1.e_addr;
-                        v2 = (int) e2.e_addr;
+	case S_EX:
+		t1 = addr(&e1);
+		comma(1);
+		t2 = addr(&e2);
+		if (t2 == S_R16) {
+			v1 = (int) e1.e_addr;
+			v2 = (int) e2.e_addr;
                         /*
                          * ex  (sp),hl
                          * ex  (sp),ix
                          * ex  (sp),iy
                          */
-                        if ((t1 == S_IDSP) && (v1 == 0)) {
-                                if (gixiy(v2) == HL) {
-                                        outab(op);
-                                        break;
-                                }
-                        }
+			if ((t1 == S_IDSP) && (v1 == 0)) {
+				if (gixiy(v2) == HL) {
+					outab(op);
+					break;
+				}
+			}
                         /*
                          * ex  de,hl
                          */
-                        if (t1 == S_R16) {
-                                if ((v1 == DE) && (v2 == HL)) {
-                                        outab(0xEB);
-                                        break;
-                                }
-                        }
-                }
-                /*
+			if (t1 == S_R16) {
+				if ((v1 == DE) && (v2 == HL)) {
+					outab(0xEB);
+					break;
+				}
+			}
+		}
+		/*
                  * ex  af,af'
-                 */
-                if ((t1 == S_R16X) && (t2 == S_R16X)) {
-                        outab(0x08);
-                        break;
-                }
-                xerr('a', "Invalid Addressing Mode.");
-                break;
+		 */
+		if ((t1 == S_R16X) && (t2 == S_R16X)) {
+			outab(0x08);
+			break;
+		}
+		xerr('a', "Invalid Addressing Mode.");
+		break;
 
-        case S_IN:
-        case S_OUT:
-                if (rf == S_IN) {
-                        t1 = addr(&e1);
-                        comma(1);
-                        t2 = addr(&e2);
-                } else {
-                        t2 = addr(&e2);
-                        comma(1);
-                        t1 = addr(&e1);
-                }
-                v1 = (int) e1.e_addr;
-                v2 = (int) e2.e_addr;
-                if (t1 == S_R8) {
+	case S_IN:
+	case S_OUT:
+		if (rf == S_IN) {
+			t1 = addr(&e1);
+			comma(1);
+			t2 = addr(&e2);
+		} else {
+			t2 = addr(&e2);
+			comma(1);
+			t1 = addr(&e1);
+		}
+		v1 = (int) e1.e_addr;
+		v2 = (int) e2.e_addr;
+		if (t1 == S_R8) {
                         /*
                          * in   a,(n)   [in   a,(#n)]
                          * out  (n),a   [out  (#n),a]
                          */
-                        if ((v1 == A) && (t2 == S_INDM)) {
-                                outab(op);
-                                outab(v2);
-                                break;
-                        }
+			if ((v1 == A) && (t2 == S_INDM)) {
+				outab(op);
+				outab(v2);
+				break;
+			}
                         /*
                          * in   r,(c)   [in   r,(bc)]
                          * out  (c),r   [out  (bc),r]
                          */
-                        if (t2 == S_IDC) {
-                                outab(0xED);
-                                outab(((rf == S_IN) ? 0x40 : 0x41) + (v1<<3));
-                                break;
-                        }
-                }
-                xerr('a', "Invalid Addressing Mode.");
-                break;
+			if (t2 == S_IDC) {
+				outab(0xED);
+				outab(((rf == S_IN) ? 0x40 : 0x41) + (v1<<3));
+				break;
+			}
+		}
+		xerr('a', "Invalid Addressing Mode.");
+		break;
 
-        case S_DEC:
-        case S_INC:
-                t1 = addr(&e1);
-                v1 = (int) e1.e_addr;
-                /*
+	case S_DEC:
+	case S_INC:
+		t1 = addr(&e1);
+		v1 = (int) e1.e_addr;
+		/*
                  * op  r
-                 */
-                if (t1 == S_R8) {
-                        outab(op|(v1<<3));
-                        break;
-                }
-                /*
+		 */
+		if (t1 == S_R8) {
+			outab(op|(v1<<3));
+			break;
+		}
+		/*
                  * op  (hl)
-                 */
-                if (t1 == S_IDHL) {
-                        outab(op|0x30);
-                        break;
-                }
-                /*
+		 */
+		if (t1 == S_IDHL) {
+			outab(op|0x30);
+			break;
+		}
+		/*
                  * op  (ix+d)
                  * op  (iy+d)
-                 */
-                if (t1 != gixiy(t1)) {
-                        outab(op|0x30);
-                        outrb(&e1,0);
-                        break;
-                }
-                /*
+		 */
+		if (t1 != gixiy(t1)) {
+			outab(op|0x30);
+			outrb(&e1,0);
+			break;
+		}
+		/*
                  * op  bc
                  * op  de
                  * op  hl
                  * op  sp
                  * op  ix
                  * op  iy
-                 */
-                if (t1 == S_R16) {
-                        v1 = gixiy(v1);
-                        if (rf == S_INC) {
-                                outab(0x03|(v1<<4));
-                                break;
-                        }
-                        if (rf == S_DEC) {
-                                outab(0x0B|(v1<<4));
-                                break;
-                        }
-                }
-                /*
+		 */
+		if (t1 == S_R16) {
+			v1 = gixiy(v1);
+			if (rf == S_INC) {
+				outab(0x03|(v1<<4));
+				break;
+			}
+			if (rf == S_DEC) {
+				outab(0x0B|(v1<<4));
+				break;
+			}
+		}
+		/*
                  * op  IXL
                  * op  IXH
                  * op  IYL
                  * op  IYH
-                 */
+		 */
                 if (allow_undoc && ((t1 == S_R8U1)||(t1 == S_R8U2))) {
                         outab( ((t1 == S_R8U1) ? 0xDD : 0xFD ) );
-                        outab(op|(v1<<3));
-                        break;
-                }
-                xerr('a', "Invalid Addressing Mode.");
-                break;
+			outab(op|(v1<<3));
+			break;
+		}
+		xerr('a', "Invalid Addressing Mode.");
+		break;
 
-        case S_DJNZ:
-        case S_JR:
-                /*
+	case S_DJNZ:
+	case S_JR:
+		/*
                  * jr  cc,e
-                 */
-                if (rf == S_JR && (v1 = admode(CND)) != 0) {
-                        if ((v1 &= 0xFF) <= 0x03) {
-                                op += (v1+1)<<3;
-                        } else {
-                                xerr('a', "Condition code required.");
-                        }
-                        comma(1);
-                }
-                /*
+		 */
+		if (rf == S_JR && (v1 = admode(CND)) != 0) {
+			if ((v1 &= 0xFF) <= 0x03) {
+				op += (v1+1)<<3;
+			} else {
+				xerr('a', "Condition code required.");
+			}
+			comma(1);
+		}
+		/*
                  * jr  e
-                 */
-                expr(&e2, 0);
-                outab(op);
+		 */
+		expr(&e2, 0);
+		outab(op);
                 if (mchpcr(&e2)) {
                         v2 = (int) (e2.e_addr - dot.s_addr - 1);
                         if (pass == 2 && ((v2 < -128) || (v2 > 127)))
-                                xerr('a', "Branching Range Exceeded.");
-                        outab(v2);
-                } else {
-                        outrb(&e2, R_PCR);
-                }
-                if (e2.e_mode != S_USER)
-                        rerr();
-                break;
+				xerr('a', "Branching Range Exceeded.");
+			outab(v2);
+		} else {
+			outrb(&e2, R_PCR);
+		}
+		if (e2.e_mode != S_USER)
+			rerr();
+		break;
 
-        case S_CALL:
-                if ((v1 = admode(CND)) != 0) {
+	case S_CALL:
+		if ((v1 = admode(CND)) != 0) {
                         /*
                          * call  cc,n
                          */
-                        op |= (v1&0xFF)<<3;
-                        comma(1);
-                } else {
+			op |= (v1&0xFF)<<3;
+			comma(1);
+		} else {
                         /*
                          * call  n
                          */
-                        op = 0xCD;
-                }
-                expr(&e1, 0);
-                outab(op);
+			op = 0xCD;
+		}
+		expr(&e1, 0);
+		outab(op);
                 glilsis(sf, &e1);
-                break;
+		break;
 
-        case S_JP:
-                /*
+	case S_JP:
+		/*
                  * jp  cc,mn
-                 */
-                if ((v1 = admode(CND)) != 0) {
-                        op |= (v1&0xFF)<<3;
-                        comma(1);
-                        expr(&e1, 0);
-                        outab(op);
+		 */
+		if ((v1 = admode(CND)) != 0) {
+			op |= (v1&0xFF)<<3;
+			comma(1);
+			expr(&e1, 0);
+			outab(op);
                         glilsis(sf, &e1);
-                        break;
-                }
-                /*
+			break;
+		}
+		/*
                  * jp  mn
-                 */
-                t1 = addr(&e1);
-                if (t1 == S_USER) {
-                        outab(0xC3);
+		 */
+		t1 = addr(&e1);
+		if (t1 == S_USER) {
+			outab(0xC3);
                         glilsis(sf, &e1);
-                        break;
-                }
-                /*
+			break;
+		}
+		/*
                  * jp  (hl)
                  * jp  (ix)
                  * jp  (iy)
-                 */
-                if ((e1.e_addr == 0) && (gixiy(t1) == S_IDHL)) {
-                        outab(0xE9);
-                        break;
-                }
-                /*
+		 */
+		if ((e1.e_addr == 0) && (gixiy(t1) == S_IDHL)) {
+			outab(0xE9);
+			break;
+		}
+		/*
                  * jp  (c)
-                 */
+		 */
                 if (mchtyp == X_ZXN && t1 == S_IDC) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0x98);
-                        break;
-                }
-                xerr('a', "Invalid Addressing Mode.");
-                break;
+			break;
+		}
+		xerr('a', "Invalid Addressing Mode.");
+		break;
 
         case X_UNDOCD:
                 if (mchtyp != X_HD64)
                         ++allow_undoc;
                 else
                         xerr('a', "HD64180/Z180: Traps on illegal instruction");
-                break;
+		break;
 
-        case S_CPU:
-                opcycles = OPCY_CPU;
-                mchtyp = op;
-                sym[2].s_addr = op;
-                lmode = SLIST;
+	case S_CPU:
+		opcycles = OPCY_CPU;
+		mchtyp = op;
+		sym[2].s_addr = op;
+		lmode = SLIST;
                 allow_undoc = (mchtyp == X_EZ80 || mchtyp == X_ZXN || mchtyp == X_R800);
-                break;
+		break;
 
-        case X_INH2:
-                outab(0xED);
-                outab(op);
-                break;
+	case X_INH2:
+		outab(0xED);
+		outab(op);
+		break;
 
-        case X_IN:
-        case X_OUT:
-                if (rf == X_IN) {
-                        t1 = addr(&e1);
-                        comma(1);
-                        t2 = addr(&e2);
-                } else {
-                        t2 = addr(&e2);
-                        comma(1);
-                        t1 = addr(&e1);
-                }
-                if ((t1 == S_R8) && (t2 == S_INDM)) {
-                        outab(0xED);
-                        outab(op | (e1.e_addr<<3));
-                        outrb(&e2, 0);
-                        break;
-                }
-                xerr('a', "Invalid Addressing Mode.");
-                break;
+	case X_IN:
+	case X_OUT:
+		if (rf == X_IN) {
+			t1 = addr(&e1);
+			comma(1);
+			t2 = addr(&e2);
+		} else {
+			t2 = addr(&e2);
+			comma(1);
+			t1 = addr(&e1);
+		}
+		if ((t1 == S_R8) && (t2 == S_INDM)) {
+			outab(0xED);
+			outab(op | (e1.e_addr<<3));
+			outrb(&e2, 0);
+			break;
+		}
+		xerr('a', "Invalid Addressing Mode.");
+		break;
 
-        case X_MLT:
-                /*
+	case X_MLT:
+		/*
                  * mlt  bc/de/hl/sp
-                 */
-                t1 = addr(&e1);
+		 */
+		t1 = addr(&e1);
                 if (mchtyp == X_ZXN && (t1 == S_R16) && (int) e1.e_addr == DE) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0x30);
-                        break;
-                }
+			break;
+		}
                 else if ((t1 == S_R16) && ((v1 = (int) e1.e_addr) <= SP)) {
-                        outab(0xED);
-                        outab(op | (v1<<4));
-                        break;
-                }
-                xerr('a', "Only BC, DE, HL and SP are allowed.");
-                break;
+			outab(0xED);
+			outab(op | (v1<<4));
+			break;
+		}
+		xerr('a', "Only BC, DE, HL and SP are allowed.");
+		break;
 
-        case X_TST:
-                /*
+	case X_TST:
+		/*
                  * op  (hl)
                  * op  r
                  * op  n        [#n]
-                 */
-                t2 = addr(&e2);
-                if (more()) {
+		 */
+		t2 = addr(&e2);
+		if (more()) {
                         /*
                          * op  a,(hl)
                          * op  a,r
                          * op  a,n      [a,#n]
                          */
-                        if ((t2 != S_R8) || (e2.e_addr != A))
+			if ((t2 != S_R8) || (e2.e_addr != A))
                                 aerr();
-                        comma(1);
-                        clrexpr(&e2);
-                        t2 = addr(&e2);
-                }
-                /*
+			comma(1);
+			clrexpr(&e2);
+			t2 = addr(&e2);
+		}
+		/*
                  * tst  (hl)
-                 */
+		 */
                 if ((mchtyp == X_HD64 || mchtyp == X_EZ80) && t2 == S_IDHL) {
-                        outab(0xED);
-                        outab(0x34);
-                        break;
-                }
-                /*
+			outab(0xED);
+			outab(0x34);
+			break;
+		}
+		/*
                  * tst  r
-                 */
+		 */
                 if ((mchtyp == X_HD64 || mchtyp == X_EZ80) && t2 == S_R8) {
-                        outab(0xED);
+			outab(0xED);
                         outab(op | (e2.e_addr << 3));
-                        break;
-                }
-                /*
+			break;
+		}
+		/*
                  * tst  n       [tst  #n]
-                 */
+		 */
                 if (t2 == S_IMMED) {
-                        outab(0xED);
+			outab(0xED);
                         if (mchtyp == X_HD64 || mchtyp == X_EZ80)
                                 outab(0x64);
                         else if (mchtyp == X_ZXN)
                                 outab(0x27);
                         else
                                 aerr();
-                        outrb(&e2, 0);
-                        break;
-                }
-                xerr('a', "Invalid Addressing Mode.");
-                break;
+			outrb(&e2, 0);
+			break;
+		}
+		xerr('a', "Invalid Addressing Mode.");
+		break;
 
-        case X_TSTIO:
-                t1 = addr(&e1);
-                /*
+	case X_TSTIO:
+		t1 = addr(&e1);
+		/*
                  * tstio  n             [tstio  #n]
-                 */
-                if (t1 == S_IMMED) {
-                        outab(0xED);
-                        outab(op);
-                        outrb(&e1, 0);
-                        break;
-                }
-                xerr('a', "Invalid Addressing Mode.");
-                break;
+		 */
+		if (t1 == S_IMMED) {
+			outab(0xED);
+			outab(op);
+			outrb(&e1, 0);
+			break;
+		}
+		xerr('a', "Invalid Addressing Mode.");
+		break;
 
         case X_ZXN_INH2:
                 switch (op) {
@@ -1694,137 +1693,137 @@ struct mne *mp;
                          if (t1 != S_R16 || e1.e_addr != DE || t2 != S_R8 || e2.e_addr != B)
                                 aerr();
                          break;
-                }
-                outab(0xED);
-                outab(op);
-                break;
+		}
+		outab(0xED);
+		outab(op);
+		break;
 
         case X_ZXN_MUL:
                 if ((t1 = addr(&e1)) == S_R8 && e1.e_addr == D &&
                         more() && comma(1) &&
                         (t2 = addr(&e2)) == S_R8 && e2.e_addr == E
                         ) {
-                        outab(0xED);
-                        outab(op);
-                        break;
-                }
+			outab(0xED);
+			outab(op);
+			break;
+		}
                 aerr();
-                break;
+		break;
 
         case X_ZXN_MIRROR:
-                t1 = addr(&e1);
+		t1 = addr(&e1);
                 if (t1 == S_R8 && e1.e_addr == A) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0x24);
-                        break;
-                }
+			break;
+		}
                 if (t1 == S_R16 && e1.e_addr == DE) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0x26);
-                        break;
-                }
+			break;
+		}
                 aerr();
-                break;
+		break;
 
         case X_ZXN_NEXTREG:
-                t1 = addr(&e1);
-                t2 = 0;
-                if (more()) {
-                        comma(1);
-                        t2 = addr(&e2);
-                }
+		t1 = addr(&e1);
+		t2 = 0;
+		if (more()) {
+			comma(1);
+			t2 = addr(&e2);
+		}
                 if (t1 == S_IMMED && t2 == S_IMMED) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0x91);
-                        outrb(&e1, 0);
-                        outrb(&e2, 0);
-                        break;
-                }
+			outrb(&e1, 0);
+			outrb(&e2, 0);
+			break;
+		}
                 if (t1 == S_IMMED && t2 == S_R8 && e2.e_addr == A) {
-                        outab(0xED);
+			outab(0xED);
                         outab(0x92);
-                        outrb(&e1, 0);
-                        break;
-                }
+			outrb(&e1, 0);
+			break;
+		}
                 aerr();
-                break;
+		break;
 
         case X_ZXN_CU_WAIT:
-                t1 = addr(&e1);
-                t2 = 0;
-                if (more()) {
-                        comma(1);
-                        t2 = addr(&e2);
-                }
+		t1 = addr(&e1);
+		t2 = 0;
+		if (more()) {
+			comma(1);
+			t2 = addr(&e2);
+		}
                 if (t1 == S_IMMED && t2 == S_IMMED) {
                         if (e1.e_addr > 311 || e2.e_addr > 55) {
                                 aerr();
-                                break;
-                        }
+				break;
+			}
                         v1 = 0x8000 + (e2.e_addr << 9) + (e1.e_addr);
                         outab(v1 >> 8);
                         outab(v1 & 0xFF);
                         opcycles = OPCY_ERR;
-                        break;
-                }
+			break;
+		}
                 aerr();
-                break;
+		break;
 
         case X_ZXN_CU_MOVE:
-                t1 = addr(&e1);
-                t2 = 0;
-                if (more()) {
-                        comma(1);
-                        t2 = addr(&e2);
-                }
+		t1 = addr(&e1);
+		t2 = 0;
+		if (more()) {
+			comma(1);
+			t2 = addr(&e2);
+		}
                 if (t1 == S_IMMED && t2 == S_IMMED) {
                         if (e1.e_addr > 127 || e2.e_addr > 255) {
                                 aerr();
-                                break;
-                        }
+				break;
+			}
                         v1 = (e1.e_addr << 8) + (e2.e_addr);
                         outab(v1 >> 8);
                         outab(v1 & 0xFF);
                         opcycles = OPCY_ERR;
-                        break;
-                }
+			break;
+		}
                 aerr();
-                break;
+		break;
 
         case X_ZXN_CU_STOP:
                 outab(0xFF);
                 outab(0xFF);
-                opcycles = OPCY_ERR;
-                break;
+		opcycles = OPCY_ERR;
+		break;
 
         case X_ZXN_CU_NOP:
                 outab(0x00);
                 outab(0x00);
-                opcycles = OPCY_ERR;
-                break;
+		opcycles = OPCY_ERR;
+		break;
 
         case X_EZ_ADL:
                 expr(&e1,0);
-                abscheck(&e1);
+		abscheck(&e1);
                 ez80_adl = e1.e_addr;
-                break;
+		break;
 
         case X_EZ_INH2:
-                outab(0xED);
-                outab(op);
-                break;
+		outab(0xED);
+		outab(op);
+		break;
 
         case X_EZ_LEA:
-                t1 = addr(&e1);
-                v1 = (int) e1.e_addr;
-                comma(1);
-                t2 = addr(&e2);
-                v2 = (int) e2.e_addr;
-                comma(1);
+		t1 = addr(&e1);
+		v1 = (int) e1.e_addr;
+		comma(1);
+		t2 = addr(&e2);
+		v2 = (int) e2.e_addr;
+		comma(1);
                 t3 = addr(&e2);
                 if ((t1 == S_R16) && (v1 != SP) && (t2 == S_R16) && (v2==IX || v2==IY) && t3 == S_IMMED) {
                         t2 = e2.e_mode = S_INDR + v2;
-                        outab(0xED);
+			outab(0xED);
                         /*
                          * op  ix,ix,#d
                          * op  ix,iy,#d
@@ -1834,7 +1833,7 @@ struct mne *mp;
                                         outab(0x32);
                                 } else {
                                         outab(0x54);
-                                }
+				}
                         } else
                         /*
                          * op  iy,ix,#d
@@ -1845,8 +1844,8 @@ struct mne *mp;
                                         outab(0x55);
                                 } else {
                                         outab(0x33);
-                                }
-                        } else {
+				}
+			} else {
                                 if (t2 == S_IDIY) {
                                         /*
                                          * op  bc,iy,#d
@@ -1861,129 +1860,129 @@ struct mne *mp;
                                          * op  hl,ix,#d
                                          */
                                         outab((v1 << 4) + 2);
-                                }
-                        }
+				}
+			}
                         outrb(&e2, R_SGND);
-                        break;
-                }
+			break;
+		}
                 aerr();
-                break;
+		break;
 
         case X_EZ_PEA:
-                t1 = addr(&e1);
-                v1 = (int) e1.e_addr;
-                comma(1);
+		t1 = addr(&e1);
+		v1 = (int) e1.e_addr;
+		comma(1);
                 t2 = addr (&e1);
-                /*
+		/*
                  * pea  ix,#d
                  * pea  iy,#d
-                 */
+		 */
                 if ((t1 == S_R16) && (v1==IX || v1==IY) && t2 == S_IMMED) {
                         t1 = e1.e_mode = S_INDR + v1;
-                        outab(0xED);
+			outab(0xED);
                         if (t1 == S_IDIY)
                                 ++op;
-                        outab(op);
+			outab(op);
                         outrb(&e1, R_SGND);
-                        break;
-                }
+			break;
+		}
                 aerr();
-                break;
+		break;
 
         case X_Z280_MULTU:
-                t1 = addr(&e1);
-                comma(1);
-                t2 = addr(&e2);
+		t1 = addr(&e1);
+		comma(1);
+		t2 = addr(&e2);
                 // For the R800, this instruction only works if the second operand is b, c, d, or e.
                 if (t1 == S_R8 && e1.e_addr == A && t2 == S_R8 && (e2.e_addr == B || e2.e_addr == C || e2.e_addr == D || e2.e_addr == E)) {
-                        outab(0xED);
+			outab(0xED);
                         outab(op | (e2.e_addr<<3));
-                        break;
+			break;
                 }       
                 aerr();
-                break;
+		break;
 
         case X_Z280_MULTUW:
-                t1 = addr(&e1);
-                comma(1);
-                t2 = addr(&e2);
+		t1 = addr(&e1);
+		comma(1);
+		t2 = addr(&e2);
                 // For the R800, this instruction only works if the second operand is bc or sp.
                 if (t1 == S_R16 && e1.e_addr == HL && t2 == S_R16 && (e2.e_addr == BC || e2.e_addr == SP)) {
-                        outab(0xED);
+			outab(0xED);
                         outab(op | (e2.e_addr<<4));
-                        break;
-                }
+			break;
+		}
                 aerr();
-                break;
+		break;
 
-        default:
-                opcycles = OPCY_ERR;
-                xerr('o', "Internal Opcode Error.");
-                break;
-        }
+	default:
+		opcycles = OPCY_ERR;
+		xerr('o', "Internal Opcode Error.");
+		break;
+	}
 
-        if (opcycles == OPCY_NONE) {
+	if (opcycles == OPCY_NONE) {
                 switch (mchtyp) {
-                case X_HD64:
+		case X_HD64:
                         opcycles = hd64Page[0][cb[0] & 0xFF];
-                        while ((opcycles & OPCY_NONE) && (opcycles & OPCY_MASK)) {
-                                switch (opcycles) {
-                                case P2:        /* CB xx        */
-                                case P3:        /* DD xx        */
-                                case P4:        /* ED xx        */
-                                case P5:        /* FD xx        */
-                                        opcycles = hd64Page[opcycles & OPCY_MASK][cb[1] & 0xFF];
-                                        break;
-                                case P6:        /* DD CB -- xx  */
-                                case P7:        /* FD CB -- xx  */
-                                        opcycles = hd64Page[opcycles & OPCY_MASK][cb[3] & 0xFF];
-                                        break;
-                                default:
-                                        opcycles = OPCY_NONE;
-                                        break;
-                                }
-                        }
-                        break;
-                case X_Z80:
+			while ((opcycles & OPCY_NONE) && (opcycles & OPCY_MASK)) {
+				switch (opcycles) {
+				case P2:	/* CB xx	*/
+				case P3:	/* DD xx	*/
+				case P4:	/* ED xx	*/
+				case P5:	/* FD xx	*/
+					opcycles = hd64Page[opcycles & OPCY_MASK][cb[1] & 0xFF];
+					break;
+				case P6:	/* DD CB -- xx	*/
+				case P7:	/* FD CB -- xx	*/
+					opcycles = hd64Page[opcycles & OPCY_MASK][cb[3] & 0xFF];
+					break;
+				default:
+					opcycles = OPCY_NONE;
+					break;
+				}
+			}
+			break;
+		case X_Z80:
                         opcycles = z80Page[0][cb[0] & 0xFF];
-                        while ((opcycles & OPCY_NONE) && (opcycles & OPCY_MASK)) {
-                                switch (opcycles) {
-                                case P2:        /* CB xx        */
-                                case P3:        /* DD xx        */
-                                case P4:        /* ED xx        */
-                                case P5:        /* FD xx        */
-                                        opcycles = z80Page[opcycles & OPCY_MASK][cb[1] & 0xFF];
-                                        break;
-                                case P6:        /* DD CB -- xx  */
-                                case P7:        /* FD CB -- xx  */
-                                        opcycles = z80Page[opcycles & OPCY_MASK][cb[3] & 0xFF];
-                                        break;
-                                default:
-                                        opcycles = OPCY_NONE;
-                                        break;
-                                }
-                        }
-                        break;
+			while ((opcycles & OPCY_NONE) && (opcycles & OPCY_MASK)) {
+				switch (opcycles) {
+				case P2:	/* CB xx	*/
+				case P3:	/* DD xx	*/
+				case P4:	/* ED xx	*/
+				case P5:	/* FD xx	*/
+					opcycles = z80Page[opcycles & OPCY_MASK][cb[1] & 0xFF];
+					break;
+				case P6:	/* DD CB -- xx	*/
+				case P7:	/* FD CB -- xx	*/
+					opcycles = z80Page[opcycles & OPCY_MASK][cb[3] & 0xFF];
+					break;
+				default:
+					opcycles = OPCY_NONE;
+					break;
+				}
+			}
+			break;
                 case X_ZXN:
                         opcycles = zxnPage[0][cb[0] & 0xFF];
-                        while ((opcycles & OPCY_NONE) && (opcycles & OPCY_MASK)) {
-                                switch (opcycles) {
-                                case P2:        /* CB xx        */
-                                case P3:        /* DD xx        */
-                                case P4:        /* ED xx        */
-                                case P5:        /* FD xx        */
+			while ((opcycles & OPCY_NONE) && (opcycles & OPCY_MASK)) {
+				switch (opcycles) {
+				case P2:	/* CB xx	*/
+				case P3:	/* DD xx	*/
+				case P4:	/* ED xx	*/
+				case P5:	/* FD xx	*/
                                         opcycles = zxnPage[opcycles & OPCY_MASK][cb[1] & 0xFF];
-                                        break;
-                                case P6:        /* DD CB -- xx  */
-                                case P7:        /* FD CB -- xx  */
+					break;
+				case P6:	/* DD CB -- xx	*/
+				case P7:	/* FD CB -- xx	*/
                                         opcycles = zxnPage[opcycles & OPCY_MASK][cb[3] & 0xFF];
-                                        break;
-                                default:
-                                        opcycles = OPCY_NONE;
-                                        break;
-                                }
-                        }
-                        break;
+					break;
+				default:
+					opcycles = OPCY_NONE;
+					break;
+				}
+			}
+			break;
                 case X_EZ80:
                         {
                                 int of = 0;
@@ -2008,14 +2007,14 @@ struct mne *mp;
                                                 opcycles = OPCY_NONE;
                                                 break;
                                         }
-                                }
-                        }
+				}
+			}
 // ToDo: ASXX has 'Cycle Adjustment' here...
-                        break;
-                default:
-                        break;
-                }
-        }
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 /*
@@ -2024,73 +2023,71 @@ struct mne *mp;
  * return(esp->e_mode)
  */
 int
-genop(pop, op, esp, f)
-int pop, op;
-struct expr *esp;
-int f;
+genop(int pop, int op, struct expr *esp, int f)
 {
-        int t1;
+	int t1;
 
-        if ((t1 = esp->e_mode) == S_R8) {
-                if (pop)
-                        outab(pop);
-                outab(op|esp->e_addr);
-                return(0);
-        }
-        if (t1 == S_IDHL) {
-                if (pop)
-                        outab(pop);
-                outab(op|0x06);
-                return(0);
-        }
-        if (gixiy(t1) == S_IDHL) {
-                if (pop) {
-                        outab(pop);
-                        outrb(esp,0);
-                        outab(op|0x06);
-                } else {
-                        outab(op|0x06);
-                        outrb(esp,0);
-                }
-                return(0);
-        }
-        if ((t1 == S_IMMED) && (f)) {
-                if (pop)
-                        outab(pop);
-                outab(op|0x46);
-                outrb(esp,0);
-                return(0);
-        }
-        return(t1);
+	if ((mchtyp == X_8080) && pop)
+		xerr('a', "Not an 8080 instruction or an invalid argument.");
+	if ((t1 = esp->e_mode) == S_R8) {
+		if (pop)
+			outab(pop);
+		outab(op|esp->e_addr);
+		return(0);
+	}
+	if (t1 == S_IDHL) {
+		if (pop)
+			outab(pop);
+		outab(op|0x06);
+		return(0);
+	}
+	if (gixiy(t1) == S_IDHL) {
+		if (pop) {
+			outab(pop);
+			outrb(esp,0);
+			outab(op|0x06);
+		} else {
+			outab(op|0x06);
+			outrb(esp,0);
+		}
+		return(0);
+	}
+	if ((t1 == S_IMMED) && (f)) {
+		if (pop)
+			outab(pop);
+		outab(op|0x46);
+		outrb(esp,0);
+		return(0);
+	}
+	return(t1);
 }
 
 /*
  * IX and IY prebyte check
  */
 int
-gixiy(v)
-int v;
+gixiy(int v)
 {
-        if (v == IX) {
-                v = HL;
-                outab(0xDD);
-        } else if (v == IY) {
-                v = HL;
-                outab(0xFD);
-        } else if (v == S_IDIX) {
-                v = S_IDHL;
-                outab(0xDD);
-        } else if (v == S_IDIY) {
-                v = S_IDHL;
-                outab(0xFD);
-        }
-        return(v);
+	if (v == IX) {
+		v = HL;
+		outab(0xDD);
+	} else if (v == IY) {
+		v = HL;
+		outab(0xFD);
+	} else if (v == S_IDIX) {
+		v = S_IDHL;
+		outab(0xDD);
+	} else if (v == S_IDIY) {
+		v = S_IDHL;
+		outab(0xFD);
+	}
+	return(v);
 }
 
 /*
  * .IL/.LIL and .IS/.SIS checks
  */
-VOID
+void
 glilsis(sfx, esp)
 int sfx;
 struct expr *esp;
@@ -2105,53 +2102,53 @@ struct expr *esp;
 // funkce - viz asxxsrc/asout.c
 // zrejme se musim podivat do ASxx zdrojaku, jak se zpracovavaji priznaky R_ADL, R_Z80, R_PAGX1...
 //              outrwm(esp, R_Z80|R_PAGX1, 0);
-        }
+	}
 }
 
 /*
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
-struct expr *esp;
+mchpcr(struct expr *esp)
 {
-        if (esp->e_base.e_ap == dot.s_area) {
-                return(1);
-        }
-        if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {
-                /*
-                 * Absolute Destination
-                 *
-                 * Use the global symbol '.__.ABS.'
-                 * of value zero and force the assembler
-                 * to use this absolute constant as the
-                 * base value for the relocation.
-                 */
-                esp->e_flag = 1;
-                esp->e_base.e_sp = &sym[1];
-        }
-        return(0);
+	if (esp->e_base.e_ap == dot.s_area) {
+		return(1);
+	}
+	if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {
+		/*
+		 * Absolute Destination
+		 *
+		 * Use the global symbol '.__.ABS.'
+		 * of value zero and force the assembler
+		 * to use this absolute constant as the
+		 * base value for the relocation.
+		 */
+		esp->e_flag = 1;
+		esp->e_base.e_sp = &sym[1];
+	}
+	return(0);
 }
 
 /*
  * Machine dependent initialization
  */
-VOID
-minit()
+void
+minit(void)
 {
-        /*
-         * Byte Order
-         */
-        hilo = 0;
+	/*
+	 * Byte Order
+	 */
+	hilo = 0;
 
-        /*
+	/*
          * Address Space
-         */
+	 */
         exprmasks(4);
 
         if (pass == 0) {
                 mchtyp = X_Z80;
                 sym[2].s_addr = X_Z80;
                 ez80_adl = 0;
-        }
+	}
 }
+

@@ -2824,11 +2824,12 @@ optimizeCastCast (eBBlock **ebbs, int count)
                      getAddrspace (type1) == getAddrspace (type3) && sclsFromPtr (type1) == sclsFromPtr (type3) &&
                     (ic->op == CAST || ic->op == '+' && IS_OP_LITERAL (ic->right) && IS_OP_LITERAL (uic->right)))
                     {
-                      if (ic->next == uic && isOperandEqual (ic->result, uic->left)) // Eliminate ic competely.
+                      if (ic->next == uic && isOperandEqual (ic->result, uic->left)) // Eliminate ic completely.
                         {
                           bitVectUnSetBit (OP_USES (uic->left), uic->key);
                           uic->left = ic->op == CAST ? ic->right : ic->left;
-                          bitVectSetBit (OP_USES (uic->left), uic->key);
+                          if (IS_SYMOP (uic->left))
+                            bitVectSetBit (OP_USES (uic->left), uic->key);
                           if (ic->op == '+')
                             uic->right = operandFromValue (valPlus (valPlus (constIntVal ("0ll"), OP_VALUE (ic->right), false), OP_VALUE (uic->right), true), false);
                           unsetDefsAndUses (ic);

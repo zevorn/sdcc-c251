@@ -11,6 +11,7 @@
 
 #pragma disable_warning 85
 #pragma disable_warning 127
+#pragma disable_warning 322
 
 #if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) && !(defined( __SDCC_mcs51) && (defined(__SDCC_MODEL_SMALL) || defined(__SDCC_MODEL_MEDIUM))) // Lack of memory
 

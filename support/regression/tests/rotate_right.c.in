@@ -23,7 +23,6 @@ void
 testRotateRight(void)
 {
 #if __STDC_VERSION__ > 202311L || defined(__SDCC)
-#if !defined( __SDCC_mos6502) && !defined( __SDCC_mos65c02) // Bug
   i = 0xa5;
   ASSERT(stdc_rotate_right(i, 1) == ror(i, 1));
   ASSERT(stdc_rotate_right(i, 4) == ror(i, 4));
@@ -36,7 +35,6 @@ testRotateRight(void)
 
   ASSERT(stdc_rotate_right_uc(0xa5, 4) == 0x5a);
   ASSERT(stdc_rotate_right_us(0xa5b6, 4) == 0x6a5b);
-#endif
 #endif
 #endif
 }

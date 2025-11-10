@@ -4,6 +4,8 @@
 
 #include <testfwk.h>
 
+#pragma disable_warning 322
+
 void
 WriteToXData (char *buffer)
 {

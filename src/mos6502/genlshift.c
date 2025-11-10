@@ -33,7 +33,8 @@
 /**************************************************************************
  * AccLsh - left shift accumulator by known count
  *************************************************************************/
-void AccLsh (int shCount)
+void
+AccLsh (int shCount)
 {
   int i;
 
@@ -67,7 +68,8 @@ void AccLsh (int shCount)
 /**************************************************************************
  * XAccLsh - left shift register pair XA by known count
  *************************************************************************/
-void XAccLsh (reg_info *msb_reg, int shCount)
+void
+XAccLsh (reg_info *msb_reg, int shCount)
 {
   int i;
 
@@ -672,16 +674,12 @@ genlsh32 (operand * result, operand * left, int shCount)
  * genLeftShiftLiteral - left shifting by known count
  *************************************************************************/
 static void
-genLeftShiftLiteral (operand * left, operand * right, operand * result, iCode * ic)
+genLeftShiftLiteral (operand * left, operand * result, int shCount)
 {
-  int shCount = (int) ulFromVal (AOP (right)->aopu.aop_lit);
   bool restore_x = false;
   int size;
 
   emitComment (TRACEGEN, __func__);
-
-  aopOp (left, ic);
-  aopOp (result, ic);
 
   size = AOP_SIZE (result);
   emitComment (TRACEGEN|VVDBG, "  %s - result size=%d, left size=%d",
@@ -736,8 +734,6 @@ genLeftShift (iCode * ic)
 
   int size, offset;
   symbol *tlbl, *tlbl1;
-  char *shift;
-  asmop *aopResult;
   reg_info *countreg = NULL;
   int count_offset = 0;
   bool restore_y = false;
@@ -746,6 +742,10 @@ genLeftShift (iCode * ic)
   emitComment (TRACEGEN, __func__);
 
   aopOp (right, ic);
+  aopOp (left, ic);
+  aopOp (result, ic);
+
+  printIC(ic);
 
   sym_link *resulttype = operandType (result);
   unsigned topbytemask = (IS_BITINT (resulttype) && SPEC_USIGN (resulttype) && (SPEC_BITINTWIDTH (resulttype) % 8)) ?
@@ -757,8 +757,9 @@ genLeftShift (iCode * ic)
   if (AOP_TYPE (right) == AOP_LIT &&
       (getSize (operandType (result)) == 1 || getSize (operandType (result)) == 2 || getSize (operandType (result)) == 4))
     {
-      genLeftShiftLiteral (left, right, result, ic);
-      return;
+      int shCount = (int) ulFromVal (AOP (right)->aopu.aop_lit);
+      genLeftShiftLiteral (left, result, shCount);
+      goto release;
     }
 
   /* shift count is unknown then we have to form
@@ -766,10 +767,6 @@ genLeftShift (iCode * ic)
      only the lower order byte since shifting
      more that 32 bits make no sense anyway, ( the
      largest size of an object can be only 32 bits ) */
-
-  aopOp (result, ic);
-  aopOp (left, ic);
-  aopResult = AOP (result);
 
   // TODO
 #if 0
@@ -792,6 +789,7 @@ genLeftShift (iCode * ic)
       restore_y=true;
       countreg = m6502_reg_y;
     }
+
   if(countreg)
     {
       m6502_useReg (countreg);
@@ -813,19 +811,15 @@ genLeftShift (iCode * ic)
   /* now move the left to the result if they are not the
      same */
   if (IS_AOP_YX (AOP (result)))
+    {
     loadRegFromAop (m6502_reg_yx, AOP (left), 0);
-  else if (!sameRegs (AOP (left), aopResult))
+    }
+  else if (!sameRegs (AOP (left), AOP (result)))
     {
       size = AOP_SIZE (result);
-      offset = 0;
-      while (size--)
-        {
-          transferAopAop (AOP (left), offset, aopResult, offset);
-          offset++;
-        }
+      for (offset=0; offset<size; offset++)
+          transferAopAop (AOP (left), offset, AOP (result), offset);
     }
-  freeAsmop (left, NULL);
-  AOP (result) = aopResult;
 
   if(IS_AOP_XA (AOP (result)))
     {  
@@ -861,12 +855,10 @@ genLeftShift (iCode * ic)
     }
   else
     {
-      shift = "asl";
-      for (offset = 0; offset < size; offset++)
-	{
-	  rmwWithAop (shift, AOP (result), offset);
-	  shift = "rol";
-	}
+      rmwWithAop ("asl", AOP (result), 0);
+
+      for (offset = 1; offset < size; offset++)
+	  rmwWithAop ("rol", AOP (result), offset);
     }
 
   if (countreg)
@@ -884,15 +876,14 @@ genLeftShift (iCode * ic)
 
   safeEmitLabel (tlbl1);
 
-  // After loop, countreg is 0
+  // After loop, countreg is always 0
   if (countreg)
     {
       m6502_dirtyReg(countreg);
       countreg->isLitConst = 1;
       countreg->litConst = 0;
     }
-
-  if (!countreg)
+  else
     {
       emitComment (TRACEGEN|VVDBG, "  pull null (1) ");
       loadRegTemp(NULL);
@@ -921,7 +912,9 @@ genLeftShift (iCode * ic)
   if(restore_y)
     loadRegTemp(m6502_reg_y);
 
-  freeAsmop (result, NULL);
+ release:
   freeAsmop (right, NULL);
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
 }
 
