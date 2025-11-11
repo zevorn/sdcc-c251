@@ -1306,6 +1306,7 @@ createIvalArray (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
             }
 
           aSym = newNode ('[', sym, newAst_VALUE (valueFromLit ((float) (idx))));
+          setAstFileLine (aSym, iloop ? iloop->filename : sym->filename, iloop ? iloop->lineno : sym->lineno);
           aSym = decorateType (resolveSymbols (aSym), RESULT_TYPE_NONE, true);
           rast = createIval (aSym, type->next, iloop, rast, rootValue, 0);
           idx++;
@@ -1320,7 +1321,10 @@ createIvalArray (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
       if (IS_STRUCT (AST_VALUE (rootValue)->type))
         AST_SYMBOL (rootValue)->flexArrayLength = size * getSize (type->next);
       else
-        DCL_ELEM (type) = size;
+        {
+          DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+          DCL_ELEM (type) = size;
+        }
     }
 
   return decorateType (resolveSymbols (rast), RESULT_TYPE_NONE, true);
@@ -1371,6 +1375,8 @@ createIvalCharPtr (ast * sym, sym_link * type, ast * iexpr, ast * rootVal)
       unsigned int symsize = DCL_ELEM (type);
 
       size = DCL_ELEM (iexpr->ftype);
+      if (IS_CHAR (type->next) && !IS_CHAR (iexpr->ftype->next))
+        werror (E_TYPE_MISMATCH, "initialization", "");
       if (symsize && size > symsize)
         {
           if (size > symsize)
@@ -1431,7 +1437,10 @@ createIvalCharPtr (ast * sym, sym_link * type, ast * iexpr, ast * rootVal)
           if (IS_STRUCT (AST_VALUE (rootVal)->type))
             AST_SYMBOL (rootVal)->flexArrayLength = size * getSize (type->next);
           else
-            DCL_ELEM (type) = size;
+            {
+              DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+              DCL_ELEM (type) = size;
+            }
         }
 
       return decorateType (resolveSymbols (rast), RESULT_TYPE_NONE, true);
@@ -1506,6 +1515,8 @@ ast *
 initAggregates (symbol *sym, initList *ival, ast *wid)
 {
   ast *newAst = newAst_VALUE (symbolVal (sym));
+  newAst->filename = sym->fileDef;
+  newAst->lineno = sym->lineDef;
   return createIval (newAst, sym->type, ival, wid, newAst, 1);
 }
 
@@ -1546,6 +1557,8 @@ gatherAutoInit (symbol * autoChain)
         }
 #endif
 
+      initList *ilist = sym->ival;
+
       /* if this is a static variable & has an */
       /* initial value the code needs to be lifted */
       /* here to the main portion since they can be */
@@ -1566,13 +1579,9 @@ gatherAutoInit (symbol * autoChain)
             }
           else
             {
-              if (getNelements (sym->type, sym->ival) > 1)
-                {
-                  werrorfl (sym->fileDef, sym->lineDef, W_EXCESS_INITIALIZERS, "scalar", sym->name);
-                }
-              work = newNode ('=', newAst_VALUE (symbolVal (newSym)), list2expr (sym->ival));
+              ilist = checkScalariList (sym, sym->type, ilist, true);
+              work = newNode ('=', newAst_VALUE (symbolVal (newSym)), list2expr (ilist));
             }
-
           setAstFileLine (work, sym->fileDef, sym->lineDef);
 
           sym->ival = NULL;
@@ -1587,18 +1596,6 @@ gatherAutoInit (symbol * autoChain)
       /* if there is an initial value */
       if (SPEC_SCLS (sym->etype) != S_CODE)
         {
-          initList *ilist = sym->ival;
-
-          while (ilist->type == INIT_DEEP)
-            {
-              ilist = ilist->init.deep;
-            }
-
-          /* update lineno for error msg */
-          filename = sym->fileDef;
-          lineno = sym->lineDef;
-          setAstFileLine (ilist->init.node, sym->fileDef, sym->lineDef);
-
           if (IS_AGGREGATE (sym->type))
             {
               aggregateIsAutoVar = 1;
@@ -1607,14 +1604,9 @@ gatherAutoInit (symbol * autoChain)
             }
           else
             {
-              if (getNelements (sym->type, sym->ival) > 1)
-                {
-                  werrorfl (sym->fileDef, sym->lineDef, W_EXCESS_INITIALIZERS, "scalar", sym->name);
-                }
+              ilist = checkScalariList (sym, sym->type, ilist, true);
               work = newNode ('=', newAst_VALUE (symbolVal (sym)), list2expr (sym->ival));
             }
-
-          // just to be sure
           setAstFileLine (work, sym->fileDef, sym->lineDef);
 
           sym->ival = NULL;
@@ -3608,6 +3600,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
     else
       dtl = decorateType (tree->left, resultTypeProp, reduceTypeAllowed);
 
+    if (dtl && dtl->isError)
+      goto errorTreeReturn;
+
     /* if an array node, we may need to swap branches */
     if (tree->opval.op == '[')
       {
@@ -3720,6 +3715,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
         {
           SPEC_SCLS (TETYPE (tree)) = sclsFromPtr (LTYPE (tree));
         }
+
+      if (!tree->initMode && IS_REGISTER (TETYPE (tree)))
+        werrorfl (tree->filename, tree->lineno, W_REGISTER_ELEMENT_ACCESS_C2Y);
 
       return tree;
 
@@ -3938,7 +3936,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
           goto errorTreeReturn;
         }
         
-      if (SPEC_SCLS (LETYPE (tree)) == S_SFR && !port->mem.sfrupointer)
+      if (LETYPE (tree) && SPEC_SCLS (LETYPE (tree)) == S_SFR && !port->mem.sfrupointer)
         {
           werror (E_SFR_POINTER);
         }
@@ -4850,9 +4848,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
       /*         casting            */
       /*----------------------------*/
     case CAST:                 /* change the type   */
-      /* cannot cast to an aggregate type */
+      /* cannot cast to struct / union */
       if (IS_AGGREGATE (LTYPE (tree)))
-        {
+        {printTypeChain (LTYPE (tree), 0);
           werrorfl (tree->filename, tree->lineno, E_CAST_ILLEGAL);
           goto errorTreeReturn;
         }
@@ -5739,6 +5737,8 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
               printFromToType (RTYPE (tree), LTYPE (tree));
             }
         }
+      else if (IS_ARRAY (RTYPE (tree)) && IS_REGISTER (RTYPE (tree)->next))
+        werrorfl (tree->filename, tree->lineno, E_ILLEGAL_ADDR, "address of register variable");
 
       /* if the left side of the tree is of type void
          then report error */

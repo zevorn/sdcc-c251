@@ -34,7 +34,7 @@
  * genXor - code for Exclusive or
  *************************************************************************/
 void
-genXor (iCode * ic, iCode * ifx)
+m6502_genXor (iCode * ic, iCode * ifx)
 {
   operand *right  = IC_RIGHT (ic);
   operand *left   = IC_LEFT (ic);

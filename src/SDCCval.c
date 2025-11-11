@@ -255,6 +255,63 @@ copyIlist (initList * src)
 }
 
 /*------------------------------------------------------------------*/
+/* checkScalariList - check ilist for non-agregate typea scalar     */
+/*------------------------------------------------------------------*/
+initList *checkScalariList (const symbol *sym, sym_link *type, initList *ilist, bool typecheck)
+{
+  wassert (type && !IS_AGGREGATE (type));
+
+  // Not an aggregate, ilist must be a node,
+  if (ilist->type != INIT_NODE)
+    {
+      // or a 1-element list.
+      if (ilist->init.deep->next)
+        werrorfl (sym->fileDef, sym->lineDef, W_EXCESS_INITIALIZERS, "scalar", sym->name);
+      ilist = ilist->init.deep;
+    }
+
+  if (ilist->type != INIT_NODE)
+    {
+      werrorfl (ilist->filename, ilist->lineno, W_EXCESS_BRACES_INITIALIZER);
+      while (ilist->type != INIT_NODE)
+        ilist = ilist->init.deep;
+    }
+
+  // Give up early on errors, to avoid reading invalid memory below.
+  if (ilist->init.node->isError)
+    return (ilist); 
+
+  // The type must match.
+  sym_link *itype = ilist->init.node->ftype;
+
+  if (typecheck && compareType (type, itype, false) == 0)
+    {
+      // special case for literal strings
+      if (IS_ARRAY (itype) && IS_CHAR (getSpec (itype)) &&
+          // which are really code pointers
+          IS_CODEPTR (type))
+        {
+          // no sweat
+        }
+      else if (IS_CODEPTR (type) && IS_FUNC (type->next)) // function pointer
+        {
+          if (ilist)
+            werrorfl (ilist->filename, ilist->lineno, E_INCOMPAT_TYPES);
+          else
+            werror (E_INCOMPAT_TYPES);
+          printFromToType (itype, type->next);
+        }
+      else
+        {
+          werrorfl (ilist->filename, ilist->lineno, E_TYPE_MISMATCH, "assignment", " ");
+          printFromToType (itype, type);
+        }
+    }
+
+  return (ilist);
+}
+
+/*------------------------------------------------------------------*/
 /* list2int - converts the first element of the list to value       */
 /*------------------------------------------------------------------*/
 double
@@ -1679,6 +1736,7 @@ strVal (const char *s)
   /* get a declarator */
   val->type = newLink (DECLARATOR);
   DCL_TYPE (val->type) = ARRAY;
+  DCL_ARRAY_LENGTH_TYPE (val->type) = ARRAY_LENGTH_KNOWN_CONST;
   val->type->next = val->etype = newLink (SPECIFIER);
   SPEC_SCLS (val->etype) = S_LITERAL;
   SPEC_CONST (val->etype) = 1;
@@ -1752,6 +1810,7 @@ rawStrVal (const char *s, size_t size)
   /* get a declarator */
   val->type = newLink (DECLARATOR);
   DCL_TYPE (val->type) = ARRAY;
+  DCL_ARRAY_LENGTH_TYPE (val->type) = ARRAY_LENGTH_KNOWN_CONST;
   val->type->next = val->etype = newLink (SPECIFIER);
   SPEC_SCLS (val->etype) = S_LITERAL;
   SPEC_CONST (val->etype) = 1;

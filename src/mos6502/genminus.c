@@ -157,7 +157,7 @@ genMinusDec (iCode * ic)
  * genMinus - generates code for subtraction
  *************************************************************************/
 void
-genMinus (iCode * ic)
+m6502_genMinus (iCode * ic)
 {
   operand *right  = IC_RIGHT (ic);
   operand *left   = IC_LEFT (ic);

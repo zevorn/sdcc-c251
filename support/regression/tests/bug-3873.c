@@ -53,7 +53,6 @@ static void huffCreate(const uint8* pBits, HuffTable* pHuffTable)
 
 void testBug(void) {
 #ifndef __SDCC_mcs51 // Bug #3875
-    int i;
     huffCreate(gBits, &gHuffTab0);
 
     ASSERT(gHuffTab0.mMinCode[0] == 0x0000);

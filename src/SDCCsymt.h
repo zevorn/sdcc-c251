@@ -193,6 +193,22 @@ typedef enum
 }
 DECLARATOR_TYPE;
 
+typedef enum
+{
+  ARRAY_LENGTH_KNOWN_CONST = 0,     // The normal tyspe of array: [N], for some integer constant expression N.
+  ARRAY_LENGTH_SPECIFIED,           // VLA of specified length: [n], for some expression n that is not an integer constant expression.
+  ARRAY_LENGTH_UNSPECIFIED,         // VLA of unspecified length: [*],
+  ARRAY_LENGTH_UNEVALUATED,         // Array of unevaluated length: [n], in a context where the expression n is not evaluated.
+                                    // Only really exists from C99 to C23; since C2y these are treated as arrays of unspecified length instead.
+                                    // SDCC shall follow C2y and not use this enum value¹. That is compliant with earlier standards:
+                                    // Array of unevaluated length either behave like arrays of unspecified length
+                                    // (when forming a composite type with an array of known kength) or have undefined behavior
+                                    // (all other uses), so always following C2y is correct.
+                                    // ¹ We do use it in the parser as placeholder, until we fill in the proper value in the function arraySizes.
+  ARRAY_LENGTH_UNKNOWN              // Array of unknown length: [], these arrays have incomplete type
+}
+ARRAY_LENGTH_TYPE;
+
 typedef struct ast ast;
 
 typedef struct declarator
@@ -206,7 +222,7 @@ typedef struct declarator
   unsigned ptr_volatile:1;          /* pointer is volatile        */
   unsigned ptr_restrict:1;          /* pointer is resticted       */
   bool ptr_atomic:1;                /* pointer is atomic          */
-  bool array_vla:1;                 // Array is known to be a VLA.
+  ARRAY_LENGTH_TYPE array_length_type; // Array is known to be a VLA?
   bool vla_check_visited:1;         // Already visited in check for VLA - implementation detail to prevent infinite recursion */
   struct symbol *ptr_addrspace;     /* pointer is in named address space  */
 
@@ -404,7 +420,7 @@ extern sym_link *validateLink (sym_link * l,
 #define DCL_PTR_VOLATILE(l) validateLink(l, "DCL_PTR_VOLATILE", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_volatile
 #define DCL_PTR_RESTRICT(l) validateLink(l, "DCL_PTR_RESTRICT", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_restrict
 #define DCL_PTR_ATOMIC(l) validateLink(l, "DCL_PTR_ATOMIC", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_atomic
-#define DCL_ARRAY_VLA(l) validateLink(l, "DCL_ARRAY_VLA", #l, DECLARATOR, __FILE__, __LINE__)->select.d.array_vla
+#define DCL_ARRAY_LENGTH_TYPE(l) validateLink(l, "DCL_ARRAY_LENGTH_TYPE", #l, DECLARATOR, __FILE__, __LINE__)->select.d.array_length_type
 #define DCL_PTR_ADDRSPACE(l) validateLink(l, "DCL_PTR_ADDRSPACE", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_addrspace
 #define DCL_TSPEC(l) validateLink(l, "DCL_TSPEC", #l, DECLARATOR, __FILE__, __LINE__)->select.d.tspec
 

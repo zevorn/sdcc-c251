@@ -158,6 +158,7 @@ value *valueFromLit (double);
 initList *newiList (int, void *);
 initList *revinit (initList *);
 initList *copyIlist (initList *);
+initList *checkScalariList (const symbol *sym, sym_link *type, initList *ilist, bool typecheck);
 double list2int (initList *);
 value *list2val (initList *, int);
 struct ast *list2expr (initList *);

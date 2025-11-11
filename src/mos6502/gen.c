@@ -1317,7 +1317,7 @@ getFreeIdxReg()
   //if (m6502_reg_y->isFree && !m6502_reg_y->isLitConst)
   //   return m6502_reg_y;
   //  else
-  if (m6502_reg_x->isFree && m6502_reg_x->aop!=&tsxaop)
+  if (m6502_reg_x->isFree && !keepTSX())
     return m6502_reg_x;
   else if (m6502_reg_y->isFree)
     return m6502_reg_y;
@@ -1705,7 +1705,7 @@ storeConstToAop (int c, asmop * aop, int loffset)
       if(aop->type != AOP_SOF)
         {
           // prefer X if literal!=0 && X does not contain tsx offset 
-          if(c!=0 && m6502_reg_x->isFree && m6502_reg_x->aop != &tsxaop)
+          if(c!=0 && m6502_reg_x->isFree && !keepTSX() )
             {
               loadRegFromConst (m6502_reg_x, c);
               storeRegToAop (m6502_reg_x, aop, loffset);
@@ -2419,7 +2419,7 @@ setupDPTR(operand *op, int offset, char * rematOfs, bool savea)
           if(reg0&&reg1)
             return offset;
 
-	  if(m6502_reg_x->isFree && m6502_reg_x->aop!=&tsxaop )
+	  if(m6502_reg_x->isFree && !keepTSX() )
 	    reg=m6502_reg_x;
 	  else if(m6502_reg_a->isFree && !savea)
 	    reg=m6502_reg_a;
@@ -2622,6 +2622,14 @@ tsxUseful(const iCode *ic)
   return uses >= 1;
 }
 #endif
+
+bool
+keepTSX()
+{
+  if(m6502_reg_x->aop==&tsxaop)
+    return options.stackAuto || (currFunc && IFFUNC_ISREENT (currFunc->type));
+  return false;
+}
 
 void
 emitTSX()
@@ -2953,20 +2961,11 @@ aopCanShift (asmop * aop)
 /**************************************************************************
  * addSign - complete with sign
  *************************************************************************/
-void
-addSign (operand * result, int offset, int sign)
-{
-  int size = (AOP_SIZE (result) - offset);
-  if (size > 0) {
-    if (sign) {
-      signExtendA();
-      while (size--)
-        storeRegToAop (m6502_reg_a, AOP (result), offset++);
-    } else
-      while (size--)
-        storeConstToAop (0, AOP (result), offset++);
-  }
-}
+//void
+//addSign (operand * result, int offset, int sign)
+//{
+//
+//}
 
 /**************************************************************************
  * aopOp - allocates an asmop for an operand
@@ -8381,11 +8380,11 @@ genm6502iCode (iCode *ic)
       break;
 
     case '+':
-      genPlus (ic);
+      m6502_genPlus (ic);
       break;
 
     case '-':
-      genMinus (ic);
+      m6502_genMinus (ic);
       break;
 
     case '*':
@@ -8421,15 +8420,15 @@ genm6502iCode (iCode *ic)
       break;
 
     case '^':
-      genXor (ic, ifxForOp (result, ic));
+      m6502_genXor (ic, ifxForOp (result, ic));
       break;
 
     case '|':
-      genOr (ic, ifxForOp (result, ic));
+      m6502_genOr (ic, ifxForOp (result, ic));
       break;
 
     case BITWISEAND:
-      genAnd (ic, ifxForOp (result, ic));
+      m6502_genAnd (ic, ifxForOp (result, ic));
       break;
 
     case INLINEASM:
@@ -8453,11 +8452,11 @@ genm6502iCode (iCode *ic)
       break;
 
     case LEFT_OP:
-      genLeftShift (ic);
+      m6502_genLeftShift (ic);
       break;
 
     case RIGHT_OP:
-      genRightShift (ic);
+      m6502_genRightShift (ic);
       break;
 
     case GET_VALUE_AT_ADDRESS:

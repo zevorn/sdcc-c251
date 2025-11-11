@@ -1,10 +1,89 @@
+2025-11-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge undefined branch.
+
+2025-11-10 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c,
+  	  src/mos6502/gen.h:
+  	  Keep literal 0 in Y when possible.
+  	* src/mos6502/gen.c,
+  	  src/mos6502/gen.h,
+  	  src/mos6502/genand.c,
+  	  src/mos6502/genminus.c,
+  	  src/mos6502/genor.c,
+  	  src/mos6502/genplus.c,
+  	  src/mos6502/genxor.c,
+  	  src/mos6502/genlshift.c,
+  	  src/mos6502/genrshift.c:
+  	  Partial fix for bug #3851.
+   	* src/mos6502/genlshift.c,
+  	  src/mos6502/genrshift.c:
+  	  Left shift optimizations.
+
+2025-11-10 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCsymt.c,
+	  src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  doc/sdccman.lyx,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3342 resolution of C23 UB on qualified function types, choosing an error as implementation-define behavior.
+	* support/regression/tests/bug-3462.c,
+	  support/regression/tests/bug-3831.c,
+	  support/regression/tests/bug-3873.c,
+	  support/regression/tests/gcc-torture-execute-20030626-2.c:
+	  Regression test cleanup for some recently-introduced new warnings.
+
+2025-11-09 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCsymt.h,
+	  src/SDCCsymt.c,
+	  src/SDCCmem.c,
+	  src/SDCC.y,
+	  src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCglue.c,
+	  src/SDCCmain.c,
+	  src/SDCCval.c,
+	  support/valdiag/tests/undefinedc23.c,
+	  support/regression/tests/undefinedc23.c:
+	  Implement N3652/N3397 resolution of C23 UB on array types of unevaluated length.
+
 2025-11-08 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/genrshift.c:
   	  Fix bug #3786.
   	* src/mos6502/genrshift.c,
   	  src/mos6502/genlshift.c:
-      Small cosmetic cleanup.
+  	  Small cosmetic cleanup.
+
+2025-11-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3346 resolution for C23 UB on malformed initializations of aggregates.
+
+2025-11-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCglue.c,
+	  src/SDCCval.c,
+	  src/SDCCval.h,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3346 resolution for C23 UB on malformed initializations of scalars.
+
+2025-11-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCsymt.c,
+	  support/valdiag/tests/undefinedc23.c:
+	  Implement N3244 (diagnostics) / N3517 (behavior) resolution for C23 UB on uses of array with storage class register.
 
 2025-11-06 Janko Stamenović
 

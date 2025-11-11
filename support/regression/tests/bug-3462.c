@@ -4,6 +4,8 @@
 
 #include <testfwk.h>
 
+#pragma disable_warning 291
+
 #ifdef __SDCC
 enum e0
 {

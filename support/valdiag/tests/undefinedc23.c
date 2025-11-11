@@ -81,6 +81,34 @@ extern int a1; /* ERROR */
 }
 #endif
 
+#ifdef TEST15a
+char a[];
+char a[4];
+char b[]; /* WARNING */
+#pragma disable_warning 85
+void f(char a[*])
+{
+}
+#endif
+
+#ifdef TEST15b
+char a[*]; /* ERROR */
+#endif
+
+#ifdef TEST15c
+void f(int i)
+{
+char c[*]; /* ERROR */
+}
+#endif
+
+#ifdef TEST15d
+void f(int i)
+{
+char c[i] = "test"; /* ERROR */
+}
+#endif
+
 #ifdef TEST19
 struct f *p, *q;
 
@@ -92,6 +120,28 @@ void g1(void)
 void g3(void)
 {
   *q = *p; /* ERROR */
+}
+#endif
+
+#ifdef TEST21
+void f(void)
+{
+	register int a[4] = {0};
+	a[2]; /* WARNING */
+}
+
+void g(void)
+{
+	register int i;
+	int *p = &i; /* ERROR */
+}
+
+void h(void)
+{
+	register int a[4];
+	int *p = a; /*ERROR */
+	int *q;
+	q = a; /* ERROR*/
 }
 #endif
 
@@ -169,6 +219,15 @@ struct g { struct { }; }; /* ERROR */
 struct h { int i:3; };
 #endif
 
+#ifdef TEST63
+// Qualified funtion
+typedef void f(void);
+
+f g;
+const f const_g; /* ERROR */
+volatile f volatile_g; /* ERROR */
+#endif
+
 #ifdef TEST67
 // extern inline declaration without definition in same translation unit
 extern inline void f(void); /* ERROR */
@@ -181,6 +240,77 @@ int h(volatile void); /* ERROR */
 int i(const void); /* ERROR */
 int j(void x); /* ERROR */
 int j(void x) { } /* ERROR */
+#endif
+
+#ifdef TEST80a
+#pragma std_c23
+// Allowed
+int i0 = 7;
+int i1 = {7};
+int i2 = {};
+// Disallowed
+int j0 = {7, 0}; /* WARNING */
+int j1 = {{7}}; /* WARNING */
+#endif
+
+#ifdef TEST80b
+#pragma std_c23
+void f(void)
+{
+// Allowed
+int i0 = 7;
+int i1 = {7};
+int i2 = {};
+// Disallowed
+int j0 = {7, 0}; /* WARNING */
+int j1 = {{7}}; /* WARNING */
+}
+#endif
+
+#ifdef TEST80c
+#pragma std_c23
+void g(void)
+{
+// Allowed
+static int i0 = 7;
+static int i1 = {7};
+static int i2 = {};
+// Disallowed
+int j0 = {7, 0}; /* WARNING */
+int j1 = {{7}}; /* WARNING */
+}
+#endif
+
+#ifdef TEST81
+struct s
+{
+	int i;
+};
+
+struct s s = 7; /* ERROR */
+#endif /* IGNORE */
+
+#ifdef TEST82a
+char c0[7] = L"test"; /* ERROR */
+char c2[7] = u"test"; /* ERROR */
+#endif
+
+#ifdef TEST82b
+void f(void)
+{
+char c0[7] = L"test"; /* ERROR */
+long long c1[7] = "test"; /* ERROR */
+char c2[7] = u"test"; /* ERROR */
+}
+#endif
+
+#ifdef TEST82c
+void f(void)
+{
+char c0[7] = L"test"; /* ERROR */
+long long c1[7] = "test"; /* ERROR */
+char c2[7] = u"test"; /* ERROR */
+}
 #endif
 
 #ifdef TEST87

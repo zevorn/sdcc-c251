@@ -843,7 +843,7 @@ allocLocal (symbol *sym)
             port->fun_prefix,
             currFunc->name, sym->name, sym->level, sym->block);
 
-  if (!sym->ismyparm && IS_ARRAY(sym->type) && DCL_ARRAY_VLA (sym->type))
+  if (!sym->ismyparm && IS_ARRAY(sym->type) && DCL_ARRAY_LENGTH_TYPE (sym->type) != ARRAY_LENGTH_KNOWN_CONST)
     {
       werrorfl (sym->fileDef, sym->lineDef, E_VLA_OBJECT);
       return;

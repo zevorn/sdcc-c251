@@ -7,6 +7,10 @@
  */
 
 #include <testfwk.h>
+
+#pragma disable_warning 154
+#pragma disable_warning 88
+
 #include <stdint.h>
 
 typedef struct foo_t
