@@ -1333,6 +1333,7 @@ array_declarator
 
        p = newLink (DECLARATOR);
        DCL_TYPE(p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNKNOWN;
        DCL_ELEM(p) = 0;
 
        if ($3)
@@ -1358,6 +1359,7 @@ array_declarator
 
        p = newLink (DECLARATOR);
        DCL_TYPE(p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNEVALUATED;
        DCL_ELEM_AST (p) = $4;
 
        if ($3)
@@ -1385,6 +1387,7 @@ array_declarator
 
        p = newLink (DECLARATOR);
        DCL_TYPE(p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNEVALUATED;
        DCL_ELEM_AST (p) = $5;
 
        if ($4)
@@ -1413,6 +1416,7 @@ array_declarator
 
        p = newLink (DECLARATOR);
        DCL_TYPE(p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNEVALUATED;
        DCL_ELEM_AST (p) = $5;
 
        DCL_PTR_CONST(p) = SPEC_CONST ($3);
@@ -1423,6 +1427,32 @@ array_declarator
        n = newLink (SPECIFIER);
        SPEC_NEEDSPAR(n) = 1;
        addDecl($1,0,n);
+     }
+   | direct_declarator '[' type_qualifier_list_opt '*' ']'
+     {
+       sym_link *p, *n;
+
+       p = newLink (DECLARATOR);
+       DCL_TYPE (p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNSPECIFIED;
+       DCL_ELEM (p) = 0;
+
+       if ($3)
+         {
+           if (!options.std_c99)
+             werror (E_QUALIFIED_ARRAY_PARAM_C99);
+
+           DCL_PTR_CONST (p) = SPEC_CONST ($3);
+           DCL_PTR_RESTRICT (p) = SPEC_RESTRICT ($3);
+           DCL_PTR_VOLATILE (p) = SPEC_VOLATILE ($3);
+           DCL_PTR_ADDRSPACE (p) = SPEC_ADDRSPACE ($3);
+           addDecl ($1,0,p);
+           n = newLink (SPECIFIER);
+           SPEC_NEEDSPAR (n) = 1;
+           addDecl ($1,0,n);
+         }
+       else
+         addDecl ($1,0,p);
      }
    ;
 
@@ -1796,22 +1826,39 @@ direct_abstract_declarator_opt
    ;
 
 array_abstract_declarator
-   : direct_abstract_declarator_opt '[' ']'   {
-                                       $$ = newLink (DECLARATOR);
-                                       DCL_TYPE($$) = ARRAY;
-                                       DCL_ELEM($$) = 0;
-                                       if($1)
-                                         $$->next = $1;
-                                    }
+   : direct_abstract_declarator_opt '[' ']'
+      {
+        $$ = newLink (DECLARATOR);
+        DCL_TYPE ($$) = ARRAY;
+        DCL_ARRAY_LENGTH_TYPE ($$) = ARRAY_LENGTH_UNKNOWN;
+        DCL_ELEM ($$) = 0;
+        if ($1)
+          {
+            $1->next = $$;
+            $$ = $1;
+          }
+      }
    | direct_abstract_declarator_opt '[' constant_expr ']'
-                                    {
-                                       value *val;
-                                       $$ = newLink (DECLARATOR);
-                                       DCL_TYPE($$) = ARRAY;
-                                       DCL_ELEM($$) = (int) ulFromVal(val = constExprValue($3, true));
-                                       if($1)
-                                         $$->next = $1;
-                                    }
+      {
+        value *val = constExprValue ($3, true);
+        $$ = newLink (DECLARATOR);
+        DCL_TYPE ($$) = ARRAY;
+        if (val && SPEC_SCLS (val->etype) == S_LITERAL)
+          {
+            DCL_ARRAY_LENGTH_TYPE ($$) = ARRAY_LENGTH_KNOWN_CONST;
+            DCL_ELEM ($$) = (int) ulFromVal (val);
+          }
+        else
+          {
+            DCL_ARRAY_LENGTH_TYPE ($$) = ARRAY_LENGTH_SPECIFIED;
+            DCL_ELEM ($$) = 0;
+          }
+        if ($1)
+          {
+            $1->next = $$;
+            $$ = $1;
+          }
+      }
    ;
 
 function_abstract_declarator

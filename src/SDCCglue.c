@@ -229,10 +229,7 @@ emitRegularMap (memmap *map, bool addPublics, bool arFlag)
                 }
               else
                 {
-                  if (getNelements (tsym->type, tsym->ival) > 1)
-                    {
-                      werrorfl (tsym->fileDef, tsym->lineDef, W_EXCESS_INITIALIZERS, "scalar", tsym->name);
-                    }
+                  checkScalariList (sym, sym->type, sym->ival, false);
                   ival = newNode ('=', newAst_VALUE (symbolVal (tsym)),
                                   decorateType (resolveSymbols (list2expr (tsym->ival)), RESULT_TYPE_NONE, true));
                 }
@@ -315,10 +312,7 @@ emitRegularMap (memmap *map, bool addPublics, bool arFlag)
                 }
               else
                 {
-                  if (getNelements (sym->type, sym->ival) > 1)
-                    {
-                      werrorfl (sym->fileDef, sym->lineDef, W_EXCESS_INITIALIZERS, "scalar", sym->name);
-                    }
+                  checkScalariList (sym, sym->type, sym->ival, false);
                   ival = newNode ('=', newAst_VALUE (symbolVal (sym)),
                                   decorateType (resolveSymbols (list2expr (sym->ival)), RESULT_TYPE_NONE, true));
                 }
@@ -1170,7 +1164,10 @@ printIvalChar (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
               if (sym && IS_STRUCT (sym->type))
                 sym->flexArrayLength = size;
               else
-                DCL_ELEM (type) = size;
+                {
+                  DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (type) = size;
+                }
             }
 
           if (check && DCL_ELEM (val->type) > size)
@@ -1230,7 +1227,10 @@ printIvalChar16 (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s 
               if (sym && IS_STRUCT (sym->type))
                 sym->flexArrayLength = size;
               else
-                DCL_ELEM (type) = size;
+                {
+                  DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (type) = size;
+                }
             }
 
           if (check && DCL_ELEM (val->type) > size)
@@ -1289,7 +1289,10 @@ printIvalChar32 (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s 
               if (sym && IS_STRUCT (sym->type))
                 sym->flexArrayLength = size;
               else
-                DCL_ELEM (type) = size;
+                {
+                  DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (type) = size;
+                }
             }
 
           if (check && DCL_ELEM (val->type) > size)
@@ -1416,7 +1419,10 @@ printIvalArray (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *
       if (IS_STRUCT (sym->type))
         sym->flexArrayLength = size * getSize (type->next);
       else
-        DCL_ELEM (type) = size;
+        {
+          DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+          DCL_ELEM (type) = size;
+        }
     }
 
   return;
@@ -1791,8 +1797,6 @@ printIvalPtr (symbol *sym, sym_link *type, initList *ilist, struct dbuf_s *oBuf)
 void
 printIval (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf, bool check)
 {
-  sym_link *itype;
-
   /* Handle designated initializers */
   if (ilist && ilist->type==INIT_DEEP)
     ilist = reorderIlist (type, ilist);
@@ -1827,53 +1831,7 @@ printIval (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf,
     }
 
   if (ilist)
-    {
-      // not an aggregate, ilist must be a node
-      if (ilist->type != INIT_NODE)
-        {
-          // or a 1-element list
-          if (ilist->init.deep->next)
-            {
-              werrorfl (sym->fileDef, sym->lineDef, W_EXCESS_INITIALIZERS, "scalar", sym->name);
-            }
-          else
-            {
-              ilist = ilist->init.deep;
-            }
-        }
-
-      // Give up here, to avoid reading invalid memory below.
-      if (ilist->init.node->isError)
-        goto ilist_done;
-
-      // and the type must match
-      itype = ilist->init.node->ftype;
-
-      if (compareType (type, itype, false) == 0)
-        {
-          // special case for literal strings
-          if (IS_ARRAY (itype) && IS_CHAR (getSpec (itype)) &&
-              // which are really code pointers
-              IS_CODEPTR (type))
-            {
-              // no sweat
-            }
-          else if (IS_CODEPTR (type) && IS_FUNC (type->next))   /* function pointer */
-            {
-              if (ilist)
-                werrorfl (ilist->filename, ilist->lineno, E_INCOMPAT_TYPES);
-              else
-                werror (E_INCOMPAT_TYPES);
-              printFromToType (itype, type->next);
-            }
-          else
-            {
-              werrorfl (ilist->filename, ilist->lineno, E_TYPE_MISMATCH, "assignment", " ");
-              printFromToType (itype, type);
-            }
-        }
-    }
-ilist_done:
+    ilist = checkScalariList (sym, type, ilist, true);
 
   /* if this is a pointer */
   if (IS_PTR (type))

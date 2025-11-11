@@ -34,7 +34,7 @@
  * genOr  - code for or
  *************************************************************************/
 void
-genOr (iCode * ic, iCode * ifx)
+m6502_genOr (iCode * ic, iCode * ifx)
 {
   operand *right  = IC_RIGHT (ic);
   operand *left   = IC_LEFT (ic);

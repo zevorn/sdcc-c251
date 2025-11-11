@@ -46,3 +46,19 @@ void testPtrIntCast(void)
 #endif
 }
 
+//15, "Composite type with unevaluated sizes"
+void foo(_Bool cond, void* ptr1, void* ptr2)
+{
+	int n = 2;
+	int m = 3;
+	cond ? 0 : (char(*)[n])ptr1; // UB according to 6.5.16p8
+	cond ? (char(*)[ ])ptr1 : (char(*)[n])ptr2; // UB according to 6.2.7 (cond == true)
+	cond ? (char(*)[3])ptr1 : (char(*)[n])ptr2; // UB according to 6.2.7 (cond == true)
+	cond ? (char(*)[n])ptr1 : (char(*)[m])ptr2; // UB according to 6.2.7
+
+	char (*ptr3)[n] = ptr1;
+	char (*ptr4)[m] = ptr2;
+	cond ? ptr3 : ptr4; // UB according to 6.7.7.3p6
+}
+
+

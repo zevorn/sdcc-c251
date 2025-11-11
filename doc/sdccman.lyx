@@ -11438,6 +11438,10 @@ SDCC shall preserve all volatile reads and writes,
  but does not guarantee them to be atomic (except for atomic types and volatile sig_atomic_t).
 \end_layout
 
+\begin_layout Itemize
+Function types may not be qualified.
+\end_layout
+
 \begin_layout Subsubsection
 Preprocessing directives
 \end_layout

@@ -34,7 +34,7 @@
  * genAnd  - code for and
  *************************************************************************/
 void
-genAnd (iCode * ic, iCode * ifx)
+m6502_genAnd (iCode * ic, iCode * ifx)
 {
   operand *right  = IC_RIGHT (ic);
   operand *left   = IC_LEFT (ic);

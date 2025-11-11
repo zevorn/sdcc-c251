@@ -147,7 +147,8 @@ genPlusInc (iCode * ic)
       if (size > 1)
 	emitBranch ("bcc", tlbl);
     }
-  for (offset = 1; offset < size; offset++) {
+  for (offset = 1; offset < size; offset++)
+    {
     rmwWithAop ("inc", AOP (result), offset);
     if(AOP(result)->type==AOP_REG) m6502_dirtyReg(AOP(result)->aopu.aop_reg[offset]);
     if ((offset + 1) < size)
@@ -166,7 +167,7 @@ genPlusInc (iCode * ic)
  * genPlus - generates code for addition
  *************************************************************************/
 void
-genPlus (iCode * ic)
+m6502_genPlus (iCode * ic)
 {
   operand *right  = IC_RIGHT (ic);
   operand *left   = IC_LEFT (ic);
