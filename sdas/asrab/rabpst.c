@@ -1,7 +1,7 @@
 /* rabpst.c */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
 /*
  * Mnemonic Structure
  */
-struct  mne     mne[] = {
+struct	mne	mne[] = {
 
         /* machine */
 
@@ -55,17 +55,17 @@ struct  mne     mne[] = {
     {   NULL,   "NOPAG",        S_ATYP,         0,      A_NOPAG },
     {   NULL,   "PAG",          S_ATYP,         0,      A_PAG   },
 
-    {   NULL,   ".page",        S_PAGE,         0,      0       },
-    {   NULL,   ".title",       S_HEADER,       0,      O_TITLE },
-    {   NULL,   ".sbttl",       S_HEADER,       0,      O_SBTTL },
-    {   NULL,   ".module",      S_MODUL,        0,      0       },
+    {	NULL,	".page",	S_PAGE,		0,	0	},
+    {	NULL,	".title",	S_HEADER,	0,	O_TITLE	},
+    {	NULL,	".sbttl",	S_HEADER,	0,	O_SBTTL	},
+    {	NULL,	".module",	S_MODUL,	0,	0	},
     {	NULL,	".include",	S_INCL,		0,	I_CODE	},
     {	NULL,	".incbin",	S_INCL,		0,	I_BNRY	},
-    {   NULL,   ".area",        S_AREA,         0,      0       },
-    {   NULL,   ".org",         S_ORG,          0,      0       },
-    {   NULL,   ".radix",       S_RADIX,        0,      0       },
-    {   NULL,   ".globl",       S_GLOBL,        0,      0       },
-    {   NULL,   ".local",       S_LOCAL,        0,      0       },
+    {	NULL,	".area",	S_AREA,		0,	0	},
+    {	NULL,	".org",		S_ORG,		0,	0	},
+    {	NULL,	".radix",	S_RADIX,	0,	0	},
+    {	NULL,	".globl",	S_GLOBL,	0,	0	},
+    {	NULL,	".local",	S_LOCAL,	0,	0	},
     {	NULL,	".if",		S_CONDITIONAL,	0,	O_IF	},
     {	NULL,	".iff",		S_CONDITIONAL,	0,	O_IFF	},
     {	NULL,	".ift",		S_CONDITIONAL,	0,	O_IFT	},
@@ -100,35 +100,35 @@ struct  mne     mne[] = {
     {	NULL,	".iifdif",	S_CONDITIONAL,	0,	O_IIFDIF},
     {	NULL,	".else",	S_CONDITIONAL,	0,	O_ELSE	},
     {	NULL,	".endif",	S_CONDITIONAL,	0,	O_ENDIF	},
-    {   NULL,   ".list",        S_LISTING,      0,      O_LIST  },
-    {   NULL,   ".nlist",       S_LISTING,      0,      O_NLIST },
-    {   NULL,   ".equ",         S_EQU,          0,      O_EQU   },
-    {   NULL,   ".gblequ",      S_EQU,          0,      O_GBLEQU},
-    {   NULL,   ".lclequ",      S_EQU,          0,      O_LCLEQU},
-    {   NULL,   ".byte",        S_DATA,         0,      O_1BYTE },
-    {   NULL,   ".db",          S_DATA,         0,      O_1BYTE },
-    {   NULL,   ".fcb",         S_DATA,         0,      O_1BYTE },
-    {   NULL,   ".word",        S_DATA,         0,      O_2BYTE },
-    {   NULL,   ".dw",          S_DATA,         0,      O_2BYTE },
-    {   NULL,   ".fdb",         S_DATA,         0,      O_2BYTE },
-/*    { NULL,   ".3byte",       S_DATA,         0,      O_3BYTE },      */
-/*    { NULL,   ".triple",      S_DATA,         0,      O_3BYTE },      */
-/*    { NULL,   ".4byte",       S_DATA,         0,      O_4BYTE },      */
-/*    { NULL,   ".quad",        S_DATA,         0,      O_4BYTE },      */
+    {	NULL,	".list",	S_LISTING,	0,	O_LIST	},
+    {	NULL,	".nlist",	S_LISTING,	0,	O_NLIST	},
+    {	NULL,	".equ",		S_EQU,		0,	O_EQU	},
+    {	NULL,	".gblequ",	S_EQU,		0,	O_GBLEQU},
+    {	NULL,	".lclequ",	S_EQU,		0,	O_LCLEQU},
+    {	NULL,	".byte",	S_DATA,		0,	O_1BYTE	},
+    {	NULL,	".db",		S_DATA,		0,	O_1BYTE	},
+    {	NULL,	".fcb",		S_DATA,		0,	O_1BYTE	},
+    {	NULL,	".word",	S_DATA,		0,	O_2BYTE	},
+    {	NULL,	".dw",		S_DATA,		0,	O_2BYTE	},
+    {	NULL,	".fdb",		S_DATA,		0,	O_2BYTE	},
+/*    {	NULL,	".3byte",	S_DATA,		0,	O_3BYTE	},	*/
+/*    {	NULL,	".triple",	S_DATA,		0,	O_3BYTE	},	*/
+/*    {	NULL,	".4byte",	S_DATA,		0,	O_4BYTE	},	*/
+/*    {	NULL,	".quad",	S_DATA,		0,	O_4BYTE	},	*/
     {   NULL,   ".df",          S_FLOAT,        0,      0       },
-    {   NULL,   ".blkb",        S_BLK,          0,      O_1BYTE },
-    {   NULL,   ".ds",          S_BLK,          0,      O_1BYTE },
-    {   NULL,   ".rmb",         S_BLK,          0,      O_1BYTE },
-    {   NULL,   ".rs",          S_BLK,          0,      O_1BYTE },
-    {   NULL,   ".blkw",        S_BLK,          0,      O_2BYTE },
-/*    { NULL,   ".blk3",        S_BLK,          0,      O_3BYTE },      */
-/*    { NULL,   ".blk4",        S_BLK,          0,      O_4BYTE },      */
-    {   NULL,   ".ascii",       S_ASCIX,        0,      O_ASCII },
-    {   NULL,   ".ascis",       S_ASCIX,        0,      O_ASCIS },
-    {   NULL,   ".asciz",       S_ASCIX,        0,      O_ASCIZ },
-    {   NULL,   ".str",         S_ASCIX,        0,      O_ASCII },
-    {   NULL,   ".strs",        S_ASCIX,        0,      O_ASCIS },
-    {   NULL,   ".strz",        S_ASCIX,        0,      O_ASCIZ },
+    {	NULL,	".blkb",	S_BLK,		0,	O_1BYTE	},
+    {	NULL,	".ds",		S_BLK,		0,	O_1BYTE	},
+    {	NULL,	".rmb",		S_BLK,		0,	O_1BYTE	},
+    {	NULL,	".rs",		S_BLK,		0,	O_1BYTE	},
+    {	NULL,	".blkw",	S_BLK,		0,	O_2BYTE	},
+/*    {	NULL,	".blk3",	S_BLK,		0,	O_3BYTE	},	*/
+/*    {	NULL,	".blk4",	S_BLK,		0,	O_4BYTE	},	*/
+    {	NULL,	".ascii",	S_ASCIX,	0,	O_ASCII	},
+    {	NULL,	".ascis",	S_ASCIX,	0,	O_ASCIS	},
+    {	NULL,	".asciz",	S_ASCIX,	0,	O_ASCIZ	},
+    {	NULL,	".str",		S_ASCIX,	0,	O_ASCII	},
+    {	NULL,	".strs",	S_ASCIX,	0,	O_ASCIS	},
+    {	NULL,	".strz",	S_ASCIX,	0,	O_ASCIZ	},
     {	NULL,	".fcc",		S_ASCIX,	0,	O_ASCII	},
     {	NULL,	".define",	S_DEFINE,	0,	O_DEF	},
     {	NULL,	".undefine",	S_DEFINE,	0,	O_UNDEF	},
@@ -142,42 +142,42 @@ struct  mne     mne[] = {
     {   NULL,   ".optsdcc",     S_OPTSDCC,      0,      0       },
 /* end sdas specific */
 
-        /* Macro Processor */
+	/* Macro Processor */
 
-    {   NULL,   ".macro",       S_MACRO,        0,      O_MACRO },
-    {   NULL,   ".endm",        S_MACRO,        0,      O_ENDM  },
-    {   NULL,   ".mexit",       S_MACRO,        0,      O_MEXIT },
+    {	NULL,	".macro",	S_MACRO,	0,	O_MACRO	},
+    {	NULL,	".endm",	S_MACRO,	0,	O_ENDM	},
+    {	NULL,	".mexit",	S_MACRO,	0,	O_MEXIT	},
 
-    {   NULL,   ".narg",        S_MACRO,        0,      O_NARG  },
-    {   NULL,   ".nchr",        S_MACRO,        0,      O_NCHR  },
-    {   NULL,   ".ntyp",        S_MACRO,        0,      O_NTYP  },
+    {	NULL,	".narg",	S_MACRO,	0,	O_NARG	},
+    {	NULL,	".nchr",	S_MACRO,	0,	O_NCHR	},
+    {	NULL,	".ntyp",	S_MACRO,	0,	O_NTYP	},
 
-    {   NULL,   ".irp",         S_MACRO,        0,      O_IRP   },
-    {   NULL,   ".irpc",        S_MACRO,        0,      O_IRPC  },
-    {   NULL,   ".rept",        S_MACRO,        0,      O_REPT  },
+    {	NULL,	".irp",		S_MACRO,	0,	O_IRP	},
+    {	NULL,	".irpc",	S_MACRO,	0,	O_IRPC	},
+    {	NULL,	".rept",	S_MACRO,	0,	O_REPT	},
 
-    {   NULL,   ".nval",        S_MACRO,        0,      O_NVAL  },
+    {	NULL,	".nval",	S_MACRO,	0,	O_NVAL	},
 
-    {   NULL,   ".mdelete",     S_MACRO,        0,      O_MDEL  },
+    {	NULL,	".mdelete",	S_MACRO,	0,	O_MDEL	},
 
-        /* Machines */
+	/* Machines */
 
     {   NULL,   ".r4k",         S_CPU,          0,      X_R4K   },
-    {   NULL,   ".r3k",         S_CPU,          0,      X_R2K   },
-    {   NULL,   ".r2k",         S_CPU,          0,      X_R2K   },
-    {   NULL,   ".hd64",        S_CPU,          0,      X_HD64  },
-    {   NULL,   ".z180",        S_CPU,          0,      X_HD64  },
-    {   NULL,   ".z80",         S_CPU,          0,      X_Z80   },
+    {	NULL,	".r3k",		S_CPU,		0,	X_R2K	},
+    {	NULL,	".r2k",		S_CPU,		0,	X_R2K	},
+    {	NULL,	".hd64",	S_CPU,		0,	X_HD64	},
+    {	NULL,	".z180",	S_CPU,		0,	X_HD64	},
+    {	NULL,	".z80",		S_CPU,		0,	X_Z80	},
 
         /* rabbit (warning: derived from "z80 / hd64180") */
 
     {   NULL,   "ld",           S_LD,           0,      0x40    },
 
-    {   NULL,   "call",         S_CALL,         0,      0xC4    },
-    {   NULL,   "jp",           S_JP,           0,      0xC2    },
-    {   NULL,   "jr",           S_JR,           0,      0x18    },
+    {	NULL,	"call",		S_CALL,		0,	0xC4	},
+    {	NULL,	"jp",		S_JP,		0,	0xC2	},
+    {	NULL,	"jr",		S_JR,		0,	0x18	},
     {   NULL,   "djnz",         S_DJNZ,         0,      0x10    },
-    {   NULL,   "ret",          S_RET,          0,      0xC0    },
+    {	NULL,	"ret",		S_RET,		0,	0xC0	},
 
     {   NULL,   "bit",          S_BIT,          0,      0x40    },
     {   NULL,   "res",          S_BIT,          0,      0x80    },
@@ -198,7 +198,7 @@ struct  mne     mne[] = {
 
     {   NULL,   "ex",           S_EX,           0,      0xE3    },
 
-    {   NULL,   "push",         S_PUSH,         0,      0xC5    },
+    {	NULL,	"push",		S_PUSH,		0,	0xC5	},
     {   NULL,   "pop",          S_PUSH,         0,      0xC1    },
 
 /*  {   NULL,   "in",           S_IN,           0,      0xDB    }, */
@@ -215,7 +215,7 @@ struct  mne     mne[] = {
     {   NULL,   "sra",          S_RL,           0,      0x28    },
     {   NULL,   "srl",          S_RL,           0,      0x38    },
 
-    {   NULL,   "rst",          S_RST,          0,      0xC7    },
+    {	NULL,	"rst",		S_RST,		0,	0xC7	},
 
 /*  {   NULL,   "im",           S_IM,           0,      0xED    }, */
 
@@ -230,8 +230,8 @@ struct  mne     mne[] = {
     {   NULL,   "ipset2",       S_INH2,         0,      0x4E    },
     {   NULL,   "ipset3",       S_INH2,         0,      0x5E    },
     {   NULL,   "ipres",        S_INH2,         0,      0x5D    },
-    {   NULL,   "exx",          S_INH1,         0,      0xD9    },
-    {   NULL,   "nop",          S_INH1,         0,      0x00    },
+    {	NULL,	"exx",		S_INH1,		0,	0xD9	},
+    {	NULL,	"nop",		S_INH1,		0,	0x00	},
 
 /*  {   NULL,   "halt",         S_INH1,         0,      0x76    }, */
     {   NULL,   "altd",         S_INH1,         0,      0x76    },
@@ -259,7 +259,7 @@ struct  mne     mne[] = {
 /*  {   NULL,   "otdr",         S_INH2,         0,      0xBB    }, */
 /*  {   NULL,   "outi",         S_INH2,         0,      0xA3    }, */
 /*  {   NULL,   "otir",         S_INH2,         0,      0xB3    }, */
-    {   NULL,   "reti",         S_INH2,         0,      0x4D    },
+    {	NULL,	"reti",		S_INH2,		0,	0x4D	},
 /*  {   NULL,   "retn",         S_INH2,         0,      0x45    }, */
     {   NULL,   "lret",         S_INH2,         0,      0x45    },
 /*  {   NULL,   "rld",          S_INH2,         0,      0x6F    }, */

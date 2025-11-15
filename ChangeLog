@@ -1,3 +1,29 @@
+2025-11-15 Janko Stamenović
+
+	* sdas/asstm8/stm8.h
+	  sdas/asstm8/stm8adr.c
+	  sdas/asstm8/stm8mch.c
+	  sdas/asstm8/stm8pst.c
+	  sdas/asxxsrc/asxxxx.h
+	  Rebasing sdas assemblers to the current upstream: asst8
+
+2025-11-14 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabadr.c
+	  sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  Rebasing sdas assemblers to the current upstream: asrab
+
+2025-11-11 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/genrshift.c:
+  	  Don't allow A to be a count register.
+   	* src/mos6502/genrshift.c,
+  	  src/mos6502/genlshift.c:
+  	  Refactor right and left shifts.
+  	
 2025-11-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge undefined branch.

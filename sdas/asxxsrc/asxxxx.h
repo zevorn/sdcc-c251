@@ -63,7 +63,7 @@
  * Local Definitions
  */
 
-#define	VERSION	"V05.50.4+NoICE+SDCCmods-WIP4"
+#define	VERSION	"V05.50.4+NoICE+SDCCmods-WIP6"
 #define	COPYRIGHT "2025"
 
 /*

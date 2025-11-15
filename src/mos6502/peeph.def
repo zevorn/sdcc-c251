@@ -165,6 +165,48 @@ replace restart {
 	lda %3
 } if same(%1 'adc' 'sbc')
 
+
+////////////////////////////////////////////////////////
+// Reorder copy
+////////////////////////////////////////////////////////
+
+replace restart {
+	lda %1
+	sta %2
+	lda %3
+	sta %4
+        lda %2
+} by {
+	; Peephole reorder int
+	lda %3
+	sta %4
+	lda %1
+	sta %2
+}
+
+replace restart {
+	lda %1
+	sta %2
+	lda %3
+	sta %4
+	lda %5
+	sta %6
+	lda %7
+	sta %8
+        lda %2
+} by {
+	; Peephole reorder long
+	lda %3
+	sta %4
+	lda %5
+	sta %6
+	lda %7
+	sta %8
+	lda %1
+	sta %2
+}
+
+
 ////////////////////////////////////////////////////////
 // Remove unnecessary loads
 ////////////////////////////////////////////////////////
