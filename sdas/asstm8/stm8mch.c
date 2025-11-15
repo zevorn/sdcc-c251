@@ -1,7 +1,7 @@
 /* stm8mch.c */
 
 /*
- *  Copyright (C) 2010  Alan R. Baldwin
+ *  Copyright (C) 2010-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,9 +31,9 @@ char	*dsft	= "asm";
 
 #define	NB	512
 
-unsigned	*bp;
-unsigned	bm;
-unsigned	bb[NB];
+int	*bp;
+int	bm;
+int	bb[NB];
 
 /*
  * Opcode Cycle Definitions
@@ -167,7 +167,7 @@ static char *Page[5] = {
 /*
  * Process a machine op.
  */
-VOID
+void
 machine(mp)
 struct mne *mp;
 {
@@ -176,6 +176,12 @@ struct mne *mp;
 	int t1, t2, t3;
 	int v1, v2, v3;
 	int op, rf;
+
+	/*
+	 * Using Internal Format
+	 * For Cycle Counting
+	 */
+	opcycles = OPCY_NONE;
 
 	clrexpr(&e1);
 	clrexpr(&e2);
@@ -196,8 +202,7 @@ struct mne *mp;
 		comma(1);
 		t1 = addr(&e1);
 		v1 = rcode;
-		if ((t2 == S_REG) && (v2 == SP) &&
-		    (t1 == S_IMM)) {
+		if ((t2 == S_REG) && (v2 == SP) && (t1 == S_IMM)) {
 			if (op == 0x00) {	/* SUB  SP,# */
 				outab(0x52);
 				outrb(&e1, R_USGN);
@@ -210,12 +215,12 @@ struct mne *mp;
 			}
 		}
 		if ((t2 != S_REG) || (v2 != A)) {
-			opcy_aerr();
+			xerr('a', "First argument must be A.");
 			break;
 		}
 		switch(t1) {
 		case S_REG:	/* A, X, XL, XH, Y, YL, YH, CC, SP */
-			opcy_aerr();
+			xerr('a', "Second argument must NOT be a register.");
 			break;
 		case S_LONG:	/*  arg */
 			if (ls_mode(&e1)) {
@@ -234,17 +239,21 @@ struct mne *mp;
 		case S_IXO:	/* (offset,R), R = X, Y, SP */
 			if (ls_mode(&e1)) {
 		case S_IXE:	/* (offset,R).e, R = X, Y, SP */
-				if (t1 == S_IXE) { aerr(); }
+				if (t1 == S_IXE)
+					xerr('a', "__.e argument is not supported."); 
 		case S_IXW:	/* (offset,R).w, R = X, Y, SP */
 				switch(v1) {
 				case Y:		outab(0x90);
 				case X:		outab(op | 0xD0);
 						outrw(&e1, R_USGN);	break;
-				case SP:	if (t1 == S_IXW) { aerr(); }
+				case SP:	if (t1 == S_IXW)
+							xerr('a', "__.w argument is not supported."); 
 						if (e1.e_addr & ~0xFF) { aerr(); }
 						outab(op | 0x10);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Addressing mode requires X, Y, or SP.");
+					break;
 				}
 			} else {
 		case S_IXB:	/* (offset,R).b, R = X, Y, SP */
@@ -254,7 +263,9 @@ struct mne *mp;
 						outrb(&e1, R_USGN);	break;
 				case SP:	outab(op | 0x10);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Addressing mode requires X, Y, or SP.");
+					break;
 				}
 			}
 			break;
@@ -262,13 +273,16 @@ struct mne *mp;
 			switch(v1) {
 			case Y:		outab(0x90);
 			case X:		outab(op | 0xF0);	break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Addressing mode requires X or Y.");
+				break;
 			}
 			break;
 		case S_IN:	/* [offset] */
 			if (ls_mode(&e1)) {
 		case S_INE:	/* [offset].e */
-				if (t1 == S_INE) { aerr(); }
+				if (t1 == S_INE)
+					xerr('a', "__.e argument is not supported."); 
 		case S_INW:	/* [offset].w */
 				outab(0x72);
 				outab(op | 0xC0);
@@ -283,17 +297,21 @@ struct mne *mp;
 		case S_INIX:	/* ([offset],R), R = X, Y */
 			if (ls_mode(&e1)) {
 		case S_INIXE:	/* ([offset],R).e, R = X, Y */
-				if (t1 == S_INIXE) { aerr(); }
+				if (t1 == S_INIXE)
+					xerr('a', "__.e argument is not supported."); 
 		case S_INIXW:	/* ([offset],R).w, R = X, Y */
 				switch(v1) {
 				case X:		outab(0x72);
 						outab(op | 0xD0);
 						outrw(&e1, R_USGN);	break;
-				case Y:	        if (t1 == S_INIXW) { aerr(); }
+				case Y:	        if (t1 == S_INIXW)
+							xerr('a', "__.w argument is not supported."); 
 						outab(0x91);
 						outab(op | 0xD0);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Addressing mode requires X or Y.");
+					break;
 				}
 			} else {
 		case S_INIXB:	/* ([offset],R).b, R = X, Y */
@@ -306,12 +324,14 @@ struct mne *mp;
 						}
 						outab(op | 0xD0);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Addressing mode requires X or Y.");
+					break;
 				}
 			}
 			break;
 		default:
-			opcy_aerr();
+			xerr('a', "Invalid Addressing Mode.");
 			break;
 		}
 		break;
@@ -326,21 +346,47 @@ struct mne *mp;
 		comma(1);
 		t1 = addr(&e1);
 		v1 = rcode;
-		if ((t2 != S_REG) || ((v2 != X) && (v2 != Y) && (v2 != SP))) {
-			opcy_aerr();
+		/*
+		 * Added due to disagreement and
+		 * contradictions in the 2005 and
+		 * 2011 ST8 manuals.  Generated
+		 * code is identical to ADD SP,#byte .
+		 */
+		if ((t2 == S_REG) && (v2 == SP) && (t1 == S_IMM)) {
+			if (op == 0x0D) {	/* SUBW  SP,# */
+				outab(0x52);
+				outrb(&e1, R_USGN);
+				break;
+			} else
+			if (op == 0x0C) {	/* ADDW  SP,# */
+				outab(0x5B);
+				outrb(&e1, R_USGN);
+				break;
+			}
+		}
+		if ((t2 != S_REG) || ((v2 != X) && (v2 != Y))) {
+			xerr('a', "First argument requires X, Y, or register.");
 			break;
 		}
 		switch(t1) {
 		case S_LONG:	/*  arg */
+			outab(0x72);
+			switch(v2) {
+			case X:		outab(0xBB);	break;
+			case Y:		outab(0xB9);	break;
+			default:			break;
+			}
+			outrw(&e1, R_USGN);
+			break;
 		case S_SHORT:	/* *arg */
 			outab(0x72);
 			switch(v2) {
 			case X:		outab(0xBB);	break;
 			case Y:		outab(0xB9);	break;
-			case SP:	opcy_aerr();	break;
 			default:			break;
 			}
-			outrw(&e1, R_USGN);
+			outab(0x00);
+			outrb(&e1, R_USGN);
 			break;
 		case S_IMM:	/* #arg */
 			switch(v2) {
@@ -355,7 +401,7 @@ struct mne *mp;
 			break;
 		case S_IXE:	/* (offset,R).e, R = SP */
 		case S_IXW:	/* (offset,R).w, R = SP */
-			aerr();
+			xerr('a', "__.w or __.e argument is not supported."); 
 		case S_IXB:	/* (offset,R).b, R = SP */
 		case S_IXO:	/* (offset,R), R = SP */
 			if (v1 == SP) {
@@ -367,11 +413,11 @@ struct mne *mp;
 				}
 				outrb(&e1, R_USGN);	break;
 			} else {
-				opcy_aerr();
+				xerr('a', "Second argument requires SP.");
 			}
 			break;
 		default:
-			opcy_aerr();
+			xerr('a', "Invalid Addressing Mode.");
 			break;
 		}
 		break;
@@ -386,13 +432,30 @@ struct mne *mp;
 		comma(1);
 		t1 = addr(&e1);
 		v1 = rcode;
+		/*
+		 * Added due to disagreement and
+		 * contradictions in the 2005 and
+		 * 2011 ST8 mmanuals.  Generated
+		 * code is identical to SUB SP,#byte .
+		 */
+		if ((t2 == S_REG) && (v2 == SP) && (t1 == S_IMM)) {
+			if (op == 0x0D) {	/* SUBW  SP,# */
+				outab(0x52);
+				outrb(&e1, R_USGN);
+				break;
+			} else
+			if (op == 0x0C) {	/* ADDW  SP,# */
+				outab(0x5B);
+				outrb(&e1, R_USGN);
+				break;
+			}
+		}
 		if ((t2 != S_REG) || ((v2 != X) && (v2 != Y))) {
-			opcy_aerr();
+			xerr('a', "First argument requires X, Y, or register.");
 			break;
 		}
 		switch(t1) {
 		case S_LONG:	/*  arg */
-		case S_SHORT:	/* *arg */
 			outab(0x72);
 			switch(v2) {
 			case X:		outab(0xB0);	break;
@@ -400,6 +463,16 @@ struct mne *mp;
 			default:			break;
 			}
 			outrw(&e1, R_USGN);
+			break;
+		case S_SHORT:	/* *arg */
+			outab(0x72);
+			switch(v2) {
+			case X:		outab(0xB0);	break;
+			case Y:		outab(0xB2);	break;
+			default:			break;
+			}
+			outab(0x00);
+			outrb(&e1, R_USGN);
 			break;
 		case S_IMM:	/* #arg */
 			switch(v2) {
@@ -412,7 +485,7 @@ struct mne *mp;
 			break;
 		case S_IXE:	/* (offset,R).e, R = SP */
 		case S_IXW:	/* (offset,R).w, R = SP */
-			aerr();
+			xerr('a', "__.w or __.e argument is not supported."); 
 		case S_IXB:	/* (offset,R).b, R = SP */
 		case S_IXO:	/* (offset,R), R = SP */
 			if (v1 == SP) {
@@ -424,11 +497,11 @@ struct mne *mp;
 				}
 				outrb(&e1, R_USGN);	break;
 			} else {
-				opcy_aerr();
+				xerr('a', "Second argument requires SP.");
 			}
 			break;
 		default:
-			opcy_aerr();
+			xerr('a', "Invalid Addressing Mode.");
 			break;
 		}
 		break;
@@ -444,11 +517,11 @@ struct mne *mp;
 		t1 = addr(&e1);
 		v1 = rcode;
 		if ((t2 != S_REG) || ((v2 != X) && (v2 != Y))) {
-			opcy_aerr();
+			xerr('a', "First argument requires X, Y, or register.");
 			break;
 		}
 		if (v2 == v1) {
-			opcy_aerr();
+			xerr('a', "First and second arguments must not be identical.");
 			break;
 		}
 		switch(t1) {
@@ -479,28 +552,32 @@ struct mne *mp;
 			outrw(&e1, R_NORM);
 			break;
 		case S_IXE:	/* (offset,R).e, R = X, Y, SP */
-			aerr();
+			xerr('a', "__.e argument is not supported."); 
 		case S_IXW:	/* (offset,R).w, R = X, Y, SP */
 		case S_IXB:	/* (offset,R).b, R = X, Y, SP */
 		case S_IXO:	/* (offset,R), R = X, Y, SP */
 			if ((v2 == Y) && (v1 == SP)) {
-				opcy_aerr();
+				xerr('a', "First argument Y with second argument SP is invalid.");
 				break;
 			}
 			switch(t1) {
 			case S_IXO:	/* (offset,R), R = X, Y, SP */
 				if (ls_mode(&e1)) {
 			case S_IXE:	/* (offset,R).e, R = X, Y, SP */
-					if (t1 == S_IXE) { aerr(); }
+					if (t1 == S_IXE)
+						xerr('a', "__.e argument is not supported."); 
 			case S_IXW:	/* (offset,R).w, R = X, Y, SP */
 					switch(v1) {
 					case Y:		outab(0x90);
 					case X:		outab(op | 0xD0);
 							outrw(&e1, R_USGN);	break;
-					case SP:	if (t1 == S_IXW) { aerr(); }
+					case SP:	if (t1 == S_IXW)
+								xerr('a', "__.w argument is not supported."); 
 							outab(op | 0x10);
 							outrb(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second argument requires X, Y, or SP.");
+						break;
 					}
 				} else {
 			case S_IXB:	/* (offset,R).b, R = X, Y, SP */
@@ -510,7 +587,9 @@ struct mne *mp;
 							outrb(&e1, R_USGN);	break;
 					case SP:	outab(op | 0x10);
 							outrb(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second argument requires X, Y, or SP.");
+						break;
 					}
 				}
 			}
@@ -519,19 +598,23 @@ struct mne *mp;
 			switch(v1) {
 			case Y:		outab(0x90);
 			case X:		outab(op | 0xF0);	break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Second argument requires X or Y.");
+				break;
 			}
 			break;
 		case S_IN:	/* [offset] */
 			if (ls_mode(&e1)) {
 		case S_INE:	/* [offset].e */
-				if (t1 == S_INE) { aerr(); }
+				if (t1 == S_INE)
+					xerr('a', "__.e argument is not supported."); 
 		case S_INW:	/* [offset].w */
 				switch(v2) {
 				case X:		outab(0x72);
 						outab(0xC3);
 						outrw(&e1, R_USGN);	break;
-				case Y:	        if (t1 == S_INW) { aerr(); }
+				case Y:	        if (t1 == S_INW)
+							xerr('a', "__.w argument is not supported."); 
 						outab(0x91);
 						outab(0xC3);
 						outrb(&e1, R_USGN);	break;
@@ -551,17 +634,21 @@ struct mne *mp;
 		case S_INIX:	/* ([offset],R), R = X, Y */
 			if (ls_mode(&e1)) {
 		case S_INIXE:	/* ([offset],R).e, R = X, Y */
-				if (t1 == S_INIXE) { aerr(); }
+				if (t1 == S_INIXE)
+					xerr('a', "__.e argument is not supported."); 
 		case S_INIXW:	/* ([offset],R).w, R = X, Y */
 				switch(v1) {
 				case X:		outab(0x72);
 						outab(op | 0xD0);
 						outrw(&e1, R_USGN);	break;
-				case Y:	        if (t1 == S_INIXW) { aerr(); }
+				case Y:	        if (t1 == S_INIXW)
+							xerr('a', "__.w argument is not supported."); 
 						outab(0x91);
 						outab(op | 0xD0);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Second argument requires X or Y.");
+					break;
 				}
 			} else {
 		case S_INIXB:	/* ([offset],R).b, R = X, Y */
@@ -574,12 +661,14 @@ struct mne *mp;
 						}
 						outab(op | 0xD0);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Second argument requires X or Y.");
+					break;
 				}
 			}
 			break;
 		default:
-			opcy_aerr();
+			xerr('a', "Invalid Addressing Mode.");
 			break;
 		}
 		break;
@@ -599,7 +688,7 @@ struct mne *mp;
 			if (v1 == A) {
 				outab(op | 0x40);
 			} else {
-				opcy_aerr();
+				xerr('a', "Register argument must be A.");
 			}
 			break;
 		case S_LONG:	/*  arg */
@@ -614,12 +703,13 @@ struct mne *mp;
 			}
 			break;
 		case S_IMM:	/* #arg */
-			opcy_aerr();
+			xerr('a', "Argument: #__ is invalid."); 
 			break;
 		case S_IXO:	/* (offset,R), R = X, Y, SP */
 			if (ls_mode(&e1)) {
 		case S_IXE:	/* (offset,R).e, R = X, Y, SP */
-				if (t1 == S_IXE) { aerr(); }
+				if (t1 == S_IXE)
+					xerr('a', "__.e argument is not supported."); 
 		case S_IXW:	/* (offset,R).w, R = X, Y, SP */
 				switch(v1) {
 				case Y:
@@ -630,10 +720,13 @@ struct mne *mp;
 						}
 						outab(op | 0x40);
 						outrw(&e1, R_USGN);	break;
-				case SP:	if (t1 == S_IXW) { aerr(); }
+				case SP:	if (t1 == S_IXW)
+							xerr('a', "__.w argument is not supported."); 
 						outab(op | 0x00);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Argument requires X, Y, or SP.");
+					break;
 				}
 			} else {
 		case S_IXB:	/* (offset,R).b, R = X, Y, SP */
@@ -643,7 +736,9 @@ struct mne *mp;
 						outrb(&e1, R_USGN);	break;
 				case SP:	outab(op | 0x00);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Argument requires X, Y, or SP.");
+					break;
 				}
 			}
 			break;
@@ -651,13 +746,16 @@ struct mne *mp;
 			switch(v1) {
 			case Y:		outab(0x90);
 			case X:		outab(op | 0x70);	break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Argument requires X or Y.");
+				break;
 			}
 			break;
 		case S_IN:	/* [offset] */
 			if (ls_mode(&e1)) {
 		case S_INE:	/* [offset] */
-				if (t1 == S_INE) { aerr(); }
+				if (t1 == S_INE)
+					xerr('a', "__.e argument is not supported."); 
 		case S_INW:	/* [offset].w */
 				outab(0x72);
 				outab(op | 0x30);
@@ -672,17 +770,21 @@ struct mne *mp;
 		case S_INIX:	/* ([offset],R), R = X, Y */
 			if (ls_mode(&e1)) {
 		case S_INIXE:	/* ([offset],R).e, R = X, Y */
-				if (t1 == S_INIXE) { aerr(); }
+				if (t1 == S_INIXE)
+					xerr('a', "__.e argument is not supported."); 
 		case S_INIXW:	/* ([offset],R).w, R = X, Y */
 				switch(v1) {
 				case X:		outab(0x72);
 						outab(op | 0x60);
 						outrw(&e1, R_USGN);	break;
-				case Y:		if (t1 == S_INIXW) { aerr(); }
+				case Y:		if (t1 == S_INIXW)
+							xerr('a', "__.w argument is not supported."); 
 						outab(0x91);
 						outab(op | 0x60);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Argument requires X or Y.");
+					break;
 				}
 			} else {
 		case S_INIXB:	/* ([offset],R).b, R = X, Y */
@@ -695,12 +797,14 @@ struct mne *mp;
 						}
 						outab(op | 0x60);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+				xerr('a', "Argument requires X or Y.");
+					break;
 				}
 			}
 			break;
 		default:
-			opcy_aerr();
+			xerr('a', "Invalid Addressing Mode.");
 			break;
 		}
 		break;
@@ -737,7 +841,7 @@ struct mne *mp;
 			t1 = t2;
 			v1 = v2;
 		} else {
-			opcy_aerr();
+			xerr('a', "The first or second argument must be A.");
 			break;
 		}
 		switch(t1) {
@@ -749,7 +853,9 @@ struct mne *mp;
 				case XL:	outab(0x9F);	break;
 				case YH:	outab(0x90);
 				case XH:	outab(0x9E);	break;
-				default:	opcy_aerr();	break;
+				default:
+					xerr('a', "Second argument requires XL, XH, YL, or YH.");
+					break;
 				}
 				break;
 			case 0x07:	/* ---,A */
@@ -758,7 +864,9 @@ struct mne *mp;
 				case XL:	outab(0x97);	break;
 				case YH:	outab(0x90);
 				case XH:	outab(0x95);	break;
-				default:	opcy_aerr();	break;
+				default:
+					xerr('a', "First argument requires XL, XH, YL, or YH.");
+					break;
 				}
 				break;
 			default:	break;
@@ -778,14 +886,17 @@ struct mne *mp;
 			switch(op) {
 			case 0x06:	outab(op | 0xA0);
 					outrb(&e1, R_NORM);	break;
-			case 0x07:	opcy_aerr();		break;
+			case 0x07:
+				xerr('a', "First argument: #__ is invalid."); 
+				break;
 			default:				break;
 			}
 			break;
 		case S_IXO:	/* (offset,R), R = X, Y, SP */
 			if (ls_mode(&e1)) {
 		case S_IXE:	/* (offset,R).e, R = X, Y, SP */
-				if (t1 == S_IXE) { aerr(); }
+				if (t1 == S_IXE)
+					xerr('a', "__.e argument is not supported."); 
 		case S_IXW:	/* (offset,R).w, R = X, Y, SP */
 				switch(v1) {
 				case Y:		outab(0x90);
@@ -799,8 +910,12 @@ struct mne *mp;
 							outrb(&e1, R_USGN);	break;
 					default:				break;
 					}
-					if (t1 == S_IXW) { aerr(); }		break;
-				default:	opcy_aerr();		break;
+					if (t1 == S_IXW)
+						xerr('a', "__.e argument is not supported.");
+ 				        break;
+				default:
+					xerr('a', "Argument requires X, Y, or SP.");
+					break;
 				}
 			} else {
 		case S_IXB:	/* (offset,R).b, R = X, Y, SP */
@@ -817,7 +932,9 @@ struct mne *mp;
 					default:				break;
 					}
 					break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Argument requires X, Y, or SP.");
+					break;
 				}
 			}
 			break;
@@ -825,13 +942,16 @@ struct mne *mp;
 			switch(v1) {
 			case Y:		outab(0x90);
 			case X:		outab(op | 0xF0);	break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Argument requires X or Y.");
+				break;
 			}
 			break;
 		case S_IN:	/* [offset] */
 			if (ls_mode(&e1)) {
 		case S_INE:	/* [offset].e */
-				if (t1 == S_INE) { aerr(); }
+				if (t1 == S_INE)
+					xerr('a', "__.e argument is not supported.");
 		case S_INW:	/* [offset].w */
 				outab(0x72);
 				outab(op | 0xC0);
@@ -846,17 +966,21 @@ struct mne *mp;
 		case S_INIX:	/* ([offset],R), R = X, Y */
 			if (ls_mode(&e1)) {
 		case S_INIXE:	/* ([offset],R).e, R = X, Y */
-				if (t1 == S_INIXE) { aerr(); }
+				if (t1 == S_INIXE)
+					xerr('a', "__.e argument is not supported.");
 		case S_INIXW:	/* ([offset],R).w, R = X, Y */
 				switch(v1) {
 				case X:		outab(0x72);
 						outab(op | 0xD0);
 						outrw(&e1, R_USGN);	break;
-				case Y:		if (t1 == S_INIXW) { aerr(); }
+				case Y:		if (t1 == S_INIXW)
+							xerr('a', "__.w argument is not supported."); 
 						outab(0x91);
 						outab(op | 0xD0);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Argument requires X or Y.");
+					break;
 				}
 			} else {
 		case S_INIXB:	/* ([offset],R).b, R = X, Y */
@@ -869,12 +993,14 @@ struct mne *mp;
 						}
 						outab(op | 0xD0);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();			break;
+				default:
+					xerr('a', "Argument requires X or Y.");
+					break;
 				}
 			}
 			break;
 		default:
-			opcy_aerr();
+			xerr('a', "Invalid Addressing Mode.");
 			break;
 		}
 		break;
@@ -922,7 +1048,7 @@ struct mne *mp;
 			break;
 		case S_IXB:	/* (offset,R).b, R = X, Y */
 		case S_IXW:	/* (offset,R).w, R = X, Y */
-			aerr();
+			xerr('a', "__.b and __.w arguments are not supported."); 
 		case S_IXE:	/* (offset,R).e, R = X, Y */
 		case S_IXO:	/* (offset,R), R = X, Y */
 			switch(op) {
@@ -934,12 +1060,14 @@ struct mne *mp;
 			case Y:		outab(0x90);
 			case X:		outab(op);
 					outr3b(&e1, R_NORM);	break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Argument requires X or Y.");
+				break;
 			}
 			break;
 		case S_INB:	/* [offset].b */
 		case S_INW:	/* [offset].w */
-			aerr();
+			xerr('a', "__.b and __.w arguments are not supported."); 
 		case S_INE:	/* [offset].e */
 		case S_IN:	/* [offset] */
 			outab(0x92);
@@ -948,7 +1076,7 @@ struct mne *mp;
 			break;
 		case S_INIXB:	/* ([offset],R).b, R = X, Y */
 		case S_INIXW:	/* ([offset],R).w, R = X, Y */
-			aerr();
+			xerr('a', "__.b and __.w arguments are not supported."); 
 		case S_INIXE:	/* ([offset],R).e, R = X, Y */
 		case S_INIX:	/* ([offset],R), R = X, Y */
 			switch(op) {
@@ -963,7 +1091,9 @@ struct mne *mp;
 			case Y:		outab(0x91);
 					outab(op);
 					outrw(&e1, R_USGN);	break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Argument requires X or Y.");
+				break;
 			}
 			break;
 		default:
@@ -988,7 +1118,9 @@ struct mne *mp;
 				switch(v2) {	/* ---,x or ---,y or ---,sp */
 				case Y:		outab(0x93);	break;
 				case SP:	outab(0x96);	break;
-				default:	opcy_aerr();	break;
+				default:
+					xerr('a', "First argument X, Second argument Y or SP.");
+					break;
 				}
 				break;
 			case Y:
@@ -996,17 +1128,23 @@ struct mne *mp;
 				switch(v2) {	/* ---,x or ---,y or ---,sp */
 				case X:		outab(0x93);	break;
 				case SP:	outab(0x96);	break;
-				default:	opcy_aerr();	break;
+				default:
+					xerr('a', "First argument Y, Second argument X or SP.");
+					break;
 				}
 				break;
 			case SP:
 				switch(v2) {	/* ---,x or ---,y or ---,sp */
 				case Y:		outab(0x90);
 				case X:		outab(0x94);	break;
-				default:	opcy_aerr();	break;
+				default:
+					xerr('a', "First argument SP, Second argument X or Y.");
+					break;
 				}
 				break;
-			default:	opcy_aerr();	break;
+			default:
+				xerr('a', "REG,REG addressing mode allows only X, Y, and SP.");
+				break;
 			}
 			break;
 		}
@@ -1027,15 +1165,19 @@ struct mne *mp;
 			case S_IXO:	/* (offset,R), R = X, SP */
 				if (ls_mode(&e2)) {
 			case S_IXE:	/* (offset,R).e, R = X, SP */
-					if (t2 == S_IXE) { aerr(); }
+					if (t2 == S_IXE)
+						xerr('a', "__.e argument is not supported.");
 			case S_IXW:	/* (offset,R).w, R = X, SP */
 					switch(v2) {
 					case X:		outab(0xDE);
 							outrw(&e2, R_USGN);	break;
-					case SP:	if (t2 == S_IXW) { aerr(); }
+					case SP:	if (t2 == S_IXW)
+								xerr('a', "__.w argument is not supported.");
 							outab(0x1E);
 							outrb(&e2, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second Argument requires X or SP.");
+						break;
 					}
 				} else {
 			case S_IXB:	/* (offset,R).b, R = X, SP */
@@ -1044,20 +1186,25 @@ struct mne *mp;
 							outrb(&e2, R_USGN);	break;
 					case SP:	outab(0x1E);
 							outrb(&e2, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second Argument requires X or SP.");
+						break;
 					}
 				}
 				break;
 			case S_IX:	/* (R), R = X */
 				switch(v2) {
 				case X:		outab(0xFE);	break;
-				default:	opcy_aerr();	break;
+				default:
+					xerr('a', "Second Argument requires X.");
+					break;
 				}
 				break;
 			case S_IN:	/* [offset] */
 				if (ls_mode(&e2)) {
 			case S_INE:	/* [offset].e */
-					if (t2 == S_INE) { aerr(); }
+					if (t2 == S_INE)
+						xerr('a', "__.e argument is not supported.");
 			case S_INW:	/* [offset].w */
 					outab(0x72);
 					outab(0xCE);
@@ -1072,13 +1219,16 @@ struct mne *mp;
 			case S_INIX:	/* ([offset],R), R = X */
 				if (ls_mode(&e2)) {
 			case S_INIXE:	/* ([offset],R).e, R = X */
-					if (t2 == S_INIXE) { aerr(); }
+					if (t2 == S_INIXE)
+						xerr('a', "__.e argument is not supported.");
 			case S_INIXW:	/* ([offset],R).w, R = X */
 					switch(v2) {
 					case X:		outab(0x72);
 							outab(0xDE);
 							outrw(&e2, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second Argument requires X.");
+						break;
 					}
 				} else {
 			case S_INIXB:	/* ([offset],R).b, R = X */
@@ -1086,12 +1236,14 @@ struct mne *mp;
 					case X:		outab(0x92);
 							outab(0xDE);
 							outrb(&e2, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second Argument requires X.");
+						break;
 					}
 				}
 				break;
 			default:
-				opcy_aerr();
+				xerr('a', "Invalid Addressing Mode.");
 				break;
 			}
 			break;
@@ -1116,16 +1268,20 @@ struct mne *mp;
 			case S_IXO:	/* (offset,R), R = Y, SP */
 				if (ls_mode(&e2)) {
 			case S_IXE:	/* (offset,R).e, R = Y, SP */
-					if (t2 == S_IXE) { aerr(); }
+					if (t2 == S_IXE)
+						xerr('a', "__.e argument is not supported.");
 			case S_IXW:	/* (offset,R).w, R = Y, SP */
 					switch(v2) {
 					case Y:	        outab(0x90);
 							outab(0xDE);
 							outrw(&e2, R_USGN);	break;
-					case SP:	if (t2 == S_IXW) { aerr(); }
+					case SP:	if (t2 == S_IXW)
+								xerr('a', "__.w argument is not supported.");
 							outab(0x16);
 							outrb(&e2, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second Argument requires Y or SP.");
+						break;
 					}
 				} else {
 			case S_IXB:	/* (offset,R).b, R = Y, SP */
@@ -1135,7 +1291,9 @@ struct mne *mp;
 							outrb(&e2, R_USGN);	break;
 					case SP:	outab(0x16);
 							outrb(&e2, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second Argument requires Y or SP.");
+						break;
 					}
 				}
 				break;
@@ -1143,13 +1301,16 @@ struct mne *mp;
 				switch(v2) {
 				case Y:	        outab(0x90);
 						outab(0xFE);	break;
-				default:	opcy_aerr();	break;
+				default:
+					xerr('a', "Second Argument requires Y.");
+					break;
 				}
 				break;
 			case S_IN:	/* [offset] */
 				if (ls_mode(&e2)) {
 			case S_INE:	/* [offset].e */
-					if (t2 == S_INE) { aerr(); }
+					if (t2 == S_INE)
+						xerr('a', "__.e argument is not supported.");
 			case S_INW:	/* [offset].w */
 					if (t2 == S_INW) { aerr(); }
 					outab(0x91);
@@ -1165,14 +1326,18 @@ struct mne *mp;
 			case S_INIX:	/* ([offset],R), R = Y */
 				if (ls_mode(&e2)) {
 			case S_INIXE:	/* ([offset],R).e, R = Y */
-					if (t2 == S_INIXE) { aerr(); }
+					if (t2 == S_INIXE)
+						xerr('a', "__.e argument is not supported.");
 			case S_INIXW:	/* ([offset],R).w, R = Y */
 					switch(v2) {
-					case Y:	        if (t2 == S_INIXW) { aerr(); }
+					case Y:	        if (t2 == S_INIXW)
+								xerr('a', "__.w argument is not supported."); 
 							outab(0x91);
 							outab(0xDE);
 							outrb(&e2, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second Argument requires Y.");
+						break;
 					}
 				} else {
 			case S_INIXB:	/* ([offset],R).b, R = Y */
@@ -1180,12 +1345,14 @@ struct mne *mp;
 					case Y:		outab(0x91);
 							outab(0xDE);
 							outrb(&e2, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "Second Argument requires Y.");
+						break;
 					}
 				}
 				break;
 			default:
-				opcy_aerr();
+				xerr('a', "Invalid Addressing Mode.");
 				break;
 			}
 			break;
@@ -1204,16 +1371,20 @@ struct mne *mp;
 			case S_IXO:	/* (offset,R), R = Y, SP */
 				if (ls_mode(&e1)) {
 			case S_IXE:	/* (offset,R).e, R = Y, SP */
-					if (t1 == S_IXE) { aerr(); }
+					if (t1 == S_IXE)
+						xerr('a', "__.e argument is not supported.");
 			case S_IXW:	/* (offset,R).w, R = Y, SP */
 					switch(v1) {
 					case Y:	        outab(0x90);
 							outab(0xDF);
 							outrw(&e1, R_USGN);	break;
-					case SP:	if (t1 == S_IXW) { aerr(); }
+					case SP:	if (t1 == S_IXW)
+								xerr('a', "__.w argument is not supported.");
 							outab(0x1F);
 							outrb(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "First Argument requires Y or SP.");
+						break;
 					}
 				} else {
 			case S_IXB:	/* (offset,R).b, R = Y, SP */
@@ -1223,7 +1394,9 @@ struct mne *mp;
 							outrb(&e1, R_USGN);	break;
 					case SP:	outab(0x1F);
 							outrb(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "First Argument requires Y or SP.");
+						break;
 					}
 				}
 				break;
@@ -1231,13 +1404,16 @@ struct mne *mp;
 				switch(v1) {
 				case Y:	        outab(0x90);
 						outab(0xFF);	break;
-				default:	opcy_aerr();	break;
+				default:
+					xerr('a', "First Argument requires Y.");
+					break;
 				}
 				break;
 			case S_IN:	/* [offset] */
 				if (ls_mode(&e1)) {
 			case S_INE:	/* [offset].e */
-					if (t1 == S_INE) { aerr(); }
+					if (t1 == S_INE)
+						xerr('a', "__.e argument is not supported.");
 			case S_INW:	/* [offset].w */
 					outab(0x72);
 					outab(0xCF);
@@ -1252,14 +1428,18 @@ struct mne *mp;
 			case S_INIX:	/* ([offset],R), R = Y */
 				if (ls_mode(&e1)) {
 			case S_INIXE:	/* ([offset],R).e, R = Y */
-					if (t1 == S_INIXE) { aerr(); }
+					if (t1 == S_INIXE)
+						xerr('a', "__.e argument is not supported.");
 			case S_INIXW:	/* ([offset],R).w, R = Y */
 					switch(v1) {
-					case Y:	        if (t1 == S_INIXW) { aerr(); }
+					case Y:	        if (t1 == S_INIXW)
+								xerr('a', "__.w argument is not supported."); 
 							outab(0x91);
 							outab(0xDF);
 							outrb(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "First Argument requires Y.");
+						break;
 					}
 				} else {
 			case S_INIXB:	/* ([offset],R).b, R = Y */
@@ -1267,12 +1447,14 @@ struct mne *mp;
 					case Y:		outab(0x91);
 							outab(0xDF);
 							outrb(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "First Argument requires Y.");
+						break;
 					}
 				}
 				break;
 			default:
-				opcy_aerr();
+				xerr('a', "Invalid Addressing Mode.");
 				break;
 			}
 			break;
@@ -1293,15 +1475,19 @@ struct mne *mp;
 			case S_IXO:	/* (offset,R), R = X, SP */
 				if (ls_mode(&e1)) {
 			case S_IXE:	/* (offset,R).e, R = X, SP */
-					if (t1 == S_IXE) { aerr(); }
+					if (t1 == S_IXE)
+						xerr('a', "__.e argument is not supported.");
 			case S_IXW:	/* (offset,R).w, R = X, SP */
 					switch(v1) {
 					case X:		outab(0xDF);
 							outrw(&e1, R_USGN);	break;
-					case SP:	if (t1 == S_IXW) { aerr(); }
+					case SP:	if (t1 == S_IXW)
+								xerr('a', "__.w argument is not supported.");
 							outab(0x17);
 							outrb(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "First Argument requires X or SP.");
+						break;
 					}
 				} else {
 			case S_IXB:	/* (offset,R).b, R = X, SP */
@@ -1310,20 +1496,25 @@ struct mne *mp;
 							outrb(&e1, R_USGN);	break;
 					case SP:	outab(0x17);
 							outrb(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "First Argument requires X or SP.");
+						break;
 					}
 				}
 				break;
 			case S_IX:	/* (R), R = X */
 				switch(v1) {
 				case X:		outab(0xFF);	break;
-				default:	opcy_aerr();	break;
+				default:
+					xerr('a', "First Argument requires X.");
+					break;
 				}
 				break;
 			case S_IN:	/* [offset] */
 				if (ls_mode(&e1)) {
 			case S_INE:	/* [offset].e */
-					if (t1 == S_INE) { aerr(); }
+					if (t1 == S_INE)
+						xerr('a', "__.e argument is not supported.");
 			case S_INW:	/* [offset].w */
 					if (t1 == S_INW) { aerr(); }
 					outab(0x91);
@@ -1339,13 +1530,16 @@ struct mne *mp;
 			case S_INIX:	/* ([offset],R), R = X */
 				if (ls_mode(&e1)) {
 			case S_INIXE:	/* ([offset],R).e, R = X */
-					if (t1 == S_INIXE) { aerr(); }
+					if (t1 == S_INIXE)
+						xerr('a', "__.e argument is not supported.");
 			case S_INIXW:	/* ([offset],R).w, R = X */
 					switch(v1) {
 					case X:		outab(0x72);
 							outab(0xDF);
 							outrw(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "First Argument requires X.");
+						break;
 					}
 				} else {
 			case S_INIXB:	/* ([offset],R).b, R = X */
@@ -1353,17 +1547,19 @@ struct mne *mp;
 					case X:		outab(0x92);
 							outab(0xDF);
 							outrb(&e1, R_USGN);	break;
-					default:	opcy_aerr();		break;
+					default:
+						xerr('a', "First Argument requires X.");
+						break;
 					}
 				}
 				break;
 			default:
-				opcy_aerr();
+				xerr('a', "Invalid Addressing Mode.");
 				break;
 			}
 			break;
 		}
-		opcy_aerr();
+		xerr('a', "Invalid Addressing Mode.");
 		break;
 
 	/*
@@ -1386,19 +1582,25 @@ struct mne *mp;
 		case S_LONG:
 			switch(t2) {
 			case S_IMM:	outab(0x35);
-					outrb(&e2, R_NORM);     valu_aerr(&e2, 1);
+					outrb(&e2, R_NORM);
+					if (valu_err(&e2, 1))
+						xerr('a', "Second argument: < -128 or > 255.");
 					outrw(&e1, R_USGN);	break;
 			case S_SHORT:
 			case S_LONG:	outab(0x55);
 					outrw(&e2, R_USGN);
 					outrw(&e1, R_USGN);	break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Invalid Addressing Mode.");
+				break;
 			}
 			break;
 		case S_SHORT:
 			switch(t2) {
 			case S_IMM:	outab(0x35);
-					outrb(&e2, R_NORM);     valu_aerr(&e2, 1);
+					outrb(&e2, R_NORM);
+					if (valu_err(&e2, 1))
+						xerr('a', "Second argument: < -128 or > 255.");
 					outrw(&e1, R_USGN);	break;
 			case S_SHORT:	outab(0x45);
 					outrb(&e2, R_USGN);
@@ -1406,10 +1608,14 @@ struct mne *mp;
 			case S_LONG:	outab(0x55);
 					outrw(&e2, R_USGN);
 					outrw(&e1, R_USGN);	break;
-			default:	opcy_aerr();		break;
+			default:
+		xerr('a', "Invalid Addressing Mode.");
+				break;
 			}
 			break;
-		default:	opcy_aerr();	break;
+		default:
+		xerr('a', "Invalid Addressing Mode.");
+			break;
 		}
 		break;
 
@@ -1420,10 +1626,12 @@ struct mne *mp;
 			switch(v1) {
 			case Y:		outab(0x90);
 			case X:		outab(op);	break;
-			default:	opcy_aerr();	break;
+			default:
+				xerr('a', "Argument requires X or Y.");
+				break;
 			}
 		} else {
-			opcy_aerr();
+			xerr('a', "Argument requires X or Y.");
 		}
 		break;
 
@@ -1437,7 +1645,9 @@ struct mne *mp;
 		switch(v1) {
 		case Y:		outab(0x90);
 		case X:		outab(op);	break;
-		default:	opcy_aerr();	break;
+		default:
+			xerr('a', "Arguments: X,A or Y,A.");
+			break;
 		}
 		break;
 
@@ -1456,13 +1666,17 @@ struct mne *mp;
 				switch(v2) {
 				case XL:	outab(op | 0x40);	break;
 				case YL:	outab(op | 0x60);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Second argument requires X or Y.");
+					break;
 				}
 				break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Invalid Addressing Mode.");
+				break;
 			}
 		} else {
-			opcy_aerr();
+			xerr('a', "Invalid Addressing Mode.");
 		}
 		break;
 
@@ -1473,17 +1687,19 @@ struct mne *mp;
 		t2 = addr(&e2);
 		v2 = rcode;
 		if ((t2 != S_REG) && (v2 != A)) {
-			opcy_aerr();
+			xerr('a', "Second argument requires A.");
 			break;
 		}
 		if (t1 == S_REG) {
 			switch(v1) {
 			case Y:		outab(0x90);
 			case X:		outab(op);	break;
-			default:	opcy_aerr();	break;
+			default:
+				xerr('a', "First argument requires X or Y.");
+				break;
 			}
 		} else {
-			opcy_aerr();
+			xerr('a', "Invalid Addressing Mode.");
 		}
 		break;
 
@@ -1497,7 +1713,7 @@ struct mne *mp;
 		    ((t2 == S_REG) && (v2 == Y))) {
 			outab(0x65);
 		} else {
-			opcy_aerr();
+			xerr('a', "Required arguments: X,Y.");
 		}
 		break;
 
@@ -1514,7 +1730,7 @@ struct mne *mp;
 				break;
 			}
 		}
-		opcy_aerr();
+		xerr('a', "Required arguments: X,Y or Y,x.");
 		break;
 
 	case S_POP:
@@ -1525,13 +1741,17 @@ struct mne *mp;
 			switch(v1) {
 			case A:		outab(0x84);		break;
 			case CC:	outab(0x86);		break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Required argument: A or CC.");
+				break;
 			}
 			break;
 		case S_SHORT:
 		case S_LONG:		outab(op);
 					outrw(&e1, R_USGN);	break;
-		default:		opcy_aerr();		break;
+		default:
+			xerr('a', "Invalid Addressing Mode.");
+			break;
 		}
 		break;
 
@@ -1543,7 +1763,9 @@ struct mne *mp;
 			switch(v1) {
 			case A:		outab(0x88);		break;
 			case CC:	outab(0x8A);		break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Required argument: A or CC.");
+				break;
 			}
 			break;
 		case S_SHORT:
@@ -1551,7 +1773,9 @@ struct mne *mp;
 					outrw(&e1, R_USGN);	break;
 		case S_IMM:		outab(0x4B);
 					outrb(&e1, R_NORM);	break;
-		default:		opcy_aerr();		break;
+		default:
+			xerr('a', "Invalid Addressing Mode.");
+			break;
 		}
 		break;
 
@@ -1563,10 +1787,14 @@ struct mne *mp;
 			switch(v1) {
 			case Y:		outab(0x90);
 			case X:		outab(op);		break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Required argument: X or Y.");
+				break;
 			}
 			break;
-		default:		opcy_aerr();		break;
+		default:
+			xerr('a', "Invalid Addressing Mode.");
+			break;
 		}
 		break;
 
@@ -1586,13 +1814,16 @@ struct mne *mp;
 		case S_IXO:	/* (offset,R), R = X, Y */
 			if (ls_mode(&e1)) {
 		case S_IXE:	/* (offset,R).e, R = X, Y */
-				if (t1 == S_IXE) { aerr(); }
+				if (t1 == S_IXE)
+					xerr('a', "__.e argument is not supported.");
 		case S_IXW:	/* (offset,R).w, R = X, Y */
 				switch(v1) {
 				case Y:		outab(0x90);
 				case X:		outab(op | 0xD0);
 						outrw(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Required argument: X or Y.");
+					break;
 				}
 			} else {
 		case S_IXB:	/* (offset,R).b, R = X, Y */
@@ -1600,7 +1831,9 @@ struct mne *mp;
 				case Y:		outab(0x90);
 				case X:		outab(op | 0xE0);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Required argument: X or Y.");
+					break;
 				}
 			}
 			break;
@@ -1608,13 +1841,16 @@ struct mne *mp;
 			switch(v1) {
 			case Y:		outab(0x90);
 			case X:		outab(op | 0xF0);	break;
-			default:	opcy_aerr();		break;
+			default:
+				xerr('a', "Required argument: X or Y.");
+				break;
 			}
 			break;
 		case S_IN:	/* [offset] */
 			if (ls_mode(&e1)) {
 		case S_INE:	/* [offset].e */
-				if (t1 == S_INE) { aerr(); }
+				if (t1 == S_INE)
+					xerr('a', "__.e argument is not supported.");
 		case S_INW:	/* [offset].w */
 				outab(0x72);
 				outab(op | 0xC0);
@@ -1629,17 +1865,21 @@ struct mne *mp;
 		case S_INIX:	/* ([offset],R), R = X, Y */
 			if (ls_mode(&e1)) {
 		case S_INIXE:	/* ([offset],R).e, R = X, Y */
-				if (t1 == S_INIXE) { aerr(); }
+				if (t1 == S_INIXE)
+					xerr('a', "__.e argument is not supported.");
 		case S_INIXW:	/* ([offset],R).w, R = X, Y */
 				switch(v1) {
 				case X:		outab(0x72);
 						outab(op | 0xD0);
 						outrw(&e1, R_USGN);	break;
-				case Y:		if (t1 == S_INIXW) { aerr(); }
+				case Y:		if (t1 == S_INIXW)
+							xerr('a', "__.w argument is not supported."); 
 						outab(0x91);
 						outab(op | 0xD0);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Required argument: X or Y.");
+					break;
 				}
 			} else {
 		case S_INIXB:	/* ([offset],R).b, R = X, Y */
@@ -1652,12 +1892,14 @@ struct mne *mp;
 						}
 						outab(op | 0xD0);
 						outrb(&e1, R_USGN);	break;
-				default:	opcy_aerr();		break;
+				default:
+					xerr('a', "Required argument: X or Y.");
+					break;
 				}
 			}
 			break;
 		default:
-			opcy_aerr();
+			xerr('a', "Invalid Addressing Mode.");
 			break;
 		}
 		break;
@@ -1676,13 +1918,15 @@ struct mne *mp;
 				outr3b(&e1, R_NORM);	break;
 		case S_INB:	/* [offset].b */
 		case S_INW:	/* [offset].w */
-			aerr();
+			xerr('a', "__.b and __.w arguments are not supported."); 
 		case S_INE:	/* [offset].e */
 		case S_IN:	/* [offset] */
 				outab(0x92);
 				outab(op);
 				outrw(&e1, R_USGN);	break;
-		default:	opcy_aerr();		break;
+		default:
+			xerr('a', "Invalid Addressing Mode.");
+			break;
 		}
 		break;
 
@@ -1696,7 +1940,7 @@ struct mne *mp;
 		if (mchpcr(&e1)) {
 			v1 = (int) (e1.e_addr - dot.s_addr - 1);
 			if ((v1 < -128) || (v1 > 127))
-				aerr();
+				xerr('a', "Branching Range Exceeded.");
 			outab(v1);
 		} else {
 			outrb(&e1, R_PCR);
@@ -1714,13 +1958,12 @@ struct mne *mp;
 		v2 = (int) e2.e_addr;
 		comma(1);
 		expr(&e3, 0);
-		if (((t1 != S_SHORT) && (t1 != S_LONG)) ||
-		     (t2 != S_IMM)) {
-			opcy_aerr();
+		if (((t1 != S_SHORT) && (t1 != S_LONG)) || (t2 != S_IMM)) {
+			xerr('a', "First argument must be an address.");
 			break;
 		}
 		if (is_abs(&e2) && (v2 & ~0x07)) {
-			aerr();
+			xerr('a', "Second argument is a bit number: 0 -> 7.");
 		}
 		outab(0x72);
 		//outrbm(&e2, R_BITS, op);
@@ -1729,7 +1972,7 @@ struct mne *mp;
 		if (mchpcr(&e3)) {
 			v3 = (int) (e3.e_addr - dot.s_addr - 1);
 			if ((v3 < -128) || (v3 > 127))
-				aerr();
+				xerr('a', "Branching Range Exceeded.");
 			outab(v3);
 		} else {
 			outrb(&e3, R_PCR);
@@ -1746,13 +1989,12 @@ struct mne *mp;
 		comma(1);
 		t2 = addr(&e2);
 		v2 = (int) e2.e_addr;
-		if (((t1 != S_SHORT) && (t1 != S_LONG)) ||
-		     (t2 != S_IMM)) {
-			opcy_aerr();
+		if (((t1 != S_SHORT) && (t1 != S_LONG)) || (t2 != S_IMM)) {
+			xerr('a', "First argument must be an address.");
 			break;
 		}
 		if (is_abs(&e2) && (v2 & ~0x07)) {
-			aerr();
+			xerr('a', "Second argument is a bit number: 0 -> 7.");
 		}
 		switch(rf) {
 		case S_BT72:	outab(0x72);	break;
@@ -1781,7 +2023,7 @@ struct mne *mp;
 
 	default:
 		opcycles = OPCY_ERR;
-		err('o');
+		xerr('o', "Internal Opcode Error.");
 		break;
 	}
 
@@ -1796,7 +2038,7 @@ struct mne *mp;
 /*
  * Disable Opcode Cycles with aerr()
  */
-VOID
+void
 opcy_aerr()
 {
 	opcycles = OPCY_SKP;
@@ -1839,33 +2081,35 @@ struct expr *e;
 }
 
 /*
- * Generate an 'a' error if the absolute
- * value is not a valid unsigned or signed value.
+ * Return 1 if the absolute value is not
+ * a valid unsigned or signed value.
+ * Else return 0.
  */
-VOID
-valu_aerr(e, n)
+int
+valu_err(e, n)
 struct expr *e;
 int n;
 {
-	int v;
+	a_uint v;
 
 	if (is_abs(e)) {
 		v = e->e_addr;
 		switch(n) {
 		default:
 #ifdef	LONGINT
-		case 1:	if ((v & ~0x000000FFl) && ((v & ~0x000000FFl) != ~0x000000FFl)) aerr();	break;
-		case 2:	if ((v & ~0x0000FFFFl) && ((v & ~0x0000FFFFl) != ~0x0000FFFFl)) aerr();	break;
-		case 3:	if ((v & ~0x00FFFFFFl) && ((v & ~0x00FFFFFFl) != ~0x00FFFFFFl)) aerr();	break;
-		case 4:	if ((v & ~0xFFFFFFFFl) && ((v & ~0xFFFFFFFFl) != ~0xFFFFFFFFl)) aerr();	break;
+		case 1:	if ((v & ~0x000000FFl) && ((v & ~0x000000FFl) != ~0x000000FFl)) return(1);
+		case 2:	if ((v & ~0x0000FFFFl) && ((v & ~0x0000FFFFl) != ~0x0000FFFFl)) return(1);
+		case 3:	if ((v & ~0x00FFFFFFl) && ((v & ~0x00FFFFFFl) != ~0x00FFFFFFl)) return(1);
+		case 4:	if ((v & ~0xFFFFFFFFl) && ((v & ~0xFFFFFFFFl) != ~0xFFFFFFFFl)) return(1);
 #else
-		case 1:	if ((v & ~0x000000FF) && ((v & ~0x000000FF) != ~0x000000FF)) aerr();	break;
-		case 2:	if ((v & ~0x0000FFFF) && ((v & ~0x0000FFFF) != ~0x0000FFFF)) aerr();	break;
-		case 3:	if ((v & ~0x00FFFFFF) && ((v & ~0x00FFFFFF) != ~0x00FFFFFF)) aerr();	break;
-		case 4:	if ((v & ~0xFFFFFFFF) && ((v & ~0xFFFFFFFF) != ~0xFFFFFFFF)) aerr();	break;
+		case 1:	if ((v & ~0x000000FF) && ((v & ~0x000000FF) != ~0x000000FF)) return(1);
+		case 2:	if ((v & ~0x0000FFFF) && ((v & ~0x0000FFFF) != ~0x0000FFFF)) return(1);
+		case 3:	if ((v & ~0x00FFFFFF) && ((v & ~0x00FFFFFF) != ~0x00FFFFFF)) return(1);
+		case 4:	if ((v & ~0xFFFFFFFF) && ((v & ~0xFFFFFFFF) != ~0xFFFFFFFF)) return(1);
 #endif
 		}
 	}
+	return(0);
 }
 
 /*
@@ -1896,7 +2140,7 @@ struct expr *esp;
 /*
  * Machine specific initialization.
  */
-VOID
+void
 minit()
 {
 	/*
