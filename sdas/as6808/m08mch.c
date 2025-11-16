@@ -1,7 +1,7 @@
 /* m08mch.c */
 
 /*
- *  Copyright (C) 1993-2021  Alan R. Baldwin
+ *  Copyright (C) 1993-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -203,9 +203,8 @@ struct area *zpg;
 /*
  * Process a machine op.
  */
-VOID
-machine(mp)
-struct mne *mp;
+void
+machine(struct mne *mp)
 {
 	int op, t1, t2, type;
 	struct expr e1, e2, e3;
@@ -390,7 +389,7 @@ struct mne *mp;
 		if (t2 != S_DIR)
 			xerr('a', "Require Direct Mode For Second Argument.");
                 outab(op + 2*(espv&0x07));
-                outrb(&e2, R_PAG0);
+		outrb(&e2, R_PAG0);
 		break;
 
 	case S_TYP4:
@@ -405,18 +404,18 @@ struct mne *mp;
 		comma(1);
 		expr(&e3, 0);
                 outab(op + 2*(espv&0x07));
-                outrb(&e2, R_PAG0);
+		outrb(&e2, R_PAG0);
                 if (mchpcr(&e3)) {
                         v1 = (int) (e3.e_addr - dot.s_addr - 1);
-                        if ((v1 < -128) || (v1 > 127))
-                                aerr();
-                        outab(v1);
-                } else {
-                        outrb(&e3, R_PCR);
-                }
-                if (e3.e_mode != S_USER)
-                        rerr();
-                break;
+			if ((v1 < -128) || (v1 > 127))
+				aerr();
+			outab(v1);
+		} else {
+			outrb(&e3, R_PCR);
+		}
+		if (e3.e_mode != S_USER)
+			rerr();
+		break;
 
 	case S_TYPAI:
 		if ((mchtyp != X_HC08) && (mchtyp != X_HCS08)) {
@@ -710,8 +709,7 @@ struct mne *mp;
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
-struct expr *esp;
+mchpcr(struct expr *esp)
 {
 	if (esp->e_base.e_ap == dot.s_area) {
 		return(1);
@@ -734,8 +732,8 @@ struct expr *esp;
 /*
  * Machine specific initialization.
  */
-VOID
-minit()
+void
+minit(void)
 {
 	/*
 	 * Byte Order

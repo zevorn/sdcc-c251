@@ -1,7 +1,7 @@
 /* r6500.h */
 
 /*
- *  Copyright (C) 1995-2022  Alan R. Baldwin
+ *  Copyright (C) 1995-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -125,8 +125,6 @@ struct adsym
 #define X_R65C00	33
 #define	X_R65C02	34
 
-#ifdef	OTHERSYSTEM
-
 	/* r65adr.c */
 extern	struct	adsym	axy[];
 extern	int		addr(struct expr *esp);
@@ -135,27 +133,9 @@ extern	int		srch(char *str);
 
 	/* r65mch.c */
 extern	struct  area	*zpg;
-extern	VOID		machine(struct mne *mp);
+extern	void		machine(struct mne *mp);
 extern	int		mchpcr(struct expr *esp);
-extern	VOID		mcherr(int c, char *str);
-extern	VOID		mchwrn(char *str);
-extern	VOID		minit(void);
-
-#else
-
-	/* r65adr.c */
-extern	struct	adsym	axy[];
-extern	int		addr();
-extern	int		admode();
-extern	int		srch();
-
-	/* r65mch.c */
-extern	struct  area	*zpg;
-extern	VOID		machine();
-extern	int		mchpcr();
-extern	VOID		mcherr();
-extern	VOID		mchwrn();
-extern	VOID		minit();
-
-#endif
+extern	void		mcherr(int c, char *str);
+extern	void		mchwrn(char *str);
+extern	void		minit(void);
 
