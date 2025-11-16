@@ -1,7 +1,7 @@
 /* r65mch.c */
 
 /*
- *  Copyright (C) 1995-2023  Alan R. Baldwin
+ *  Copyright (C) 1995-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -152,12 +152,14 @@ static char c02pg1[256] = {
 int mchtyp;
 struct area *zpg;
 
+int autodpcnst;
+int autodpsmbl;
+
 /*
  * Process a machine op.
  */
-VOID
-machine(mp)
-struct mne *mp;
+void
+machine(struct mne *mp)
 {
 	int op, t1;
 	struct expr e1,e2;
@@ -217,11 +219,11 @@ struct mne *mp;
 			break;
 
 		case X_R65C02:
-			opcycles = OPCY_65C02;
-			r65f11 = 1;
-			r65c00 = 1;
-			r65c02 = 1;
-			break;
+		opcycles = OPCY_65C02;
+		r65f11 = 1;
+		r65c00 = 1;
+		r65c02 = 1;
+		break;
 		}
 		break;
 
@@ -658,8 +660,7 @@ struct mne *mp;
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
-struct expr *esp;
+mchpcr(struct expr *esp)
 {
 	if (esp->e_base.e_ap == dot.s_area) {
 		return(1);
@@ -682,14 +683,14 @@ struct expr *esp;
 /*
  * Machine dependent initialization
  */
-VOID
-minit()
+void
+minit(void)
 {
 	/*
 	 * Byte Order
 	 */
 	hilo = 0;
-	
+
 	/*
 	 * Address Space
 	 */
