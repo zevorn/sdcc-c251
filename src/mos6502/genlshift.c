@@ -731,7 +731,6 @@ m6502_genLeftShift (iCode * ic)
   int size, offset;
   symbol *tlbl, *tlbl1;
   reg_info *countreg = NULL;
-  int count_offset = 0;
   bool restore_a = false;
   bool restore_y = false;
   bool x_in_regtemp = false;
@@ -844,9 +843,9 @@ m6502_genLeftShift (iCode * ic)
   emitCmp(countreg, 0);
   emitBranch ("beq", tlbl1);
 
-// FIXME: find a good solution for this
-//  if(IS_AOP_WITH_A (AOP (right)) && sameRegs (AOP (left), AOP (result)) )
-//    loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
+  // FIXME: find a good solution for this
+  //  if(IS_AOP_WITH_A (AOP (right)) && sameRegs (AOP (left), AOP (result)) )
+  //    loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
 
   safeEmitLabel (tlbl); // loop label
 

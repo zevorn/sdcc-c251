@@ -31,7 +31,7 @@
 #include "dbuf_string.h"
 
 /**************************************************************************
- * genPlusIncr :- does addition with increment if possible
+ * genPlusInc :- does addition with increment if possible
  *************************************************************************/
 static bool
 genPlusInc (iCode * ic)
@@ -54,15 +54,39 @@ genPlusInc (iCode * ic)
 
   icount = (unsigned int) ulFromVal (AOP (right)->aopu.aop_lit);
 
-  //  emitComment (TRACEGEN, "  %s - size=%d  icount=%d", __func__, size, icount);
-  emitComment (TRACEGEN, "  %s", __func__);
+  emitComment (TRACEGEN, "  %s - size=%d  icount=%d", __func__, size, icount);
 
   emitComment (TRACEGEN|VVDBG, "  %s: icount = %d, sameRegs=%d",
                __func__, icount, sameRegs (AOP (left), AOP (result)));
 
-  if (icount>255)
+  if (icount>255 && ((icount&0xff)!=0) )
     return false;
 
+  if (icount>255)
+    {
+#if 1
+      int bcount = icount>>8;
+    if (IS_AOP_XA (AOP (result)) && IS_AOP_XA (AOP (left)) )
+        {
+          if(m6502_reg_x->isLitConst)
+            {
+//              loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
+              emit6502op ("ldx", "0x%02x", (m6502_reg_x->litConst + bcount)&0xff );
+              return true;
+            }
+          else if(bcount<4)
+            {
+      while (bcount--)
+        emit6502op ("inx", "");
+      return true;
+
+            }
+        }
+    return false;
+#else
+      return false;
+#endif
+    }
 
   if(IS_AOP_XA (AOP (result)) && icount >=0 )
     {
@@ -147,13 +171,14 @@ genPlusInc (iCode * ic)
       if (size > 1)
 	emitBranch ("bcc", tlbl);
     }
+
   for (offset = 1; offset < size; offset++)
     {
-    rmwWithAop ("inc", AOP (result), offset);
-    if(AOP(result)->type==AOP_REG) m6502_dirtyReg(AOP(result)->aopu.aop_reg[offset]);
-    if ((offset + 1) < size)
-      emitBranch ("bne", tlbl);
-  }
+      rmwWithAop ("inc", AOP (result), offset);
+      if(AOP(result)->type==AOP_REG) m6502_dirtyReg(AOP(result)->aopu.aop_reg[offset]);
+      if ((offset + 1) < size)
+	emitBranch ("bne", tlbl);
+    }
 
   if (size > 1)
     safeEmitLabel (tlbl);

@@ -54,20 +54,36 @@ genMinusDec (iCode * ic)
 
   emitComment (TRACEGEN, "  %s - size=%d  icount=%d", __func__, size, icount);
 
+  emitComment (TRACEGEN|VVDBG, "  %s: icount = %d, sameRegs=%d",
+               __func__, icount, sameRegs (AOP (left), AOP (result)));
+
   if (icount>255 && ((icount&0xff)!=0) )
     return false;
 
   if (icount>255)
     {
-#if 0
+#if 1
       int bcount = icount>>8;
-      if (!IS_AOP_XA (AOP (result)) || bcount>4 )
-        return false;
-
+    if (IS_AOP_XA (AOP (result)) && IS_AOP_XA (AOP (left)) )
+        {
+          if(m6502_reg_x->isLitConst)
+            {
+//              loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
+              emit6502op ("ldx", "0x%02x", (m6502_reg_x->litConst - bcount)&0xff );
+              return true;
+            }
+          else if(bcount<4)
+            {
       while (bcount--)
         emit6502op ("dex", "");
-#endif
+      return true;
+
+            }
+        }
       return false;
+#else
+      return false;
+#endif
     }
 
   if(IS_AOP_XA (AOP (result)) && icount >=0 )

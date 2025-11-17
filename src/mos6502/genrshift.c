@@ -887,7 +887,7 @@ genRightShiftLiteral (operand * left, operand * result, int shCount, int sign)
 
   emitComment (TRACEGEN, __func__);
 
-//  size = AOP_SIZE (left);
+  //  size = AOP_SIZE (left);
   /* test the LEFT size !!! */
   size = AOP_SIZE (result);
   emitComment (TRACEGEN|VVDBG, "  %s - result size=%d, left size=%d",
@@ -976,7 +976,6 @@ m6502_genRightShift (iCode * ic)
   symbol *tlbl, *tlbl1;
   bool sign;
   reg_info *countreg = NULL;
-  int count_offset=0;
   bool restore_a = false;
   bool restore_y = false;
   bool x_in_regtemp = false;
@@ -1095,9 +1094,9 @@ m6502_genRightShift (iCode * ic)
   emitCmp(countreg, 0);
   emitBranch ("beq", tlbl1);
 
-// FIXME: find a good solution for this
-//  if(IS_AOP_WITH_A (AOP (right)) && sameRegs (AOP (left), AOP (result)) )
-//    loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
+  // FIXME: find a good solution for this
+  //  if(IS_AOP_WITH_A (AOP (right)) && sameRegs (AOP (left), AOP (result)) )
+  //    loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
 
   safeEmitLabel (tlbl); // loop label
 
