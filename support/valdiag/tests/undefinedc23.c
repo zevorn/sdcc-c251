@@ -162,6 +162,14 @@ return (_Bool)p;
 }
 #endif
 
+#ifdef TEST28
+// We only get full diagnostics if libu8ident was present at configure/build time.
+// Combining Latin and Cyrillic in an identifier name will result in a warning either way:
+// without libu8ident, we get a warning about a non-ASCII identifier that can't be checked properly,
+// with libu8ident we get a warning about an invalid combination of scripts in the same identifier.
+int AВ; /* WARNING */
+#endif
+
 #ifdef TEST38a
 struct A {
 int a;

@@ -88,6 +88,9 @@
 /* Define to 1 if you have the <treedec/combinations.hpp> header file. */
 #undef HAVE_TREEDEC_COMBINATIONS_HPP
 
+/* Define to 1 if you have the <u8ident.h> header file. */
+#undef HAVE_U8IDENT_H
+
 /* Define to 1 if you have the <uchar.h> header file. */
 #undef HAVE_UCHAR_H
 

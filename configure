@@ -1805,41 +1805,6 @@ printf "%s\n" "$ac_res" >&6; }
 
 } # ac_fn_c_check_header_compile
 
-# ac_fn_cxx_check_header_compile LINENO HEADER VAR INCLUDES
-# ---------------------------------------------------------
-# Tests whether HEADER exists and can be compiled using the include files in
-# INCLUDES, setting the cache variable VAR accordingly.
-ac_fn_cxx_check_header_compile ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
-printf %s "checking for $2... " >&6; }
-if eval test \${$3+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-$4
-#include <$2>
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"
-then :
-  eval "$3=yes"
-else case e in #(
-  e) eval "$3=no" ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
-esac
-fi
-eval ac_res=\$$3
-	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-printf "%s\n" "$ac_res" >&6; }
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-
-} # ac_fn_cxx_check_header_compile
-
 # ac_fn_c_try_link LINENO
 # -----------------------
 # Try to link conftest.$ac_ext, and return whether this succeeded.
@@ -1887,6 +1852,41 @@ fi
   as_fn_set_status $ac_retval
 
 } # ac_fn_c_try_link
+
+# ac_fn_cxx_check_header_compile LINENO HEADER VAR INCLUDES
+# ---------------------------------------------------------
+# Tests whether HEADER exists and can be compiled using the include files in
+# INCLUDES, setting the cache variable VAR accordingly.
+ac_fn_cxx_check_header_compile ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
+printf %s "checking for $2... " >&6; }
+if eval test \${$3+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+#include <$2>
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  eval "$3=yes"
+else case e in #(
+  e) eval "$3=no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+esac
+fi
+eval ac_res=\$$3
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_cxx_check_header_compile
 
 # ac_fn_c_check_func LINENO FUNC VAR
 # ----------------------------------
@@ -5559,7 +5559,7 @@ then :
   printf %s "(cached) " >&6
 else case e in #(
   e)
-	for am_cv_pathless_PYTHON in python python2 python3  python3.11 python3.10  python3.9 python3.8 python3.7 python3.6 python3.5 python3.4 python3.3  python3.2 python3.1 python3.0  python2.7 python2.6 python2.5 python2.4 python2.3 python2.2 python2.1  python2.0 none; do
+	for am_cv_pathless_PYTHON in python python3  python3.20 python3.19 python3.18 python3.17 python3.16  python3.15 python3.14 python3.13 python3.12 python3.11 python3.10  python3.9 python3.8 python3.7 python3.6 python3.5 python3.4 python3.3  python3.2 python3.1 python3.0  python2  python2.7 python2.6 python2.5 python2.4 python2.3 python2.2 python2.1  python2.0 none; do
 	  test "$am_cv_pathless_PYTHON" = none && break
 	  prog="import sys
 # split strings by '.' and convert to numeric.  Append some zeros
@@ -5830,7 +5830,21 @@ try:
     if python_implementation() == 'CPython' and sys.version[:3] == '2.7':
         can_use_sysconfig = 0
 except ImportError:
-    pass"
+    pass" # end of am_python_setup_sysconfig
+
+  # More repeated code, for figuring out the installation scheme to use.
+  am_python_setup_scheme="if hasattr(sysconfig, 'get_default_scheme'):
+      scheme = sysconfig.get_default_scheme()
+    else:
+      scheme = sysconfig._get_default_scheme()
+    if scheme == 'posix_local':
+      if '$am_py_prefix' == '/usr':
+        scheme = 'deb_system' # should only happen during Debian package builds
+      else:
+        # Debian's default scheme installs to /usr/local/ but we want to
+        # follow the prefix, as we always have.
+        # See bugs#54412, #64837, et al.
+        scheme = 'posix_prefix'" # end of am_python_setup_scheme
 
 
               { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON script directory (pythondir)" >&5
@@ -5847,14 +5861,11 @@ else case e in #(
    am_cv_python_pythondir=`$PYTHON -c "
 $am_python_setup_sysconfig
 if can_use_sysconfig:
-  if hasattr(sysconfig, 'get_default_scheme'):
-    scheme = sysconfig.get_default_scheme()
-  else:
-    scheme = sysconfig._get_default_scheme()
-  if scheme == 'posix_local':
-    # Debian's default scheme installs to /usr/local/ but we want to find headers in /usr/
-    scheme = 'posix_prefix'
-  sitedir = sysconfig.get_path('purelib', scheme, vars={'base':'$am_py_prefix'})
+  try:
+    $am_python_setup_scheme
+    sitedir = sysconfig.get_path('purelib', scheme, vars={'base':'$am_py_prefix'})
+  except:
+    sitedir = sysconfig.get_path('purelib', vars={'base':'$am_py_prefix'})
 else:
   from distutils import sysconfig
   sitedir = sysconfig.get_python_lib(0, 0, prefix='$am_py_prefix')
@@ -5884,7 +5895,7 @@ printf "%s\n" "$am_cv_python_pythondir" >&6; }
           pkgpythondir=\${pythondir}/$PACKAGE
 
 
-          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON extension module directory (pyexecdir)" >&5
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON extension module directory (pyexecdir)" >&5
 printf %s "checking for $am_display_PYTHON extension module directory (pyexecdir)... " >&6; }
 if test ${am_cv_python_pyexecdir+y}
 then :
@@ -5898,14 +5909,11 @@ else case e in #(
    am_cv_python_pyexecdir=`$PYTHON -c "
 $am_python_setup_sysconfig
 if can_use_sysconfig:
-  if hasattr(sysconfig, 'get_default_scheme'):
-    scheme = sysconfig.get_default_scheme()
-  else:
-    scheme = sysconfig._get_default_scheme()
-  if scheme == 'posix_local':
-    # Debian's default scheme installs to /usr/local/ but we want to find headers in /usr/
-    scheme = 'posix_prefix'
-  sitedir = sysconfig.get_path('platlib', scheme, vars={'platbase':'$am_py_exec_prefix'})
+  try:
+    $am_python_setup_scheme
+    sitedir = sysconfig.get_path('platlib', scheme, vars={'platbase':'$am_py_exec_prefix'})
+  except:
+    sitedir = sysconfig.get_path('platlib', vars={'platbase':'$am_py_exec_prefix'})
 else:
   from distutils import sysconfig
   sitedir = sysconfig.get_python_lib(1, 0, prefix='$am_py_exec_prefix')
@@ -6033,6 +6041,75 @@ esac
 fi
 
 done
+       for ac_header in u8ident.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "u8ident.h" "ac_cv_header_u8ident_h" "$ac_includes_default"
+if test "x$ac_cv_header_u8ident_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_U8IDENT_H 1" >>confdefs.h
+
+else case e in #(
+  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: u8ident library not found, falling back to plain ISO C11 identifier validity check." >&5
+printf "%s\n" "$as_me: u8ident library not found, falling back to plain ISO C11 identifier validity check." >&6;} ;;
+esac
+fi
+
+done
+as_ac_Lib=`printf "%s\n" "ac_cv_lib_":libu8ident.a"""_u8ident_init" | sed "$as_sed_sh"`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for u8ident_init in -l\":libu8ident.a\"" >&5
+printf %s "checking for u8ident_init in -l\":libu8ident.a\"... " >&6; }
+if eval test \${$as_ac_Lib+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_lib_save_LIBS=$LIBS
+LIBS="-l":libu8ident.a"  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char u8ident_init (void);
+int
+main (void)
+{
+return u8ident_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  eval "$as_ac_Lib=yes"
+else case e in #(
+  e) eval "$as_ac_Lib=no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS ;;
+esac
+fi
+eval ac_res=\$$as_ac_Lib
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_Lib"\" = x"yes"
+then :
+  cat >>confdefs.h <<_ACEOF
+#define `printf "%s\n" "HAVE_LIB":libu8ident.a"" | sed "$as_sed_cpp"` 1
+_ACEOF
+
+  LIBS="-l":libu8ident.a" $LIBS"
+
+fi
+
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -6280,7 +6357,17 @@ else case e in #(
 // MSVC always sets __cplusplus to 199711L in older versions; newer versions
 // only set it correctly if /Zc:__cplusplus is specified as well as a
 // /std:c++NN switch:
+//
 // https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
+//
+// The value __cplusplus ought to have is available in _MSVC_LANG since
+// Visual Studio 2015 Update 3:
+//
+// https://learn.microsoft.com/en-us/cpp/preprocessor/predefined-macros
+//
+// This was also the first MSVC version to support C++14 so we can't use the
+// value of either __cplusplus or _MSVC_LANG to quickly rule out MSVC having
+// C++11 or C++14 support, but we can check _MSVC_LANG for C++17 and later.
 #elif __cplusplus < 201103L && !defined _MSC_VER
 
 #error "This is not a C++11 compiler"
@@ -6577,673 +6664,9 @@ printf "%s\n" "$ax_cv_cxx_compile_cxx11" >&6; }
       ac_success=yes
     fi
 
-    if test x$ac_success = xno; then
-    for alternative in ${ax_cxx_compile_alternatives}; do
-      switch="-std=gnu++${alternative}"
-      cachevar=`printf "%s\n" "ax_cv_cxx_compile_cxx11_$switch" | sed "$as_sed_sh"`
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether $CXX supports C++11 features with $switch" >&5
-printf %s "checking whether $CXX supports C++11 features with $switch... " >&6; }
-if eval test \${$cachevar+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_save_CXX="$CXX"
-         CXX="$CXX $switch"
-         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
 
 
-// If the compiler admits that it is not ready for C++11, why torture it?
-// Hopefully, this will speed up the test.
 
-#ifndef __cplusplus
-
-#error "This is not a C++ compiler"
-
-// MSVC always sets __cplusplus to 199711L in older versions; newer versions
-// only set it correctly if /Zc:__cplusplus is specified as well as a
-// /std:c++NN switch:
-// https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
-#elif __cplusplus < 201103L && !defined _MSC_VER
-
-#error "This is not a C++11 compiler"
-
-#else
-
-namespace cxx11
-{
-
-  namespace test_static_assert
-  {
-
-    template <typename T>
-    struct check
-    {
-      static_assert(sizeof(int) <= sizeof(T), "not big enough");
-    };
-
-  }
-
-  namespace test_final_override
-  {
-
-    struct Base
-    {
-      virtual ~Base() {}
-      virtual void f() {}
-    };
-
-    struct Derived : public Base
-    {
-      virtual ~Derived() override {}
-      virtual void f() override {}
-    };
-
-  }
-
-  namespace test_double_right_angle_brackets
-  {
-
-    template < typename T >
-    struct check {};
-
-    typedef check<void> single_type;
-    typedef check<check<void>> double_type;
-    typedef check<check<check<void>>> triple_type;
-    typedef check<check<check<check<void>>>> quadruple_type;
-
-  }
-
-  namespace test_decltype
-  {
-
-    int
-    f()
-    {
-      int a = 1;
-      decltype(a) b = 2;
-      return a + b;
-    }
-
-  }
-
-  namespace test_type_deduction
-  {
-
-    template < typename T1, typename T2 >
-    struct is_same
-    {
-      static const bool value = false;
-    };
-
-    template < typename T >
-    struct is_same<T, T>
-    {
-      static const bool value = true;
-    };
-
-    template < typename T1, typename T2 >
-    auto
-    add(T1 a1, T2 a2) -> decltype(a1 + a2)
-    {
-      return a1 + a2;
-    }
-
-    int
-    test(const int c, volatile int v)
-    {
-      static_assert(is_same<int, decltype(0)>::value == true, "");
-      static_assert(is_same<int, decltype(c)>::value == false, "");
-      static_assert(is_same<int, decltype(v)>::value == false, "");
-      auto ac = c;
-      auto av = v;
-      auto sumi = ac + av + 'x';
-      auto sumf = ac + av + 1.0;
-      static_assert(is_same<int, decltype(ac)>::value == true, "");
-      static_assert(is_same<int, decltype(av)>::value == true, "");
-      static_assert(is_same<int, decltype(sumi)>::value == true, "");
-      static_assert(is_same<int, decltype(sumf)>::value == false, "");
-      static_assert(is_same<int, decltype(add(c, v))>::value == true, "");
-      return (sumf > 0.0) ? sumi : add(c, v);
-    }
-
-  }
-
-  namespace test_noexcept
-  {
-
-    int f() { return 0; }
-    int g() noexcept { return 0; }
-
-    static_assert(noexcept(f()) == false, "");
-    static_assert(noexcept(g()) == true, "");
-
-  }
-
-  namespace test_constexpr
-  {
-
-    template < typename CharT >
-    unsigned long constexpr
-    strlen_c_r(const CharT *const s, const unsigned long acc) noexcept
-    {
-      return *s ? strlen_c_r(s + 1, acc + 1) : acc;
-    }
-
-    template < typename CharT >
-    unsigned long constexpr
-    strlen_c(const CharT *const s) noexcept
-    {
-      return strlen_c_r(s, 0UL);
-    }
-
-    static_assert(strlen_c("") == 0UL, "");
-    static_assert(strlen_c("1") == 1UL, "");
-    static_assert(strlen_c("example") == 7UL, "");
-    static_assert(strlen_c("another\0example") == 7UL, "");
-
-  }
-
-  namespace test_rvalue_references
-  {
-
-    template < int N >
-    struct answer
-    {
-      static constexpr int value = N;
-    };
-
-    answer<1> f(int&)       { return answer<1>(); }
-    answer<2> f(const int&) { return answer<2>(); }
-    answer<3> f(int&&)      { return answer<3>(); }
-
-    void
-    test()
-    {
-      int i = 0;
-      const int c = 0;
-      static_assert(decltype(f(i))::value == 1, "");
-      static_assert(decltype(f(c))::value == 2, "");
-      static_assert(decltype(f(0))::value == 3, "");
-    }
-
-  }
-
-  namespace test_uniform_initialization
-  {
-
-    struct test
-    {
-      static const int zero {};
-      static const int one {1};
-    };
-
-    static_assert(test::zero == 0, "");
-    static_assert(test::one == 1, "");
-
-  }
-
-  namespace test_lambdas
-  {
-
-    void
-    test1()
-    {
-      auto lambda1 = [](){};
-      auto lambda2 = lambda1;
-      lambda1();
-      lambda2();
-    }
-
-    int
-    test2()
-    {
-      auto a = [](int i, int j){ return i + j; }(1, 2);
-      auto b = []() -> int { return '0'; }();
-      auto c = [=](){ return a + b; }();
-      auto d = [&](){ return c; }();
-      auto e = [a, &b](int x) mutable {
-        const auto identity = [](int y){ return y; };
-        for (auto i = 0; i < a; ++i)
-          a += b--;
-        return x + identity(a + b);
-      }(0);
-      return a + b + c + d + e;
-    }
-
-    int
-    test3()
-    {
-      const auto nullary = [](){ return 0; };
-      const auto unary = [](int x){ return x; };
-      using nullary_t = decltype(nullary);
-      using unary_t = decltype(unary);
-      const auto higher1st = [](nullary_t f){ return f(); };
-      const auto higher2nd = [unary](nullary_t f1){
-        return [unary, f1](unary_t f2){ return f2(unary(f1())); };
-      };
-      return higher1st(nullary) + higher2nd(nullary)(unary);
-    }
-
-  }
-
-  namespace test_variadic_templates
-  {
-
-    template <int...>
-    struct sum;
-
-    template <int N0, int... N1toN>
-    struct sum<N0, N1toN...>
-    {
-      static constexpr auto value = N0 + sum<N1toN...>::value;
-    };
-
-    template <>
-    struct sum<>
-    {
-      static constexpr auto value = 0;
-    };
-
-    static_assert(sum<>::value == 0, "");
-    static_assert(sum<1>::value == 1, "");
-    static_assert(sum<23>::value == 23, "");
-    static_assert(sum<1, 2>::value == 3, "");
-    static_assert(sum<5, 5, 11>::value == 21, "");
-    static_assert(sum<2, 3, 5, 7, 11, 13>::value == 41, "");
-
-  }
-
-  // http://stackoverflow.com/questions/13728184/template-aliases-and-sfinae
-  // Clang 3.1 fails with headers of libstd++ 4.8.3 when using std::function
-  // because of this.
-  namespace test_template_alias_sfinae
-  {
-
-    struct foo {};
-
-    template<typename T>
-    using member = typename T::member_type;
-
-    template<typename T>
-    void func(...) {}
-
-    template<typename T>
-    void func(member<T>*) {}
-
-    void test();
-
-    void test() { func<foo>(0); }
-
-  }
-
-}  // namespace cxx11
-
-#endif  // __cplusplus >= 201103L
-
-
-
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"
-then :
-  eval $cachevar=yes
-else case e in #(
-  e) eval $cachevar=no ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-         CXX="$ac_save_CXX" ;;
-esac
-fi
-eval ac_res=\$$cachevar
-	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-printf "%s\n" "$ac_res" >&6; }
-      if eval test x\$$cachevar = xyes; then
-        CXX="$CXX $switch"
-        if test -n "$CXXCPP" ; then
-          CXXCPP="$CXXCPP $switch"
-        fi
-        ac_success=yes
-        break
-      fi
-    done
-  fi
-
-    if test x$ac_success = xno; then
-                for alternative in ${ax_cxx_compile_alternatives}; do
-      for switch in -std=c++${alternative} +std=c++${alternative} "-h std=c++${alternative}"; do
-        cachevar=`printf "%s\n" "ax_cv_cxx_compile_cxx11_$switch" | sed "$as_sed_sh"`
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether $CXX supports C++11 features with $switch" >&5
-printf %s "checking whether $CXX supports C++11 features with $switch... " >&6; }
-if eval test \${$cachevar+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_save_CXX="$CXX"
-           CXX="$CXX $switch"
-           cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-// If the compiler admits that it is not ready for C++11, why torture it?
-// Hopefully, this will speed up the test.
-
-#ifndef __cplusplus
-
-#error "This is not a C++ compiler"
-
-// MSVC always sets __cplusplus to 199711L in older versions; newer versions
-// only set it correctly if /Zc:__cplusplus is specified as well as a
-// /std:c++NN switch:
-// https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
-#elif __cplusplus < 201103L && !defined _MSC_VER
-
-#error "This is not a C++11 compiler"
-
-#else
-
-namespace cxx11
-{
-
-  namespace test_static_assert
-  {
-
-    template <typename T>
-    struct check
-    {
-      static_assert(sizeof(int) <= sizeof(T), "not big enough");
-    };
-
-  }
-
-  namespace test_final_override
-  {
-
-    struct Base
-    {
-      virtual ~Base() {}
-      virtual void f() {}
-    };
-
-    struct Derived : public Base
-    {
-      virtual ~Derived() override {}
-      virtual void f() override {}
-    };
-
-  }
-
-  namespace test_double_right_angle_brackets
-  {
-
-    template < typename T >
-    struct check {};
-
-    typedef check<void> single_type;
-    typedef check<check<void>> double_type;
-    typedef check<check<check<void>>> triple_type;
-    typedef check<check<check<check<void>>>> quadruple_type;
-
-  }
-
-  namespace test_decltype
-  {
-
-    int
-    f()
-    {
-      int a = 1;
-      decltype(a) b = 2;
-      return a + b;
-    }
-
-  }
-
-  namespace test_type_deduction
-  {
-
-    template < typename T1, typename T2 >
-    struct is_same
-    {
-      static const bool value = false;
-    };
-
-    template < typename T >
-    struct is_same<T, T>
-    {
-      static const bool value = true;
-    };
-
-    template < typename T1, typename T2 >
-    auto
-    add(T1 a1, T2 a2) -> decltype(a1 + a2)
-    {
-      return a1 + a2;
-    }
-
-    int
-    test(const int c, volatile int v)
-    {
-      static_assert(is_same<int, decltype(0)>::value == true, "");
-      static_assert(is_same<int, decltype(c)>::value == false, "");
-      static_assert(is_same<int, decltype(v)>::value == false, "");
-      auto ac = c;
-      auto av = v;
-      auto sumi = ac + av + 'x';
-      auto sumf = ac + av + 1.0;
-      static_assert(is_same<int, decltype(ac)>::value == true, "");
-      static_assert(is_same<int, decltype(av)>::value == true, "");
-      static_assert(is_same<int, decltype(sumi)>::value == true, "");
-      static_assert(is_same<int, decltype(sumf)>::value == false, "");
-      static_assert(is_same<int, decltype(add(c, v))>::value == true, "");
-      return (sumf > 0.0) ? sumi : add(c, v);
-    }
-
-  }
-
-  namespace test_noexcept
-  {
-
-    int f() { return 0; }
-    int g() noexcept { return 0; }
-
-    static_assert(noexcept(f()) == false, "");
-    static_assert(noexcept(g()) == true, "");
-
-  }
-
-  namespace test_constexpr
-  {
-
-    template < typename CharT >
-    unsigned long constexpr
-    strlen_c_r(const CharT *const s, const unsigned long acc) noexcept
-    {
-      return *s ? strlen_c_r(s + 1, acc + 1) : acc;
-    }
-
-    template < typename CharT >
-    unsigned long constexpr
-    strlen_c(const CharT *const s) noexcept
-    {
-      return strlen_c_r(s, 0UL);
-    }
-
-    static_assert(strlen_c("") == 0UL, "");
-    static_assert(strlen_c("1") == 1UL, "");
-    static_assert(strlen_c("example") == 7UL, "");
-    static_assert(strlen_c("another\0example") == 7UL, "");
-
-  }
-
-  namespace test_rvalue_references
-  {
-
-    template < int N >
-    struct answer
-    {
-      static constexpr int value = N;
-    };
-
-    answer<1> f(int&)       { return answer<1>(); }
-    answer<2> f(const int&) { return answer<2>(); }
-    answer<3> f(int&&)      { return answer<3>(); }
-
-    void
-    test()
-    {
-      int i = 0;
-      const int c = 0;
-      static_assert(decltype(f(i))::value == 1, "");
-      static_assert(decltype(f(c))::value == 2, "");
-      static_assert(decltype(f(0))::value == 3, "");
-    }
-
-  }
-
-  namespace test_uniform_initialization
-  {
-
-    struct test
-    {
-      static const int zero {};
-      static const int one {1};
-    };
-
-    static_assert(test::zero == 0, "");
-    static_assert(test::one == 1, "");
-
-  }
-
-  namespace test_lambdas
-  {
-
-    void
-    test1()
-    {
-      auto lambda1 = [](){};
-      auto lambda2 = lambda1;
-      lambda1();
-      lambda2();
-    }
-
-    int
-    test2()
-    {
-      auto a = [](int i, int j){ return i + j; }(1, 2);
-      auto b = []() -> int { return '0'; }();
-      auto c = [=](){ return a + b; }();
-      auto d = [&](){ return c; }();
-      auto e = [a, &b](int x) mutable {
-        const auto identity = [](int y){ return y; };
-        for (auto i = 0; i < a; ++i)
-          a += b--;
-        return x + identity(a + b);
-      }(0);
-      return a + b + c + d + e;
-    }
-
-    int
-    test3()
-    {
-      const auto nullary = [](){ return 0; };
-      const auto unary = [](int x){ return x; };
-      using nullary_t = decltype(nullary);
-      using unary_t = decltype(unary);
-      const auto higher1st = [](nullary_t f){ return f(); };
-      const auto higher2nd = [unary](nullary_t f1){
-        return [unary, f1](unary_t f2){ return f2(unary(f1())); };
-      };
-      return higher1st(nullary) + higher2nd(nullary)(unary);
-    }
-
-  }
-
-  namespace test_variadic_templates
-  {
-
-    template <int...>
-    struct sum;
-
-    template <int N0, int... N1toN>
-    struct sum<N0, N1toN...>
-    {
-      static constexpr auto value = N0 + sum<N1toN...>::value;
-    };
-
-    template <>
-    struct sum<>
-    {
-      static constexpr auto value = 0;
-    };
-
-    static_assert(sum<>::value == 0, "");
-    static_assert(sum<1>::value == 1, "");
-    static_assert(sum<23>::value == 23, "");
-    static_assert(sum<1, 2>::value == 3, "");
-    static_assert(sum<5, 5, 11>::value == 21, "");
-    static_assert(sum<2, 3, 5, 7, 11, 13>::value == 41, "");
-
-  }
-
-  // http://stackoverflow.com/questions/13728184/template-aliases-and-sfinae
-  // Clang 3.1 fails with headers of libstd++ 4.8.3 when using std::function
-  // because of this.
-  namespace test_template_alias_sfinae
-  {
-
-    struct foo {};
-
-    template<typename T>
-    using member = typename T::member_type;
-
-    template<typename T>
-    void func(...) {}
-
-    template<typename T>
-    void func(member<T>*) {}
-
-    void test();
-
-    void test() { func<foo>(0); }
-
-  }
-
-}  // namespace cxx11
-
-#endif  // __cplusplus >= 201103L
-
-
-
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"
-then :
-  eval $cachevar=yes
-else case e in #(
-  e) eval $cachevar=no ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-           CXX="$ac_save_CXX" ;;
-esac
-fi
-eval ac_res=\$$cachevar
-	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-printf "%s\n" "$ac_res" >&6; }
-        if eval test x\$$cachevar = xyes; then
-          CXX="$CXX $switch"
-          if test -n "$CXXCPP" ; then
-            CXXCPP="$CXXCPP $switch"
-          fi
-          ac_success=yes
-          break
-        fi
-      done
-      if test x$ac_success = xyes; then
-        break
-      fi
-    done
-  fi
   ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'

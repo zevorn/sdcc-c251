@@ -25,6 +25,17 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdint.h>
+
+// Some systems, notably Mac OS, do not have uchar.h.
+// If it is missing, use our own type definitions.
+#ifdef HAVE_UCHAR_H
+#include <uchar.h>
+#else
+#include <stdint.h>
+#define char16_t uint_least16_t
+#define char32_t uint_least32_t
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -35,11 +46,16 @@
 #include "dbuf.h"
 #include "SDCCglobl.h"
 #include "SDCCmacro.h"
+#include "SDCCsymt.h"
 #include "SDCCutil.h"
 #include "newalloc.h"
 #include "dbuf_string.h"
 #ifndef _WIN32
 #include "findme.h"
+#endif
+
+#ifdef HAVE_U8IDENT_H
+#include "u8ident.h"
 #endif
 
 #include "version.h"
@@ -1307,3 +1323,182 @@ char *formatInlineAsm (char *asmStr)
         return asmStr;
     }
 }
+
+// Check for valid characters in identifiers according to ISO C11 standard, annex D.
+static bool
+is_UCN_valid_in_identifier (char32_t c, bool is_first)
+{
+  bool result = false;
+
+  // D.1 Ranges of characters allowed
+  if ((c == 0x00A8) || (c == 0x00AA) || (c == 0x00AD) || (c == 0x00AF)
+      || (c >= 0x00B2 && c <= 0x00B5) || (c >= 0x00B7 && c <= 0x00BA)
+      || (c >= 0x00BC && c <= 0x00BE) || (c >= 0x00C0 && c <= 0x00D6)
+      || (c >= 0x00D8 && c <= 0x00F6) || (c >= 0x00F8 && c <= 0x00FF)
+      || (c >= 0x0100 && c <= 0x167F) || (c >= 0x1681 && c <= 0x180D)
+      || (c >= 0x180F && c <= 0x1FFF) || (c >= 0x200B && c <= 0x200D)
+      || (c >= 0x202A && c <= 0x202E) || (c >= 0x203F && c <= 0x2040)
+      || (c == 0x2054) || (c >= 0x2060 && c <= 0x206F)
+      || (c >= 0x2070 && c <= 0x218F) || (c >= 0x2460 && c <= 0x24FF)
+      || (c >= 0x2776 && c <= 0x2793) || (c >= 0x2C00 && c <= 0x2DFF)
+      || (c >= 0x2E80 && c <= 0x2FFF) || (c >= 0x3004 && c <= 0x3007)
+      || (c >= 0x3021 && c <= 0x302F) || (c >= 0x3031 && c <= 0x303F)
+      || (c >= 0x3040 && c <= 0xD7FF) || (c >= 0xF900 && c <= 0xFD3D)
+      || (c >= 0xFD40 && c <= 0xFDCF) || (c >= 0xFDF0 && c <= 0xFE44)
+      || (c >= 0xFE47 && c <= 0xFFFD) || (c >= 0x10000 && c <= 0x1FFFD)
+      || (c >= 0x20000 && c <= 0x2FFFD) || (c >= 0x30000 && c <= 0x3FFFD)
+      || (c >= 0x40000 && c <= 0x4FFFD) || (c >= 0x50000 && c <= 0x5FFFD)
+      || (c >= 0x60000 && c <= 0x6FFFD) || (c >= 0x70000 && c <= 0x7FFFD)
+      || (c >= 0x80000 && c <= 0x8FFFD) || (c >= 0x90000 && c <= 0x9FFFD)
+      || (c >= 0xA0000 && c <= 0xAFFFD) || (c >= 0xB0000 && c <= 0xBFFFD)
+      || (c >= 0xC0000 && c <= 0xCFFFD) || (c >= 0xD0000 && c <= 0xDFFFD)
+      || (c >= 0xE0000 && c <= 0xEFFFD))
+    {
+      result = true;
+      // D.2 Ranges of characters disallowed initially
+      if (is_first && ((c >= 0x0300 && c <= 0x036F) || (c >= 0x1DC0 && c <= 0x1DFF)
+          || (c >= 0x20D0 && c <= 0x20FF) || (c >= 0xFE20 && c <= 0xFE2F)))
+        {
+          result = false;
+        }
+    }
+
+  return result;
+}
+
+void
+decode_UCNs_to_utf8 (char *dest, const char *src, size_t n)
+{
+  bool is_first = true;
+  const char *s = src;
+  size_t chars_left = n - 1;
+
+  while (*src)
+    {
+      if (*src == '\\')
+        {
+          ++src;
+          char32_t c = 0;
+          if (*src == 'u')
+            c = universalEscape (&src, 4);
+          else  // U - the lexer only accepts \u and \U escapes in identifiers
+            c = universalEscape (&src, 8);
+
+#ifndef HAVE_U8IDENT_H  // If we have libu8ident, we do better checks in check_type instead.
+          if (!is_UCN_valid_in_identifier (c, is_first))
+            werror (E_INVALID_UNIVERSAL_ID, s);
+          else if (c > 0x7f)
+            werror (W_NONASCII_ID_NOUNILIB);
+#endif
+
+          if (c >= 0x10000)
+            {
+              if (chars_left < 4)
+                break;
+              *(dest++) = 0xf0 | (c >> 18);
+              *(dest++) = 0x80 | ((c >> 12) & 0x3f);
+              *(dest++) = 0x80 | ((c >> 6) & 0x3f);
+              *(dest++) = 0x80 | (c & 0x3f);
+              chars_left -= 4;
+            }
+          else if (c >= 0x800)
+            {
+              if (chars_left < 3)
+                break;
+              *(dest++) = 0xe0 | (c >> 12);
+              *(dest++) = 0x80 | ((c >> 6) & 0x3f);
+              *(dest++) = 0x80 | (c & 0x3f);
+              chars_left -= 3;
+            }
+          else  // ASCII characters already eliminated by validity check => no further check here
+            {
+              if (chars_left < 2)
+                break;
+              *(dest++) = 0xc0 | (c >> 6);
+              *(dest++) = 0x80 | (c & 0x3f);
+              chars_left -= 2;
+            }
+        }
+      else
+        {
+          if (chars_left < 1)
+            break;
+          *(dest++) = *(src++);
+          chars_left--;
+        }
+      is_first = false;
+    }
+  *dest = '\0';
+}
+
+void
+process_identifier (char *dest, const char *src, size_t n)
+{
+  if (strchr (src, '$') && !options.dollars_in_ident)
+    werror (E_INVALID_ID, src);
+
+  decode_UCNs_to_utf8 (dest, src, n);
+
+#ifdef HAVE_U8IDENT_H
+  // Give an error if the identifier does not comply with UAX #31, a warning if it does not comply with UTS #39.
+
+  // We keep reinitializing, thus we can detect invalid script combinationss only within a single identifier,
+  // not between different identifiers in the same translation unit.
+  // But reinitialization is the only way to change the profile, which we need to do to handle changing C standards
+  // from #pragma within a translation unit.
+  // The choice of the profile and options here was done experimentally. The libu8dient API and docuemtnation are quire confusing when it comes to the combinationsof profiles with options.
+  u8ident_init (options.std_c23 ? U8ID_PROFILE_5 : U8ID_PROFILE_C11_6, U8ID_NFC, options.std_c23 ? U8ID_TR31_C23 : U8ID_TR31_C11);
+
+  if (options.std_c23)
+    {
+      char *normalized = u8ident_normalize (dest, 1/* TODO: Is 1 the right value here? https://github.com/rurban/libu8ident/issues/22*/);
+      strncpy (dest, normalized, n);
+      dest[n - 1] = 0;
+      free (normalized);
+    }
+
+  enum u8id_errors errors_c = u8ident_check (dest, NULL);
+  u8ident_free ();
+  if (errors_c < 0) // Invalid identifier.
+    werror (E_INVALID_ID, dest);
+  else // Only check for subtle errors if there's no obvious ones.
+    {
+      if (errors_c == U8ID_EOK_NORM || errors_c == U8ID_EOK_NORM_WARN_CONFUS) // Only possible for C17 and earlier, from C23 we normalize first.
+        werror (W_ID_NOT_NORMALIZED_NFC, dest);
+      u8ident_init (U8ID_PROFILE_TR39_4, U8ID_NFC, U8ID_TR31_TR39);
+      int errors_tr39 = u8ident_check (dest, NULL);
+      u8ident_free ();
+      const char *errormsg = "no issue";
+      switch(errors_tr39)
+        {
+        case 0:
+          break ;
+        case U8ID_EOK_NORM_WARN_CONFUS:
+        case U8ID_EOK_WARN_CONFUS:
+        case U8ID_ERR_CONFUS:
+          errormsg = "confusion risk";
+          break;
+        case U8ID_ERR_XID:
+          errormsg = "invalid xid";
+          break;
+        case U8ID_ERR_SCRIPT:
+          errormsg = "invalid script";
+          break;
+        case U8ID_ERR_SCRIPTS:
+          errormsg = "invalid combination of scripts";
+          break;
+        case U8ID_ERR_ENCODING:
+          errormsg = "invalid encoding";
+          break;
+        case U8ID_ERR_COMBINE:
+          errormsg = "invalid combination of codepoints";
+          break;
+        default:
+          errormsg = "other issue";
+        }
+      if (errors_tr39)
+        werror (W_INSECURE_ID, dest, errormsg);
+    }
+#endif
+}
+

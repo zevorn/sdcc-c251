@@ -6194,6 +6194,235 @@ static void genRLC (iCode * ic)
 }
 
 /**************************************************************************
+ * genRotX - rotate a 16/32 bit value by a known amount
+ *************************************************************************/
+static void
+genRotX(iCode *ic, int shCount)
+{
+  operand *left   = IC_LEFT (ic);
+  operand *result = IC_RESULT (ic);
+  bool resultInXA = false;
+  bool needpulla = false;
+  int i, size;
+
+  //emitComment (TRACEGEN, __func__);
+  aopOp (left, ic);
+  aopOp (result, ic);
+  printIC(ic);
+
+  size = AOP_SIZE (result);
+
+  if(IS_AOP_XA(AOP(result))) resultInXA=true;
+  if(!resultInXA) needpulla=pushRegIfSurv(m6502_reg_a);
+
+  emitComment (TRACEGEN, "%s - size=%d shCount=%d (XA:%c)",__func__, size, shCount,
+               resultInXA?'Y':'N');
+
+  if(resultInXA)
+    {
+  if(shCount<8)
+  {
+      emitComment (TRACEGEN|VVDBG, "%s - in A",__func__);
+      loadRegFromAop (m6502_reg_a, AOP (left), 0);
+      storeRegTempAlways(m6502_reg_a, true);
+      dirtyRegTemp (getLastTempOfs());
+      loadRegFromAop (m6502_reg_a, AOP (left), 1);
+  }
+  else
+  {
+    shCount-=8;
+    emitComment (TRACEGEN|VVDBG, "%s - shCount>=8",__func__);
+      // try reversing
+      #if 0
+      loadRegFromAop (m6502_reg_x, AOP (left), 1);
+      storeRegTempAlways(m6502_reg_x, true);
+      dirtyRegTemp (getLastTempOfs());
+      loadRegFromAop (m6502_reg_a, AOP (left), 0);
+      #else
+      loadRegFromAop (m6502_reg_a, AOP (left), 0);
+      loadRegFromAop (m6502_reg_x, AOP (left), 1);
+      storeRegTempAlways(m6502_reg_x, true);
+      dirtyRegTemp (getLastTempOfs());
+      #endif
+ 
+  }
+  for(i=0;i<shCount;i++)
+    {
+           emit6502op ("cmp", "#0x80");
+           emit6502op("rol", TEMPFMT, getLastTempOfs() );
+           rmwWithReg ("rol", m6502_reg_a);
+    }
+       transferRegReg(m6502_reg_a, m6502_reg_x, true);
+       loadRegTemp(m6502_reg_a);
+    }
+  else
+    {
+      /////////////////////////////////////////////////////////
+      // not XA
+      /////////////////////////////////////////////////////////
+      int msb = size-1;
+      int offset;
+      int ror = false;
+      if((shCount%8)>4)
+        {
+      emitComment (TRACEGEN|VVDBG, "%s - enable ROR",__func__);
+          shCount+=8;
+          shCount%=(8*size);
+          ror=true;
+        }
+
+if(shCount<8)
+  {
+      for(offset=0;offset<size-1;offset++)
+        transferAopAop (AOP(left), offset, AOP (result), offset);
+      loadRegFromAop (m6502_reg_a, AOP (left), msb);
+  }
+  else if(shCount<16)
+  {
+    shCount-=8;
+      loadRegFromAop (m6502_reg_a, AOP (left), msb-1);
+      for(offset=msb-1;offset>=0;offset--)
+        transferAopAop (AOP(left), (offset-1+size)%size, AOP (result), offset);
+  } 
+  else if(shCount<24)
+    {
+      shCount-=16;
+      if(!sameRegs (AOP (left), AOP (result)))
+        {
+          for(offset=0;offset<size-1;offset++)
+            transferAopAop (AOP(left), (offset+2)%size, AOP (result), offset);
+          loadRegFromAop (m6502_reg_a, AOP (left), (msb+2)%size);
+        }
+      else
+        {
+           //FIXME: only works for 32-bit
+           loadRegFromAop (m6502_reg_a, AOP (left), 0);
+           transferAopAop (AOP(left), 2, AOP (result), 0);
+           storeRegToAop (m6502_reg_a, AOP (result), 2);
+           loadRegFromAop (m6502_reg_a, AOP (left), 1);
+           transferAopAop (AOP(left), 3, AOP (result), 1);
+        }
+    }
+  else
+    {
+    shCount-=24;
+      loadRegFromAop (m6502_reg_a, AOP (left), 0);
+      for(offset=1;offset<size;offset++)
+        transferAopAop (AOP(left), offset, AOP (result), offset-1);
+
+//      for(offset=0;offset<size-1;offset++)
+//        transferAopAop (AOP(left), offset, AOP (result), offset);
+//      loadRegFromAop (m6502_reg_a, AOP (left), msb);
+
+    }
+
+  if(ror)
+    {
+      // rotate right
+      shCount=8-shCount;
+      storeRegToAop (m6502_reg_a, AOP (result), msb);
+
+      while(shCount--)
+	{
+          loadRegFromAop (m6502_reg_a, AOP (result), 0);
+	  rmwWithReg ("lsr", m6502_reg_a);
+
+          for(offset=size-1;offset>=0;offset--)
+             rmwWithAop ("ror", AOP (result), offset);
+
+	}
+
+    }
+  else
+  {
+  for(i=0;i<shCount;i++)
+    {
+           emit6502op ("cmp", "#0x80");
+           for(offset=0;offset<size-1;offset++)
+             rmwWithAop ("rol", AOP (result), offset);
+           rmwWithReg ("rol", m6502_reg_a);
+    }
+
+      storeRegToAop (m6502_reg_a, AOP (result), msb);
+
+    }
+  }
+
+  pullOrFreeReg (m6502_reg_a, needpulla);
+
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
+}
+
+/**************************************************************************
+ * genRot8 - rotate a 8-bit value by a known amount
+ *************************************************************************/
+static void
+genRot8(iCode *ic, int shCount)
+{
+  operand *left   = IC_LEFT (ic);
+  operand *result = IC_RESULT (ic);
+
+  //  int size, offset;
+  //  char *shift;
+  bool resultInA = false;
+  bool needpulla = false;
+
+  emitComment (TRACEGEN, __func__);
+  emitComment (TRACEGEN, "%s - size=1 shCount=%d",__func__, shCount);
+  /* rotate 8 bit value */
+  aopOp (left, ic);
+  aopOp (result, ic);
+  printIC(ic);
+
+  if(IS_AOP_WITH_A(AOP(result))) resultInA=true;
+  if(!resultInA) needpulla=pushRegIfSurv(m6502_reg_a);
+  loadRegFromAop (m6502_reg_a, AOP (left), 0);
+
+  if(shCount>5)
+    {
+      // right
+      shCount=8-shCount;
+
+      while(shCount--)
+	{
+	  storeRegTempAlways (m6502_reg_a, true);
+          dirtyRegTemp (getLastTempOfs());
+	  emit6502op("lsr", TEMPFMT, getLastTempOfs() );
+	  rmwWithReg ("ror", m6502_reg_a);
+	  loadRegTemp(NULL);
+	}
+    }
+  else
+    {
+      if(shCount>=4)
+	{
+	  shCount-=4;
+	  rmwWithReg ("asl", m6502_reg_a);
+	  emit6502op ("adc", "#0x80");
+	  rmwWithReg ("rol", m6502_reg_a);
+	  rmwWithReg ("asl", m6502_reg_a);
+	  emit6502op ("adc", "#0x80");
+	  rmwWithReg ("rol", m6502_reg_a);  
+	}
+      if(shCount>0)
+	{
+	  // left
+	  while(shCount--)
+	    {
+	      emit6502op ("cmp", "#0x80");
+	      rmwWithReg ("rol", m6502_reg_a);
+	    }
+	}
+    }
+  storeRegToAop (m6502_reg_a, AOP (result), 0);
+  pullOrFreeReg (m6502_reg_a, needpulla);
+
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
+}
+
+/**************************************************************************
  * genRot - generates code for rotation
  *************************************************************************/
 static void
@@ -6202,12 +6431,16 @@ genRot (iCode *ic)
   operand *left = IC_LEFT (ic);
   operand *right = IC_RIGHT (ic);
   unsigned int lbits = bitsForType (operandType (left));
-  if (IS_OP_LITERAL (right) && operandLitValueUll (right) % lbits == 1)
-    genRLC (ic);
+  if (IS_OP_LITERAL (right) && lbits==8 )
+    genRot8(ic, operandLitValueUll (right) % lbits );
   else if (IS_OP_LITERAL (right) && operandLitValueUll (right) % lbits ==  lbits - 1)
     genRRC (ic);
+  else if (IS_OP_LITERAL (right) && operandLitValueUll (right) % lbits == 1)
+    genRLC (ic);
+  else if (IS_OP_LITERAL (right))
+    genRotX(ic, operandLitValueUll (right) % lbits );
   else
-    wassertl (0, "Unsupported rotation.");
+    emitcode("ERROR", "%s - Unimplemented rotation (lbits=%d)", __func__, lbits);    
 }
 
 /**************************************************************************

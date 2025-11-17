@@ -5,7 +5,7 @@
 
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2023, Gabriele Gorla
+  Copyright (C) 2021-2025, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -326,6 +326,12 @@ hasExtBitOp (int op, sym_link *left, int right)
         unsigned int lbits = bitsForType (left);
         if (lbits % 8)
           return false;
+        if (lbits==8)
+          return true;
+        if (lbits==16)
+          return true;
+        if (lbits==32)
+          return true;
         if (lbits > (unsigned)port->support.shift*8)
           return false;
         if (right % lbits  == 1 || right % lbits == lbits - 1)

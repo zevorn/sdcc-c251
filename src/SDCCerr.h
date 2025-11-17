@@ -301,7 +301,7 @@ enum {
   E_SFR_POINTER                 = 271, /* unsupported pointer to __sfr */
   E_INVALID_BITINTWIDTH         = 272, /* invalid with for bit-precise integer type */
   W_BITINTCONST_C23             = 273, /* bit-precise integer constant requires ISO C23 or later */
-  E_INVALID_UNIVERSAL_IDENTIFIER = 274, /* universal character name %s invalid in identifier */
+  E_INVALID_UNIVERSAL_ID        = 274, /* universal character name %s invalid in identifier */
   E_COMPLEX_UNSUPPORTED         = 275, /* complex numbers are not supported */
   E_DECIMAL_FLOAT_UNSUPPORTED   = 276, /* decimal floating-point numbers are not supported */
   E_ATOMIC_UNSUPPORTED          = 277, /* atomics are not supported */
@@ -342,7 +342,7 @@ enum {
   E_SELECTION_DECLARATION_C2Y   = 312, /* declaration within selection header requires ISO C2y or later */
   E_COMPLIT_SCLASS_C23          = 313, // compound literals with storage class specifier require ISO C23 or later
   W_ENUM_UNDERLYING_BITINT      = 314, // enum's underlying type may not be a bit-precise type in ISO C23
-  W_INVALID_BITINTWIDTH_1       = 315, // signed bit-precise integer type may not have width 1 in ISO C23
+  W_BITINTWIDTH_1_C2Y           = 315, // signed bit-precise integer type of width 1 requires ISO C2y or later
   E_ATOMIC_ARRAY                = 316, // _Atomic array
   E_ATOMIC_FUNCTION             = 317, // _Atomic function
   E_ATOMIC_SPEC_ATOMIC          = 318, // _Atomic specifier on atomic type
@@ -365,6 +365,10 @@ enum {
   E_VLA_UNSPECIFIED_SCOPE       = 335, //  "[*] variable length array declarators of unspecified length must have function prototype scope
   W_INCOMPLETE_ARRAY_IMPLICIT_1 = 336, // incomplete array type has length 1 due to implicit initializer
   E_QUALIFIED_FUNCTION          = 337, // qualified function
+  W_NONASCII_ID_NOUNILIB        = 338, // non-ascii characters in identifier, but SDCC built without libu8ident library; diagnostics on and semantics of identifier names limited to be minimum required by ISO C11
+  E_INVALID_ID                  = 339, // invalid identifier
+  W_ID_NOT_NORMALIZED_NFC       = 340, // identifier not normalized to unicode normalization form C
+  W_INSECURE_ID                 = 341, // insecure identifier not compliant with UTS #39
 
   // If you get a merge conflict here, some #pragma disable_warning in support/valdiag and support/regression will likely need to be adapted to the resolution.
 

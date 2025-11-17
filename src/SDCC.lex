@@ -62,15 +62,6 @@ UTF8IDF         {UTF8IDF1ST}|\xcc[\x80-\xbf]|\xcd[\x80-\xaf]|\xe2\x83[\x90-\xbf]
 #include "common.h"
 #include "newalloc.h"
 #include "dbuf_string.h"
-/* Some systems, notably Mac OS, do not have uchar.h. */
-/* If it is missing, use our own type definitions. */
-#ifdef HAVE_UCHAR_H
-#include <uchar.h>
-#else
-#include <stdint.h>
-#define char16_t uint_least16_t
-#define char32_t uint_least32_t
-#endif
 /* Needed by flex 2.5.4 on NetBSD 5.0.1 sparc64 */
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -101,6 +92,7 @@ static const char *stringLiteral (char);
 static void count (void);
 static void count_char (int);
 static int process_pragma (const char *);
+void process_identifier (char *dest, const char *src, size_t n);
 static int check_type (void);
 static void checkCurrFile (const char *s);
 %}
@@ -257,10 +249,6 @@ static void checkCurrFile (const char *s);
 
 
 ({L}|{UCN}|{UTF8IDF1ST})({L}|{D}|{UCN}|{UTF8IDF})*  {
-  if (!options.dollars_in_ident && strchr (yytext, '$'))
-    {
-      yyerror ("stray '$' in program");
-    }
   if (!options.std_c95)
     {
       bool ucn_check = strchr (yytext, '\\');
@@ -474,117 +462,10 @@ count (void)
     count_char(*p);
 }
 
-static bool
-is_UCN_valid_in_idf (char32_t c, bool is_first)
-{
-  bool result = false;
-
-  // D.1 Ranges of characters allowed
-  if ((c == 0x00A8) || (c == 0x00AA) || (c == 0x00AD) || (c == 0x00AF)
-      || (c >= 0x00B2 && c <= 0x00B5) || (c >= 0x00B7 && c <= 0x00BA)
-      || (c >= 0x00BC && c <= 0x00BE) || (c >= 0x00C0 && c <= 0x00D6)
-      || (c >= 0x00D8 && c <= 0x00F6) || (c >= 0x00F8 && c <= 0x00FF)
-      || (c >= 0x0100 && c <= 0x167F) || (c >= 0x1681 && c <= 0x180D)
-      || (c >= 0x180F && c <= 0x1FFF) || (c >= 0x200B && c <= 0x200D)
-      || (c >= 0x202A && c <= 0x202E) || (c >= 0x203F && c <= 0x2040)
-      || (c == 0x2054) || (c >= 0x2060 && c <= 0x206F)
-      || (c >= 0x2070 && c <= 0x218F) || (c >= 0x2460 && c <= 0x24FF)
-      || (c >= 0x2776 && c <= 0x2793) || (c >= 0x2C00 && c <= 0x2DFF)
-      || (c >= 0x2E80 && c <= 0x2FFF) || (c >= 0x3004 && c <= 0x3007)
-      || (c >= 0x3021 && c <= 0x302F) || (c >= 0x3031 && c <= 0x303F)
-      || (c >= 0x3040 && c <= 0xD7FF) || (c >= 0xF900 && c <= 0xFD3D)
-      || (c >= 0xFD40 && c <= 0xFDCF) || (c >= 0xFDF0 && c <= 0xFE44)
-      || (c >= 0xFE47 && c <= 0xFFFD) || (c >= 0x10000 && c <= 0x1FFFD)
-      || (c >= 0x20000 && c <= 0x2FFFD) || (c >= 0x30000 && c <= 0x3FFFD)
-      || (c >= 0x40000 && c <= 0x4FFFD) || (c >= 0x50000 && c <= 0x5FFFD)
-      || (c >= 0x60000 && c <= 0x6FFFD) || (c >= 0x70000 && c <= 0x7FFFD)
-      || (c >= 0x80000 && c <= 0x8FFFD) || (c >= 0x90000 && c <= 0x9FFFD)
-      || (c >= 0xA0000 && c <= 0xAFFFD) || (c >= 0xB0000 && c <= 0xBFFFD)
-      || (c >= 0xC0000 && c <= 0xCFFFD) || (c >= 0xD0000 && c <= 0xDFFFD)
-      || (c >= 0xE0000 && c <= 0xEFFFD))
-    {
-      result = true;
-      // D.2 Ranges of characters disallowed initially
-      if (is_first && ((c >= 0x0300 && c <= 0x036F) || (c >= 0x1DC0 && c <= 0x1DFF)
-          || (c >= 0x20D0 && c <= 0x20FF) || (c >= 0xFE20 && c <= 0xFE2F)))
-        {
-          result = false;
-        }
-    }
-
-  return result;
-}
-
-static void
-decode_UCNs_to_utf8 (char *dest, const char *src, size_t n)
-{
-  bool is_first = true;
-  const char *s = src;
-  size_t chars_left = n - 1;
-
-  while (*src)
-    {
-      if (*src == '\\')
-        {
-          ++src;
-          char32_t c = 0;
-          if (*src == 'u')
-            {
-              c = universalEscape(&src, 4);
-            }
-          else  // U - the lexer only accepts \u and \U escapes in identifiers
-            {
-              c = universalEscape(&src, 8);
-            }
-          if (!is_UCN_valid_in_idf(c, is_first))
-            {
-              werror(E_INVALID_UNIVERSAL_IDENTIFIER, s);
-            }
-
-          if (c >= 0x10000)
-            {
-              if (chars_left < 4)
-                break;
-              *(dest++) = 0xf0 | (c >> 18);
-              *(dest++) = 0x80 | ((c >> 12) & 0x3f);
-              *(dest++) = 0x80 | ((c >> 6) & 0x3f);
-              *(dest++) = 0x80 | (c & 0x3f);
-              chars_left -= 4;
-            }
-          else if (c >= 0x800)
-            {
-              if (chars_left < 3)
-                break;
-              *(dest++) = 0xe0 | (c >> 12);
-              *(dest++) = 0x80 | ((c >> 6) & 0x3f);
-              *(dest++) = 0x80 | (c & 0x3f);
-              chars_left -= 3;
-            }
-          else  // ASCII characters already eliminated by validity check => no further check here
-            {
-              if (chars_left < 2)
-                break;
-              *(dest++) = 0xc0 | (c >> 6);
-              *(dest++) = 0x80 | (c & 0x3f);
-              chars_left -= 2;
-            }
-        }
-      else
-        {
-          if (chars_left < 1)
-            break;
-          *(dest++) = *(src++);
-          chars_left--;
-        }
-      is_first = false;
-    }
-  *dest = '\0';
-}
-
 static int
 check_type (void)
 {
-  decode_UCNs_to_utf8(yylval.yychar, yytext, SDCC_NAME_MAX);
+  process_identifier (yylval.yychar, yytext, SDCC_NAME_MAX + 1);
 
   symbol *sym = findSym(SymbolTab, NULL, yylval.yychar);
 
@@ -596,7 +477,7 @@ check_type (void)
   else if (findSym (AddrspaceTab, NULL, yylval.yychar))
     return (ADDRSPACE_NAME);
   else
-    return(IDENTIFIER);
+    return (IDENTIFIER);
 }
 
 /*
@@ -1502,3 +1383,4 @@ yyerror (char *s)
 
   return 0;
 }
+
