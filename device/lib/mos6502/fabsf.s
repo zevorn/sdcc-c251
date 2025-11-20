@@ -49,9 +49,9 @@
 _fabsf:
 	lda	*_fabsf_PARM_1+3
 	and	#0x7f
-	sta	res3
+	sta	*res3
 	lda	*_fabsf_PARM_1+2
-	sta	res2
+	sta	*res2
 	ldx	*(_fabsf_PARM_1 + 1)
 	lda	*(_fabsf_PARM_1 + 0)
 	rts

@@ -73,7 +73,7 @@ __printu (unsigned int n)
 }
 #else
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02) // This function is unused, but see bugs #3863, #3864.
+#if defined(__SDCC_mcs51) // This function is unused, but see bugs #3864.
 void
 __printd (int n)
 {
