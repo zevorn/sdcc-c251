@@ -1,3 +1,20 @@
+2025-11-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/scripts/sdcc.nsi:
+	  Include Rabbit 4000/5000/6000 libraries in Windows installer.
+
+2025-11-19 Gabriele Gorla <gorlik@yahoo.com>
+  	* src/mos6502/ralloc.c,
+  	  src/mos6502/gen.c:
+  	  Improve register tracking.
+  	  
+2025-11-18 Gabriele Gorla <gorlik@yahoo.com>
+  	* device/lib/mos6502/fabsf.s:
+  	  Use ZP addressing to store fabs result.
+  	* src/mos6502/gen.c,
+  	  support/regression/fwk/lib/testfwk.c:
+      Fix bug #3863
+
 2025-11-16 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c,

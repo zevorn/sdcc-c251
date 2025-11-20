@@ -170,27 +170,21 @@ m6502_useReg (reg_info * reg)
   switch (reg->rIdx)
     {
     case A_IDX:
-      m6502_reg_xa->aop = NULL;
       m6502_reg_xa->isFree = 0;
       //        m6502_reg_ya->aop = NULL;
       //        m6502_reg_ya->isFree = 0;
       break;
     case X_IDX:
-      m6502_reg_xa->aop = NULL;
       m6502_reg_xa->isFree = 0;
-      m6502_reg_yx->aop = NULL;
       m6502_reg_yx->isFree = 0;
       break;
     case Y_IDX:
       //        m6502_reg_ya->aop = NULL;
       //        m6502_reg_ya->isFree = 0;
-      m6502_reg_yx->aop = NULL;
       m6502_reg_yx->isFree = 0;
       break;
     case XA_IDX:
-      m6502_reg_x->aop = NULL;
       m6502_reg_x->isFree = 0;
-      m6502_reg_a->aop = NULL;
       m6502_reg_a->isFree = 0;
       break;
       //      case YA_IDX:
@@ -200,9 +194,7 @@ m6502_useReg (reg_info * reg)
       //        m6502_reg_a->isFree = 0;
       //        break;
     case YX_IDX:
-      m6502_reg_y->aop = NULL;
       m6502_reg_y->isFree = 0;
-      m6502_reg_x->aop = NULL;
       m6502_reg_x->isFree = 0;
       break;
     default:
