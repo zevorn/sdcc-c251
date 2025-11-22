@@ -276,7 +276,7 @@ m6502_genMinus (iCode * ic)
       if (earlystore &&
 	  (AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx == A_IDX ||
 	   AOP_TYPE (right) == AOP_REG && AOP (right)->aopu.aop_reg[offset]->rIdx == A_IDX))
-	pullReg (m6502_reg_a);
+	m6502_pullReg (m6502_reg_a);
       if (AOP_TYPE (right) == AOP_REG && AOP (right)->aopu.aop_reg[offset]->rIdx == A_IDX)
 	{
 	  storeRegTemp (m6502_reg_a, true);
@@ -302,7 +302,7 @@ m6502_genMinus (iCode * ic)
       if (size && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset]->rIdx == A_IDX)
 	{
 	  emitComment (TRACEGEN|VVDBG, "    - push");
-	  pushReg (m6502_reg_a, true);
+	  m6502_pushReg (m6502_reg_a, true);
 	  delayedstore = true;
 	}
       else
@@ -314,7 +314,7 @@ m6502_genMinus (iCode * ic)
       init_carry = false;
     }
   if(delayedstore)
-    pullReg (m6502_reg_a);
+    m6502_pullReg (m6502_reg_a);
 
   loadOrFreeRegTemp (m6502_reg_a, needpulla);
 

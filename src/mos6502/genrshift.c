@@ -74,7 +74,8 @@ AccSRsh (int shCount)
 /**************************************************************************
  * AccRsh - right shift accumulator by known count
  *************************************************************************/
-void AccRsh (int shCount, bool sign)
+void
+AccRsh (int shCount, bool sign)
 {
   int i;
 
@@ -113,7 +114,8 @@ void AccRsh (int shCount, bool sign)
 /**************************************************************************
  * XAccSRsh - signed right shift register pair XA by known count
  *************************************************************************/
-static void XAccSRsh (int shCount)
+static void
+XAccSRsh (int shCount)
 {
   symbol *tlbl;
   int i;
@@ -264,9 +266,34 @@ genrsh16 (operand * result, operand * left, int shCount, int sign)
 	  storeConstToAop (0, AOP (result), 1);
 	}
     }
+  else if(IS_AOP_XA(AOP(result)))
+    {
+      if(shCount==1 && !IS_AOP_XA(AOP(left)))
+        {
+          loadRegFromAop (m6502_reg_a, AOP (left), 1);
+          if(sign)
+            {
+	      emit6502op ("cmp", "#0x80");
+	      emit6502op ("ror", "a");
+            }
+          else 
+	    emit6502op ("lsr", "a");
+
+          transferRegReg(m6502_reg_a, m6502_reg_x, true);
+          loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	  emit6502op ("ror", "a");
+          storeRegToAop (m6502_reg_xa, AOP (result), 0);
+        }
+      else
+	{
+	  /*  1 <= shCount <= 7 */
+	  // TODO: count > 2 efficient?
+	  loadRegFromAop (m6502_reg_xa, AOP (left), 0);
+	  XAccRsh (shCount, sign);
+        }
+    }
   else
     {
-      /*  1 <= shCount <= 7 */
       needpulla = storeRegTempIfSurv (m6502_reg_a);
       needpullx = storeRegTempIfSurv (m6502_reg_x);
       loadRegFromAop (m6502_reg_xa, AOP (left), 0);

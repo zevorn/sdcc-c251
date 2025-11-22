@@ -12528,7 +12528,7 @@ the source file being compiled is always linked in first
 
 ,
  regardless of its position in the command line.
- This can be problematic when a custom CRT is supplied as object file.
+ This can be problematic when a custom crt0 is supplied as object file.
  As an alternative to the above,
  
 \emph on
@@ -12558,7 +12558,23 @@ foomain.c
 \begin_inset Newline newline
 \end_inset
 
-sdcc foomain.rel foo1.rel foo2.rel
+sdcc
+\begin_inset space ~
+\end_inset
+
+custom_crt0.rel
+\begin_inset space ~
+\end_inset
+
+foomain.rel
+\begin_inset space ~
+\end_inset
+
+foo1.rel
+\begin_inset space ~
+\end_inset
+
+foo2.rel
 \begin_inset Newline newline
 \end_inset
 

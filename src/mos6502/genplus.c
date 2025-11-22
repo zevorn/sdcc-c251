@@ -279,11 +279,11 @@ m6502_genPlus (iCode * ic)
       storeRegTemp(m6502_reg_x, true);
       emitSetCarry(0);
       accopWithAop ("adc", AOP (right), 0);
-      pushReg(m6502_reg_a, true);
+      m6502_pushReg(m6502_reg_a, true);
       loadRegTemp(m6502_reg_a);
       accopWithAop ("adc", AOP (right), 1);
       transferRegReg(m6502_reg_a, m6502_reg_x, true);
-      pullReg(m6502_reg_a);
+      m6502_pullReg(m6502_reg_a);
       goto release;
     }
 
@@ -314,7 +314,7 @@ m6502_genPlus (iCode * ic)
   while (size--)
     {
       if (earlystore && offset == 1)
-	pullReg (m6502_reg_a);
+	m6502_pullReg (m6502_reg_a);
       else
 	loadRegFromAop (m6502_reg_a, AOP(left), offset);
       if (init_carry)
@@ -329,7 +329,7 @@ m6502_genPlus (iCode * ic)
 	}
       if (size && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset]->rIdx == A_IDX)
 	{
-	  pushReg (m6502_reg_a, true);
+	  m6502_pushReg (m6502_reg_a, true);
 	  delayedstore = true;
 	}
       else
@@ -342,7 +342,7 @@ m6502_genPlus (iCode * ic)
 	init_carry = false;
     }
   if (delayedstore)
-    pullReg (m6502_reg_a);
+    m6502_pullReg (m6502_reg_a);
 
   pullOrFreeReg (m6502_reg_a, needpulla);
 

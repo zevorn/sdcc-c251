@@ -34,8 +34,8 @@
  * pushReg - Push register reg onto the stack. If freereg is true, reg is
  *           marked free and available for reuse.
  *************************************************************************/
-void
-pushReg (reg_info * reg, bool freereg)
+bool
+m6502_pushReg (reg_info * reg, bool freereg)
 {
   int regidx = reg->rIdx;
 
@@ -56,7 +56,7 @@ pushReg (reg_info * reg, bool freereg)
         {
           bool needloada = storeRegTempIfUsed (m6502_reg_a);
           transferRegReg (m6502_reg_x, m6502_reg_a, false);
-          pushReg (m6502_reg_a, true);
+          m6502_pushReg (m6502_reg_a, true);
           loadOrFreeRegTemp (m6502_reg_a, needloada);
         }
       updateCFA ();
@@ -70,7 +70,7 @@ pushReg (reg_info * reg, bool freereg)
         {
           bool needloada = storeRegTempIfUsed (m6502_reg_a);
           transferRegReg (m6502_reg_y, m6502_reg_a, true);
-          pushReg (m6502_reg_a, true);
+          m6502_pushReg (m6502_reg_a, true);
           loadOrFreeRegTemp (m6502_reg_a, needloada);
         }
       updateCFA ();
@@ -81,19 +81,19 @@ pushReg (reg_info * reg, bool freereg)
         {
           transferRegReg (m6502_reg_a, m6502_reg_y, freereg);
           transferRegReg (m6502_reg_x, m6502_reg_a, freereg);
-          pushReg(m6502_reg_a, freereg);
+          m6502_pushReg(m6502_reg_a, freereg);
           transferRegReg (m6502_reg_y, m6502_reg_a, true);
-          pushReg(m6502_reg_a, freereg);
+          m6502_pushReg(m6502_reg_a, freereg);
         }
       else
         {
-	  pushReg(m6502_reg_x, freereg);
-	  pushReg(m6502_reg_a, freereg);
+	  m6502_pushReg(m6502_reg_x, freereg);
+	  m6502_pushReg(m6502_reg_a, freereg);
         }
       break;
     case YX_IDX:
-      pushReg(m6502_reg_y, freereg);
-      pushReg(m6502_reg_x, freereg);
+      m6502_pushReg(m6502_reg_y, freereg);
+      m6502_pushReg(m6502_reg_x, freereg);
       break;
     default:
       emitcode("ERROR", "    %s: bad reg idx: 0x%02x", __func__, regidx);
@@ -101,13 +101,15 @@ pushReg (reg_info * reg, bool freereg)
     }
   if (freereg)
     m6502_freeReg (reg);
+  
+  return true;
 }
 
 /**************************************************************************
  * pullReg - Pull register reg off the stack.
  *************************************************************************/
 void
-pullReg (reg_info * reg)
+m6502_pullReg (reg_info * reg)
 {
   int regidx = reg->rIdx;
 
@@ -127,7 +129,7 @@ pullReg (reg_info * reg)
       {
         // FIXME: saving A makes regression fail
         //      bool needloada = storeRegTempIfUsed (m6502_reg_a);
-        pullReg (m6502_reg_a);
+        m6502_pullReg (m6502_reg_a);
         transferRegReg (m6502_reg_a, m6502_reg_x, true);
         //      loadOrFreeRegTemp (m6502_reg_a, needloada);
       }
@@ -142,7 +144,7 @@ pullReg (reg_info * reg)
       {
         // FIXME: saving A makes regression fail
         //      bool needloada = storeRegTempIfUsed (m6502_reg_a);
-        pullReg (m6502_reg_a);
+        m6502_pullReg (m6502_reg_a);
         transferRegReg (m6502_reg_a, m6502_reg_y, true);
         //      loadOrFreeRegTemp (m6502_reg_a, needloada);
       }
@@ -150,12 +152,12 @@ pullReg (reg_info * reg)
     break;
     // little-endian order
   case XA_IDX:
-    pullReg(m6502_reg_a);
-    pullReg(m6502_reg_x);
+    m6502_pullReg(m6502_reg_a);
+    m6502_pullReg(m6502_reg_x);
     break;
   case YX_IDX:
-    pullReg(m6502_reg_x);
-    pullReg(m6502_reg_y);
+    m6502_pullReg(m6502_reg_x);
+    m6502_pullReg(m6502_reg_y);
     break;
   default:
     emitcode("ERROR", "    %s: bad reg idx: 0x%02x", __func__, regidx);
@@ -163,62 +165,6 @@ pullReg (reg_info * reg)
   }
   m6502_useReg (reg);
   m6502_dirtyReg (reg);
-}
-
-/**************************************************************************
- * pullNull - Discard n bytes off the top of the stack
- *************************************************************************/
-void
-pullNull (int n)
-{
-  emitComment (REGOPS, __func__ );
-  if(n < 0) emitcode("ERROR", "pullNull called with negative parameter");
-
-  adjustStack (n);
-}
-
-/**************************************************************************
- * pushRegIfUsed - Push register reg if marked in use. Returns true if the
- *                 push was performed, false otherwise.
- *************************************************************************/
-bool
-pushRegIfUsed (reg_info *reg)
-{
-  if (!reg->isFree)
-    {
-      pushReg (reg, true);
-      return true;
-    }
-  else
-    return false;
-}
-
-/**************************************************************************
- * pushRegIfSurv - Push register reg if marked surviving. Returns true if
- *                 the push was performed, false otherwise.
- *************************************************************************/
-bool
-pushRegIfSurv (reg_info *reg)
-{
-  if (!reg->isDead)
-    {
-      pushReg (reg, true);
-      return true;
-    } else
-    return false;
-}
-
-/**************************************************************************
- * pullOrFreeReg - If needpull is true, register reg is pulled from the
- *                 stack. Otherwise register reg is marked as free.
- *************************************************************************/
-void
-pullOrFreeReg (reg_info * reg, bool needpull)
-{
-  if (needpull)
-    pullReg (reg);
-  else
-    m6502_freeReg (reg);
 }
 
 /**************************************************************************
