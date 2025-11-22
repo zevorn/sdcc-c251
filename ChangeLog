@@ -1,14 +1,43 @@
+2025-11-21 Janko Stamenović
+
+	* sdas/asgb/gb.h
+	  sdas/asgb/gbadr.c
+	  sdas/asgb/gbmch.c
+	  sdas/asgb/gbpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  Rebasing sdas assemblers to the current upstream: asgb
+
+2025-11-21 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/genrshift.c,
+  	  src/mos6502/genlshift.c:
+  	  Optimize right/left shift 16-bit values by 1.
+  	* src/mos6502/peeph.def:
+  	  Added several rules to remove dead loads.
+  	 	  
+2025-11-20 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/stackops.c,
+  	  src/mos6502/genlshift.c,
+  	  src/mos6502/genplus.c,
+  	  src/mos6502/genminus.c,
+  	  src/mos6502/gen.h,
+  	  src/mos6502/gen.c:
+  	  Partial fix for bug #3851.
+  	  
 2025-11-20 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/scripts/sdcc.nsi:
 	  Include Rabbit 4000/5000/6000 libraries in Windows installer.
 
 2025-11-19 Gabriele Gorla <gorlik@yahoo.com>
+
   	* src/mos6502/ralloc.c,
   	  src/mos6502/gen.c:
   	  Improve register tracking.
   	  
 2025-11-18 Gabriele Gorla <gorlik@yahoo.com>
+
   	* device/lib/mos6502/fabsf.s:
   	  Use ZP addressing to store fabs result.
   	* src/mos6502/gen.c,

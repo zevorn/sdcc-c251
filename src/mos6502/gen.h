@@ -199,16 +199,17 @@ reg_info* getDeadByteReg();
 reg_info* getFreeByteReg();
 reg_info* getFreeIdxReg();
 bool canBitOp (const operand* aop);
-bool keepTSX();
 
 // stack
-void pushReg (reg_info * reg, bool freereg);
-bool pushRegIfUsed (reg_info *reg);
-bool pushRegIfSurv (reg_info *reg);
-void pullReg (reg_info * reg);
-void pullOrFreeReg (reg_info * reg, bool needpull);
-void pullNull (int n);
-void adjustStack (int n);
+bool m6502_pushReg (reg_info * reg, bool freereg);
+void m6502_pullReg (reg_info * reg);
+void adjustStack (int n); // candidate for moving back into gen.c
+
+#define pushRegIfUsed(r)     (!r->isFree)?m6502_pushReg(r,true):false
+#define pushRegIfSurv(r)     (!r->isDead)?m6502_pushReg(r,true):false
+#define pullOrFreeReg(r,np)  (np)?m6502_pullReg(r):false
+#define pullNull(n)          adjustStack(n)
+
 
 // regtemp
 void storeRegTemp (reg_info * reg, bool freereg);
