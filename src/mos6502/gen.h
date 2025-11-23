@@ -212,6 +212,12 @@ void adjustStack (int n); // candidate for moving back into gen.c
 
 
 // regtemp
+bool fastSaveA();
+bool fastRestoreA();
+#define fastSaveAIfUsed()     (!m6502_reg_a->isFree)?fastSaveA():false
+#define fastSaveAIfSurv()     (!m6502_reg_a->isDead)?fastSaveA():false
+#define fastRestoreOrFreeA(np)  (np)?fastRestoreA():false
+
 void storeRegTemp (reg_info * reg, bool freereg);
 void storeRegTempAlways (reg_info * reg, bool freereg);
 bool storeRegTempIfUsed (reg_info *reg);

@@ -142,6 +142,7 @@ typedef struct specifier
   unsigned b_alignas:1;             /* alignment                  */
   unsigned b_absadr:1;              /* absolute address specfied  */
   unsigned b_const:1;               /* is a constant              */
+  unsigned b_constexpr:1;           /* is a constant expression   */
   unsigned b_restrict:1;            /* is restricted              */
   unsigned b_volatile:1;            /* is marked as volatile      */
   bool     b_atomic:1;              /* is qualified as _Atomic    */
@@ -522,6 +523,7 @@ extern sym_link *validateLink (sym_link * l,
  */
 #define SPEC_ISR_SAVED_BANKS(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s._bitStart
 #define SPEC_CONST(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_const
+#define SPEC_CONSTEXPR(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_constexpr
 #define SPEC_RESTRICT(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_restrict
 #define SPEC_VOLATILE(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_volatile
 #define SPEC_ATOMIC(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_atomic
@@ -609,8 +611,9 @@ extern sym_link *validateLink (sym_link * l,
 #define IS_LITERAL(x)    (IS_SPEC(x) && x->select.s.sclass == S_LITERAL)
 #define IS_CODE(x)       (IS_SPEC(x) && SPEC_SCLS(x) == S_CODE)
 #define IS_REGPARM(x)    (IS_SPEC(x) && SPEC_REGPARM(x))
+#define IS_CONSTEXPR(x)  (IS_SPEC(x) && SPEC_CONSTEXPR(x))
 
-#define IS_VALID_PARAMETER_STORAGE_CLASS_SPEC(x)    (!SPEC_TYPEDEF(x) && !SPEC_EXTR(x) && !SPEC_STAT(x) && SPEC_SCLS(x) != S_AUTO)
+#define IS_VALID_PARAMETER_STORAGE_CLASS_SPEC(x)    (!SPEC_TYPEDEF(x) && !SPEC_EXTR(x) && !SPEC_STAT(x) && !SPEC_CONSTEXPR(x) && SPEC_SCLS(x) != S_AUTO)
 
 /* symbol check macros */
 #define IS_AUTO(x)       (x->level && !IS_STATIC(x->etype) && !IS_EXTERN(x->etype))

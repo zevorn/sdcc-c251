@@ -45,7 +45,6 @@ AccLsh (int shCount)
       emit6502op ("ror", "a");
       loadRegFromConst(m6502_reg_a, 0);
       emit6502op ("ror", "a");
-      /* total: 6 cycles, 4 bytes */
     }
   else if(shCount==6)
     {
@@ -53,12 +52,11 @@ AccLsh (int shCount)
       emit6502op ("ror", "a");
       emit6502op ("ror", "a");
       emit6502op ("and", "#0xc0");
-      /* total: 8 cycles, 5 bytes */
     }
   else
     {
       /* asl a is 2 cycles and 1 byte, so an unrolled loop is the   */
-      /* fastest and shortest (shCount<6).                            */
+      /* fastest and shortest (shCount<6).                          */
       for (i = 0; i < shCount; i++)
 	emit6502op ("asl", "a");
     }
@@ -178,11 +176,11 @@ genlsh16 (operand * result, operand * left, int shCount)
           loadRegFromAop (m6502_reg_a, AOP (left), 0);
 	  emit6502op ("asl", "a");
           m6502_dirtyReg(m6502_reg_a);
-          storeRegTemp(m6502_reg_a, true);
+          fastSaveA();
           loadRegFromAop (m6502_reg_a, AOP (left), 1);
 	  emit6502op ("rol", "a");
           transferRegReg(m6502_reg_a, m6502_reg_x, true);
-          loadRegTemp(m6502_reg_a);
+          fastRestoreA();
         }
       else
         {
@@ -230,19 +228,22 @@ genlsh16 (operand * result, operand * left, int shCount)
       loadOrFreeRegTemp (m6502_reg_a, needpulla);
     }
 
-  if (maskedtopbyte) {
-    bool in_a = (result->aop->type == AOP_REG && result->aop->aopu.aop_reg[1]->rIdx == A_IDX);
-    bool needpull = false;
-    if (!in_a) {
-      needpull = pushRegIfUsed (m6502_reg_a);
-      loadRegFromAop (m6502_reg_a, result->aop, 1);
+  if (maskedtopbyte)
+    {
+      bool in_a = (result->aop->type == AOP_REG && result->aop->aopu.aop_reg[1]->rIdx == A_IDX);
+      bool needpull = false;
+      if (!in_a)
+	{
+	  needpull = pushRegIfUsed (m6502_reg_a);
+	  loadRegFromAop (m6502_reg_a, result->aop, 1);
+	}
+      emit6502op ("and", IMMDFMT, topbytemask);
+      if (!in_a)
+	{
+	  storeRegToAop (m6502_reg_a, result->aop, 1);
+	  pullOrFreeReg (m6502_reg_a, needpull);
+	}
     }
-    emit6502op ("and", IMMDFMT, topbytemask);
-    if (!in_a) {
-      storeRegToAop (m6502_reg_a, result->aop, 1);
-      pullOrFreeReg (m6502_reg_a, needpull);
-    }
-  }
  done:
   ;
 }
@@ -387,7 +388,7 @@ shiftLLong2 (operand * left, operand * result, int shift)
   bool needpulla = false;
 
   wassertl(shift>=16, "shiftLLong2 - shift<16");
-  wassertl(shift<24,  "shiftLLong2 - shift>=24");
+  wassertl(shift<24,  "shiftLLong2 - shift>23");
 
   needpulla = pushRegIfUsed (m6502_reg_a);
 
@@ -437,6 +438,7 @@ shiftLLong2 (operand * left, operand * result, int shift)
       shiftLLongInPlace (result, shift-17, 2, true);
       storeRegToAop (m6502_reg_a, AOP (result), 3);
     }
+
   pullOrFreeReg (m6502_reg_a, needpulla);
 }
 
@@ -452,8 +454,6 @@ shiftLLong3 (operand * left, operand * result, int shift)
 {
   bool needpulla = false;
   bool needloadx = false;
-  //  reg_info * reg = NULL;
-  //  reg_info * idx = NULL;
 
   wassertl(shift>=8, "shiftLLong3 - shift<8");
   wassertl(shift<16,  "shiftLLong3 - shift>=16");
@@ -571,8 +571,8 @@ shiftLLong4 (operand * left, operand * result, int shift)
       loadRegFromAop (m6502_reg_a, AOP (left), 3);
       rmwWithReg ("lsr", m6502_reg_a);
       if(shift!=7)
+        fastSaveA();
 	//             storeRegTempAlways(m6502_reg_a, true);
-	m6502_pushReg(m6502_reg_a, false);
       loadRegFromAop (m6502_reg_a, AOP (left), 2);
       rmwWithReg ("ror", m6502_reg_a);
       storeRegToAop (m6502_reg_a, AOP (result), 3);
@@ -587,7 +587,7 @@ shiftLLong4 (operand * left, operand * result, int shift)
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       if(shift!=7)
 	{
-	  m6502_pullReg(m6502_reg_a);
+          fastRestoreA();
 	  //        loadRegTemp(m6502_reg_a);
 	  while(shift!=7)
 	    {

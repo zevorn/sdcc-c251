@@ -10754,19 +10754,6 @@ long long
 Qualifier-preserving standard library functions are not implemented.
 \end_layout
 
-\begin_layout Itemize
-\begin_inset Flex Code
-status open
-
-\begin_layout Plain Layout
-constexpr
-\end_layout
-
-\end_inset
-
- is not implemented.
-\end_layout
-
 \begin_layout Subsubsection*
 Features missing in some ports
 \end_layout

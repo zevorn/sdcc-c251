@@ -1070,7 +1070,10 @@ printIvalStruct (symbol *sym, sym_link *type, initList *ilist, struct dbuf_s *oB
     {
       if (ilist->type != INIT_DEEP)
         {
-          werrorfl (sym->fileDef, sym->lineDef, E_INIT_STRUCT, sym->name);
+          if (SPEC_CONSTEXPR (type))
+            printIvalStruct (sym, type, ilist->init.node->opval.val->sym->ival, oBuf);
+          else
+            werrorfl (sym->fileDef, sym->lineDef, E_INIT_STRUCT, sym->name);
           return;
         }
 

@@ -43,7 +43,7 @@ genPlusInc (iCode * ic)
   int icount;
   unsigned int size = AOP_SIZE (result);
   symbol *tlbl = NULL;
-  bool needpula;
+  bool needpulla = false;
   unsigned int offset;
 
   /* will try to generate an increment */
@@ -66,23 +66,23 @@ genPlusInc (iCode * ic)
     {
 #if 1
       int bcount = icount>>8;
-    if (IS_AOP_XA (AOP (result)) && IS_AOP_XA (AOP (left)) )
+      if (IS_AOP_XA (AOP (result)) && IS_AOP_XA (AOP (left)) )
         {
           if(m6502_reg_x->isLitConst)
             {
-//              loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
+	      //              loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
               emit6502op ("ldx", "0x%02x", (m6502_reg_x->litConst + bcount)&0xff );
               return true;
             }
           else if(bcount<4)
             {
-      while (bcount--)
-        emit6502op ("inx", "");
-      return true;
+	      while (bcount--)
+		emit6502op ("inx", "");
+	      return true;
 
             }
         }
-    return false;
+      return false;
 #else
       return false;
 #endif
@@ -153,7 +153,6 @@ genPlusInc (iCode * ic)
 
   if (icount == 1)
     {
-      needpula = false;
       rmwWithAop ("inc", AOP (result), 0);
       if (size > 1)
 	emitBranch ("bne", tlbl);
@@ -161,9 +160,8 @@ genPlusInc (iCode * ic)
   else
     {
       if (!IS_AOP_A (AOP (result)) && !IS_AOP_XA (AOP (result)))
-	needpula = pushRegIfUsed (m6502_reg_a);
-      else
-	needpula = false;
+	needpulla = pushRegIfUsed (m6502_reg_a);
+
       loadRegFromAop (m6502_reg_a, AOP (result), 0);
       emitSetCarry(0);
       accopWithAop ("adc", AOP (right), 0);
@@ -175,7 +173,8 @@ genPlusInc (iCode * ic)
   for (offset = 1; offset < size; offset++)
     {
       rmwWithAop ("inc", AOP (result), offset);
-      if(AOP(result)->type==AOP_REG) m6502_dirtyReg(AOP(result)->aopu.aop_reg[offset]);
+      if(AOP(result)->type==AOP_REG)
+        m6502_dirtyReg(AOP(result)->aopu.aop_reg[offset]);
       if ((offset + 1) < size)
 	emitBranch ("bne", tlbl);
     }
@@ -183,7 +182,7 @@ genPlusInc (iCode * ic)
   if (size > 1)
     safeEmitLabel (tlbl);
 
-  pullOrFreeReg (m6502_reg_a, needpula);
+  pullOrFreeReg (m6502_reg_a, needpulla);
 
   return true;
 }
@@ -232,19 +231,21 @@ m6502_genPlus (iCode * ic)
   emitComment (TRACEGEN|VVDBG, "    %s - Can't Inc", __func__);
 
   size = AOP_SIZE (result);
+  bool is_right_byte = (AOP_SIZE(right)==1 && SPEC_USIGN (operandType (right))) 
+    || ( AOP_TYPE (right) == AOP_LIT
+	 && operandLitValue (right) >= 0
+	 && operandLitValue (right) <= 255 );
 
   offset = 0;
 
   // FIXME: should make this more general
-  if ( size==2 && AOP_TYPE (right) == AOP_LIT
-       && operandLitValue (right) >= 0
-       && operandLitValue (right) <= 255
+  if ( size==2 && is_right_byte
        && AOP_TYPE(result) != AOP_SOF
        && sameRegs(AOP(result),AOP(left)) )
     {
       symbol *skiplabel = safeNewiTempLabel (NULL);
 
-      emitComment (TRACEGEN|VVDBG, "    %s: size==2 && AOP_LIT", __func__);
+      emitComment (TRACEGEN|VVDBG, "    %s: size==2 && one byte", __func__);
       needpulla = pushRegIfSurv (m6502_reg_a);
       emitSetCarry(0);
       loadRegFromAop (m6502_reg_a, AOP(left), 0);

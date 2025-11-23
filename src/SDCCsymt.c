@@ -837,6 +837,7 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
   SPEC_INLINE (dest) |= SPEC_INLINE (src);
   SPEC_NORETURN (dest) |= SPEC_NORETURN(src);
   SPEC_CONST (dest) |= SPEC_CONST (src);
+  SPEC_CONSTEXPR (dest) |= SPEC_CONSTEXPR (src);
   SPEC_ABSA (dest) |= SPEC_ABSA (src);
   SPEC_VOLATILE (dest) |= SPEC_VOLATILE (src);
   SPEC_RESTRICT (dest) |= SPEC_RESTRICT (src);
@@ -2355,6 +2356,24 @@ checkSClass (symbol *sym, int isProto)
       if (options.stackAuto || (currFunc && IFFUNC_ISREENT (currFunc->type)))
         {
           SPEC_SCLS (sym->etype) = (options.useXstack ? S_XSTACK : S_STACK);
+        }
+    }
+
+  /* handle specifics of constexpr declarations */
+  if (SPEC_CONSTEXPR (sym->etype))
+    {
+      /* any constexpr is implicitly const */
+      SPEC_CONST (sym->etype) = 1;
+      /* constexpr declaration at file scope is implicitly static */
+      if (sym->level == 0)
+        SPEC_STAT (sym->etype) = 1;
+      /* constexpr object type cannot be atomic, variably modified (TODO), volatile or restrict */
+      if (SPEC_ATOMIC (sym->etype) || SPEC_VOLATILE (sym->etype) || SPEC_RESTRICT (sym->etype))
+        {
+          werror (E_CONSTEXPR_INVALID_QUAL);
+          SPEC_ATOMIC (sym->etype) = 0;
+          SPEC_VOLATILE (sym->etype) = 0;
+          SPEC_RESTRICT (sym->etype) = 0;
         }
     }
 }
@@ -5428,6 +5447,14 @@ prepareDeclarationSymbol (attribute *attr, sym_link *declSpecs, symbol *initDecl
       for (l0 = sym->type; l0 != NULL; l0 = l0->next)
         if (IS_PTR (l0))
           break;
+      /* perform sanity checks concerning constexpr initialization */
+      if (IS_CONSTEXPR (declSpecs) && (sym->ival == NULL || !constExprTree (list2expr (sym->ival))))
+        {
+          /* constexpr must be initialized with a constant expression (duh!) */
+          werror (sym->ival ? E_CONST_EXPECTED : E_CONSTEXPR_WITHOUT_INIT);
+          /* fabricate a constant dummy ival to keep going */
+          sym->ival = newiList (INIT_NODE, newAst_VALUE (constIntVal ("0")));
+        }
       /* check if creating instances of structs with flexible arrays */
       for (l1 = lnk; l1 != NULL; l1 = l1->next)
         if (IS_STRUCT (l1) && SPEC_STRUCT (l1)->b_flexArrayMember)

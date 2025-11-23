@@ -62,7 +62,7 @@ struct
   { E_SYNTAX_ERROR, ERROR_LEVEL_ERROR,
      "Syntax error, declaration ignored at '%s'", 0 },
   { E_CONST_EXPECTED, ERROR_LEVEL_ERROR,
-      "Initializer element is not a constant expression", 0 },
+     "Initializer element is not a constant expression", 0 },
   { E_OUT_OF_MEM, ERROR_LEVEL_ERROR,
      "'malloc' failed file '%s' for size %ld", 0 },
   { E_FILE_OPEN_ERR, ERROR_LEVEL_ERROR,
@@ -625,8 +625,8 @@ struct
      "use of single-dash long options is discouraged, use '-%s' instead", 0 },
   { E_UNKNOWN_LANGUAGE_STANDARD, ERROR_LEVEL_ERROR,
      "unknown language standard '%s'", 0 },
-  { E_CONSTEXPR, ERROR_LEVEL_ERROR,
-     "constexpr not implemented", 0 },
+  { E_CONSTEXPR_C23, ERROR_LEVEL_ERROR,
+     "constexpr requires ISO C23 or later", 0 },
   { E_TYPEOF, ERROR_LEVEL_ERROR,
      "typeof and typeof_unqual not implemented for nontrivial expressions", 0 },
   { W_FUNCDECL_WITH_NO_PROTOTYPE, ERROR_LEVEL_WARNING,
@@ -747,6 +747,12 @@ struct
      "identifier '%s' not normalized to unicode normalization form C", 0 },
   { W_INSECURE_ID, ERROR_LEVEL_WARNING,
      "insecure identifier '%s' not compliant with UTS #39 (%s)", 0 },
+  { E_CONSTEXPR_WITHOUT_INIT, ERROR_LEVEL_ERROR,
+     "constexpr declaration without initialization", 0 },
+  { E_CONSTEXPR_RANGE_PRECISION, ERROR_LEVEL_ERROR,
+     "type of constexpr declaration has insufficient range or precision", 0 },
+  { E_CONSTEXPR_INVALID_QUAL, ERROR_LEVEL_ERROR,
+     "object of constexpr type cannot be atomic, variably modified, volatile or restrict qualified", 0 },
 };
 
 /* -------------------------------------------------------------------------------

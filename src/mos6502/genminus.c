@@ -64,19 +64,19 @@ genMinusDec (iCode * ic)
     {
 #if 1
       int bcount = icount>>8;
-    if (IS_AOP_XA (AOP (result)) && IS_AOP_XA (AOP (left)) )
+      if (IS_AOP_XA (AOP (result)) && IS_AOP_XA (AOP (left)) )
         {
           if(m6502_reg_x->isLitConst)
             {
-//              loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
+	      //              loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
               emit6502op ("ldx", "0x%02x", (m6502_reg_x->litConst - bcount)&0xff );
               return true;
             }
           else if(bcount<4)
             {
-      while (bcount--)
-        emit6502op ("dex", "");
-      return true;
+	      while (bcount--)
+		emit6502op ("dex", "");
+	      return true;
 
             }
         }
@@ -204,18 +204,20 @@ m6502_genMinus (iCode * ic)
   emitComment (TRACEGEN|VVDBG, "    %s - Can't Dec", __func__);
 
   size = AOP_SIZE (result);
+  bool is_right_byte = (AOP_SIZE(right)==1) 
+    || ( AOP_TYPE (right) == AOP_LIT
+	 && operandLitValue (right) >= 0
+	 && operandLitValue (right) <= 255 );
 
   offset = 0;
 
-  if ( size==2 && AOP_TYPE (right) == AOP_LIT && !maskedtopbyte
-       && operandLitValue (right) >= 0
-       && operandLitValue (right) <= 255
+  if ( size==2 && is_right_byte && !maskedtopbyte
        && AOP_TYPE(result) != AOP_SOF
        && sameRegs(AOP(result),AOP(left)) )
     {
       symbol *skiplabel = safeNewiTempLabel (NULL);
 
-      emitComment (TRACEGEN|VVDBG, "    %s: size==2 && AOP_LIT", __func__);
+      emitComment (TRACEGEN|VVDBG, "    %s: size==2 && one byte", __func__);
       needpulla = pushRegIfSurv (m6502_reg_a);
       emitSetCarry(1);
       loadRegFromAop (m6502_reg_a, AOP(left), 0);

@@ -165,6 +165,15 @@ replace restart {
 	lda %3
 } if same(%1 'adc' 'sbc')
 
+replace restart {
+	lda %1
+        tay
+        txa
+} by {
+	; Peephole genIpush 1 - replaced lda/tay with ldy
+	ldy %1
+        txa
+}
 
 ////////////////////////////////////////////////////////
 // Reorder copy
@@ -295,12 +304,32 @@ replace restart {
 
 replace restart {
 	lda	%1
+	tax
+	lda	%2,%3
+} by {
+	; Peephole load 6a - replaced lda %1 + tax with ldx %1
+	ldx	%1
+	lda	%2,%3
+}
+
+replace restart {
+	lda	%1
 	tay
 	lda	%2
 } by {
-	; Peephole load 6a - replaced lda %1 + tay with ldy %1
+	; Peephole load 6b - replaced lda %1 + tay with ldy %1
 	ldy	%1
 	lda	%2
+}
+
+replace restart {
+	lda	%1
+	tay
+	lda	%2,%3
+} by {
+	; Peephole load 6c - replaced lda %1 + tay with ldy %1
+	ldy	%1
+	lda	%2,%3
 }
 
 ////////////////////////////////////////////////////////
@@ -375,11 +404,21 @@ replace restart {
 } if notSame(%1 'sta' 'adc' 'sbc' 'cmp' 'bne' 'beq' 'bpl' 'bmi' 'bcc' 'bcs' 'jsr' 'jmp'), notSame(%2 'a'), notVolatile(%4)
 
 replace restart {
+	lda	%4
+	%1	%2
+	lda	%3,%5
+} by {
+	; Peephole load 11a - removed dead lda %4 not followed by store or branch
+	%1	%2
+	lda	%3,%5
+} if notSame(%1 'sta' 'adc' 'sbc' 'cmp' 'bne' 'beq' 'bpl' 'bmi' 'bcc' 'bcs' 'jsr' 'jmp'), notSame(%2 'a'), notVolatile(%4)
+
+replace restart {
 	lda	%3
 	%1
 	lda	%2
 } by {
-	; Peephole load 11a - removed dead lda %3
+	; Peephole load 11b - removed dead lda %3
 	%1 
 	lda	%2
 } if notSame(%1 'pha' 'php' 'tax' 'tay'), notVolatile(%3)
@@ -389,7 +428,7 @@ replace restart {
 	%1
 	lda	%2,%4
 } by {
-	; Peephole load 11b - removed dead lda %3
+	; Peephole load 11c - removed dead lda %3
 	%1 
 	lda	%2,%4
 } if notSame(%1 'pha' 'php' 'tax' 'tay'), notVolatile(%3)
