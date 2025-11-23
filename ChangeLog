@@ -1,3 +1,35 @@
+2025-11-23 Benedikt Freisen <b.freisen AT gmx.net>
+
+	* doc/sdccman.lyx,
+	  src/SDCC.y,
+	  src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCglue.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  support/regression/tests/constexpr.c:
+	  Add constexpr support (slightly incomplete, C23, RFE #850).
+
+2025-11-22 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/peeph.def:
+  	  Added more peephole rules to remove dead loads.
+   	* src/mos6502/genrshift.c,
+  	  src/mos6502/genlshift.c,
+  	  src/mos6502/genplus.c,
+  	  src/mos6502/genminus.c:
+  	  Cosmetic changes.
+   	* src/mos6502/tempops.c:
+   	  Improve tempops debugging messages.
+   	* src/mos6502/gen.c:
+   	  Refactor genUminusFloat().
+   	* src/mos6502/gen.c,
+   	  src/mos6502/gen.h,
+   	  src/mos6502/genlshift.c,
+   	  src/mos6502/tempops.c:
+   	  Add fastSaveA() and fastRestoreA().
+  	  
 2025-11-21 Janko Stamenović
 
 	* sdas/asgb/gb.h
@@ -13,7 +45,7 @@
   	  src/mos6502/genlshift.c:
   	  Optimize right/left shift 16-bit values by 1.
   	* src/mos6502/peeph.def:
-  	  Added several rules to remove dead loads.
+  	  Added several peephole rules to remove dead loads.
   	 	  
 2025-11-20 Gabriele Gorla <gorlik@yahoo.com>
 

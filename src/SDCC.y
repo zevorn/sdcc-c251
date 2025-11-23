@@ -252,6 +252,10 @@ postfix_expression
 
                         /* add the specifier list to the id */
                         symbol *sym1 = prepareDeclarationSymbol(NULL, $2, sym);
+                        /* implicitly make the symbol a constexpr if the initializer allows it */
+                        sym1->etype = getSpec(sym1->type);
+                        if (constExprTree(list2expr(sym1->ival)))
+                          SPEC_CONSTEXPR(sym1->etype) = 1;
 
                         /* mark as temporary symbol for compound literal, so that gatherImplicitVariables
                            can attach it to a block, and add the temporary symbol to the symbol table */
@@ -629,7 +633,9 @@ storage_class_specifier
                }
    | CONSTEXPR {
                   $$ = newLink (SPECIFIER);
-                  werror (E_CONSTEXPR);
+                  SPEC_CONSTEXPR($$) = 1;
+                  if (!options.std_c23)
+                    werror (E_CONSTEXPR_C23);
                }
    ;
 

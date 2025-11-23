@@ -92,7 +92,6 @@ AccRsh (int shCount, bool sign)
       emit6502op ("rol", "a");
       loadRegFromConst(m6502_reg_a, 0);
       emit6502op ("rol", "a");
-      /* total: 6 cycles, 4 bytes */
     }
   else if(shCount==6)
     {
@@ -100,12 +99,11 @@ AccRsh (int shCount, bool sign)
       emit6502op ("rol", "a");
       emit6502op ("rol", "a");
       emit6502op ("and", "#0x03");
-      /* total: 8 cycles, 5 bytes */
     }
   else
     {
       /* lsr a is 2 cycles and 1 byte, so an unrolled loop is the      */
-      /* the fastest and shortest (shCount<6).            */
+      /* fastest and shortest (shCount<6).                             */
       for (i = 0; i < shCount; i++)
         emit6502op ("lsr", "a");
     }
@@ -1001,11 +999,11 @@ m6502_genRightShift (iCode * ic)
 
   int size, offset;
   symbol *tlbl, *tlbl1;
-  bool sign;
   reg_info *countreg = NULL;
   bool restore_a = false;
   bool restore_y = false;
   bool x_in_regtemp = false;
+  bool sign;
 
   emitComment (TRACEGEN, __func__);
 
