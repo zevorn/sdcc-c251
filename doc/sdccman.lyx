@@ -11136,6 +11136,29 @@ literal "false"
  Case range expressions
 \end_layout
 
+\begin_layout Itemize
+\begin_inset CommandInset href
+LatexCommand href
+name "N3398"
+target "https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3398.pdf"
+literal "false"
+
+\end_inset
+
+:
+ The 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+containerof
+\end_layout
+
+\end_inset
+
+ Macro
+\end_layout
+
 \begin_layout Subsection
 Embedded C
 \end_layout

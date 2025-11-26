@@ -198,10 +198,10 @@ m6502_genPlus (iCode * ic)
   operand *result = IC_RESULT (ic);
 
   bool init_carry = true;
-  int size, offset = 0;
+  int size, offset;
   bool needpulla = false;
-  bool earlystore = false;
-  bool delayedstore = false;
+  //  bool earlystore = false;
+  //  bool delayedstore = false;
   bool opskip = true;
 
   sym_link *resulttype = operandType (IC_RESULT (ic));
@@ -235,8 +235,6 @@ m6502_genPlus (iCode * ic)
     || ( AOP_TYPE (right) == AOP_LIT
 	 && operandLitValue (right) >= 0
 	 && operandLitValue (right) <= 255 );
-
-  offset = 0;
 
   // FIXME: should make this more general
   if ( size==2 && is_right_byte
@@ -312,42 +310,45 @@ m6502_genPlus (iCode * ic)
 
   needpulla = pushRegIfSurv (m6502_reg_a);
 
-  while (size--)
+  for(offset=0; offset<size; offset++)
     {
-      if (earlystore && offset == 1)
-	m6502_pullReg (m6502_reg_a);
-      else
-	loadRegFromAop (m6502_reg_a, AOP(left), offset);
-      if (init_carry)
-	emitSetCarry(0);
+      loadRegFromAop (m6502_reg_a, AOP(left), offset);
+
 
       if (!opskip || AOP_TYPE (right) != AOP_LIT || (byteOfVal (AOP (right)->aopu.aop_lit, offset) != 0x00) )
 	{
+          if (init_carry)
+	    emitSetCarry(0);
+
 	  accopWithAop ("adc", AOP(right), offset);
-	  if (!size && maskedtopbyte)
-	    emit6502op ("and", IMMDFMT, topbytemask);
 	  opskip = false;
 	}
-      if (size && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+      else
+        emitComment (TRACEGEN|VVDBG, "  %s - opskip offset=%d", __func__, offset);
+
+      if ( (offset==size-1) && maskedtopbyte)
+	emit6502op ("and", IMMDFMT, topbytemask);
+
+      if ( offset==0 && IS_AOP_XA (AOP(result)) )
 	{
+	  emitComment (TRACEGEN|VVDBG, "  %s - push offset=%d", __func__, offset);
 	  m6502_pushReg (m6502_reg_a, true);
-	  delayedstore = true;
+          if(needpulla)
+            emitcode("ERROR", " %s - needpulla && delayedstore == true ", __func__);
+	  needpulla = true;
 	}
       else
 	{
+	  emitComment (TRACEGEN|VVDBG, "  %s - store offset=%d", __func__, offset);
 	  storeRegToAop (m6502_reg_a, AOP (result), offset);
 	}
-      offset++;
+
       m6502_freeReg (m6502_reg_a);
       if (!opskip)
 	init_carry = false;
     }
-  if (delayedstore)
-    m6502_pullReg (m6502_reg_a);
 
   pullOrFreeReg (m6502_reg_a, needpulla);
-
-  wassert (!earlystore || !delayedstore);
 
  release:
   freeAsmop (left, NULL);
