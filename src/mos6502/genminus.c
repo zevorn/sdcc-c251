@@ -180,10 +180,10 @@ m6502_genMinus (iCode * ic)
   operand *result = IC_RESULT (ic);
 
   bool init_carry = true;
-  int size, offset = 0;
+  int size, offset;
   bool needpulla = false;
-  bool earlystore = false;
-  bool delayedstore = false;
+  //  bool earlystore = false;
+  //  bool delayedstore = false;
 
   sym_link *resulttype = operandType (IC_RESULT (ic));
   unsigned topbytemask = (IS_BITINT (resulttype) && SPEC_USIGN (resulttype) && (SPEC_BITINTWIDTH (resulttype) % 8)) ?
@@ -271,14 +271,10 @@ m6502_genMinus (iCode * ic)
       goto release;
     }
 
-  needpulla = storeRegTempIfSurv (m6502_reg_a);
+  needpulla = pushRegIfSurv (m6502_reg_a);
 
-  while (size--)
+  for(offset=0; offset<size; offset++)
     {
-      if (earlystore &&
-	  (AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx == A_IDX ||
-	   AOP_TYPE (right) == AOP_REG && AOP (right)->aopu.aop_reg[offset]->rIdx == A_IDX))
-	m6502_pullReg (m6502_reg_a);
       if (AOP_TYPE (right) == AOP_REG && AOP (right)->aopu.aop_reg[offset]->rIdx == A_IDX)
 	{
 	  storeRegTemp (m6502_reg_a, true);
@@ -299,28 +295,28 @@ m6502_genMinus (iCode * ic)
 
 	  accopWithAop ("sbc", AOP(right), offset);
 	}
-      if (!size && maskedtopbyte)
+
+      if ( (offset==size-1) && maskedtopbyte)
 	emit6502op ("and", IMMDFMT, topbytemask);
-      if (size && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+
+      if ( offset==0 && IS_AOP_XA (AOP(result)) )
 	{
-	  emitComment (TRACEGEN|VVDBG, "    - push");
+	  emitComment (TRACEGEN|VVDBG, "  %s - push offset=%d", __func__, offset);
 	  m6502_pushReg (m6502_reg_a, true);
-	  delayedstore = true;
+          if(needpulla)
+            emitcode("ERROR", " %s - needpulla && delayedstore == true ", __func__);
+	  needpulla = true;
 	}
       else
 	{
-	  emitComment (TRACEGEN|VVDBG, "    - store");
+	  emitComment (TRACEGEN|VVDBG, "  %s - store offset=%d", __func__, offset);
 	  storeRegToAop (m6502_reg_a, AOP (result), offset);
 	}
-      offset++;
+
       init_carry = false;
     }
-  if(delayedstore)
-    m6502_pullReg (m6502_reg_a);
 
-  loadOrFreeRegTemp (m6502_reg_a, needpulla);
-
-  wassert (!earlystore || !delayedstore);
+  pullOrFreeReg (m6502_reg_a, needpulla);
 
  release:
   freeAsmop (left, NULL);

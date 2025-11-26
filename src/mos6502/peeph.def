@@ -473,6 +473,28 @@ replace restart {
 	ldy	%2
 } if notSame(%1 'tya' 'phy'), notVolatile(%3)
 
+replace restart {
+	lda	%1
+	ldy	%2
+        tya
+} by {
+	; Peephole load 14 - removed dead lda
+	ldy	%2
+        tya
+} if notVolatile(%1)
+
+replace restart {
+	ldy	%2
+        tya
+        %1	%3
+        tay
+} by {
+	; Peephole acc op 1 - changed ldy/tya to lda
+	lda	%2
+        %1	%3
+        tay
+} if same(%1 'and' 'ora' 'eor' 'adc' 'sbc')
+
 ////////////////////////////////////////////////////////
 // Remove dead register operation/transfers
 ////////////////////////////////////////////////////////
@@ -534,11 +556,29 @@ replace restart {
 }
 
 replace restart {
+	tax
+	ldy %1
+	txa
+} by {
+        ldy %1
+	tax
+	; Peephole regop 7a - removed redundant txa
+}
+
+replace restart {
 	tay
 	tya
 } by {
 	tay
 	; Peephole regop 8 - removed redundant tya preceded by tay
+}
+
+replace restart {
+	tya
+	tay
+} by {
+	tya
+	; Peephole regop 8a - removed redundant tay preceded by tya
 }
 
 replace restart {

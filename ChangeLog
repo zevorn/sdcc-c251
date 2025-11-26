@@ -1,3 +1,20 @@
+2025-11-25 Benedikt Freisen <b.freisen AT gmx.net>
+
+	* device/include/stddef.h,
+	  doc/sdccman.lyx,
+	  support/regression/tests/containerof.c:
+	  Add the containerof macro (C2y, N3398).
+
+2025-11-23 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genplus.c,
+	  src/mos6502/genminus.c:
+	  Refactor m6502_genPlus() and m6502_genMinus().
+	* src/mos6502/peeph.def:
+	  Peephole rules to improve fastSaveA() and fastRestoreA().
+	* src/mos6502/gen.c:
+	  genCmp() improvements.
+
 2025-11-23 Benedikt Freisen <b.freisen AT gmx.net>
 
 	* doc/sdccman.lyx,
@@ -13,23 +30,23 @@
 
 2025-11-22 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/peeph.def:
-  	  Added more peephole rules to remove dead loads.
-   	* src/mos6502/genrshift.c,
-  	  src/mos6502/genlshift.c,
-  	  src/mos6502/genplus.c,
-  	  src/mos6502/genminus.c:
-  	  Cosmetic changes.
-   	* src/mos6502/tempops.c:
-   	  Improve tempops debugging messages.
-   	* src/mos6502/gen.c:
-   	  Refactor genUminusFloat().
-   	* src/mos6502/gen.c,
-   	  src/mos6502/gen.h,
-   	  src/mos6502/genlshift.c,
-   	  src/mos6502/tempops.c:
-   	  Add fastSaveA() and fastRestoreA().
-  	  
+	* src/mos6502/peeph.def:
+	  Added more peephole rules to remove dead loads.
+	* src/mos6502/genrshift.c,
+	  src/mos6502/genlshift.c,
+	  src/mos6502/genplus.c,
+	  src/mos6502/genminus.c:
+	  Cosmetic changes.
+	* src/mos6502/tempops.c:
+	  Improve tempops debugging messages.
+	* src/mos6502/gen.c:
+	  Refactor genUminusFloat().
+	* src/mos6502/gen.c,
+	  src/mos6502/gen.h,
+	  src/mos6502/genlshift.c,
+	  src/mos6502/tempops.c:
+	  Add fastSaveA() and fastRestoreA().
+
 2025-11-21 Janko Stamenović
 
 	* sdas/asgb/gb.h
@@ -41,22 +58,22 @@
 
 2025-11-21 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/genrshift.c,
-  	  src/mos6502/genlshift.c:
-  	  Optimize right/left shift 16-bit values by 1.
-  	* src/mos6502/peeph.def:
-  	  Added several peephole rules to remove dead loads.
-  	 	  
+	* src/mos6502/genrshift.c,
+	  src/mos6502/genlshift.c:
+	  Optimize right/left shift 16-bit values by 1.
+	* src/mos6502/peeph.def:
+	  Added several peephole rules to remove dead loads.
+
 2025-11-20 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/stackops.c,
-  	  src/mos6502/genlshift.c,
-  	  src/mos6502/genplus.c,
-  	  src/mos6502/genminus.c,
-  	  src/mos6502/gen.h,
-  	  src/mos6502/gen.c:
-  	  Partial fix for bug #3851.
-  	  
+	* src/mos6502/stackops.c,
+	  src/mos6502/genlshift.c,
+	  src/mos6502/genplus.c,
+	  src/mos6502/genminus.c,
+	  src/mos6502/gen.h,
+	  src/mos6502/gen.c:
+	  Partial fix for bug #3851.
+
 2025-11-20 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/scripts/sdcc.nsi:
@@ -64,33 +81,33 @@
 
 2025-11-19 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/ralloc.c,
-  	  src/mos6502/gen.c:
-  	  Improve register tracking.
-  	  
+	* src/mos6502/ralloc.c,
+	  src/mos6502/gen.c:
+	  Improve register tracking.
+
 2025-11-18 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/lib/mos6502/fabsf.s:
-  	  Use ZP addressing to store fabs result.
-  	* src/mos6502/gen.c,
-  	  support/regression/fwk/lib/testfwk.c:
-      Fix bug #3863
+	* device/lib/mos6502/fabsf.s:
+	  Use ZP addressing to store fabs result.
+	* src/mos6502/gen.c,
+	  support/regression/fwk/lib/testfwk.c:
+	  Fix bug #3863
 
 2025-11-16 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c,
-  	  src/mos6502/main.c:
-  	  Implement 8-bit rotate with constant.
-  	* src/mos6502/genplus.c,
-  	  src/mos6502/genlshift.c,
-  	  src/mos6502/genrshift.c:
-  	  Fix unused variable warnings.
-  	* src/mos6502/gen.c,
-  	  src/mos6502/main.c:
-  	  Implement generic rotate with constant.
-   	* src/mos6502/genplus.c,
-  	  src/mos6502/genminus.c:
-  	  Optimize genPlusInc and genMinusDec.
+	* src/mos6502/gen.c,
+	  src/mos6502/main.c:
+	  Implement 8-bit rotate with constant.
+	* src/mos6502/genplus.c,
+	  src/mos6502/genlshift.c,
+	  src/mos6502/genrshift.c:
+	  Fix unused variable warnings.
+	* src/mos6502/gen.c,
+	  src/mos6502/main.c:
+	  Implement generic rotate with constant.
+	* src/mos6502/genplus.c,
+	  src/mos6502/genminus.c:
+	  Optimize genPlusInc and genMinusDec.
 
 2025-11-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -162,12 +179,12 @@
 
 2025-11-11 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/genrshift.c:
-  	  Don't allow A to be a count register.
-   	* src/mos6502/genrshift.c,
-  	  src/mos6502/genlshift.c:
-  	  Refactor right and left shifts.
-  	
+	* src/mos6502/genrshift.c:
+	  Don't allow A to be a count register.
+	* src/mos6502/genrshift.c,
+	  src/mos6502/genlshift.c:
+	  Refactor right and left shifts.
+
 2025-11-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* aclocal.m4,
@@ -189,22 +206,22 @@
 
 2025-11-10 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c,
-  	  src/mos6502/gen.h:
-  	  Keep literal 0 in Y when possible.
-  	* src/mos6502/gen.c,
-  	  src/mos6502/gen.h,
-  	  src/mos6502/genand.c,
-  	  src/mos6502/genminus.c,
-  	  src/mos6502/genor.c,
-  	  src/mos6502/genplus.c,
-  	  src/mos6502/genxor.c,
-  	  src/mos6502/genlshift.c,
-  	  src/mos6502/genrshift.c:
-  	  Partial fix for bug #3851.
-   	* src/mos6502/genlshift.c,
-  	  src/mos6502/genrshift.c:
-  	  Left shift optimizations.
+	* src/mos6502/gen.c,
+	  src/mos6502/gen.h:
+	  Keep literal 0 in Y when possible.
+	* src/mos6502/gen.c,
+	  src/mos6502/gen.h,
+	  src/mos6502/genand.c,
+	  src/mos6502/genminus.c,
+	  src/mos6502/genor.c,
+	  src/mos6502/genplus.c,
+	  src/mos6502/genxor.c,
+	  src/mos6502/genlshift.c,
+	  src/mos6502/genrshift.c:
+	  Partial fix for bug #3851.
+	* src/mos6502/genlshift.c,
+	  src/mos6502/genrshift.c:
+	  Left shift optimizations.
 
 2025-11-10 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -238,11 +255,11 @@
 
 2025-11-08 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/genrshift.c:
-  	  Fix bug #3786.
-  	* src/mos6502/genrshift.c,
-  	  src/mos6502/genlshift.c:
-  	  Small cosmetic cleanup.
+	* src/mos6502/genrshift.c:
+	  Fix bug #3786.
+	* src/mos6502/genrshift.c,
+	  src/mos6502/genlshift.c:
+	  Small cosmetic cleanup.
 
 2025-11-08 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -1145,7 +1162,7 @@
 	  Make pdk13 behave like other pdk wrt. build of __muluchar.
 	* device/lib/pdk13/heap.s:
 	  Reduce pdk13 default heap size to 16B.
-	  
+
 2025-08-09 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* .version,
@@ -1749,202 +1766,202 @@
 
 2025-05-23 Gabriele Gorla <gorlik@yahoo.com>
 
-   	* src/mos6502/peeph.def:
-   	  Improve load after load and store after store rules.
- 	* src/mos6502/stackops.c:
- 	  Implement multiple code paths for adjustStack and select the fastest.
-   	* src/mos6502/gen.c:   	
-   	  save A only when sendSet is not empty.
-   	  
+	* src/mos6502/peeph.def:
+	  Improve load after load and store after store rules.
+	* src/mos6502/stackops.c:
+	  Implement multiple code paths for adjustStack and select the fastest.
+	* src/mos6502/gen.c:
+	  save A only when sendSet is not empty.
+
 2025-05-21 Gabriele Gorla <gorlik@yahoo.com>
 
-   	* src/mos6502/gen.h,
-   	  src/mos6502/gen.c,
-   	  src/mos6502/genand.c,
-   	  src/mos6502/genor.c,
-   	  src/mos6502/genxor.c,
-   	  src/mos6502/genplus.c,
-   	  src/mos6502/genminus.c,
-   	  src/mos6502/genlshift.c,
-  	  src/mos6502/genrshift.c,
-   	  src/mos6502/stackops.c,
-   	  src/mos6502/tempops.c:
-   	  Code refactoring to improve maintainability.
- 	* src/mos6502/gen.c,
-   	  src/mos6502/genplus.c,
-   	  src/mos6502/genminus.c:
-   	  genPlus and genMinus improvements.
-   	  
+	* src/mos6502/gen.h,
+	  src/mos6502/gen.c,
+	  src/mos6502/genand.c,
+	  src/mos6502/genor.c,
+	  src/mos6502/genxor.c,
+	  src/mos6502/genplus.c,
+	  src/mos6502/genminus.c,
+	  src/mos6502/genlshift.c,
+	  src/mos6502/genrshift.c,
+	  src/mos6502/stackops.c,
+	  src/mos6502/tempops.c:
+	  Code refactoring to improve maintainability.
+	* src/mos6502/gen.c,
+	  src/mos6502/genplus.c,
+	  src/mos6502/genminus.c:
+	  genPlus and genMinus improvements.
+
 2025-05-20 Gabriele Gorla <gorlik@yahoo.com>
 
-   	* src/mos6502/gen.c:
-   	  genRightShift improvements.
-   	  
+	* src/mos6502/gen.c:
+	  genRightShift improvements.
+
 2025-05-19 Gabriele Gorla <gorlik@yahoo.com>
 
-   	* src/mos6502/gen.c:
-   	  Additional DPTR optimizations.
+	* src/mos6502/gen.c:
+	  Additional DPTR optimizations.
 
 2025-05-16 Gabriele Gorla <gorlik@yahoo.com>
 
-   	* src/mos6502/gen.c:
-   	  Small genPointerGet improvement.
+	* src/mos6502/gen.c:
+	  Small genPointerGet improvement.
 
 2025-05-15 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/peeph.def:
-  	  Remove dead XY rule. Add genPlus/Minus optimization.
-   	* src/mos6502/gen.c:
-   	  Enable tracking of regTemp loads/stores.
-  	  Enable tracking of other regTemp operations.
-  	  
+	* src/mos6502/peeph.def:
+	  Remove dead XY rule. Add genPlus/Minus optimization.
+	* src/mos6502/gen.c:
+	  Enable tracking of regTemp loads/stores.
+	  Enable tracking of other regTemp operations.
+
 2025-05-13 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/lib/mos65c02/_strlen.s,
-  	  device/lib/mos65c02/strlen.s,
-  	  device/lib/mos65c02/memcpy.s,
-  	  device/lib/mos65c02/strcmp.s,
-  	  device/lib/mos65c02/_setjmp.s,
-  	  device/lib/mos65c02/_mullong.s,
-  	  device/lib/mos65c02/_milint.s,
-  	  device/lib/mos65c02/memcpy.s:
-  	  Update mos65c02 library based on mos6502 improvements.
-  	* device/lib/mos6502/_setjmp.s,
-  	  device/lib/mos6502/_fsmul.s:
-  	  Minor cleanup.
-  	* src/mos6502/gen.c:
-  	  Improve handling of volatile in loadRegFromAop().
-  	  Improve register selection in genPointerSet().
-  	
+	* device/lib/mos65c02/_strlen.s,
+	  device/lib/mos65c02/strlen.s,
+	  device/lib/mos65c02/memcpy.s,
+	  device/lib/mos65c02/strcmp.s,
+	  device/lib/mos65c02/_setjmp.s,
+	  device/lib/mos65c02/_mullong.s,
+	  device/lib/mos65c02/_milint.s,
+	  device/lib/mos65c02/memcpy.s:
+	  Update mos65c02 library based on mos6502 improvements.
+	* device/lib/mos6502/_setjmp.s,
+	  device/lib/mos6502/_fsmul.s:
+	  Minor cleanup.
+	* src/mos6502/gen.c:
+	  Improve handling of volatile in loadRegFromAop().
+	  Improve register selection in genPointerSet().
+
 2025-05-12 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/lib/mos6502/_fslt.s,
-  	  device/lib/mos6502/_fslib.s:
-  	  Implement fslt in assembly.
-  	* device/lib/mos65c02/_temp.s,
-  	  device/lib/mos65c02/_ret4567.s,
-  	  device/lib/mos65c02/_ret23.s,
-  	  device/lib/mos65c02/_ret01.s,
-  	  device/lib/mos65c02/_dptr.s,
-   	  device/lib/mos6502/__sdcc_regs.s,
-   	  device/lib/mos6502/Makefile.in,   	  
-  	  device/lib/mos6502-stack-auto/_temp.s,
-  	  device/lib/mos6502-stack-auto/_ret4567.s,
-  	  device/lib/mos6502-stack-auto/_ret23.s,
-  	  device/lib/mos6502-stack-auto/_ret01.s,
-  	  device/lib/mos6502-stack-auto/_dptr.s,
-   	  device/lib/mos6502-stack-auto/__sdcc_regs.s,
-   	  device/lib/mos6502-stack-auto/Makefile.in:
-   	  Reduce mos65c02 and mos6502-stack-auto ZP footprint.
- 	
+	* device/lib/mos6502/_fslt.s,
+	  device/lib/mos6502/_fslib.s:
+	  Implement fslt in assembly.
+	* device/lib/mos65c02/_temp.s,
+	  device/lib/mos65c02/_ret4567.s,
+	  device/lib/mos65c02/_ret23.s,
+	  device/lib/mos65c02/_ret01.s,
+	  device/lib/mos65c02/_dptr.s,
+	  device/lib/mos6502/__sdcc_regs.s,
+	  device/lib/mos6502/Makefile.in,
+	  device/lib/mos6502-stack-auto/_temp.s,
+	  device/lib/mos6502-stack-auto/_ret4567.s,
+	  device/lib/mos6502-stack-auto/_ret23.s,
+	  device/lib/mos6502-stack-auto/_ret01.s,
+	  device/lib/mos6502-stack-auto/_dptr.s,
+	  device/lib/mos6502-stack-auto/__sdcc_regs.s,
+	  device/lib/mos6502-stack-auto/Makefile.in:
+	  Reduce mos65c02 and mos6502-stack-auto ZP footprint.
+
 2025-05-10 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c:
-  	  Save A in genPointerSet only when necessary.
-  	  Restore registers from DPTR when possible in genPointerSet.
-   	* src/mos6502/peeph.def:
-  	  Transform lda+tax+lda into ldx+lda.
+	* src/mos6502/gen.c:
+	  Save A in genPointerSet only when necessary.
+	  Restore registers from DPTR when possible in genPointerSet.
+	* src/mos6502/peeph.def:
+	  Transform lda+tax+lda into ldx+lda.
 
 2025-05-09 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c:
-  	  Prefer X over Y for getFreeReg.
-  	* src/mos6502/peeph.def:
-  	  Fix Bug-3090 regression.
-  	  
+	* src/mos6502/gen.c:
+	  Prefer X over Y for getFreeReg.
+	* src/mos6502/peeph.def:
+	  Fix Bug-3090 regression.
+
 2025-05-06 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c:
-  	  More DPTR optimizations.
-  	  
+	* src/mos6502/gen.c:
+	  More DPTR optimizations.
+
 2025-05-04 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c:
-  	  Improve genMinusDec.
-  	  Skip writing to DPTR if it already has the correct value.
-  	  Additional genMinusDec improvements.
-  	  Renamed several variables in genPointerSet.
-  	  Allow register tracking on partial DPTR.
+	* src/mos6502/gen.c:
+	  Improve genMinusDec.
+	  Skip writing to DPTR if it already has the correct value.
+	  Additional genMinusDec improvements.
+	  Renamed several variables in genPointerSet.
+	  Allow register tracking on partial DPTR.
 
 2025-05-03 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/lib/mos6502/Makefile.in:
-  	  Fixed build warning.
-   	* src/mos6502/gen.h:
-   	  Change REGTEMP size to 6
-  	* support/regression/tests/float_single.c.in:
-  	  Fix host regression failures.
-  	
+	* device/lib/mos6502/Makefile.in:
+	  Fixed build warning.
+	* src/mos6502/gen.h:
+	  Change REGTEMP size to 6
+	* support/regression/tests/float_single.c.in:
+	  Fix host regression failures.
+
 2025-04-26 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/lib/mos6502/_fslib.s,
-  	  device/lib/mos6502/_fsadd.s,
-  	  device/lib/mos6502/_fsmul.s,
-  	  device/lib/mos6502/Makefile.in,
-  	  support/regression/tests/bug1805702.c:
-  	  Implement _fsmul in assembly. Separate common fp code in _fslib.s.
-  	* device/lib/mos6502/memcpy.s:
-  	  Change to more readable labels.
-  	* device/lib/mos6502/__sdcc_regs.s,
-  	  device/lib/mos6502/_temp.s,
-  	  device/lib/mos6502/_dptr.s,
-  	  device/lib/mos6502/_ret01.s,
-  	  device/lib/mos6502/_ret23.s,
-  	  device/lib/mos6502/_ret4567.s,
-  	  device/lib/mos6502/Makefile.in:
-  	  Combine internal registers to save ZP space.
-   	* device/lib/mos6502/fabsf.s:
-   	  Implement fabsf in assembly.
+	* device/lib/mos6502/_fslib.s,
+	  device/lib/mos6502/_fsadd.s,
+	  device/lib/mos6502/_fsmul.s,
+	  device/lib/mos6502/Makefile.in,
+	  support/regression/tests/bug1805702.c:
+	  Implement _fsmul in assembly. Separate common fp code in _fslib.s.
+	* device/lib/mos6502/memcpy.s:
+	  Change to more readable labels.
+	* device/lib/mos6502/__sdcc_regs.s,
+	  device/lib/mos6502/_temp.s,
+	  device/lib/mos6502/_dptr.s,
+	  device/lib/mos6502/_ret01.s,
+	  device/lib/mos6502/_ret23.s,
+	  device/lib/mos6502/_ret4567.s,
+	  device/lib/mos6502/Makefile.in:
+	  Combine internal registers to save ZP space.
+	* device/lib/mos6502/fabsf.s:
+	  Implement fabsf in assembly.
 
 2025-04-22 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c:
-  	  Fix regression failures in mos6502_stack-auto introduced by register tracking.
-  	  
+	* src/mos6502/gen.c:
+	  Fix regression failures in mos6502_stack-auto introduced by register tracking.
+
 2025-04-21 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/lib/mos6502/_mullong.s:
-  	  Reimplement mullong.
+	* device/lib/mos6502/_mullong.s:
+	  Reimplement mullong.
 
 2025-04-20 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/include/string.h:
-  	  Add intrinsic named address space to library functions implemented in asm.
-  	* support/regression/tests/float_single.c.in:
-  	  Add support for non-reentrant float library.
-  	* device/include/math.h:
-  	  Make the math library non-reentrant by default on mos6502/65c02 and HC08/S08.
+	* device/include/string.h:
+	  Add intrinsic named address space to library functions implemented in asm.
+	* support/regression/tests/float_single.c.in:
+	  Add support for non-reentrant float library.
+	* device/include/math.h:
+	  Make the math library non-reentrant by default on mos6502/65c02 and HC08/S08.
 
 2025-04-17 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c:
-  	  Improved DPTR tracking and cleanup genPointerGet.
+	* src/mos6502/gen.c:
+	  Improved DPTR tracking and cleanup genPointerGet.
 
 2025-04-11 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c:
-  	  Fix issue in genPointerGet when both left and result are XA.
+	* src/mos6502/gen.c:
+	  Fix issue in genPointerGet when both left and result are XA.
 
 2025-04-06 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c:
-  	  Try to keep 0 in Y when possible.
- 
+	* src/mos6502/gen.c:
+	  Try to keep 0 in Y when possible.
+
 2025-04-05 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/lib/mos6502/_mulint.s:
-  	  Minor mulint improvement.
-  	* src/mos6502/gen.c:
+	* device/lib/mos6502/_mulint.s:
+	  Minor mulint improvement.
+	* src/mos6502/gen.c:
 	  Add tracking for XA register.
 	  Cleanup literal register debug printing.
 	  Additional register tracking.
-   	* src/mos6502/peeph.def:
-   	  Remove several rules made obsolete by register tracking.
+	* src/mos6502/peeph.def:
+	  Remove several rules made obsolete by register tracking.
 
 2025-03-23 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/lib/mos6502/_mulint.s:
-  	  Reimplement mulint.
+	* device/lib/mos6502/_mulint.s:
+	  Reimplement mulint.
 
 2025-03-29 Benedikt Freisen <b.freisen AT gmx.net>
 
@@ -1958,31 +1975,31 @@
 
 2025-03-23 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* device/lib/mos6502/_strcmp.s,
-  	  device/lib/mos6502/_strrchr.s:
-  	  Small strcmp and strrchr in fixes.
-   	* device/lib/_fsadd.c:
-   	  Remove redundant sign check.
-  	* device/lib/mos6502/_fsadd.s,
-  	  device/lib/mos6502/_fssub.s:
-  	  Implement fsadd and fssub in assembly.
-  	* src/mos6502/gen.c:
-  	  Restore regs from DPTR in genPointerGet.
-  	  Enable XA=A+op optimization in genPlus.
-  	* src/mos6502/peeph.def:
-  	  Add several new rules.
+	* device/lib/mos6502/_strcmp.s,
+	  device/lib/mos6502/_strrchr.s:
+	  Small strcmp and strrchr in fixes.
+	* device/lib/_fsadd.c:
+	  Remove redundant sign check.
+	* device/lib/mos6502/_fsadd.s,
+	  device/lib/mos6502/_fssub.s:
+	  Implement fsadd and fssub in assembly.
+	* src/mos6502/gen.c:
+	  Restore regs from DPTR in genPointerGet.
+	  Enable XA=A+op optimization in genPlus.
+	* src/mos6502/peeph.def:
+	  Add several new rules.
 
 2025-03-22 Gabriele Gorla <gorlik@yahoo.com>
 
 	* src/mos6502/gen.c:
 	  Improve genCmpEQorNE.
 	  Implement DPTR tracking.
-  	* device/lib/mos6502/strlen.s,
-  	  device/lib/mos6502/_strlen.s:
-  	  Fix incorrect file name.
-  	* device/lib/mos6502/_strchr.s,
-  	  device/lib/mos6502/_strrchr.s:
-  	  Implement strchr and strrchr in assembly.
+	* device/lib/mos6502/strlen.s,
+	  device/lib/mos6502/_strlen.s:
+	  Fix incorrect file name.
+	* device/lib/mos6502/_strchr.s,
+	  device/lib/mos6502/_strrchr.s:
+	  Implement strchr and strrchr in assembly.
 
 2025-03-21 Gabriele Gorla <gorlik@yahoo.com>
 
@@ -11518,83 +11535,82 @@
 	  src/z80/main.c:
 	  Calling convention selection infrastructure from breaktheworld branch.
 
-2021/07/28 Visenri
+2021-07-28 Visenri
 
-    * sim/ucsim/pdk.src/inst.cc
-    Fix bug in pdk15 simulation (introduced in [r12557]).
+	* sim/ucsim/pdk.src/inst.cc:
+	  Fix bug in pdk15 simulation (introduced in [r12557]).
 
-2021/07/28 Visenri
+2021-07-28 Visenri
 
-    * support/regression/compact-results.py
-      Fix parsing of test name.
+	* support/regression/compact-results.py:
+	  Fix parsing of test name.
 
-2021/07/27 Visenri
+2021-07-27 Visenri
 
-    * src/pdk/gen.c
-      support/regression/tests/getbyte_param.c
-      Fix bug #3269.
-      Add test for it.
+	* src/pdk/gen.c,
+	  support/regression/tests/getbyte_param.c:
+	  Fix bug #3269.
+	  Add test for it.
 
-2021/07/26 Visenri
+2021-07-26 Visenri
 
-    * support/regression/Makefile.in
-      support/regression/ports/pdk13
-      support/regression/ports/pdk13/spec.mk
-      support/regression/ports/pdk13/support.c
-      support/regression/ports/pdk13/uCsim.cmd
-      Added infrastructure to test pdk13.
-      It is in the filter-out list to avoid automatic test, because many tests still need some work to be passed/skipped [#394].
+	* support/regression/Makefile.in,
+	  support/regression/ports/pdk13,
+	  support/regression/ports/pdk13/spec.mk,
+	  support/regression/ports/pdk13/support.c,
+	  support/regression/ports/pdk13/uCsim.cmd:
+	  Added infrastructure to test pdk13.
+	  It is in the filter-out list to avoid automatic test, because many tests still need some work to be passed/skipped [#394].
 
-2021/07/26 Visenri
+2021-07-26 Visenri
 
-    * support/regression/fwk/include/testfwk.h
-      support/regression/fwk/lib/testfwk.c
-      Lightweight version of test framework (testfwk) [#393].
-      Added new macro to indicate we are targeting a very low memory device: TARGET_VERY_LOW_MEMORY.
-      Added macros to easy the check of all pdk variants with 1 or 2 checks [#394].
-      Different implementation of __printd with hex output (for TARGET_VERY_LOW_MEMORY).
-      Skipped some strings in "Summary" output to save memory (for TARGET_VERY_LOW_MEMORY).
+	* support/regression/fwk/include/testfwk.h,
+	  support/regression/fwk/lib/testfwk.c:
+	  Lightweight version of test framework (testfwk) [#393].
+	  Added new macro to indicate we are targeting a very low memory device: TARGET_VERY_LOW_MEMORY.
+	  Added macros to easy the check of all pdk variants with 1 or 2 checks [#394].
+	  Different implementation of __printd with hex output (for TARGET_VERY_LOW_MEMORY).
+	  Skipped some strings in "Summary" output to save memory (for TARGET_VERY_LOW_MEMORY).
 
-2021/07/26 Visenri
+2021-07-26 Visenri
 
-    * support/regression/collate-results.py
-      support/regression/compact-results.py
-      Added processing for the stack overflow message from simulator.
-      Added new check to reset state machine and name with "Simulation started" string
-      Added checks to validate the name after "--- Running", because sometimes we get garbage, because of caotic program behavior (due to stack overflow or wrong code).
-      Added the possibility to parse hex values instead of decimal [#393].
-      Better output in case of a catastrophic failure ("--- Summary" not found).
-      Fixed wrong regular expression to find ".ihx" file.
+	* support/regression/collate-results.py,
+	  support/regression/compact-results.py:
+	  Added processing for the stack overflow message from simulator.
+	  Added new check to reset state machine and name with "Simulation started" string
+	  Added checks to validate the name after "--- Running", because sometimes we get garbage, because of caotic program behavior (due to stack overflow or wrong code).
+	  Added the possibility to parse hex values instead of decimal [#393].
+	  Better output in case of a catastrophic failure ("--- Summary" not found).
+	  Fixed wrong regular expression to find ".ihx" file.
 
-2021/07/26 Visenri
+2021-07-26 Visenri
 
-    * sdas/aspdk13/pdk13mch.c
-      sdas/aspdk13/pdk13pst.c
-      sdas/aspdk14/pdk14mch.c
-      sdas/aspdk14/pdk14pst.c
-      sdas/aspdk15/pdk15mch.c
-      sdas/aspdk15/pdk15pst.c
-      sdas/aspdk16/pdk16mch.c
-      sdas/aspdk16/pdk16pst.c
-      sdas/aspdk/pdk.h
-      sdas/aspdk/pdkadr.c
-      sdas/aspdk/pdkmch.c
-      Added assembler support for new pdk .io mnemonics (bug #3259).
+	* sdas/aspdk13/pdk13mch.c,
+	  sdas/aspdk13/pdk13pst.c,
+	  sdas/aspdk14/pdk14mch.c,
+	  sdas/aspdk14/pdk14pst.c,
+	  sdas/aspdk15/pdk15mch.c,
+	  sdas/aspdk15/pdk15pst.c,
+	  sdas/aspdk16/pdk16mch.c,
+	  sdas/aspdk16/pdk16pst.c,
+	  sdas/aspdk/pdk.h,
+	  sdas/aspdk/pdkadr.c,
+	  sdas/aspdk/pdkmch.c:
+	  Added assembler support for new pdk .io mnemonics (bug #3259).
+	* src/pdk/gen.c,
+	  src/pdk/main.c,
+	  src/pdk/peep.c,
+	  src/pdk/peeph.def:
+	  Updated compiler generated assembly and rules according to new pdk .io mnemonics
 
-    * src/pdk/gen.c
-      src/pdk/main.c
-      src/pdk/peep.c
-      src/pdk/peeph.def
-      Updated compiler generated assembly and rules according to new pdk .io mnemonics
+2021-07-26 Visenri
 
-2021/07/26 Visenri
-
-    * sim/ucsim/pdk.src/inst.cc
-    * sim/ucsim/pdk.src/instcl.h
-    * sim/ucsim/sim.src/sim.cc
-      Added support for stack overflow detection.
-      Fixed wrong order of output to stdout when program is stopped.
-      Added newline to make sure we get a separate line for the "Stop"
+	* sim/ucsim/pdk.src/inst.cc,
+	  sim/ucsim/pdk.src/instcl.h,
+	  sim/ucsim/sim.src/sim.cc:
+	  Added support for stack overflow detection.
+	  Fixed wrong order of output to stdout when program is stopped.
+	  Added newline to make sure we get a separate line for the "Stop"
 
 2021-07-25 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
@@ -11619,19 +11635,19 @@
 
 2021-07-16 Visenri
 
-    * src/SDCC.lex
-      src/SDCC.y
-      Added builtins: "__builtin_rlc", "__builtin_rrc" & "__builtin_swap".
-      These functions will allow swap and rotate operations with volatile variables.
-    * src/SDCCast.c
-      src/SDCCsymt.c
-      src/SDCCsymt.h
-      src/SDCCval.c
-      src/SDCCval.h
-      Support for conditional type reduction (patch #392) for optimized values to 0.
-      Fixed size calculation for ptrdiff type.
-      Fixed int promotion for shift operations: using only left operand.
-      Added checks for side effects or volatility in optimizeRRCRLC (like optimizeSWAP, bug #3218)
+	* src/SDCC.lex,
+	  src/SDCC.y:
+	  Added builtins: "__builtin_rlc", "__builtin_rrc" & "__builtin_swap".
+	  These functions will allow swap and rotate operations with volatile variables.
+	* src/SDCCast.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/SDCCval.c,
+	  src/SDCCval.h:
+	  Support for conditional type reduction (patch #392) for optimized values to 0.
+	  Fixed size calculation for ptrdiff type.
+	  Fixed int promotion for shift operations: using only left operand.
+	  Added checks for side effects or volatility in optimizeRRCRLC (like optimizeSWAP, bug #3218)
 
 2021-07-13 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
@@ -11672,20 +11688,20 @@
 	  Fix bug #3262.
 
 2021-07-05 Visenri
-    * src/pic14/glue.c
-      src/pic16/glue.c
-      src/SDCCast.c
-      src/SDCCast.h
-      src/SDCCglue.c
-      src/SDCCicode.c
-      src/SDCCval.c
-      src/SDCCval.h
-      Implemented partial support for conditional type reduction (patch #392), for now only used by SIZEOF.
-      OR - XOR type reduction optimization (patch #392).
-    * support/regression/fwk/include/testfwk.h
-      support/regression/tests/sizeof.c
-      Removed empty definition of __data for pdk from testfwk.h.
-      Added tests for SIZEOF operator.
+	* src/pic14/glue.c,
+	  src/pic16/glue.c,
+	  src/SDCCast.c,
+	  src/SDCCast.h,
+	  src/SDCCglue.c,
+	  src/SDCCicode.c,
+	  src/SDCCval.c,
+	  src/SDCCval.h:
+	  Implemented partial support for conditional type reduction (patch #392), for now only used by SIZEOF.
+	  OR - XOR type reduction optimization (patch #392).
+	* support/regression/fwk/include/testfwk.h,
+	  support/regression/tests/sizeof.c:
+	  Removed empty definition of __data for pdk from testfwk.h.
+	  Added tests for SIZEOF operator.
 
 2021-07-04 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
@@ -12753,7 +12769,7 @@
 2021-03-16 Sergey Belyashov <sergey.belyashov@gmail.com>
 
 	* src/z80/gen.c,
-          src/z80/main.c:
+	  src/z80/main.c:
 	  Enable multibyte RRC/RLC for GBZ80.
 
 2021-03-16 Sergey Belyashov <sergey.belyashov@gmail.com>
@@ -16988,8 +17004,8 @@
 
 2019-03-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
-        * src/mcs51/gen.c: fix bug #2729
-        * support/regression/tests/bool.c: reenable test
+	* src/mcs51/gen.c: fix bug #2729
+	* support/regression/tests/bool.c: reenable test
 
 2019-03-01 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -21165,7 +21181,7 @@
 
 	* sdas/linksrc/lkbank.c
 	* sdas/linksrc/lksym.c
-          Fix a buffer overflow error in revision #9786.
+	  Fix a buffer overflow error in revision #9786.
 
 2016-10-22 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -21175,8 +21191,8 @@
 
 2016-10-22 Ben Shi <powerstudio1st AT 163 DOT com>
 
-        * sdas/linksrc/lksym.c
-          Fix a buffer overflow error in previous commit.
+	* sdas/linksrc/lksym.c
+	  Fix a buffer overflow error in previous commit.
 
 2016-10-21 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -23835,10 +23851,10 @@
 
 2015-08-15 Ben Shi <powerstudio1st AT 163 DOT com>
 
-        * src/SDCCast.c:
-          Fix a bug in storage class check.
-        * support/regression/tests/gcc-torture-execute-20020402-3.c:
-          Enable test case.
+	* src/SDCCast.c:
+	  Fix a bug in storage class check.
+	* support/regression/tests/gcc-torture-execute-20020402-3.c:
+	  Enable test case.
 
 2015-08-15 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -24543,14 +24559,14 @@
 
 2015-02-25 Ben Shi <powerstudio1st AT 163 DOT com>
 
-        * support/regression/tests/bug-2031.c:
-          Add a new test case.
-        * src/SDCCglue.c:
-        * src/SDCCval.c:
-        * src/SDCCval.h:
-        * pic16/glue.c:
-          Enable a global char/int/long variable initialized by an address
-		  (const pointer).
+	* support/regression/tests/bug-2031.c:
+	  Add a new test case.
+	* src/SDCCglue.c:
+	* src/SDCCval.c:
+	* src/SDCCval.h:
+	* pic16/glue.c:
+	  Enable a global char/int/long variable initialized by an address
+	  (const pointer).
 
 2015-02-24 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -26960,7 +26976,7 @@
 	* src/SDCCglobl.h,
 	  src/SDCCBBlock.c,
 	  src/SDCCopt.c:
-      Allow debug iCode dump after lospre.
+	  Allow debug iCode dump after lospre.
 
 2013-07-04 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -28227,7 +28243,7 @@
 2013-01-20 Molnar Karoly <molnarkaroly AT users.sf.net>
 
 	* support/scripts/mcs51-disasm.pl: Additional informations about direction
-          of the jumps.
+	  of the jumps.
 
 2013-01-20 Molnar Karoly <molnarkaroly AT users.sf.net>
 
@@ -28624,30 +28640,30 @@
 
 2012-12-23 Vaclav Peroutka <vaclavpe AT seznam.cz>
 
-   * sim/ucsim/configure
-     sim/ucsim/configure.in
-     sim/ucsim/main_in.mk
-     sim/ucsim/packages_in.mk
-     sim/ucsim/stypes.h
-     sim/ucsim/st7.src/(c).1
-     sim/ucsim/st7.src/Makefile.in
-     sim/ucsim/st7.src/clean.mk
-     sim/ucsim/st7.src/conf.mk
-     sim/ucsim/st7.src/glob.cc
-     sim/ucsim/st7.src/glob.h
-     sim/ucsim/st7.src/inst.cc
-     sim/ucsim/st7.src/instcl.h
-     sim/ucsim/st7.src/regsst7.h
-     sim/ucsim/st7.src/simst7.cc
-     sim/ucsim/st7.src/simst7cl.h
-     sim/ucsim/st7.src/sst7.cc
-     sim/ucsim/st7.src/st7.cc
-     sim/ucsim/st7.src/st7cl.h
-     sim/ucsim/st7.src/st7mac.h
-     sim/ucsim/stm8.src/inst.cc
-     sim/ucsim/stm8.src/instcl.h
-     sim/ucsim/stm8.src/stm8.cc
-     sim/ucsim/stm8.src/stm8mac.h
+	* sim/ucsim/configure,
+	  sim/ucsim/configure.in,
+	  sim/ucsim/main_in.mk,
+	  sim/ucsim/packages_in.mk,
+	  sim/ucsim/stypes.h,
+	  sim/ucsim/st7.src/(c).1,
+	  sim/ucsim/st7.src/Makefile.in,
+	  sim/ucsim/st7.src/clean.mk,
+	  sim/ucsim/st7.src/conf.mk,
+	  sim/ucsim/st7.src/glob.cc,
+	  sim/ucsim/st7.src/glob.h,
+	  sim/ucsim/st7.src/inst.cc,
+	  sim/ucsim/st7.src/instcl.h,
+	  sim/ucsim/st7.src/regsst7.h,
+	  sim/ucsim/st7.src/simst7.cc,
+	  sim/ucsim/st7.src/simst7cl.h,
+	  sim/ucsim/st7.src/sst7.cc,
+	  sim/ucsim/st7.src/st7.cc,
+	  sim/ucsim/st7.src/st7cl.h,
+	  sim/ucsim/st7.src/st7mac.h,
+	  sim/ucsim/stm8.src/inst.cc,
+	  sim/ucsim/stm8.src/instcl.h,
+	  sim/ucsim/stm8.src/stm8.cc,
+	  sim/ucsim/stm8.src/stm8mac.h:
 
 2012-12-23 Philipp Klaus Krause <pkk AT spth.de>
 
