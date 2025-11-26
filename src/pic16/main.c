@@ -1422,8 +1422,8 @@ PORT pic16_port =
   1,                /* transform != to !(a == b) */
   0,                /* leave == */
   FALSE,            /* No array initializer support. */
-  0,    //cseCostEstimation,            /* !!!no CSE cost estimation yet */
-  NULL,             /* no builtin functions */
+  0,                //cseCostEstimation,            /* !!!no CSE cost estimation yet */
+  "",               // no builtin functions
   GPOINTER,         /* treat unqualified pointers as "generic" pointers */
   true,
   false,

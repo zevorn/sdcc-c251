@@ -196,7 +196,7 @@ DECLARATOR_TYPE;
 
 typedef enum
 {
-  ARRAY_LENGTH_KNOWN_CONST = 0,     // The normal tyspe of array: [N], for some integer constant expression N.
+  ARRAY_LENGTH_KNOWN_CONST = 0,     // The normal type of array: [N], for some integer constant expression N.
   ARRAY_LENGTH_SPECIFIED,           // VLA of specified length: [n], for some expression n that is not an integer constant expression.
   ARRAY_LENGTH_UNSPECIFIED,         // VLA of unspecified length: [*],
   ARRAY_LENGTH_UNEVALUATED,         // Array of unevaluated length: [n], in a context where the expression n is not evaluated.
@@ -216,15 +216,16 @@ typedef struct declarator
 {
   DECLARATOR_TYPE dcl_type;         /* POINTER,ARRAY or FUNCTION  */
   bool dcl_type_implicitintrinsic:1;/* intrinsic named address space indicated by dcltype has been assigned implicitly. */
-  size_t num_elem;                  /* # of elems if type==array, */
-  ast *num_elem_ast;                /* ast for # of elems, used to calculate num_elem. */
+  size_t num_elem;                  // # of elems if dcl_type == ARRAY,
+  ast *num_elem_ast;                // ast for # of elems, used to calculate num_elem.
+  bool static_array_param:1;        // [static] parameter
   /* always 0 for flexible arrays */
   unsigned ptr_const:1;             /* pointer is constant        */
   unsigned ptr_volatile:1;          /* pointer is volatile        */
   unsigned ptr_restrict:1;          /* pointer is resticted       */
   bool ptr_atomic:1;                /* pointer is atomic          */
   ARRAY_LENGTH_TYPE array_length_type; // Array is known to be a VLA?
-  bool vla_check_visited:1;         // Already visited in check for VLA - implementation detail to prevent infinite recursion */
+  bool vla_check_visited:1;         // Already visited in check for VLA - implementation detail to prevent infinite recursion
   struct symbol *ptr_addrspace;     /* pointer is in named address space  */
 
   struct sym_link *tspec;           /* pointer type specifier     */
@@ -283,7 +284,7 @@ typedef struct sym_link
     unsigned z88dk_has_params_offset:1;     /* Has a parameter offset (Z80 only) */
     unsigned intno;                 /* Number of interrupt for interrupt service routine */
     short regbank;                  /* register bank 2b used                */
-    unsigned builtin;               /* is a builtin function                */
+    bool builtin;                   // is a builtin function
     unsigned javaNative;            /* is a JavaNative Function (TININative ONLY) */
     unsigned overlay;               /* force parameters & locals into overlay segment */
     unsigned hasStackParms;         /* function has parameters on stack     */
@@ -416,7 +417,8 @@ extern sym_link *validateLink (sym_link * l,
 #define DCL_TYPE(l)  validateLink(l, "DCL_TYPE", #l, DECLARATOR, __FILE__, __LINE__)->select.d.dcl_type
 #define DCL_TYPE_IMPLICITINTRINSIC(l)  validateLink(l, "DCL_TYPE", #l, DECLARATOR, __FILE__, __LINE__)->select.d.dcl_type_implicitintrinsic
 #define DCL_ELEM(l)  validateLink(l, "DCL_ELEM", #l, DECLARATOR, __FILE__, __LINE__)->select.d.num_elem
-#define DCL_ELEM_AST(l)  validateLink(l, "DCL_ELEM", #l, DECLARATOR, __FILE__, __LINE__)->select.d.num_elem_ast
+#define DCL_ELEM_AST(l) validateLink(l, "DCL_ELEM", #l, DECLARATOR, __FILE__, __LINE__)->select.d.num_elem_ast
+#define DCL_STATIC_ARRAY_PARAM(l) validateLink(l, "DCL_STATIC_ARRAY_PARAM", #l, DECLARATOR, __FILE__, __LINE__)->select.d.static_array_param
 #define DCL_PTR_CONST(l) validateLink(l, "DCL_PTR_CONST", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_const
 #define DCL_PTR_VOLATILE(l) validateLink(l, "DCL_PTR_VOLATILE", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_volatile
 #define DCL_PTR_RESTRICT(l) validateLink(l, "DCL_PTR_RESTRICT", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_restrict
@@ -712,7 +714,6 @@ sym_link *getSpec (sym_link *);
 int compStructSize (int, structdef *);
 sym_link *copyLinkChain (const sym_link *);
 int checkDecl (symbol *, int);
-void checkBasic (sym_link *, sym_link *);
 value *checkPointerIval (sym_link *, value *);
 value *checkStructIval (symbol *, value *);
 value *checkArrayIval (sym_link *, value *);

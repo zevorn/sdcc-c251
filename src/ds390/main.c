@@ -80,20 +80,17 @@ static char *_ds390_keywords[] =
   NULL
 };
 
-static builtins __ds390_builtins[] =
-{
-  { "__builtin_memcpy_x2x","v",3,{"cx*","cx*","i"}}, /* void __builtin_memcpy_x2x (xdata char *,xdata char *,int) */
-  { "__builtin_memcpy_c2x","v",3,{"cx*","cp*","i"}}, /* void __builtin_memcpy_c2x (xdata char *,code  char *,int) */
-  { "__builtin_memset_x","v",3,{"cx*","c","i"}},     /* void __builtin_memset     (xdata char *,char,int)         */
+static const char __ds390_builtins[] =
+  "void __builtin_memcpy_x2x (__xdata char *, __xdata char *, int) __builtin__;\n"
+  "void __builtin_memcpy_c2x (__xdata char *, __code  char *, int) __builtin__;\n"
+  "void __builtin_memset (__xdata char *, char, int) __builtin__;\n"
   /* __builtin_inp - used to read from a memory mapped port, increment first pointer */
-  { "__builtin_inp","v",3,{"cx*","cx*","i"}},        /* void __builtin_inp        (xdata char *,xdata char *,int) */
-  /* __builtin_inp - used to write to a memory mapped port, increment first pointer */
-  { "__builtin_outp","v",3,{"cx*","cx*","i"}},       /* void __builtin_outp       (xdata char *,xdata char *,int) */
-  { "__builtin_swapw","Us",1,{"Us"}},                /* unsigned short __builtin_swapw (unsigned short) */
-  { "__builtin_memcmp_x2x","c",3,{"cx*","cx*","i"}}, /* void __builtin_memcmp_x2x (xdata char *,xdata char *,int) */
-  { "__builtin_memcmp_c2x","c",3,{"cx*","cp*","i"}}, /* void __builtin_memcmp_c2x (xdata char *,code  char *,int) */
-  { NULL , NULL,0, {NULL}}                           /* mark end of table */
-};
+  "void __builtin_inp (__xdata char *, __xdata char *, int) __builtin__;\n"
+  /* __builtin_outp - used to write to a memory mapped port, increment first pointer */
+  "void __builtin_outp (__xdata char *, __xdata char *, int) __builtin__;\n"
+  "unsigned short __builtin_swapw (unsigned short) __builtin__;\n"
+  "void __builtin_memcmp_x2x (__xdata char *, __xdata char *, int) __builtin__;\n"
+  "void __builtin_memcmp_c2x (__xdata char *, __code  char *, int) __builtin__;\n";
 
 void ds390_assignRegisters (ebbIndex * ebbi);
 
@@ -1463,50 +1460,47 @@ static char *_tininative_keywords[] =
   NULL
 };
 
-static builtins __tininative_builtins[] =
-{
-  { "__builtin_memcpy_x2x","v",3,{"cx*","cx*","i"}}, /* void __builtin_memcpy_x2x (xdata char *,xdata char *,int) */
-  { "__builtin_memcpy_c2x","v",3,{"cx*","cp*","i"}}, /* void __builtin_memcpy_c2x (xdata char *,code  char *,int) */
-  { "__builtin_memset_x","v",3,{"cx*","c","i"}},     /* void __builtin_memset     (xdata char *,char,int)         */
+static const char __tininative_builtins[] =
+  "void __builtin_memcpy_x2x (__xdata char *, __xdata char *, int) __builtin__;"
+  "void __builtin_memcpy_c2x (__xdata char *, __code  char *, int) __builtin__;"
+  "void __builtin_memset (__xdata char *, char, int) __builtin__;"
   /* TINI NatLib */
-  { "NatLib_LoadByte","c",1,{"c"}},                  /* char  Natlib_LoadByte  (0 based parameter number)         */
-  { "NatLib_LoadShort","s",1,{"c"}},                 /* short Natlib_LoadShort (0 based parameter number)         */
-  { "NatLib_LoadInt","l",1,{"c"}},                   /* long  Natlib_LoadLong  (0 based parameter number)         */
-  { "NatLib_LoadPointer","cx*",1,{"c"}},             /* long  Natlib_LoadPointer  (0 based parameter number)      */
+  "char NatLib_LoadByte (char) __builtin__;"
+  "short NatLib_LoadShort (char) __builtin__;"
+  "long NatLib_LoadInt (char) __builtin__;"
+  "xdata char *NatLib_LoadPointer (char) __builtin__;"
   /* TINI StateBlock related */
-  { "NatLib_InstallImmutableStateBlock","c",2,{"vx*","us"}},/* char NatLib_InstallImmutableStateBlock(state block *,int handle) */
-  { "NatLib_InstallEphemeralStateBlock","c",2,{"vx*","us"}},/* char NatLib_InstallEphemeralStateBlock(state block *,int handle) */
-  { "NatLib_RemoveImmutableStateBlock","v",0,{NULL}},/* void NatLib_RemoveImmutableStateBlock() */
-  { "NatLib_RemoveEphemeralStateBlock","v",0,{NULL}},/* void NatLib_RemoveEphemeralStateBlock() */
-  { "NatLib_GetImmutableStateBlock","i",0,{NULL}},   /* int  NatLib_GetImmutableStateBlock () */
-  { "NatLib_GetEphemeralStateBlock","i",0,{NULL}},   /* int  NatLib_GetEphemeralStateBlock () */
+  "char NatLib_InstallImmutableStateBlock (state block *, int handle) __builtin__;"
+  "char NatLib_InstallEphemeralStateBlock (state block *, int handle) __builtin__;"
+  "void NatLib_RemoveImmutableStateBlock (void) __builtin__;"
+  "void NatLib_RemoveEphemeralStateBlock (void) __builtin__;"
+  "int NatLib_GetImmutableStateBlock (void) __builtin__;"
+  "int NatLib_GetEphemeralStateBlock (void) __builtin__;"
   /* Memory manager */
-  { "MM_XMalloc","i",1,{"l"}},                       /* int  MM_XMalloc (long)                */
-  { "MM_Malloc","i",1,{"i"}},                        /* int  MM_Malloc  (int)                 */
-  { "MM_ApplicationMalloc","i",1,{"i"}},             /* int  MM_ApplicationMalloc  (int)      */
-  { "MM_Free","i",1,{"i"}},                          /* int  MM_Free  (int)                   */
-  { "MM_Deref","cx*",1,{"i"}},                       /* char *MM_Free  (int)                  */
-  { "MM_UnrestrictedPersist","c",1,{"i"}},           /* char  MM_UnrestrictedPersist  (int)   */
+  "int MM_XMalloc (long) __builtin__;"
+  "int MM_Malloc (int) __builtin__;"
+  "int MM_ApplicationMalloc (int) __builtin__;"
+  "int MM_Free (int) __builtin__;"
+  "char *MM_Free (int) __builtin__;"
+  "char MM_UnrestrictedPersist (int) __builtin__;"
   /* System functions */
-  { "System_ExecJavaProcess","c",2,{"cx*","i"}},     /* char System_ExecJavaProcess (char *,int) */
-  { "System_GetRTCRegisters","v",1,{"cx*"}},         /* void System_GetRTCRegisters (char *) */
-  { "System_SetRTCRegisters","v",1,{"cx*"}},         /* void System_SetRTCRegisters (char *) */
-  { "System_ThreadSleep","v",2,{"l","c"}},           /* void System_ThreadSleep (long,char)  */
-  { "System_ThreadSleep_ExitCriticalSection","v",2,{"l","c"}},/* void System_ThreadSleep_ExitCriticalSection (long,char)  */
-  { "System_ProcessSleep","v",2,{"l","c"}},          /* void System_ProcessSleep (long,char)  */
-  { "System_ProcessSleep_ExitCriticalSection","v",2,{"l","c"}},/* void System_ProcessSleep_ExitCriticalSection (long,char)  */
-  { "System_ThreadResume","c",2,{"c","c"}},          /* char System_ThreadResume(char,char)  */
-  { "System_SaveJavaThreadState","v",0,{NULL}},      /* void System_SaveJavaThreadState()    */
-  { "System_RestoreJavaThreadState","v",0,{NULL}},   /* void System_RestoreJavaThreadState() */
-  { "System_ProcessYield","v",0,{NULL}},             /* void System_ProcessYield() */
-  { "System_ProcessSuspend","v",0,{NULL}},           /* void System_ProcessSuspend() */
-  { "System_ProcessResume","v",1,{"c"}},             /* void System_ProcessResume(char) */
-  { "System_RegisterPoll","c",1,{"vF*"}},            /* char System_RegisterPoll ((void *func pointer)()) */
-  { "System_RemovePoll","c",1,{"vF*"}},              /* char System_RemovePoll ((void *func pointer)()) */
-  { "System_GetCurrentProcessId","c",0,{NULL}},      /* char System_GetCurrentProcessId() */
-  { "System_GetCurrentThreadId","c",0,{NULL}},       /* char System_GetCurrentThreadId() */
-  { NULL , NULL,0, {NULL}}                           /* mark end of table */
-};
+  "char System_ExecJavaProcess (char *, int) __builtin__;"
+  "void System_GetRTCRegisters (char *) __builtin__;"
+  "void System_SetRTCRegisters (char *) __builtin__;"
+  "void System_ThreadSleep (long, char) __builtin__;"
+  "void System_ThreadSleep_ExitCriticalSection (long,char) __builtin__;"
+  "void System_ProcessSleep (long, char) __builtin__;"
+  "void System_ProcessSleep_ExitCriticalSection (long, char) __builtin__;"
+  "char System_ThreadResume (char, char) __builtin__;"
+  "void System_SaveJavaThreadState (void) __builtin__;"
+  "void System_RestoreJavaThreadState (void) __builtin__;"
+  "void System_ProcessYield (void) __builtin__;"
+  "void System_ProcessSuspend (void) __builtin__;"
+  "void System_ProcessResume (char) __builtin__;"
+  "char System_RegisterPoll ((void *func pointer)()) __builtin__;"
+  "char System_RemovePoll ((void *func pointer)()) __builtin__;"
+  "char System_GetCurrentProcessId (void) __builtin__;"
+  "char System_GetCurrentThreadId (void) __builtin__;";
 
 static const char *_a390Cmd[] =
 {

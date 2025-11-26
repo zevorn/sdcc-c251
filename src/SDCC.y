@@ -106,7 +106,7 @@ bool uselessDecl = true;
 %token COMPLEX IMAGINARY
 %token STRUCT UNION ENUM RANGE SD_FAR
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
-%token NAKED JAVANATIVE OVERLAY TRAP
+%token NAKED JAVANATIVE OVERLAY TRAP BUILTIN
 %token <yystr> STRING_LITERAL INLINEASM FUNC
 %token IFX ADDRESS_OF GET_VALUE_AT_ADDRESS SET_VALUE_AT_ADDRESS SPIL UNSPIL GETABIT GETBYTE GETWORD
 %token BITWISEAND UNARYMINUS IPUSH IPUSH_VALUE_AT_ADDRESS IPOP PCALL ENDFUNCTION JUMPTABLE
@@ -1395,6 +1395,7 @@ array_declarator
        DCL_TYPE(p) = ARRAY;
        DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNEVALUATED;
        DCL_ELEM_AST (p) = $5;
+       DCL_STATIC_ARRAY_PARAM (p) = true;
 
        if ($4)
          {
@@ -1424,6 +1425,7 @@ array_declarator
        DCL_TYPE(p) = ARRAY;
        DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNEVALUATED;
        DCL_ELEM_AST (p) = $5;
+       DCL_STATIC_ARRAY_PARAM (p) = true;
 
        DCL_PTR_CONST(p) = SPEC_CONST ($3);
        DCL_PTR_RESTRICT(p) = SPEC_RESTRICT ($3);
@@ -1534,8 +1536,9 @@ function_declarator
 
           wassert (funcType);
 
-          FUNC_HASVARARGS(funcType) = IS_VARG($4);
-          FUNC_ARGS(funcType) = reverseVal($4);
+          FUNC_HASVARARGS(funcType) = !$4 || IS_VARG($4);
+          if ($4)
+            FUNC_ARGS(funcType) = $4;
 
           FUNC_SDCCCALL(funcType) = -1;
 
@@ -1732,13 +1735,43 @@ type_qualifier_list_opt
 
 parameter_type_list
   : parameter_list
+    {
+      $$ = reverseVal ($1);
+      checkParameterTypeList (NULL, $$);
+    }
+  | ELLIPSIS
+    {
+      if (!options.std_c23)
+        werror (W_VARARG_ONLY_C23);
+      $$ = NULL;
+    }
   | parameter_list ',' ELLIPSIS
-         {
-           if (IS_VOID ($1->type))
-             werror (E_VOID_SHALL_BE_LONELY);
-           $1->vArgs = 1;
-         }
-        ;
+    {
+      if (IS_VOID ($1->type))
+        werror (E_VOID_SHALL_BE_LONELY);
+      $$ = reverseVal ($1);
+      $$->vArgs = 1;
+      checkParameterTypeList (NULL, $$);
+    }
+  | parameter_declaration ';' parameter_list
+    {
+       if (!options.std_sdcc)
+        werror (W_PARAM_FWD_DECL);
+      $$ = reverseVal ($3);
+      checkParameterTypeList ($1, $$);
+    }
+  | parameter_declaration ';' parameter_list ',' ELLIPSIS
+    {
+      if (!options.std_sdcc)
+        werror (W_PARAM_FWD_DECL);
+      if (IS_VOID ($3->type))
+        werror (E_VOID_SHALL_BE_LONELY);
+      $$ = reverseVal ($3);
+      $$->vArgs = 1;
+      checkParameterTypeList ($1, $$);
+    }
+    
+  ;
 
 parameter_list
    : parameter_declaration
@@ -1895,7 +1928,7 @@ function_abstract_declarator
           DCL_TYPE(p) = FUNCTION;
 
           FUNC_HASVARARGS(p) = IS_VARG($4);
-          FUNC_ARGS(p) = reverseVal($4);
+          FUNC_ARGS(p) = $4;
 
           /* nest level was incremented to take care of the parms  */
           NestLevel -= LEVEL_UNIT;
@@ -2497,7 +2530,8 @@ external_declaration
           if ($1 && $1->type && IS_REGISTER (getSpec ($1->type)))
             werror (W_REGISTER_EXTERNAL_DECL);
           addSymChain (&$1);
-          allocVariables ($1);
+          if (!($1 && $1->type && IFFUNC_ISBUILTIN ($1->type)))
+            allocVariables ($1);
           cleanUpLevel (SymbolTab, 1);
         }
    | addressmod
@@ -2646,6 +2680,9 @@ function_attribute
                         $$ = newLink (SPECIFIER);
                         FUNC_INTNO($$) = INTNO_TRAP;
                         FUNC_ISISR($$) = 1;
+                     }
+   |  BUILTIN        {  $$ = newLink (SPECIFIER);
+                        FUNC_ISBUILTIN ($$) = 1;
                      }
    |  SMALLC         {  $$ = newLink (SPECIFIER);
                         FUNC_ISSMALLC($$) = 1;

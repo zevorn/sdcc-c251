@@ -4,6 +4,8 @@
 
 #include <testfwk.h>
 
+#pragma disable_warning 346 // Expected warning, this stuff is UB.
+
 typedef char chararr[4];
 
 const char a[4] = {'1', '2', '3', '4'};
@@ -22,3 +24,4 @@ void testBug (void)
 #endif
 #endif
 }
+

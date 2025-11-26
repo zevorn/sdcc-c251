@@ -88,14 +88,6 @@ enum target {
 #define IS_SDASLD          (TARGET_Z80_LIKE || TARGET_MCS51_LIKE || TARGET_HC08_LIKE)
 
 #define MAX_BUILTIN_ARGS        16
-/* definition of builtin functions */
-typedef struct builtins
-{
-  char *name;                   /* name of builtin function */
-  char *rtype;                  /* return type as string : see typeFromStr */
-  int nParms;                   /* number of parms : max 8 */
-  char *parm_types[MAX_BUILTIN_ARGS];   /* each parm type as string : see typeFromStr */
-} builtins;
 
 struct ebbIndex;
 
@@ -437,7 +429,7 @@ typedef struct
 
   bool arrayInitializerSuppported;
   bool (*cseOk) (iCode * ic, iCode * pdic);
-  builtins *builtintable;       /* table of builtin functions */
+  const char *c_preamble;       // A block of C code to be prepended to the user's code after preprocessing. Meant for declarations of builtin functions. Directly fed into ISO C23 translation phase 5.
   int unqualified_pointer;      /* unqualified pointers type is  */
   bool far_in_generic;          // __far is a subset of generic.
   bool generic_in_far;          // generic is a subset of __far.

@@ -43,10 +43,12 @@ struct valinfos;
 struct valinfo
 {
 	bool nothing, anything;
-	bool nonnull; // For pointers
+	bool nonnull;                     // Value is known to not be null - useful for pointers
 	long long int min, max;
 	unsigned long long knownbitsmask;
 	unsigned long long knownbits;
+	unsigned long minsize;            // Pointing to somewhere where there are at least minsize bytes of the pointed-to object
+	unsigned long maxsize;            // Pointing to somewhere where there are at most maxsize bytes of the pointed-to object
 };
 
 bool valinfo_union (struct valinfo *v0, const struct valinfo v1);

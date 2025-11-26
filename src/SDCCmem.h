@@ -110,12 +110,14 @@ extern struct set *ovrSetSets;
 #define PTR_TYPE(map)       (map ? (map->ptrType ? map->ptrType : POINTER) : port->unqualified_pointer)
 
 /* forward decls for functions    */
+struct symbol;
+struct sym_link;
 memmap *allocMap (char, char, char, char, char, char, unsigned, const char *, char, int);
 void initMem (void);
 bool defaultOClass (struct symbol *);
 void allocGlobal (struct symbol *);
 void allocLocal (struct symbol *);
-void allocParms (struct value *, bool smallc, bool dynamicc);
+void allocParms (struct value *, struct sym_link *ftype);
 void deallocParms (struct value *);
 void deallocLocal (struct symbol *);
 int allocVariables (struct symbol *);

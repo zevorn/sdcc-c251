@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
    wchar.h - Extended and multibyte wide character utilitites (ISO C 11 7.29)
 
-   Copyright (c) 2015-2016, Philipp Klaus Krause / pkk@spth.de
+   Copyright (c) 2015-2025, Philipp Klaus Krause / pkk@spth.de, philipp@colecovision.eu
                  2023, Benedikt Freisen / b.freisen@gmx.net
 
    This library is free software; you can redistribute it and/or modify it
@@ -64,11 +64,11 @@ inline int iswblank(wint_t c)
 }
 
 /* C99 Wide string comparison functions (ISO C11 7.29.4.4) */
-int wcscmp(const wchar_t *s1, const wchar_t *s2);
+int wcscmp(const wchar_t s1[static 1], const wchar_t s2[static 1]);
 int wcsncmp(const wchar_t *s1, const wchar_t *s2, size_t count);
 
 /* C99 Miscellaneous functions (ISO C11 7.29.4.6) */
-size_t wcslen(const wchar_t *s);
+size_t wcslen(const wchar_t s[static 1]);
 
 /* C2Y length function: */
 size_t wcsnlen (const wchar_t *s, size_t n);
@@ -86,11 +86,12 @@ size_t mbrtowc(wchar_t *restrict pwc, const char *restrict s, size_t n, mbstate_
 size_t wcrtomb(char *restrict s, wchar_t wc, mbstate_t *restrict ps);
 
 /* C99 Wide string numeric conversion functions (ISO C 11 7.29.4.1) */
-long int wcstol(const wchar_t *restrict nptr, wchar_t **restrict endptr, int base);
-unsigned long int wcstoul(const wchar_t *restrict nptr, wchar_t **restrict endptr, int base);
+long int wcstol(const wchar_t nptr[restrict static 1], wchar_t **restrict endptr, int base);
+unsigned long int wcstoul(const wchar_t nptr[restrict static 1], wchar_t **restrict endptr, int base);
 #ifdef __SDCC_LONGLONG
-long long int wcstoll(const wchar_t *restrict nptr, wchar_t **restrict endptr, int base);
-unsigned long long int wcstoull(const wchar_t *restrict nptr, wchar_t **restrict endptr, int base);
+long long int wcstoll(const wchar_t nptr[restrict static 1], wchar_t **restrict endptr, int base);
+unsigned long long int wcstoull(const wchar_t nptr[restrict  static 1], wchar_t **restrict endptr, int base);
 #endif
 
 #endif /* __SDCC_WCHAR_H */
+

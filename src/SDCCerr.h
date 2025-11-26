@@ -51,7 +51,7 @@ enum {
   W_STACK_OVERFLOW              =  21, /* stack overflow       */
   E_NEED_ARRAY_PTR              =  22, /* array or pointer reqd*/
   E_IDX_NOT_INT                 =  23, /* index not an integer */
-  W_IDX_OUT_OF_BOUNDS           =  24, /* array index out of bounds */
+  W_IDX_OUT_OF_BOUNDS           =  24, // array index out of bounds (for cases where we know exact index and bound) - see also W_INVALID_PTR_DEREF for other cases
   E_STRUCT_UNION                =  25, /* struct,union expected*/
   E_NOT_MEMBER                  =  26, /* !struct/union member */
   E_PTR_REQD                    =  27, /* pointer required     */
@@ -351,9 +351,9 @@ enum {
   E_BLOCK_SCOPE_FUNC_SCLASS     = 321, // Function declared at block scope with explicit storage-class specifier other than extern
   W_PTR2INT_NOREPRESENT         = 322, // Cast of pointer to integer type that cannot represent all values of the pointer type
   W_MAIN_TYPE                   = 323, // Function main should be void main(void) or int main(void)
-  E_VOID_SHALL_BE_LONELY        = 324, // void is allowed as single parameter with no storage class specifiers, npo type qualifers, no following ellipsis
+  E_VOID_SHALL_BE_LONELY        = 324, // void is allowed as single parameter with no storage class specifiers, no type qualifers, no following ellipsis
   W_ANONYMOUS_STRUCT_C11        = 325, // anonymous struct/union requires ISO C11 or later
-  E_UNAMED_STRUCT_MEMBER        = 326, // struct/union members need to have a name,unless they are anonymous struct/union or bit-fields
+  E_UNAMED_STRUCT_MEMBER        = 326, // struct/union members need to have a name, unless they are anonymous struct/union or bit-fields
   E_NO_LINKAGE_INCOMPLETE_TYPE  = 327, // object with no linkage of incomplete type
   E_EXTERN_INLINE_NO_DEF        = 328, // inline function declared with external linkage, but not defined in translation unit
   E_STRAY_CHARACTER             = 329, // stray character at column %d
@@ -372,8 +372,14 @@ enum {
   E_CONSTEXPR_WITHOUT_INIT      = 342, // constexpr declaration without initialization
   E_CONSTEXPR_RANGE_PRECISION   = 343, // type of constexpr declaration has insufficient range or precision
   E_CONSTEXPR_INVALID_QUAL      = 344, // object of constexpr type cannot be atomic, variably modified, volatile or restrict qualified
+  W_STATIC_ARRAY_PARAM_LENGTH   = 345, // argument for [static] array parameter is not of sufficient length
+  W_INVALID_PTR_DEREF           = 346, // possibly invalid pointer dereferenced or array index out of bounds - see also W_IDX_OUT_OF_BOUNDS (for cases where we know exact index and bound)
+  W_PARAM_FWD_DECL              = 347, // parameter forward declaration not allowed in ISO C
+  E_PARAM_FWD_DECL_NOPARAM      = 348, // forward-declared parameter '%s' missing from parameter list
+  E_PARAM_FWD_DECL_UNSUPPORTED  = 349, // unsupported parameter forward declaration; only single forward-declared parameters of integer type are supported
+  W_VARARG_ONLY_C23             = 350, // function with variable arguments only requires ISO C23 or later
 
-  // If you get a merge conflict here, some #pragma disable_warning in support/valdiag and support/regression will likely need to be adapted to the resolution.
+  // If you get a merge conflict here, some #pragma disable_warning in support/valdiag and support/regression will likely need to be adapted to the resolution. Check there!
 
   /* don't touch this! */
   NUMBER_OF_ERROR_MESSAGES             /* Number of error messages */

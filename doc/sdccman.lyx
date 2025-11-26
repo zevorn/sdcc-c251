@@ -3229,6 +3229,14 @@ In 4.5.13,
  stray non-ASCII characters in source files are an error instead of being silently ignored.
 \end_layout
 
+\begin_layout Itemize
+In 4.5.15 the omission of integer promotions on explicitly cast variable arguments only happens for the mcs51,
+ ds390,
+ mos6502,
+ mos65c02,
+ pic14 and pic16 ports.
+\end_layout
+
 \begin_layout Section
 System Requirements
 \end_layout
@@ -27168,9 +27176,11 @@ xx
 \end_layout
 
 \begin_layout Subsection
-Omitting promotion on arguments of vararg function (does not apply to pdk13,
- pdk14,
- pdk15)
+Omitting promotion on arguments of vararg function (mcs51,
+ ds390,
+ mos6502,
+ mos65c02,
+ pic14 and pic16 only)
 \end_layout
 
 \begin_layout Standard
@@ -27220,6 +27230,31 @@ xx
 \end_inset
 
  is a placeholder for the desired version of the C standard.
+\end_layout
+
+\begin_layout Subsection
+Parameter forward declarations
+\end_layout
+
+\begin_layout Standard
+SDCC (when using 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+--std-sdccxx
+\end_layout
+
+\end_inset
+
+) supports parameter forward declarations for s single parameter of integer type.
+ The supported functionality is thus a subset of the GCC extension:
+\end_layout
+
+\begin_layout Verse
+void f(size_t n;
+ char a[static n],
+ size_t n);
 \end_layout
 
 \begin_layout Section

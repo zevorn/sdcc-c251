@@ -477,7 +477,7 @@ PORT pic_port =
   0,            /* leave == */
   FALSE,        /* No array initializer support. */
   0,            /* no CSE cost estimation yet */
-  NULL,         /* no builtin functions */
+  "",           // no builtin functions
   GPOINTER,     /* treat unqualified pointers as "generic" pointers */
   true,
   false,
