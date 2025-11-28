@@ -238,6 +238,7 @@ static void checkCurrFile (const char *s);
 "__iar"                 { count (); TKEYWORD (IAR); }
 "__cosmic"              { count (); TKEYWORD (COSMIC); }
 "__dynamicc"            { count (); TKEYWORD (DYNAMICC); }
+"__builtin__"           { count (); return BUILTIN; }
 "__sdcccall"            { count (); return SDCCCALL; }
 "__preserves_regs"      { count (); return PRESERVES_REGS; }
 "__z88dk_fastcall"      { count (); TKEYWORD (Z88DK_FASTCALL); }

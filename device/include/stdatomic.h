@@ -9,14 +9,14 @@
 
 typedef struct {unsigned char flag;} atomic_flag;
 
-_Bool atomic_flag_test_and_set(volatile atomic_flag *object) __SDCC_NONBANKED;
+_Bool atomic_flag_test_and_set(volatile atomic_flag object[static 1]) __SDCC_NONBANKED;
 
 #if defined(__SDCC_mcs51) || defined(__SDCC_ds390)
 
 #define ATOMIC_FLAG_INIT {0}
 
 __SDCC_ATOMIC_EXTERN
-inline void atomic_flag_clear(volatile atomic_flag *object) __SDCC_NONBANKED
+inline void atomic_flag_clear(volatile atomic_flag object[static 1]) __SDCC_NONBANKED
 {
 	object->flag = 0;
 }
@@ -25,10 +25,10 @@ inline void atomic_flag_clear(volatile atomic_flag *object) __SDCC_NONBANKED
 
 #define ATOMIC_FLAG_INIT {0}
 
-_Bool atomic_flag_test_and_set(volatile atomic_flag *object);
+_Bool atomic_flag_test_and_set(volatile atomic_flag object[static 1]);
 
 __SDCC_ATOMIC_EXTERN
-inline void atomic_flag_clear(volatile atomic_flag *object)
+inline void atomic_flag_clear(volatile atomic_flag object[static 1])
 {
 	object->flag = 0;
 }
@@ -38,7 +38,7 @@ inline void atomic_flag_clear(volatile atomic_flag *object)
 #define ATOMIC_FLAG_INIT {0xfe}
 
 __SDCC_ATOMIC_EXTERN
-inline void atomic_flag_clear(volatile atomic_flag *object)
+inline void atomic_flag_clear(volatile atomic_flag object[static 1])
 {
 	object->flag = 0xfe;
 }
@@ -48,7 +48,7 @@ inline void atomic_flag_clear(volatile atomic_flag *object)
 #define ATOMIC_FLAG_INIT {1}
 
 __SDCC_ATOMIC_EXTERN
-inline void atomic_flag_clear(volatile atomic_flag *object)
+inline void atomic_flag_clear(volatile atomic_flag object[static 1])
 {
 	object->flag = 1;
 }

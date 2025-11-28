@@ -1586,6 +1586,11 @@ void move_parms(void)
 
       val->sym->stack -= 2;
     }
+
+  // Handle the placeholder for variable arguments
+  symbol *sym;
+  if(currFunc && IFFUNC_HASVARARGS (currFunc->type) && (sym = (symbol *)(findSym (SymbolTab, NULL, "__va_start"))))
+    sym->stack -= 2;
 }
   
 iCode *z80_ralloc2_cc(ebbIndex *ebbi)

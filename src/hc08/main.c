@@ -940,8 +940,8 @@ PORT hc08_port =
   0,                            /* leave == */
   false,                        /* No array initializer support. */
   cseCostEstimation,
-  NULL,                         /* no builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  "",                           // no builtin functions
+  GPOINTER,                     // treat unqualified pointers as "generic" pointers
   true,
   false,
   1,                            /* reset labelKey to 1 */
@@ -1090,8 +1090,8 @@ PORT s08_port =
   0,                            /* leave == */
   false,                        /* No array initializer support. */
   cseCostEstimation,
-  NULL,                         /* no builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  "",                           // no builtin functions
+  GPOINTER,                     // treat unqualified pointers as "generic" pointers
   true,
   false,
   1,                            /* reset labelKey to 1 */

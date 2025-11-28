@@ -3616,3 +3616,51 @@ valForCastArr (ast * aexpr, sym_link * type)
   val->etype = getSpec (val->type);
   return val;
 }
+
+/*-----------------------------------------------------------------*/
+/* checkParameterTypeList - check that the identifiers used in the */
+/*                          types inthe list are declared before   */
+/*-----------------------------------------------------------------*/
+void
+checkParameterTypeList (value *forward_declaration, value *parameters)
+{
+  if (forward_declaration)
+    {
+      changePointer (forward_declaration->type);
+      if (!IS_SPEC (forward_declaration->type) ||
+        SPEC_NOUN (forward_declaration->type) != V_INT &&
+        SPEC_NOUN (forward_declaration->type) != V_CHAR &&
+        SPEC_NOUN (forward_declaration->type) != V_BITINT &&
+        SPEC_NOUN (forward_declaration->type) != V_BOOL)
+        werror (E_PARAM_FWD_DECL_UNSUPPORTED);
+      if (!forward_declaration->sym)
+        werror (E_PARAM_NAME_OMITTED, "", 0);
+      else
+        {
+          addSymChain (&forward_declaration->sym);
+          bool found = false;
+          for (value *p = parameters; p; p = p->next)
+            if (p->sym && !strcmp (forward_declaration->sym->name, p->sym->name))
+              {
+                found = true;
+                break;
+              }
+          if (!found)
+            werror (E_PARAM_FWD_DECL_NOPARAM, forward_declaration->sym->name);
+        }
+    }
+  for (value *p = parameters; p; p = p->next)
+    {
+      changePointer (p->type);
+      if (p->sym)
+        addSymChain (&p->sym);
+    }
+  if (forward_declaration && forward_declaration->sym)
+    deleteSym (SymbolTab, forward_declaration->sym, forward_declaration->sym->name);
+  for (value *p = parameters; p; p = p->next)
+    {
+      if (p->sym)
+        deleteSym (SymbolTab, p->sym, p->sym->name);
+    }
+}
+

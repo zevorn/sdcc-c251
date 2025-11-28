@@ -106,6 +106,8 @@ getTypeValinfo (sym_link *type, bool loose)
   v.min = v.max = 0ll;
   v.knownbitsmask = 0ull;
   v.knownbits = 0ull;
+  v.minsize = 0;
+  v.maxsize = ULONG_MAX;
 
   if (IS_BOOLEAN (type))
     {
@@ -153,6 +155,7 @@ getTypeValinfo (sym_link *type, bool loose)
           else
             wassert (0);
         }
+      v.maxsize = v.max;
     }
   else if (IS_INTEGRAL (type) && IS_UNSIGNED (type) && bitsForType (type) < 64)
     {
@@ -176,7 +179,10 @@ getTypeValinfo (sym_link *type, bool loose)
 }
 
 static void
-valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right);
+valinfoUpdate (struct valinfo *v);
+
+static void
+valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right, sym_link *sourcetype);
 
 struct valinfo
 getOperandValinfo (const iCode *ic, const operand *op)
@@ -198,7 +204,7 @@ getOperandValinfo (const iCode *ic, const operand *op)
 
   if (IS_INTEGRAL (type) && bitsForType (type) < 64 && !IS_OP_VOLATILE (op) && // Todo: More exact check than this bits thing?
     (IS_OP_LITERAL (op) || IS_SYMOP (op) && SPEC_CONST (type) && OP_SYMBOL_CONST (op)->ival && IS_AST_VALUE (list2expr (OP_SYMBOL_CONST (op)->ival))) ||
-    (TARGET_Z80_LIKE || TARGET_IS_STM8 || TARGET_F8_LIKE) && IS_PTR (type) && IS_OP_LITERAL (op)) // Port has no tag bits in pointers
+    (TARGET_Z80_LIKE || TARGET_IS_STM8 || TARGET_F8_LIKE || IS_GENPTR (type)) && IS_PTR (type) && IS_OP_LITERAL (op)) // Port has no tag bits in pointers
     {
       struct valinfo v2;
       long long litval;
@@ -213,19 +219,33 @@ getOperandValinfo (const iCode *ic, const operand *op)
       v2.max = litval;
       v2.knownbitsmask = ~0ull;
       v2.knownbits = litval;
-      valinfoCast (&v, type, v2); // Need to cast: ival could be out of range of type.
-      return (v);
+      valinfoCast (&v, type, v2, NULL); // Need to cast: ival could be out of range of type.
+      valinfoUpdate (&v);
     }
-  else if (IS_ITEMP (op) && !IS_OP_VOLATILE (op))
+  else if ((IS_ITEMP (op) ||
+    IS_SYMOP (op) && OP_SYMBOL_CONST (op)->islocal && // Also include a few non-iTemps in the analysis, since since they don't always get replaced by register-equivalent iTemps without --stack-auto.
+      !OP_SYMBOL_CONST (op)->addrtaken && !IS_STATIC (OP_SYMBOL_CONST (op)->etype) && !IS_EXTERN (OP_SYMBOL_CONST (op)->etype)) // Exclude what might change in between, e.g. by a backjump via longjmp, or for extern/addrtaken by an intermediate call to another function.
+    && !IS_OP_VOLATILE (op) && ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end ())
+    return (ic->valinfos->map[op->key]);
+  else if (IS_ITEMP (op))
     {
-      if (ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end ())
-        return (ic->valinfos->map[op->key]);
       v.nothing = true;
       v.anything = false;
-      return (v);
     }
   else
-    return (getTypeValinfo (type, true));
+    {
+      v = getTypeValinfo (type, true);
+      if (IS_SYMOP (op) && OP_SYMBOL_CONST (op)->ismyparm &&
+        IS_DECL (type) && DCL_STATIC_ARRAY_PARAM (type) && DCL_ELEM (type))
+        {
+          // Valid pointer to an array of at least DCL_ELEM (type) elements.
+          v.nonnull = true;
+          v.min = 1;
+          v.minsize = DCL_ELEM (type) * getSize (type->next);
+          v.max -= v.minsize;
+        }
+    }
+  return (v);
 }
 
 bool
@@ -250,6 +270,12 @@ valinfo_union (struct valinfo *v0, const struct valinfo v1)
   auto new_knownbitsmask = v0->knownbitsmask & v1.knownbitsmask & ~(v0->knownbits ^ v1.knownbits);
   change |= (v0->knownbitsmask != new_knownbitsmask);
   v0->knownbitsmask = new_knownbitsmask;
+  auto new_minsize = std::min (v0->minsize, v1.minsize);
+  change |= (v0->minsize != new_minsize);
+  v0->minsize = new_minsize;
+  auto new_maxsize = std::max (v0->maxsize, v1.maxsize);
+  change |= (v0->maxsize != new_maxsize);
+  v0->maxsize = new_maxsize;
   return (change);
 }
 
@@ -319,7 +345,7 @@ dump_cfg_genconstprop (const cfg_t &cfg, const std::string& suffix)
           else if (ic->resultvalinfo->anything)
             os << "*";
           else
-            os << "[" << ic->resultvalinfo->min << ", " << ic->resultvalinfo->max << "] " << ic->resultvalinfo->knownbitsmask;
+            os << "[" << ic->resultvalinfo->min << ", " << ic->resultvalinfo->max << "] " << "[" << ic->resultvalinfo->minsize << ", " << ic->resultvalinfo->maxsize << "] " << ic->resultvalinfo->knownbitsmask;
         }
       name[i] = os.str();
     }
@@ -340,7 +366,6 @@ valinfoUpdate (struct valinfo *v)
     {
       v->knownbitsmask = ~0ull;
       v->knownbits = v->min;
-      return;
     }
   for (int i = 0; i < 62; i++) // Leading zeroes.
     {
@@ -361,6 +386,15 @@ valinfoUpdate (struct valinfo *v)
       if (bitmin > (unsigned long long)(v->min))
         v->min = bitmin;
     }
+
+  if (v->min > 0 || v->max < 0)
+    v->nonnull = true;
+
+  if (v->max == 0) // Null pointer points to zero bytes
+   {
+     v->minsize = 0;
+     v->maxsize = 0;
+   }
 }
 
 static void
@@ -396,6 +430,14 @@ valinfoPlus (struct valinfo *result, sym_link *resulttype, const struct valinfo 
           result->knownbits = result->knownbits & ~0x8000ull | left.knownbits & 0x8000ull;
         }
       result->nonnull |= left.nonnull;
+      if ((long long)(left.minsize) >= right.max)
+        result->minsize = (long long)(left.minsize) - right.max;
+      else
+        result->minsize = 0;
+      if ((long long)(left.maxsize) >= right.min)
+        result->maxsize = (long long)(left.maxsize) - right.min;
+      else
+        result->maxsize = 0;
     }
   if (!left.anything && !right.anything &&
     left.min >= 0 && right.min >= 0)
@@ -540,8 +582,8 @@ valinfoAnd (struct valinfo *result, sym_link *resulttype, const struct valinfo &
 {
   // In iCode, bitwise and sometimes has operands of different type.
   struct valinfo left, right;
-  valinfoCast (&left, resulttype, left_orig);
-  valinfoCast (&right, resulttype, right_orig);
+  valinfoCast (&left, resulttype, left_orig, NULL);
+  valinfoCast (&right, resulttype, right_orig, NULL);
 
   if (!left.anything && !right.anything &&
     (left.min >= 0 || right.min >= 0))
@@ -638,8 +680,9 @@ valinfoRight (struct valinfo *result, const struct valinfo &left, const struct v
     }
 }
 
+// sourcetype is optional
 static void
-valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right)
+valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right, sym_link *sourcetype)
 {
   bool genptrtarget = IS_GENPTR (targettype) || (TARGET_Z80_LIKE || TARGET_F8_LIKE || TARGET_IS_STM8); // Some ports have no tag bits in pointers.
 
@@ -674,8 +717,16 @@ valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo 
     }
 
   if (!right.anything && genptrtarget && right.nonnull)
+    result->nonnull = true;
+
+  if (!right.anything && IS_PTR (targettype) && sourcetype && IS_PTR (sourcetype))
     {
-      result->nonnull = false;
+      if (result->minsize < right.minsize)
+        result->minsize = right.minsize;
+      if (result->maxsize > right.maxsize)
+        result->maxsize = right.maxsize;
+      if (result->minsize)
+        result->nonnull = true;
     }
 }
 
@@ -809,11 +860,45 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
         resultsym = 0;
       else if (IS_OP_VOLATILE (ic->result)) // No point trying to find out what we write to a volatile operand. At the next use, it could be anything, anyway.
         ;
+      else if (ic->op == RECEIVE)
+        {
+          sym_link *type = operandType (ic->result);
+          if (IS_DECL (type) && DCL_STATIC_ARRAY_PARAM (type))
+            {
+              if (DCL_ELEM (type))
+                {
+                  // Valid pointer to an array of at least DCL_ELEM (type) elements.
+                  resultvalinfo.min = 1;
+                  resultvalinfo.minsize = DCL_ELEM (type) * getSize (type->next);
+                  resultvalinfo.max -= resultvalinfo.minsize;
+                  resultvalinfo.nonnull = true;
+                }
+            }
+        }
       else if (ic->op == ADDRESS_OF)
         {
           if(resultvalinfo.min <= 0)
-           resultvalinfo.min = 1;
+            resultvalinfo.min = 1;
           resultvalinfo.nonnull = true;
+          sym_link *objtype = operandType (ic->left);
+          unsigned long roff = operandLitValue (ic->right);
+          if (!IS_ARRAY (objtype) && !(IS_STRUCT (objtype) && SPEC_STRUCT (objtype)->b_flexArrayMember)) // Single object. We know the size unless it has a flexible array memeber.
+            {
+              if (getSize (objtype) >= roff)
+                resultvalinfo.minsize = resultvalinfo.maxsize = getSize (objtype) - roff;
+              else
+                resultvalinfo.minsize = resultvalinfo.maxsize = 0;
+            }
+          else if (IS_ARRAY (objtype) && DCL_ARRAY_LENGTH_TYPE (objtype) == ARRAY_LENGTH_KNOWN_CONST)
+            {
+              unsigned long lsize = DCL_ELEM (objtype) * getSize (objtype->next);
+              wassert (lsize); // There are no arrays of known constant length 0 in SDCC.
+              if (lsize >= roff)
+                resultvalinfo.minsize = resultvalinfo.maxsize = lsize - roff;
+              else
+                resultvalinfo.minsize = resultvalinfo.maxsize = 0;
+            }
+          resultvalinfo.max -= resultvalinfo.minsize;
         }
       else if (ic->op == '!')
         {
@@ -913,7 +998,7 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
         valinfoRight (&resultvalinfo, leftvalinfo, rightvalinfo);
       else if (ic->op == '=' && !POINTER_SET (ic) || ic->op == CAST)
         //resultvalinfo = rightvalinfo; // Doesn't work for = - sometimes = with mismatched types arrive here.
-        valinfoCast (&resultvalinfo, operandType (IC_RESULT (ic)), rightvalinfo);
+        valinfoCast (&resultvalinfo, operandType (ic->result), rightvalinfo, operandType (ic->right));
 
       if (resultsym)
         {

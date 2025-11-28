@@ -742,7 +742,6 @@ funcOfType (const char *name, sym_link * type, sym_link * argType, int nArgs, in
         {
           args->type = copyLinkChain (argType);
           args->etype = getSpec (args->type);
-          SPEC_EXTR (args->etype) = 1;
           if (!nArgs)
             break;
           args = args->next = newValue ();
@@ -783,7 +782,6 @@ funcOfTypeVarg (const char *name, const char *rtype, int nArgs, const char **aty
         {
           args->type = typeFromStr (atypes[i]);
           args->etype = getSpec (args->type);
-          SPEC_EXTR (args->etype) = 1;
           if ((i + 1) == nArgs)
             break;
           args = args->next = newValue ();
@@ -926,10 +924,11 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
 
       /* don't perform integer promotion of explicitly typecasted variable arguments
        * if sdcc extensions are enabled */
-      if (options.std_sdcc && !TARGET_PDK_LIKE && IFFUNC_HASVARARGS (functype) &&
-          (IS_CAST_OP (*actParm) ||
-           (IS_AST_SYM_VALUE (*actParm) && AST_VALUES (*actParm, cast.removedCast)) ||
-           (IS_AST_LIT_VALUE (*actParm) && AST_VALUES (*actParm, cast.literalFromCast))))
+      if (options.std_sdcc && (TARGET_IS_MCS51 || TARGET_IS_DS390 || TARGET_MOS6502_LIKE || TARGET_PIC_LIKE) &&
+        IFFUNC_HASVARARGS (functype) &&
+        (IS_CAST_OP (*actParm) ||
+          (IS_AST_SYM_VALUE (*actParm) && AST_VALUES (*actParm, cast.removedCast)) ||
+          (IS_AST_LIT_VALUE (*actParm) && AST_VALUES (*actParm, cast.literalFromCast))))
         {
           /* Parameter was explicitly typecast; don't touch it. */
           return 0;
@@ -7659,7 +7658,7 @@ createFunction (symbol * name, ast * body)
   if (FUNC_ISINLINE (name->type))
     name->funcTree = copyAst (body);
 
-  allocParms (FUNC_ARGS (name->type), IFFUNC_ISSMALLC (name->type), IFFUNC_ISDYNAMICC (name->type));  /* allocate the parameters */
+  allocParms (FUNC_ARGS (name->type), name->type); // allocate the parameters
 
   /* do processing for parameters that are passed in registers */
   processRegParms (FUNC_ARGS (name->type), body);

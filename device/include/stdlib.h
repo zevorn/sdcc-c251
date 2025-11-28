@@ -2,7 +2,7 @@
    stdlib.h - General utilities (ISO C 11 7.22)
 
    Copyright (C) 1998, Sandeep Dutta . sandeep.dutta@usa.net
-   Copyright (c) 2016-2021, Philipp Klaus Krause, pkk@spth.de
+   Copyright (c) 2016-2025, Philipp Klaus Krause, pkk@spth.de, philipp@colecovision.eu
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -61,19 +61,25 @@
 #if __STDC_VERSION__ >= 202311L
 typedef bool once_flag;
 #define ONCE_FLAG_INIT false
-void call_once(once_flag *flag, void (*func)(void));
+void call_once(once_flag flag[static 1], void (*func)(void));
 #endif
 
 /* Numeric conversion functions (ISO C11 7.22.1) */
+#if __STDC_VERSION__ >= 199901L
+extern float atof (const char nptr[static 1]);
+extern int atoi (const char nptr[static 1]);
+extern long int atol (const char nptr[static 1]);
+extern long int strtol(const char nptr[restrict static 1], char **restrict endptr, int base);
+extern unsigned long int strtoul(const char nptr[restrict static 1], char **restrict endptr, int base);
+extern long long int atoll (const char nptr[static 1]);
+extern long long int strtoll(const char nptr[restrict static 1], char **restrict endptr, int base);
+extern unsigned long long int strtoull(const char nptr[restrict static 1], char **restrict endptr, int base);
+#else
 extern float atof (const char *nptr);
 extern int atoi (const char *nptr);
 extern long int atol (const char *nptr);
 extern long int strtol(const char *nptr, char **endptr, int base);
 extern unsigned long int strtoul(const char *nptr, char **endptr, int base);
-#ifdef __SDCC_LONGLONG
-extern long long int atoll (const char *nptr);
-extern long long int strtoll(const char *nptr, char **endptr, int base);
-extern unsigned long long int strtoull(const char *nptr, char **endptr, int base);
 #endif
 
 /* SDCC extensions */
@@ -177,7 +183,7 @@ size_t mbstowcs(wchar_t *restrict pwcs, const char *restrict s, size_t n);
 size_t wcstombs(char *restrict s, const wchar_t *restrict pwcs, size_t n);
 #endif
 
-/* C2X Alignment of memory */
+/* C23 Alignment of memory */
 #if __STDC_VERSION__ >= 202311L
 size_t memalignment(const void *p);
 #endif

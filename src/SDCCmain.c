@@ -2878,13 +2878,33 @@ main (int argc, char **argv, char **envp)
 
   if (fullSrcFileName || options.c1mode)
     {
-      preProcess (envp);
-
       initSymt ();
       initiCode ();
       initCSupport ();
       initBuiltIns ();
       initPeepHole ();
+
+      // Emit preamble for declarations for port-specific built-in functions.
+      if (port->c_preamble && strlen (port->c_preamble))
+        {
+          int p[2];
+          FILE *preamble;
+#ifdef _WIN32
+          wassert (!_pipe (p));
+#else
+          wassert (!pipe (p));
+#endif
+          preamble = fdopen (p[1], "w");
+          wassert (preamble);
+          fprintf (preamble, port->c_preamble);
+          fclose (preamble);
+          yyin = fdopen (p[0], "r");
+          wassert (yyin);
+          yyparse ();
+          fclose (yyin);
+        }
+
+      preProcess (envp); // Sets yyin to pipe from preprocessor
 
       if (options.verbose)
         printf ("sdcc: Generating code...\n");

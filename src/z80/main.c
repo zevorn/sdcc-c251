@@ -271,14 +271,20 @@ extern PORT sm83_port;
 
 #include "mappings.i"
 
-static builtins _z80_builtins[] = {
-  {"__builtin_memcpy", "vg*", 3, {"vg*", "Cvg*", "Ui"}},
-  {"__builtin_strcpy", "cg*", 2, {"cg*", "Ccg*"}},
-  {"__builtin_strncpy", "cg*", 3, {"cg*", "Ccg*", "Ui"}},
-  {"__builtin_strchr", "cg*", 2, {"Ccg*", "i"}},
-  {"__builtin_memset", "vg*", 3, {"vg*", "i", "Ui"}},
-  {NULL, NULL, 0, {NULL}}
-};
+// Dont have size_t here, so we just use unsigned int, which is size_t for these ports.
+static const char z80_builtins[] =
+  "extern void *__builtin_memcpy (void *restrict dest, const void *restrict src, unsigned int n) __builtin__;\n"
+  "extern char *__builtin_strcpy (char dest[restrict static 1], const char src[restrict static 1]) __builtin__;\n"
+  "extern char *__builtin_strncpy (char *restrict dest, const char *restrict src, unsigned int n) __builtin__;\n"
+  "extern char *__builtin_strchr (const char s[static 1], int c) __builtin__;\n"
+  "extern void *__builtin_memset (void *s, int c, unsigned int n) __builtin__;\n";
+
+static const char z80_builtins_c90[] =
+  "extern void *__builtin_memcpy (void *dest, const void *src, unsigned int n) __builtin__;\n"
+  "extern char *__builtin_strcpy (char *dest, const char *src) __builtin__;\n"
+  "extern char *__builtin_strncpy (char *dest, const char *src, unsigned int n) __builtin__;\n"
+  "extern char *__builtin_strchr (const char *s, char c) __builtin__;\n"
+  "extern void *__builtin_memset (void *s, int c, unsigned int n) __builtin__;\n";
 
 extern reg_info sm83_regs[];
 extern reg_info z80_regs[];
@@ -922,6 +928,10 @@ _setValues (void)
 static void
 _finaliseOptions (void)
 {
+  
+  if (!options.std_c99 && port->c_preamble)
+    port->c_preamble = z80_builtins_c90;
+
   if (IS_RAB && options.model == MODEL_MEDIUM)
     {
       port->s.funcptr_size = 3;
@@ -1402,7 +1412,144 @@ PORT z80_port =
   0,                            /* leave == */
   FALSE,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
+  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  false,                        // there is no __far, and thus no pointers into it.
+  false,                        // there is no __far, and thus no pointers into it.
+  1,                            /* reset labelKey to 1 */
+  1,                            /* globals & local statics allowed */
+  9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
+  PORT_MAGIC
+};
+
+PORT z80n_port =
+{
+  TARGET_ID_Z80N,
+  "z80n",
+  "Z80N",                       /* Target name */
+  NULL,                         /* Processor name */
+  {
+    glue,
+    FALSE,
+    NO_MODEL,
+    NO_MODEL,
+    NULL,                       /* model == target */
+  },
+  {                             /* Assembler */
+    _z80AsmCmd,
+    NULL,
+    "-plosgffwy",               /* Options with debug */
+    "-plosgffw",                /* Options without debug */
+    0,
+    ".asm"
+  },
+  {                             /* Linker */
+    _z80LinkCmd,                //NULL,
+    NULL,                       //LINKCMD,
+    NULL,
+    ".rel",
+    1,
+    _crt,                       /* crt */
+    _libs_z80n,                 /* libs */
+  },
+  {                             /* Peephole optimizer */
+    _z80n_defaultRules,
+    z80instructionSize,
+    NULL,
+    NULL,
+    NULL,
+    z80notUsed,
+    z80canAssign,
+    z80notUsedFrom,
+    z80symmParmStack,
+    z80canJoinRegs,
+    z80canSplitReg,
+  },
+  /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, BitInt (in bits) */
+  { 1, 2, 2, 4, 8, 2, 2, 2, 2, 2, 1, 4, 64 },
+  /* tags for generic pointers */
+  { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
+  {
+    "XSEG",
+    "STACK",
+    "CODE",
+    "DATA",
+    NULL,                       /* idata */
+    NULL,                       /* pdata */
+    NULL,                       /* xdata */
+    NULL,                       // xconst
+    NULL,                       /* bit */
+    "RSEG (ABS)",
+    "GSINIT",
+    NULL,                       /* overlay */
+    "GSFINAL",
+    "HOME",
+    NULL,                       /* xidata */
+    NULL,                       /* xinit */
+    NULL,                       /* const_name */
+    "CABS (ABS)",               // cabs_name
+    NULL,                       // xabs_name
+    "DABS (ABS)",               // iabs_name
+    "INITIALIZED",              /* name of segment for initialized variables */
+    "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
+    NULL,
+    NULL,
+    1,                          /* CODE  is read-only */
+    false,                      // unqualified pointers cannot point to __sfr.
+    1                           /* No fancy alignments supported. */
+  },
+  { NULL, NULL },
+  1,                            /* ABI revision */
+  { -1, 0, 0, 4, 0, 3, 0 },
+  { 
+    -1,                         /* shifts never use support routines */
+    false,                      /* do not use support routine for int x int -> long multiplication */
+    false,                      /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
+  },
+  { z80_emitDebuggerSymbol },
+  {
+    8000,                       /* maxCount */
+    2,                          /* sizeofElement */
+    {6, 7, 8},                  /* sizeofMatchJump[] - Assumes operand allocated to registers */
+    {6, 9, 15},                 /* sizeofRangeCompare[] - Assumes operand allocated to registers*/
+    1,                          /* sizeofSubtract - Assumes use of a single inc or dec */
+    9,                          /* sizeofDispatch - Assumes operand allocated to register e or c*/
+  },
+  "_",
+  _z80n_init,
+  _parseOptions,
+  _z80_like_options,
+  NULL,
+  _finaliseOptions,
+  _setDefaultOptions,
+  z80_assignRegisters,
+  _getRegName,
+  _getRegByName,
+  NULL,
+  _keywords,
+  _z80_genAssemblerStart,
+  NULL,                         /* no genAssemblerEnd */
+  0,                            /* no local IVT generation code */
+  0,                            /* no genXINIT code */
+  NULL,                         /* genInitStartup */
+  _reset_regparm,
+  _reg_parm,
+  _process_pragma,
+  NULL,
+  _hasNativeMulFor,
+  hasExtBitOp,                  /* hasExtBitOp */
+  oclsExpense,                  /* oclsExpense */
+  TRUE,
+  TRUE,                         /* little endian */
+  0,                            /* leave lt */
+  0,                            /* leave gt */
+  1,                            /* transform <= to ! > */
+  1,                            /* transform >= to ! < */
+  1,                            /* transform != to !(a == b) */
+  0,                            /* leave == */
+  FALSE,                        /* Array initializer support. */
+  0,                            /* no CSE cost estimation yet */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // there is no __far, and thus no pointers into it.
   false,                        // there is no __far, and thus no pointers into it.
@@ -1539,7 +1686,7 @@ PORT z180_port =
   0,                            /* leave == */
   FALSE,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // there is no __far, and thus no pointers into it.
   false,                        // there is no __far, and thus no pointers into it.
@@ -1675,7 +1822,7 @@ PORT r2k_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // __far is not a subspace of generic.
   true,                         // generic is a subspace of __far.
@@ -1812,7 +1959,7 @@ PORT r2ka_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // __far is not a subspace of generic.
   true,                         // generic is a subspace of __far.
@@ -1949,7 +2096,7 @@ PORT r3ka_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // __far is not a subspace of generic.
   true,                         // generic is a subspace of __far.
@@ -2086,7 +2233,7 @@ PORT r4k_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // __far is not a subspace of generic.
   true,                         // generic is a subspace of __far.
@@ -2223,7 +2370,7 @@ PORT r5k_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // __far is not a subspace of generic.
   true,                         // generic is a subspace of __far.
@@ -2360,7 +2507,7 @@ PORT r6k_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // __far is not a subspace of generic.
   true,                         // generic is a subspace of __far.
@@ -2499,7 +2646,7 @@ PORT sm83_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  NULL,                         /* no builtin functions */
+  "",                           // no builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // there is no __far, and thus no pointers into it.
   false,                        // there is no __far, and thus no pointers into it.
@@ -2636,7 +2783,7 @@ PORT tlcs90_port =
   0,                            /* leave == */
   FALSE,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  0,                            /* no builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // __far is not a subspace of generic.
   true,                         // generic is a subspace of __far.
@@ -2773,147 +2920,10 @@ PORT ez80_port =
   0,                            /* leave == */
   FALSE,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // __far is not a subspace of generic.
   true,                         // generic is a subspace of __far.
-  1,                            /* reset labelKey to 1 */
-  1,                            /* globals & local statics allowed */
-  9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
-  PORT_MAGIC
-};
-
-PORT z80n_port =
-{
-  TARGET_ID_Z80N,
-  "z80n",
-  "Z80N",                       /* Target name */
-  NULL,                         /* Processor name */
-  {
-    glue,
-    FALSE,
-    NO_MODEL,
-    NO_MODEL,
-    NULL,                       /* model == target */
-  },
-  {                             /* Assembler */
-    _z80AsmCmd,
-    NULL,
-    "-plosgffwy",               /* Options with debug */
-    "-plosgffw",                /* Options without debug */
-    0,
-    ".asm"
-  },
-  {                             /* Linker */
-    _z80LinkCmd,                //NULL,
-    NULL,                       //LINKCMD,
-    NULL,
-    ".rel",
-    1,
-    _crt,                       /* crt */
-    _libs_z80n,                 /* libs */
-  },
-  {                             /* Peephole optimizer */
-    _z80n_defaultRules,
-    z80instructionSize,
-    NULL,
-    NULL,
-    NULL,
-    z80notUsed,
-    z80canAssign,
-    z80notUsedFrom,
-    z80symmParmStack,
-    z80canJoinRegs,
-    z80canSplitReg,
-  },
-  /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, BitInt (in bits) */
-  { 1, 2, 2, 4, 8, 2, 2, 2, 2, 2, 1, 4, 64 },
-  /* tags for generic pointers */
-  { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
-  {
-    "XSEG",
-    "STACK",
-    "CODE",
-    "DATA",
-    NULL,                       /* idata */
-    NULL,                       /* pdata */
-    NULL,                       /* xdata */
-    NULL,                       // xconst
-    NULL,                       /* bit */
-    "RSEG (ABS)",
-    "GSINIT",
-    NULL,                       /* overlay */
-    "GSFINAL",
-    "HOME",
-    NULL,                       /* xidata */
-    NULL,                       /* xinit */
-    NULL,                       /* const_name */
-    "CABS (ABS)",               // cabs_name
-    NULL,                       // xabs_name
-    "DABS (ABS)",               // iabs_name
-    "INITIALIZED",              /* name of segment for initialized variables */
-    "INITIALIZER",              /* name of segment for copies of initialized variables in code space */
-    NULL,
-    NULL,
-    1,                          /* CODE  is read-only */
-    false,                      // unqualified pointers cannot point to __sfr.
-    1                           /* No fancy alignments supported. */
-  },
-  { NULL, NULL },
-  1,                            /* ABI revision */
-  { -1, 0, 0, 4, 0, 3, 0 },
-  { 
-    -1,                         /* shifts never use support routines */
-    false,                      /* do not use support routine for int x int -> long multiplication */
-    false,                      /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
-  },
-  { z80_emitDebuggerSymbol },
-  {
-    8000,                       /* maxCount */
-    2,                          /* sizeofElement */
-    {6, 7, 8},                  /* sizeofMatchJump[] - Assumes operand allocated to registers */
-    {6, 9, 15},                 /* sizeofRangeCompare[] - Assumes operand allocated to registers*/
-    1,                          /* sizeofSubtract - Assumes use of a single inc or dec */
-    9,                          /* sizeofDispatch - Assumes operand allocated to register e or c*/
-  },
-  "_",
-  _z80n_init,
-  _parseOptions,
-  _z80_like_options,
-  NULL,
-  _finaliseOptions,
-  _setDefaultOptions,
-  z80_assignRegisters,
-  _getRegName,
-  _getRegByName,
-  NULL,
-  _keywords,
-  _z80_genAssemblerStart,
-  NULL,                         /* no genAssemblerEnd */
-  0,                            /* no local IVT generation code */
-  0,                            /* no genXINIT code */
-  NULL,                         /* genInitStartup */
-  _reset_regparm,
-  _reg_parm,
-  _process_pragma,
-  NULL,
-  _hasNativeMulFor,
-  hasExtBitOp,                  /* hasExtBitOp */
-  oclsExpense,                  /* oclsExpense */
-  TRUE,
-  TRUE,                         /* little endian */
-  0,                            /* leave lt */
-  0,                            /* leave gt */
-  1,                            /* transform <= to ! > */
-  1,                            /* transform >= to ! < */
-  1,                            /* transform != to !(a == b) */
-  0,                            /* leave == */
-  FALSE,                        /* Array initializer support. */
-  0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
-  false,                        // there is no __far, and thus no pointers into it.
-  false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -3047,7 +3057,7 @@ PORT r800_port =
   0,                            /* leave == */
   FALSE,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  _z80_builtins,                /* builtin functions */
+  z80_builtins,                 // builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   false,                        // there is no __far, and thus no pointers into it.
   false,                        // there is no __far, and thus no pointers into it.

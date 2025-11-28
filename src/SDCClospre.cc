@@ -20,7 +20,7 @@
 // Lifetime-optimal speculative partial redundancy elimination.
 
 // #define DEBUG_LOSPRE // Uncomment to get debug messages while doing lospre.
-// #define DEBUG_LOSPRE_ASS // Uncomment to get debug messages on considered assignmentd while doing lospre.
+// #define DEBUG_LOSPRE_ASS // Uncomment to get debug messages on considered assignments while doing lospre.
 
 #include "SDCClospre.hpp"
 

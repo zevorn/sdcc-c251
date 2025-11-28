@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
    uchar.h: Unicode utilities  (ISO C 11 7.28)
 
-   Copyright (C) 2015-2016, Philipp Klaus Krause, pkk@spth.de
+   Copyright (C) 2015-2025, Philipp Klaus Krause, pkk@spth.de, philipp@colecovision.eu
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -61,6 +61,7 @@ size_t c16rtomb(char *restrict s, char16_t c16, mbstate_t *restrict ps);
 size_t mbrtoc32(char32_t *restrict pc32, const char *restrict s, size_t n, mbstate_t *restrict ps);
 size_t c32rtomb(char *restrict s, char32_t c32, mbstate_t *restrict ps);
 
+// SDCC-specific  stuff
 size_t __mbstoc16s(char16_t *restrict c16s, const char *restrict s, size_t n);
 size_t __c16stombs(char *restrict s, const char16_t *restrict c16s, size_t n);
 

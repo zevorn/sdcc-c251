@@ -1107,7 +1107,7 @@ PORT mcs51_port =
   0,                            /* leave == */
   FALSE,                        /* No array initializer support. */
   cseCostEstimation,
-  NULL,                         /* no builtin functions */
+  "",                           // no builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   true,                         // __far is a subspace of the generic space.
   false,                        // the generic space is not a subspace of __far.

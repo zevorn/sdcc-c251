@@ -1,9 +1,56 @@
+2025-11-27 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genand.c,
+	  src/mos6502/genor.c,
+	  src/mos6502/genxor.c:
+	  Refactor bit operations.
+
+2025-11-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCicode.c:
+	  Fix false positives in operand comparsion.
+
+2025-11-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge arraybounds branch.
+
 2025-11-25 Benedikt Freisen <b.freisen AT gmx.net>
 
 	* device/include/stddef.h,
 	  doc/sdccman.lyx,
 	  support/regression/tests/containerof.c:
 	  Add the containerof macro (C2y, N3398).
+
+2025-11-25 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/ralloc2.cc:
+	  Fix interaction of new va_start with frame pointer omission.
+
+2025-11-24 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* .version,
+	  ChangeLog,
+	  doc/sdccman.lyx,
+	  src/SDCC.y,
+	  src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  support/regression/tests/vaargs.c.in,
+	  tests/vaargs-c23.c.in,
+	  tests/vaargs.c.in,
+	  support/valdiag/tests/varg.c:
+	  ISO C23 variable arguments, integer promotion changes on variable arguments, tests and documentation therefor and for ISO C23 va_start.
+
+2025-11-24 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* evice/include/stdarg.h,
+	  src/SDCCast.c,
+	  src/SDCCmem.c,
+	  src/SDCCmem.h,
+	  support/regression/tests/bitintvararg.c.in,
+	  support/regression/tests/bug-3172.c.in,
+	  support/regression/tests/vaargs.c.in,
+	  Move va_start implementation from library into compiler to fix false positive [static n] warnins in functions with variable arguments, and to make va_start ISO C23-compliant.
 
 2025-11-23 Gabriele Gorla <gorlik@yahoo.com>
 
@@ -14,6 +61,29 @@
 	  Peephole rules to improve fastSaveA() and fastRestoreA().
 	* src/mos6502/gen.c:
 	  genCmp() improvements.
+
+2025-11-23 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCicode.c,
+	  src/SDCCicode.h,
+	  src/SDCCopt.c,
+	  src/SDCCsymt.c,
+	  support/valdiag/tests/arraybounds.c:
+	  Warnings on [static n] array parameters where n is not an integer constant.
+
+2025-11-23 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.y,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCsymt.c,
+	  src/SDCCval.c,
+	  src/SDCCval.h,
+	  src/port.h,
+	  support/valdiag/tests/arraybounds.c,
+	  .version,
+	  doc/sdccman.lyx:
+	  Support parameter forward declaration syntax for a single parameter of integer type.
 
 2025-11-23 Benedikt Freisen <b.freisen AT gmx.net>
 
@@ -47,6 +117,35 @@
 	  src/mos6502/tempops.c:
 	  Add fastSaveA() and fastRestoreA().
 
+2025-11-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/include/stdatomic.h,
+	  device/include/stdio.h,
+	  device/include/stdlib.h,
+	  device/include/string.h,
+	  device/include/time.h,
+	  device/include/uchar.h,
+	  device/include/wchar.h,
+	  src/SDCC.lex,
+	  src/SDCC.y,
+	  src/SDCCicode.c,
+	  src/SDCCmain.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/ds390/main.c,
+	  src/f8/main.c,
+	  src/hc08/main.c,
+	  src/mcs51/main.c,
+	  src/pdk/main.c,
+	  src/pic14/main.c,
+	  src/pic16/main.c,
+	  src/port.h,
+	  src/stm8/main.c,
+	  src/z80/main.c,
+	  support/regression/tests/gcc-torture-execute-pr34176.c,
+	  support/valdiag/tests/arraybounds.c:
+	  Use [static] notation in standard library headers to enable improved diagnostics on passing null pointers where invalid. Rewrite mechanism for announcing built-in functions by ports.
+
 2025-11-21 Janko Stamenović
 
 	* sdas/asgb/gb.h
@@ -76,6 +175,20 @@
 
 2025-11-20 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCC.y,
+	  src/SDCCval.c,
+	  src/SDCCval.h,
+	  support/valdiag/tests/arraybounds.c:
+	  Check well-formedness of array parameter declarations.
+
+2025-11-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCgenconstprop.cc,
+	  src/SDCCopt.c:
+	  Improve handling of local variables not replaced by register equivalents in generalized constant propagation (to more reliably get warnings on out-of bounds array accesses and dereferences of invalid pointers).
+
+2025-11-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* support/scripts/sdcc.nsi:
 	  Include Rabbit 4000/5000/6000 libraries in Windows installer.
 
@@ -85,6 +198,17 @@
 	  src/mos6502/gen.c:
 	  Improve register tracking.
 
+2025-11-19 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCdflow.h,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCopt.c,
+	  src/SDCCsymt.c,
+	  support/regression/tests/bug-2222.c,
+	  support/regression/tests/bug-2384.c,
+	  support/valdiag/tests/arraybounds.c:
+	  Generalize  [static] parameter warning to also warn on dereference of invalid pointers. Improve pointer arithmetic support in static analysis for such warnings.
+
 2025-11-18 Gabriele Gorla <gorlik@yahoo.com>
 
 	* device/lib/mos6502/fabsf.s:
@@ -92,6 +216,22 @@
 	* src/mos6502/gen.c,
 	  support/regression/fwk/lib/testfwk.c:
 	  Fix bug #3863
+
+2025-11-17 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  src/SDCCopt.c,
+	  src/SDCCgenconstprop.cc,
+	  support/valdiag/tests/arraybounds.c:
+	  Preparations for generalizing  [static] parameter warning to also warn on dereference of invalid pointers.
+
+2025-11-17 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCdflow.h,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCopt.c:
+	  Integrate static analysis for warning for passing too-short array as [static] parameter into generalized constant propagation.
 
 2025-11-16 Gabriele Gorla <gorlik@yahoo.com>
 
@@ -159,6 +299,27 @@
 	  sdas/asxxsrc/asxxxx.h
 	  Rebasing sdas assemblers to the current upstream: as8xcxxx
 
+2025-11-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCopt.c,
+	  support/valdiag/tests/arraybounds.c:
+	  Generalize warning for passing null pointer as [static] array to warning for passing too-short array.
+
+2025-11-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCopt.c,
+	  support/valdiag/tests/arraybounds.c:
+	  Generalize warning for passing null pointer as [static] array to parameters that are neither in registers nor on the stack.
+	* src/SDCCgenconstprop.cc,
+	  support/regression/tests/arraybounds.c:
+	  Generalize optimization on null pointer checks for [static] array parameters to parameters not passed in registers.
+
+2025-11-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCgenconstprop.cc,
+	  support/valdiag/tests/arraybounds.c:
+	  Generalize warning for passing null pointer as [static] array to targets with non-flat address space.
+
 2025-11-15 Janko Stamenović
 
 	* sdas/asstm8/stm8.h
@@ -167,6 +328,21 @@
 	  sdas/asstm8/stm8pst.c
 	  sdas/asxxsrc/asxxxx.h
 	  Rebasing sdas assemblers to the current upstream: asst8
+
+2025-11-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCsymt.h
+	  src/SDCCsymt.c
+	  src/SDCC.y
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  src/SDCCicode.h,
+	  src/SDCCicode.c,
+	  src/SDCCopt.c,
+	  src/SDCCmem.c,
+	  src/SDCCast.c:
+	  Infrastructure for handling [static], a simple optimization, and a simple warning based on it. Part of RFE #1002.
 
 2025-11-14 Janko Stamenović
 
@@ -230,7 +406,7 @@
 	  src/SDCCerr.c,
 	  doc/sdccman.lyx,
 	  support/valdiag/tests/undefinedc23.c:
-	  Implement N3342 resolution of C23 UB on qualified function types, choosing an error as implementation-define behavior.
+	  Implement N3342 resolution of C23 UB on qualified function types, choosing an error as implementation-defined behavior.
 	* support/regression/tests/bug-3462.c,
 	  support/regression/tests/bug-3831.c,
 	  support/regression/tests/bug-3873.c,

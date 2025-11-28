@@ -6,6 +6,8 @@
 
 #pragma disable_warning 283
 
+#pragma disable_warning 346 // Expected warning, since we dereference invalid pointers (but that is UB onlyif actually executed at runtime, it shouldn't crash the compiler)
+
 typedef unsigned short u16;
 
 static u16 vn[20];
@@ -39,3 +41,4 @@ void crash2()
 void testBug(void)
 {
 }
+

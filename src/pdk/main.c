@@ -415,8 +415,8 @@ PORT pdk13_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  0,                            /* builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  "",                           // builtin functions
+  GPOINTER,                     // treat unqualified pointers as "generic" pointers
   false,                        // there is no __far, and thus no pointers into it.
   false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
@@ -587,8 +587,8 @@ PORT pdk14_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  0,                            /* builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  "",                           // builtin functions
+  GPOINTER,                     // treat unqualified pointers as "generic" pointers
   false,                        // there is no __far, and thus no pointers into it.
   false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
@@ -759,8 +759,8 @@ PORT pdk15_port =
   0,                            /* leave == */
   false,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
-  0,                            /* builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  "",                           // builtin functions
+  GPOINTER,                     // treat unqualified pointers as "generic" pointers
   false,                        // there is no __far, and thus no pointers into it.
   false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */

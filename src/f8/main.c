@@ -552,9 +552,9 @@ PORT f8_port =
   false,                        // leave !=
   false,                        // leave ==
   false,                        // Array initializer support
-  0,                            /* no CSE cost estimation yet */
-  NULL,                         /* builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  0,                            // no CSE cost estimation yet */
+  "",                           // builtin functions
+  GPOINTER,                     // treat unqualified pointers as "generic" pointers
   false,                        // there is no __far, and thus no pointers into it.
   false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
@@ -723,9 +723,9 @@ PORT f8l_port =
   false,                        // leave !=
   false,                        // leave ==
   false,                        // Array initializer support
-  0,                            /* no CSE cost estimation yet */
-  NULL,                         /* builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  0,                            // no CSE cost estimation yet
+  "",                           // builtin functions
+  GPOINTER,                     // treat unqualified pointers as "generic" pointers
   false,                        // there is no __far, and thus no pointers into it.
   false,                        // there is no __far, and thus no pointers into it.
   1,                            /* reset labelKey to 1 */
