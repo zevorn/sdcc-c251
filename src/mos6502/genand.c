@@ -298,8 +298,9 @@ m6502_genAnd (iCode * ic, iCode * ifx)
       }
     }
 
-
   needpulla = fastSaveAIfSurv();
+
+  // prevent from saving A again
   if(needpulla)
     m6502_reg_a->isDead=true;
 
@@ -324,7 +325,6 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 	  storeRegToAop (m6502_reg_a, AOP (result), offset);
 	}
     }
-
 
   fastRestoreOrFreeA(needpulla);
 

@@ -121,7 +121,7 @@ m6502_genOr (iCode * ic, iCode * ifx)
 	  loadRegFromConst (m6502_reg_a, 0xff);
 	}
       else
-	while (size--)
+	for(offset=0; offset<size; offset++)
 	  {
 	    bytemask = (isLit) ? (lit >> (offset * 8)) & 0xff : 0x100;
 
@@ -132,8 +132,10 @@ m6502_genOr (iCode * ic, iCode * ifx)
 
 	    if (bytemask != NOP_MASK)
 	      accopWithAop ("ora", AOP(right), offset);
-	    if (size && size%2)
+
+            if(((offset+1)%2)==0)
 	      emitBranch ("bne", tlbl);
+            offset++;
 	  }
 
       m6502_freeReg (m6502_reg_a);
@@ -223,8 +225,11 @@ m6502_genOr (iCode * ic, iCode * ifx)
       }
     }
 
-
   needpulla = fastSaveAIfSurv();
+
+  // prevent from saving A again
+  if(needpulla)
+    m6502_reg_a->isDead=true;
 
   emitComment (TRACEGEN|VVDBG, "  %s: general path", __func__);
 

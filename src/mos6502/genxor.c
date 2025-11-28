@@ -171,10 +171,11 @@ m6502_genXor (iCode * ic, iCode * ifx)
       }
     }
 
-
   needpulla = fastSaveAIfSurv();
-  //  if(needpulla)
-  //    m6502_reg_a->isDead=true;
+
+  // prevent from saving A again
+  if(needpulla)
+    m6502_reg_a->isDead=true;
 
   emitComment (TRACEGEN|VVDBG, "  %s: general path", __func__);
 
@@ -193,7 +194,6 @@ m6502_genXor (iCode * ic, iCode * ifx)
 	  storeRegToAop (m6502_reg_a, AOP (result), offset);
 	}
     }
-
 
   fastRestoreOrFreeA(needpulla);
 

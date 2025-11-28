@@ -1,3 +1,8 @@
+2025-11-28 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genor.c:
+	  Fix bug introduced by r15900.
+	
 2025-11-27 Gabriele Gorla <gorlik@yahoo.com>
 
 	* src/mos6502/genand.c,
