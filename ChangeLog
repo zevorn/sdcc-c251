@@ -1,3 +1,20 @@
+2025-11-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge _Optional branch.
+
+2025-11-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCicode.c,
+	  src/SDCCicode.h,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/SDCCval.c,
+	  support/valdiag/tests/_Optional.c,
+	  support/valdiag/tests/restrict.c:
+	  Fix diagnostics for _Optional (and restrict) qualifier on parameters in function declarations that are not definitions, and on explicit casts.
+	* doc/sdccman.lyx:
+	  Basic documentation for _Optional support.
+
 2025-11-28 Gabriele Gorla <gorlik@yahoo.com>
 
 	* src/mos6502/genor.c:
@@ -10,10 +27,44 @@
 	  src/mos6502/genxor.c:
 	  Refactor bit operations.
 
+2025-11-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.y,
+	  src/SDCCsymt.c,
+	  support/valdiag/tests/_Optional.c:
+	  Further fixes and test cases for _Optional.
+
+2025-11-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.y,
+	  src/SDCCast.c,
+	  support/valdiag/tests/_Optional.c:
+	  Implement special handling of _Optional qualifier at & and &*.
+
+2025-11-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCicode.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  support/valdiag/tests/_Optional.c:
+	  Fixes for _Optional functions (_Optional is the only qualifier that has defined semantics when applied to functions).
+
 2025-11-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCicode.c:
-	  Fix false positives in operand comparsion.
+	  Fix false positives in operand comparison.
+
+2025-11-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.lex,
+	  src/SDCC.y,
+	  src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCicode.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h:
+	  Basic infrastructure for the _Optional qualifier.
 
 2025-11-26 Philipp Klaus Krause <philipp@colecovision.eu>
 

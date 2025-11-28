@@ -247,7 +247,7 @@ static void checkCurrFile (const char *s);
 "__z88dk_params_offset" { count (); return Z88DK_PARAMS_OFFSET; }
 "__addressmod"          { count (); return ADDRESSMOD; }
 "__typeof"              { count (); return TYPEOF; }
-
+"_Optional"             { count (); return OPTIONAL; }
 
 ({L}|{UCN}|{UTF8IDF1ST})({L}|{D}|{UCN}|{UTF8IDF})*  {
   if (!options.std_c95)

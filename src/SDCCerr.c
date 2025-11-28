@@ -765,6 +765,8 @@ struct
      "unsupported parameter forward declaration; only single forward-declared parameters of integer type are supported", 0 },
   { W_VARARG_ONLY_C23, ERROR_LEVEL_WARNING,
      "function with variable arguments only requires ISO C23 or later", 0 },
+  { E_BAD_OPTIONAL, ERROR_LEVEL_ERROR,
+     "types other than the referenced type of a pointer type shall not be optional-qualified", 0 },
 };
 
 /* -------------------------------------------------------------------------------

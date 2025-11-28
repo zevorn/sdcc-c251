@@ -748,6 +748,8 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
         werror (W_REPEAT_QUALIFIER, "const");
       if (SPEC_VOLATILE (dest) && SPEC_VOLATILE (src))
         werror (W_REPEAT_QUALIFIER, "volatile");
+      if (SPEC_OPTIONAL(dest) && SPEC_OPTIONAL (src))
+        werror (W_REPEAT_QUALIFIER, "_Optional");
       if (SPEC_STAT (dest) && SPEC_STAT (src))
         werror (W_REPEAT_QUALIFIER, "static");
       if (SPEC_EXTR (dest) && SPEC_EXTR (src))
@@ -842,6 +844,7 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
   SPEC_VOLATILE (dest) |= SPEC_VOLATILE (src);
   SPEC_RESTRICT (dest) |= SPEC_RESTRICT (src);
   SPEC_ATOMIC (dest) |= SPEC_ATOMIC (src);
+  SPEC_OPTIONAL (dest) |= SPEC_OPTIONAL (src);
   SPEC_ADDR (dest) |= SPEC_ADDR (src);
   SPEC_OCLS (dest) = SPEC_OCLS (src);
   SPEC_BLEN (dest) |= SPEC_BLEN (src);
@@ -948,6 +951,7 @@ mergeDeclSpec (sym_link * dest, sym_link * src, const char *name)
       DCL_PTR_VOLATILE (decl) |= SPEC_VOLATILE (spec);
       DCL_PTR_RESTRICT (decl) |= SPEC_RESTRICT (spec);
       DCL_PTR_ATOMIC (decl) |= SPEC_ATOMIC (spec);
+      DCL_PTR_OPTIONAL (decl) |= SPEC_OPTIONAL (spec);
       if (DCL_PTR_ADDRSPACE (decl) && SPEC_ADDRSPACE (spec) &&
         strcmp (DCL_PTR_ADDRSPACE (decl)->name, SPEC_ADDRSPACE (spec)->name))
         werror (E_SYNTAX_ERROR, yytext);
@@ -958,12 +962,15 @@ mergeDeclSpec (sym_link * dest, sym_link * src, const char *name)
       SPEC_VOLATILE (spec) = 0;
       SPEC_RESTRICT (spec) = 0;
       SPEC_ATOMIC (spec) = 0;
+      SPEC_OPTIONAL (spec) = 0;
       SPEC_ADDRSPACE (spec) = 0;
     }
   else if (DCL_TYPE (decl) == FUNCTION)
     {
       if (SPEC_CONST (spec) || SPEC_VOLATILE (spec))
-        werror ( E_QUALIFIED_FUNCTION);
+        werror (E_QUALIFIED_FUNCTION);
+      DCL_PTR_OPTIONAL (decl) |= SPEC_OPTIONAL (spec);
+      SPEC_OPTIONAL (spec) = 0;
     }
 
   lnk = decl;
@@ -2075,15 +2082,56 @@ promoteAnonStructs (int su, structdef * sdef)
     }
 }
 
+/*------------------------------------------------------------------*/
+/* checkQualifers - check qualifiers on type, use sym for           */
+/*                  diagnostics, if provided.                       */
+/*------------------------------------------------------------------*/
+void
+checkQualifiers (symbol *sym, sym_link *type, bool check_vla_unspec)
+{
+  sym_link *t = type;
+  bool pointed_to = false;
+  while (t)
+    {
+      if (!pointed_to && isOptional (t))
+        {
+          if (sym)
+            werrorfl (sym->fileDef, sym->lineDef, E_BAD_OPTIONAL);
+          else
+            werror (E_BAD_OPTIONAL);
+        }
+      if (IS_SPEC (t) && SPEC_RESTRICT (t) ||
+        IS_DECL (t) && DCL_PTR_RESTRICT (t) && (IS_FUNCPTR (t) || IS_FUNC (t)))
+        {
+          if (sym)
+            werrorfl (sym->fileDef, sym->lineDef, E_BAD_RESTRICT);
+          else
+            werror (E_BAD_RESTRICT);
+          if (IS_SPEC (t))
+            SPEC_RESTRICT (t) = false;
+          else
+            DCL_PTR_RESTRICT (t) = false;
+          break;
+        }
+      else if (check_vla_unspec && IS_DECL (t) && IS_ARRAY (t) && DCL_ARRAY_LENGTH_TYPE (t) == ARRAY_LENGTH_UNSPECIFIED)
+        {
+          if (sym)
+            werrorfl (sym->fileDef, sym->lineDef, E_VLA_UNSPECIFIED_SCOPE);
+          else
+            werror (E_VLA_UNSPECIFIED_SCOPE);
+          break;
+        }
+      pointed_to = IS_PTR (t);
+      t = t->next;
+    }
+}
 
 /*------------------------------------------------------------------*/
 /* checkSClass - check the storage class specification              */
 /*------------------------------------------------------------------*/
 static void
-checkSClass (symbol *sym, int isProto)
+checkSClass (symbol *sym, bool isProto)
 {
-  sym_link *t;
-
   if (getenv ("DEBUG_SANITY"))
     {
       fprintf (stderr, "checkSClass: %s \n", sym->name);
@@ -2127,14 +2175,6 @@ checkSClass (symbol *sym, int isProto)
       SPEC_NEEDSPAR (sym->etype) = 0;
     }
 
-  /* make sure restrict is only used with pointers */
-  if (SPEC_RESTRICT (sym->etype))
-    {
-      werrorfl (sym->fileDef, sym->lineDef, E_BAD_RESTRICT);
-      SPEC_RESTRICT (sym->etype) = 0;
-    }
-
-
   if (IS_ARRAY (sym->type) && SPEC_ATOMIC (sym->etype))
     {
       werrorfl (sym->fileDef, sym->lineDef, E_ATOMIC_ARRAY);
@@ -2146,33 +2186,16 @@ checkSClass (symbol *sym, int isProto)
       SPEC_ATOMIC (sym->etype) = 0;
     }
 
-  t = sym->type;
-  while (t)
-    {
-      if (IS_DECL (t) && DCL_PTR_RESTRICT (t) && !(IS_PTR (t) && !IS_FUNCPTR(t)))
-        {
-          werrorfl (sym->fileDef, sym->lineDef, E_BAD_RESTRICT);
-          DCL_PTR_RESTRICT (t) = 0;
-          break;
-        }
-      else if (IS_DECL (t) && IS_ARRAY (t) && DCL_ARRAY_LENGTH_TYPE (t) == ARRAY_LENGTH_UNSPECIFIED)
-        {
-          werrorfl (sym->fileDef, sym->lineDef, E_VLA_UNSPECIFIED_SCOPE);
-          break;
-        }
-      t = t->next;
-    }
+  checkQualifiers (sym, sym->type, true);
 
   /* if absolute address given then it mark it as
      volatile -- except in the PIC port */
-
 #if !OPT_DISABLE_PIC14 || !OPT_DISABLE_PIC16
   /* The PIC port uses a different peep hole optimizer based on "pCode" */
   if (!TARGET_PIC_LIKE)
 #endif
-
-  if (IS_ABSOLUTE (sym->etype))
-    SPEC_VOLATILE (sym->etype) = 1;
+    if (IS_ABSOLUTE (sym->etype))
+      SPEC_VOLATILE (sym->etype) = 1;
 
   if (TARGET_IS_MCS51 && IS_ABSOLUTE (sym->etype) && SPEC_SCLS (sym->etype) == S_SFR)
     {
@@ -2248,7 +2271,7 @@ checkSClass (symbol *sym, int isProto)
   if ((sym->level == 0 || SPEC_STAT(sym->etype)) && SPEC_SCLS (sym->etype) == S_FIXED && !IS_FUNC (sym->type))
     {
       /* find the first non-array link */
-      t = sym->type;
+      sym_link *t = sym->type;
       while (IS_ARRAY (t))
         t = t->next;
       if (IS_CONSTANT (t))
@@ -2262,7 +2285,7 @@ checkSClass (symbol *sym, int isProto)
   if ((sym->level == 0 || SPEC_STAT(sym->etype)) && SPEC_SCLS (sym->etype) == S_CODE && port->mem.code_ro)
     {
       /* find the first non-array link */
-      t = sym->type;
+      sym_link *t = sym->type;
       while (IS_ARRAY (t))
         t = t->next;
       if (IS_SPEC (t))
@@ -2277,7 +2300,7 @@ checkSClass (symbol *sym, int isProto)
       (SPEC_SCLS (sym->etype) != S_FIXED && SPEC_SCLS (sym->etype) != S_SBIT && SPEC_SCLS (sym->etype) != S_BIT))
     {
       /* find out if this is the return type of a function */
-      t = sym->type;
+      sym_link *t = sym->type;
       while (t && t->next != sym->etype)
         t = t->next;
       if (!t || t->next != sym->etype || !IS_FUNC (t))
@@ -2336,7 +2359,7 @@ checkSClass (symbol *sym, int isProto)
        SPEC_SCLS (sym->etype) == S_SFR))
     {
       /* find out if this is the return type of a function */
-      t = sym->type;
+      sym_link *t = sym->type;
       while (t && t->next != sym->etype)
         t = t->next;
       if (t->next != sym->etype || !IS_FUNC (t))
@@ -2384,9 +2407,9 @@ checkSClass (symbol *sym, int isProto)
       if (SPEC_ATOMIC (sym->etype) || SPEC_VOLATILE (sym->etype) || SPEC_RESTRICT (sym->etype))
         {
           werror (E_CONSTEXPR_INVALID_QUAL);
-          SPEC_ATOMIC (sym->etype) = 0;
-          SPEC_VOLATILE (sym->etype) = 0;
-          SPEC_RESTRICT (sym->etype) = 0;
+          SPEC_VOLATILE (sym->etype) = false;
+          SPEC_RESTRICT (sym->etype) = false;
+          SPEC_ATOMIC (sym->etype) = false;
         }
     }
 }
@@ -3274,6 +3297,8 @@ compareTypeExact (sym_link * dest, sym_link * src, long level)
                 return 0;
               if (DCL_PTR_VOLATILE (src) != DCL_PTR_VOLATILE (dest))
                 return 0;
+              if (DCL_PTR_OPTIONAL (src) != DCL_PTR_OPTIONAL (dest))
+                return 0;
               if (IS_FUNC (src))
                 {
                   value *exargs, *acargs, *checkValue;
@@ -3379,6 +3404,8 @@ compareTypeExact (sym_link * dest, sym_link * src, long level)
   if (SPEC_CONST (dest) != SPEC_CONST (src))
     return 0;
   if (SPEC_VOLATILE (dest) != SPEC_VOLATILE (src))
+    return 0;
+  if (SPEC_OPTIONAL (dest) != SPEC_OPTIONAL (src))
     return 0;
   if (SPEC_STAT (dest) != SPEC_STAT (src))
     return 0;
@@ -4061,8 +4088,9 @@ dbuf_printTypeChain (sym_link * start, struct dbuf_s *dbuf)
             {
             case FUNCTION:
               dbuf_printf (dbuf, "function %s%s",
-                           (IFFUNC_ISBUILTIN (type) ? "__builtin__ " : ""),
-                           (IFFUNC_ISJAVANATIVE (type) ? "_JavaNative " : ""));
+                (DCL_PTR_OPTIONAL (type) ? "_Optional " : ""),
+                (IFFUNC_ISBUILTIN (type) ? "__builtin__ " : ""),
+                (IFFUNC_ISJAVANATIVE (type) ? "_JavaNative " : ""));
               dbuf_append_str (dbuf, "( ");
               if (!FUNC_ARGS (type) && !FUNC_HASVARARGS(type) && !FUNC_NOPROTOTYPE(type))
                 dbuf_append_str (dbuf, "void ");
@@ -4168,11 +4196,17 @@ dbuf_printTypeChain (sym_link * start, struct dbuf_s *dbuf)
                   dbuf_append_str (dbuf, " restrict");
                 }
             }
+          if (DCL_PTR_OPTIONAL (type))
+            {
+              dbuf_append_str (dbuf, " _Optional");
+            }
         }
       else
         {
           if (SPEC_VOLATILE (type))
             dbuf_append_str (dbuf, "volatile-");
+          if (SPEC_OPTIONAL (type))
+            dbuf_append_str (dbuf, "_Optional-");
           if (SPEC_CONST (type))
             dbuf_append_str (dbuf, "const-");
           if (SPEC_NOUN (type) == V_CHAR) // char is a different type from both unsigned char and signed char
@@ -4360,6 +4394,10 @@ printTypeChainRaw (sym_link * start, FILE * of)
                   fprintf (of, "restrict-");
                 }
             }
+          if (DCL_PTR_OPTIONAL (type))
+            {
+              fprintf (of, "_Optional-");
+            }
           switch (DCL_TYPE (type))
             {
             case FUNCTION:
@@ -4473,6 +4511,8 @@ printTypeChainRaw (sym_link * start, FILE * of)
             fprintf (of, "const-");
           if (SPEC_USIGN (type))
             fprintf (of, "unsigned-");
+          if (SPEC_OPTIONAL (type))
+            fprintf (of, "_Optional-");
           switch (SPEC_NOUN (type))
             {
             case V_INT:
@@ -5282,7 +5322,7 @@ newEnumType (symbol *enumlist, sym_link *userRequestedType)
 /*-------------------------------------------------------------------*/
 /* isConstant - check if the type is constant                        */
 /*-------------------------------------------------------------------*/
-int
+bool
 isConstant (sym_link *type)
 {
   if (!type)
@@ -5300,7 +5340,7 @@ isConstant (sym_link *type)
 /*-------------------------------------------------------------------*/
 /* isVolatile - check if the type is volatile                        */
 /*-------------------------------------------------------------------*/
-int
+bool
 isVolatile (sym_link *type)
 {
   if (!type)
@@ -5318,7 +5358,7 @@ isVolatile (sym_link *type)
 /*-------------------------------------------------------------------*/
 /* isRestrict - check if the type is restricted                      */
 /*-------------------------------------------------------------------*/
-int
+bool
 isRestrict (sym_link *type)
 {
   if (!type)
@@ -5336,7 +5376,7 @@ isRestrict (sym_link *type)
 /*-------------------------------------------------------------------*/
 /* isAtomic - check if the type is atomic                            */
 /*-------------------------------------------------------------------*/
-int
+bool
 isAtomic (sym_link *type)
 {
   if (!type)
@@ -5349,6 +5389,24 @@ isAtomic (sym_link *type)
     return SPEC_ATOMIC (type);
   else
     return DCL_PTR_ATOMIC (type);
+}
+
+/*-------------------------------------------------------------------*/
+/* isOptional - check if the type is optional                        */
+/*-------------------------------------------------------------------*/
+bool
+isOptional (sym_link *type)
+{
+  if (!type)
+    return 0;
+
+  while (IS_ARRAY (type))
+    type = type->next;
+
+  if (IS_SPEC (type))
+    return SPEC_OPTIONAL (type);
+  else
+    return DCL_PTR_OPTIONAL (type);
 }
 
 /*-------------------------------------------------------------------*/

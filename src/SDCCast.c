@@ -2881,8 +2881,9 @@ gatherImplicitVariables (ast * tree, ast * block)
           SPEC_OCLS (assignee->etype) = NULL;
           SPEC_EXTR (assignee->etype) = 0;
           SPEC_STAT (assignee->etype) = 0;
-          SPEC_VOLATILE (assignee->etype) = 0;
-          SPEC_ATOMIC (assignee->etype) = 0;
+          SPEC_VOLATILE (assignee->etype) = false;
+          SPEC_ATOMIC (assignee->etype) = false;
+          SPEC_OPTIONAL (assignee->etype) = false;
           SPEC_ABSA (assignee->etype) = 0;
           SPEC_CONST (assignee->etype) = 0;
 
@@ -4037,7 +4038,11 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
             !(AST_SYMBOL (tree->left)->level && currFunc && FUNC_ISINLINE (currFunc->type) && !IS_EXTERN (getSpec (currFunc->type)) && !IS_STATIC (getSpec (currFunc->type)));
         }
 
-      p->next = LTYPE (tree);
+      p->next = copyLinkChain (LTYPE (tree));
+      if (IS_DECL (p->next))
+        DCL_PTR_OPTIONAL (p->next) = false;
+      else
+        SPEC_OPTIONAL (p->next) = false; // _Optional qualifier is not preserved across &.
       TTYPE (tree) = p;
       TETYPE (tree) = getSpec (TTYPE (tree));
       LLVAL (tree) = 1;
@@ -6139,6 +6144,7 @@ typeofOp (ast *tree)
 {
   ++noAlloc;
   tree = decorateType (resolveSymbols (tree), RESULT_TYPE_NONE, false);
+  tree->decorated = 0; // Reset, so we redecorate parameters later at CALL node to ensure that register parameters get marked correctly.
   --noAlloc;
   sym_link *type = copyLinkChain (tree->ftype);
   sym_link *spec_type;
@@ -7272,14 +7278,14 @@ inlineTempVar (sym_link * type, long level)
   SPEC_STAT (sym->etype) = 0;
   if (IS_SPEC (sym->type))
     {
-      SPEC_VOLATILE (sym->type) = 0;
-      SPEC_ATOMIC (sym->type) = 0;
+      SPEC_VOLATILE (sym->type) = false;
+      SPEC_ATOMIC (sym->type) = false;
       SPEC_ADDRSPACE (sym->type) = 0;
     }
   else
     {
-      DCL_PTR_VOLATILE (sym->type) = 0;
-      DCL_PTR_ATOMIC (sym->type) = 0;
+      DCL_PTR_VOLATILE (sym->type) = false;
+      DCL_PTR_ATOMIC (sym->type) = false;
       DCL_PTR_ADDRSPACE (sym->type) = 0;
     }
   SPEC_ABSA (sym->etype) = 0;

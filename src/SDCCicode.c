@@ -1749,7 +1749,9 @@ operandFromOperand (operand * op)
   nop->isLiteral = op->isLiteral;
   nop->usesDefs = op->usesDefs;
   nop->isParm = op->isParm;
-  nop->isConstElimnated = op->isConstElimnated;
+  nop->isConstEliminated = op->isConstEliminated;
+  nop->isRestrictEliminated = op->isRestrictEliminated;
+  nop->isOptionalEliminated = op->isOptionalEliminated;
 
   switch (nop->type)
     {
@@ -2156,11 +2158,11 @@ geniCodeRValue (operand * op, bool force)
 /* checkPtrQualifiers - check for lost pointer qualifiers          */
 /*-----------------------------------------------------------------*/
 static void
-checkPtrQualifiers (sym_link * ltype, sym_link * rtype, int warn_const)
+checkPtrQualifiers (sym_link * ltype, sym_link * rtype, operand *op)
 {
-  if (IS_PTR (ltype) && IS_PTR (rtype) && !IS_FUNCPTR (ltype) && warn_const)
+  if (IS_PTR (ltype) && IS_PTR (rtype) && !IS_FUNCPTR (ltype) && !op->isConstEliminated)
     {
-      if (!IS_CONSTANT (ltype->next) && IS_CONSTANT (rtype->next))
+      if (!isConstant (ltype->next) && isConstant (rtype->next))
         werror (W_TARGET_LOST_QUALIFIER, "const");
 #if 0
       // disabled because SDCC will make all union fields volatile
@@ -2168,8 +2170,13 @@ checkPtrQualifiers (sym_link * ltype, sym_link * rtype, int warn_const)
       if (!IS_VOLATILE (ltype->next) && IS_VOLATILE (rtype->next))
         werror (W_TARGET_LOST_QUALIFIER, "volatile");
 #endif
-      if (!IS_RESTRICT (ltype->next) && IS_RESTRICT (rtype->next))
+    }
+  if (IS_PTR (ltype) && IS_PTR (rtype))
+    {
+      if (!op->isRestrictEliminated && !isRestrict (ltype->next) && isRestrict (rtype->next))
         werror (W_TARGET_LOST_QUALIFIER, "restrict");
+      if (!op->isOptionalEliminated && !isOptional (ltype->next) && isOptional (rtype->next))
+        werror (W_TARGET_LOST_QUALIFIER, "_Optional");
     }
 }
 
@@ -2199,8 +2206,15 @@ geniCodeCast (sym_link *type, operand *op, bool implicit)
   /* if the operand is already the desired type then do nothing */
   if (compareType (type, optype, false) == 1)
   {
-    if (IS_PTR (type) && IS_CONSTANT (opetype) && !IS_CONSTANT (getSpec(type)))
-      op->isConstElimnated = 1;
+    if (IS_PTR (type))
+      {
+        if (isConstant (opetype) && !isConstant (getSpec (type)))
+          op->isConstEliminated = 1;
+        if (isRestrict (opetype) && !isRestrict (getSpec (type)))
+          op->isRestrictEliminated = 1;
+        if (isOptional (opetype) && !isOptional (getSpec (type)))
+          op->isOptionalEliminated = 1;
+      }
     return op;
   }
 
@@ -3453,18 +3467,18 @@ checkTypes (operand * left, operand * right)
       if (IS_VOLATILE (ltype)) // Don't propagate volatile to right side - we don't want volatile iTemps.
         {
           ltype = copyLinkChain (ltype);
-          if (IS_DECL(ltype))
+          if (IS_DECL (ltype))
             DCL_PTR_VOLATILE (ltype) = 0;
           else
             SPEC_VOLATILE (ltype) = 0;
-          if (IS_DECL(ltype))
+          if (IS_DECL (ltype))
             DCL_PTR_ATOMIC (ltype) = 0;
           else
             SPEC_ATOMIC (ltype) = 0;
         }
       right = geniCodeCast (ltype, right, TRUE);
     }
-  checkPtrQualifiers (ltype, rtype, !right->isConstElimnated);
+  checkPtrQualifiers (ltype, rtype, right);
   return right;
 }
 
@@ -3994,7 +4008,7 @@ geniCodeFunctionBody (ast * tree, int lvl)
 /* geniCodeReturn - gen icode for 'return' statement               */
 /*-----------------------------------------------------------------*/
 void
-geniCodeReturn (operand * op)
+geniCodeReturn (operand *op)
 {
   iCode *ic;
 
@@ -4004,7 +4018,7 @@ geniCodeReturn (operand * op)
 
   /* check if a cast is needed */
   if (op && currFunc && currFunc->type && currFunc->type->next)
-    checkPtrQualifiers (currFunc->type->next, operandType (op), !op->isConstElimnated);
+    checkPtrQualifiers (currFunc->type->next, operandType (op), op);
 
   /* if the operand is present force an rvalue */
   if (op)

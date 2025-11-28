@@ -27257,6 +27257,30 @@ void f(size_t n;
  size_t n);
 \end_layout
 
+\begin_layout Subsection
+_Optional
+\end_layout
+
+\begin_layout Standard
+SDCC supports the 
+\emph on
+_Optional
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+_Optional
+\end_layout
+
+\end_inset
+
+
+\emph default
+ qualifier.
+\end_layout
+
 \begin_layout Section
 Parameters
 \begin_inset Index idx

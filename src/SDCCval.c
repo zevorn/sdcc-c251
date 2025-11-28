@@ -3619,7 +3619,7 @@ valForCastArr (ast * aexpr, sym_link * type)
 
 /*-----------------------------------------------------------------*/
 /* checkParameterTypeList - check that the identifiers used in the */
-/*                          types inthe list are declared before   */
+/*                          types in the list are declared before  */
 /*-----------------------------------------------------------------*/
 void
 checkParameterTypeList (value *forward_declaration, value *parameters)
@@ -3637,6 +3637,7 @@ checkParameterTypeList (value *forward_declaration, value *parameters)
         werror (E_PARAM_NAME_OMITTED, "", 0);
       else
         {
+          checkQualifiers (forward_declaration->sym, forward_declaration->sym->type, false);
           addSymChain (&forward_declaration->sym);
           bool found = false;
           for (value *p = parameters; p; p = p->next)
@@ -3652,6 +3653,7 @@ checkParameterTypeList (value *forward_declaration, value *parameters)
   for (value *p = parameters; p; p = p->next)
     {
       changePointer (p->type);
+      checkQualifiers (p->sym, p->type, false);
       if (p->sym)
         addSymChain (&p->sym);
     }
