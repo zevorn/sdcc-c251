@@ -30,6 +30,9 @@
 #include "gen.h"
 #include "dbuf_string.h"
 
+#define NOP_MASK   0xff
+#define CONST_MASK 0x00
+
 /**************************************************************************
  * genAnd  - code for and
  *************************************************************************/
@@ -165,7 +168,8 @@ m6502_genAnd (iCode * ic, iCode * ifx)
             }
 	  else
 	    {
-	      storeRegTemp(m6502_reg_a, true);
+              // no dead register available
+              storeRegTemp(m6502_reg_a, true);
 	      accopWithAop ("and", AOP(right), 0);
 	      loadRegTempNoFlags(m6502_reg_a, true); // preserve flags
 	    }
@@ -178,28 +182,35 @@ m6502_genAnd (iCode * ic, iCode * ifx)
   if (AOP_TYPE (result) == AOP_CRY)
     {
       symbol *tlbl = safeNewiTempLabel (NULL);
+
       needpulla = storeRegTempIfSurv (m6502_reg_a);
-      offset = 0;
 
       if ( isLit && lit == 0)
 	{
+          if(ifx)
+            {
+	      emitSetCarry(0);
+	      genIfxJump (ifx, "c");
+	      goto release;
+	    }
 	  loadRegFromConst (m6502_reg_a, 0x00);
 	}
       else
-	while (size--)
+	for(offset=0; offset<size; offset++)
 	  {
 	    bytemask = (isLit) ? (lit >> (offset * 8)) & 0xff : 0x100;
 
-	    if (bytemask != 0x00)
+	    if (bytemask != CONST_MASK)
 	      {
 		loadRegFromAop (m6502_reg_a, AOP(left), offset);
-		if (bytemask != 0xff)
+		if (bytemask != NOP_MASK)
 		  accopWithAop ("and", AOP(right), offset);
-		if (size)
+	  
+                if (offset<size-1)
 		  emitBranch ("bne", tlbl);
 	      }
-	    offset++;
 	  }
+
       m6502_freeReg (m6502_reg_a);
       safeEmitLabel (tlbl);
 
@@ -211,7 +222,8 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 	}
       else
 	{
-	  if (needpulla) loadRegTemp (NULL);
+	  if (needpulla)
+            loadRegTemp (NULL);
 	}
       goto release;
     }
@@ -234,7 +246,6 @@ m6502_genAnd (iCode * ic, iCode * ifx)
     }
 #endif
 
-  bool savea = false;
   unsigned int bmask0 = (isLit) ? ((lit >> (0 * 8)) & 0xff) : 0x100;
   unsigned int bmask1 = (isLit) ? ((lit >> (1 * 8)) & 0xff) : 0x100;
 
@@ -252,80 +263,70 @@ m6502_genAnd (iCode * ic, iCode * ifx)
       {
         if (IS_AOP_A(AOP(left)))
           storeConstToAop(0x00, AOP(result), 1);
-        else if(bmask1==0x00)
-          storeConstToAop(0x00, AOP(result), 1);
-        else if(IS_AOP_XA(AOP(left)) && m6502_reg_x->isLitConst && m6502_reg_x->litConst==0xff)
-          transferAopAop(AOP(right), 1, AOP(result), 1);
-        else if (bmask1==0xff)
+        else if (bmask1==NOP_MASK)
           transferAopAop(AOP(left), 1, AOP(result), 1);
+        else if(bmask1==CONST_MASK)
+          storeConstToAop(0x00, AOP(result), 1);
+        else  if(IS_AOP_XA(AOP(left)) && m6502_reg_x->isLitConst && m6502_reg_x->litConst==0xff)
+          transferAopAop(AOP(right), 1, AOP(result), 1);
         else
           {
-            if(IS_AOP_XA(AOP(left)))
+            if(IS_AOP_XA(AOP(left)) && (bmask0!=CONST_MASK))
 	      {
-		if(bmask0!=0x00)
-		  {
-		    if (bmask0!=0xff)
-		      accopWithAop ("and", AOP (right), 0);
-		    storeRegTemp(m6502_reg_a, true);
-		    needpulla=true;
-		  }
+		fastSaveA();
+		needpulla=true;
 	      }
             loadRegFromAop (m6502_reg_a, AOP (left), 1);
             accopWithAop ("and", AOP (right), 1);
             storeRegToAop (m6502_reg_a, AOP (result), 1);          
           }
-        if(bmask0==0x00)
+
+        if(bmask0==CONST_MASK)
           storeConstToAop(0x00, AOP(result), 0);
         else
 	  {
-	    if(needpulla) loadRegTemp(m6502_reg_a);
+	    if(needpulla)
+	      fastRestoreA();
 	    else
 	      {
 		loadRegFromAop (m6502_reg_a, AOP (left), 0);
-		if (bmask0!=0xff)
-		  accopWithAop ("and", AOP (right), 0);
 	      }
+	    if (bmask0!=NOP_MASK)
+	      accopWithAop ("and", AOP (right), 0);
 	  }
         goto release;
       }
     }
 
-  {
-    int i;
-    needpulla = !m6502_reg_a->isDead;
-    if(needpulla) storeRegTemp(m6502_reg_a, true);
 
-    emitComment (TRACEGEN|VVDBG, "  %s: general path", __func__);
-
-    for(i=0; i<size; i++)
-      {
-	bytemask = (isLit) ? ((lit >> (i * 8)) & 0xff) : 0x100;
-	if ( bytemask==0x00 )
-	  {
-	    storeConstToAop(0x00, AOP(result), i);
-	  }
-	else if ( bytemask==0xff )
-	  {
-	    transferAopAop(AOP(left), i, AOP(result), i);
-	  }
-	else
-	  {
-	    loadRegFromAop (m6502_reg_a, AOP (left), i);
-	    accopWithAop ("and", AOP (right), i);
-	    storeRegToAop (m6502_reg_a, AOP (result), i);
-	  }
-      }
-  }
-
+  needpulla = fastSaveAIfSurv();
   if(needpulla)
+    m6502_reg_a->isDead=true;
+
+  emitComment (TRACEGEN|VVDBG, "  %s: general path", __func__);
+
+  for(offset=0; offset<size; offset++)
     {
-      loadRegTemp(m6502_reg_a);
+      bytemask = (isLit) ? ((lit >> (offset * 8)) & 0xff) : 0x100;
+
+      if ( bytemask==NOP_MASK )
+	{
+	  transferAopAop(AOP(left), offset, AOP(result), offset);
+	}
+      else if ( bytemask==CONST_MASK )
+	{
+	  storeConstToAop(0x00, AOP(result), offset);
+	}
+      else 
+	{
+	  loadRegFromAop (m6502_reg_a, AOP (left), offset);
+	  accopWithAop ("and", AOP (right), offset);
+	  storeRegToAop (m6502_reg_a, AOP (result), offset);
+	}
     }
-  else
-    {
-      if(savea) loadRegTemp(NULL);
-      m6502_freeReg(m6502_reg_a);
-    }
+
+
+  fastRestoreOrFreeA(needpulla);
 
  release:
   freeAsmop (left, NULL);

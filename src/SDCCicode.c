@@ -1645,7 +1645,7 @@ isOperandEqual (const operand * left, const operand * right)
   if (left->type != right->type)
     return 0;
 
-  if (IS_SYMOP (left) && IS_SYMOP (right))
+  if (IS_ITEMP (left) && IS_ITEMP (right))
     return left->key == right->key;
 
   /* if types are the same */

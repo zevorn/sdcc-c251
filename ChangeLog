@@ -1,3 +1,15 @@
+2025-11-27 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genand.c,
+	  src/mos6502/genor.c,
+	  src/mos6502/genxor.c:
+	  Refactor bit operations.
+
+2025-11-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCicode.c:
+	  Fix false positives in operand comparsion.
+
 2025-11-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge arraybounds branch.
