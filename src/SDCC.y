@@ -102,7 +102,7 @@ bool uselessDecl = true;
 %token TYPEDEF EXTERN STATIC AUTO REGISTER CONSTEXPR CODE EEPROM INTERRUPT SFR SFR16 SFR32 ADDRESSMOD
 %token AT SBIT REENTRANT USING  XDATA DATA IDATA PDATA ELLIPSIS CRITICAL
 %token NONBANKED BANKED SHADOWREGS SD_WPARAM
-%token SD_BOOL SD_CHAR SD_SHORT SD_INT SD_LONG SIGNED UNSIGNED SD_FLOAT DOUBLE FIXED16X16 SD_CONST VOLATILE SD_VOID BIT
+%token SD_BOOL SD_CHAR SD_SHORT SD_INT SD_LONG SIGNED UNSIGNED SD_FLOAT DOUBLE FIXED16X16 SD_CONST VOLATILE SD_VOID BIT OPTIONAL
 %token COMPLEX IMAGINARY
 %token STRUCT UNION ENUM RANGE SD_FAR
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
@@ -308,8 +308,21 @@ unary_expression
    | DEC_OP unary_expression        { $$ = newNode (DEC_OP, NULL, $2); }
    | unary_operator cast_expression
        {
+         // &* is ignored except for removing the _Optional qualifier.
          if ($1 == '&' && IS_AST_OP ($2) && $2->opval.op == '*' && $2->right == NULL)
-           $$ = $2->left;
+           {
+             $$ = $2->left;
+             sym_link *type = typeofOp ($$);
+             if (isOptional (type->next))
+               {
+                 type = copyLinkChain (type);
+                 if (IS_DECL (type->next))
+                   DCL_PTR_OPTIONAL (type->next) = false;
+                 else
+                   SPEC_OPTIONAL (type->next) = false;
+                 $$ = newNode (CAST, newAst_LINK(type), $$);
+               }
+           }
          else if ($1 == '*' && IS_AST_OP ($2) && $2->opval.op == '&' && $2->right == NULL)
            $$ = $2->left;
          else
@@ -1243,10 +1256,14 @@ type_qualifier
                   $$=newLink(SPECIFIER);
                   SPEC_VOLATILE($$) = 1;
                }
-   | ATOMIC  {
+   | ATOMIC    {
                   $$=newLink(SPECIFIER);
                   SPEC_ATOMIC($$) = 1;
                   werror (E_ATOMIC_UNSUPPORTED);
+               }
+   | OPTIONAL  {
+                  $$=newLink(SPECIFIER);
+                  SPEC_OPTIONAL($$) = true;
                }
    | ADDRSPACE_NAME {
                   $$=newLink(SPECIFIER);
@@ -1636,6 +1653,7 @@ pointer
                  DCL_PTR_CONST($1) = SPEC_CONST($2);
                  DCL_PTR_VOLATILE($1) = SPEC_VOLATILE($2);
                  DCL_PTR_RESTRICT($1) = SPEC_RESTRICT($2);
+                 DCL_PTR_OPTIONAL($1) = SPEC_OPTIONAL($2);
                  DCL_PTR_ADDRSPACE($1) = SPEC_ADDRSPACE($2);
              }
              else
@@ -1674,6 +1692,7 @@ pointer
                  DCL_PTR_CONST($1) = SPEC_CONST($2);
                  DCL_PTR_VOLATILE($1) = SPEC_VOLATILE($2);
                  DCL_PTR_RESTRICT($1) = SPEC_RESTRICT($2);
+                 DCL_PTR_OPTIONAL($1) = SPEC_OPTIONAL($2);
                  DCL_PTR_ADDRSPACE($1) = SPEC_ADDRSPACE($2);
                  switch (SPEC_SCLS($2)) {
                  case S_XDATA:

@@ -143,10 +143,11 @@ typedef struct specifier
   unsigned b_absadr:1;              /* absolute address specfied  */
   unsigned b_const:1;               /* is a constant              */
   unsigned b_constexpr:1;           /* is a constant expression   */
-  unsigned b_restrict:1;            /* is restricted              */
-  unsigned b_volatile:1;            /* is marked as volatile      */
-  bool     b_atomic:1;              /* is qualified as _Atomic    */
-  struct symbol *addrspace;         /* is in named address space  */
+  bool     b_restrict:1;                // is restricted
+  bool     b_volatile:1;                // is marked as volatile
+  bool     b_atomic:1;                  // is qualified as _Atomic
+  bool     b_optional:1;                // is marked as _Optional
+  struct symbol *addrspace;             // is in named address space
   unsigned b_typedef:1;             /* is typedefed               */
   unsigned b_isregparm:1;           /* is the first parameter     */
   unsigned b_isenum:1;              /* is an enumerated type      */
@@ -159,22 +160,22 @@ typedef struct specifier
   unsigned _stack;                  /* stack offset for stacked v */
   int argreg;                       /* reg no for regparm         */
   union
-  {                                   /* Values if constant or enum */
-    TYPE_TARGET_INT v_int;            /* 2 bytes: int and char values            */
-    const char *v_char;               /*          char character string          */
-    const TYPE_TARGET_UINT *v_char16; /*          char16_t character string      */
-    const TYPE_TARGET_ULONG *v_char32;/*          char32_t character string      */
-    TYPE_TARGET_UINT v_uint;          /* 2 bytes: unsigned int const value       */
-    TYPE_TARGET_LONG v_long;          /* 4 bytes: long constant value            */
-    TYPE_TARGET_ULONG v_ulong;        /* 4 bytes: unsigned long constant value   */
-    TYPE_TARGET_LONGLONG v_longlong;  /* 8 bytes: long long constant value       */
-    TYPE_TARGET_ULONGLONG v_ulonglong;/* 8 bytes: unsigned long long const value */
-    double v_float;                   /*          floating point constant value  */
-    TYPE_TARGET_ULONG v_fixed16x16;   /* 4 bytes: fixed point constant value     */
-    struct symbol *v_enum;            /* ptr to enum_list if enum==1             */
+  {                                     // Values if constant or enum
+    TYPE_TARGET_INT v_int;              // 2 bytes: int and char values
+    const char *v_char;                 //          char character string
+    const TYPE_TARGET_UINT *v_char16;   //          char16_t character string
+    const TYPE_TARGET_ULONG *v_char32;  //          char32_t character string
+    TYPE_TARGET_UINT v_uint;            // 2 bytes: unsigned int const value
+    TYPE_TARGET_LONG v_long;            // 4 bytes: long constant value
+    TYPE_TARGET_ULONG v_ulong;          // 4 bytes: unsigned long constant value
+    TYPE_TARGET_LONGLONG v_longlong;    // 8 bytes: long long constant value
+    TYPE_TARGET_ULONGLONG v_ulonglong;  // 8 bytes: unsigned long long const value
+    double v_float;                     //          floating point constant value
+    TYPE_TARGET_ULONG v_fixed16x16;     // 4 bytes: fixed point constant value
+    struct symbol *v_enum;              // ptr to enum_list if enum==1
   }
   const_val;
-  struct structdef *v_struct;       /* structure pointer      */
+  struct structdef *v_struct;           // structure pointer
 }
 specifier;
 
@@ -196,17 +197,17 @@ DECLARATOR_TYPE;
 
 typedef enum
 {
-  ARRAY_LENGTH_KNOWN_CONST = 0,     // The normal type of array: [N], for some integer constant expression N.
-  ARRAY_LENGTH_SPECIFIED,           // VLA of specified length: [n], for some expression n that is not an integer constant expression.
-  ARRAY_LENGTH_UNSPECIFIED,         // VLA of unspecified length: [*],
-  ARRAY_LENGTH_UNEVALUATED,         // Array of unevaluated length: [n], in a context where the expression n is not evaluated.
-                                    // Only really exists from C99 to C23; since C2y these are treated as arrays of unspecified length instead.
-                                    // SDCC shall follow C2y and not use this enum value¹. That is compliant with earlier standards:
-                                    // Array of unevaluated length either behave like arrays of unspecified length
-                                    // (when forming a composite type with an array of known kength) or have undefined behavior
-                                    // (all other uses), so always following C2y is correct.
-                                    // ¹ We do use it in the parser as placeholder, until we fill in the proper value in the function arraySizes.
-  ARRAY_LENGTH_UNKNOWN              // Array of unknown length: [], these arrays have incomplete type
+  ARRAY_LENGTH_KNOWN_CONST = 0,         // The normal type of array: [N], for some integer constant expression N.
+  ARRAY_LENGTH_SPECIFIED,               // VLA of specified length: [n], for some expression n that is not an integer constant expression.
+  ARRAY_LENGTH_UNSPECIFIED,             // VLA of unspecified length: [*],
+  ARRAY_LENGTH_UNEVALUATED,             // Array of unevaluated length: [n], in a context where the expression n is not evaluated.
+                                        // Only really exists from C99 to C23; since C2y these are treated as arrays of unspecified length instead.
+                                        // SDCC shall follow C2y and not use this enum value¹. That is compliant with earlier standards:
+                                        // Array of unevaluated length either behave like arrays of unspecified length
+                                        // (when forming a composite type with an array of known kength) or have undefined behavior
+                                        // (all other uses), so always following C2y is correct.
+                                        // ¹ We do use it in the parser as placeholder, until we fill in the proper value in the function arraySizes.
+  ARRAY_LENGTH_UNKNOWN                  // Array of unknown length: [], these arrays have incomplete type
 }
 ARRAY_LENGTH_TYPE;
 
@@ -214,21 +215,21 @@ typedef struct ast ast;
 
 typedef struct declarator
 {
-  DECLARATOR_TYPE dcl_type;         /* POINTER,ARRAY or FUNCTION  */
-  bool dcl_type_implicitintrinsic:1;/* intrinsic named address space indicated by dcltype has been assigned implicitly. */
-  size_t num_elem;                  // # of elems if dcl_type == ARRAY,
-  ast *num_elem_ast;                // ast for # of elems, used to calculate num_elem.
-  bool static_array_param:1;        // [static] parameter
+  DECLARATOR_TYPE dcl_type;             // POINTER, ARRAY or FUNCTION
+  bool dcl_type_implicitintrinsic:1;    // intrinsic named address space indicated by dcltype has been assigned implicitly.
+  size_t num_elem;                      // # of elems if dcl_type == ARRAY,
+  ast *num_elem_ast;                    // ast for # of elems, used to calculate num_elem.
+  bool static_array_param:1;            // [static] parameter
   /* always 0 for flexible arrays */
-  unsigned ptr_const:1;             /* pointer is constant        */
-  unsigned ptr_volatile:1;          /* pointer is volatile        */
-  unsigned ptr_restrict:1;          /* pointer is resticted       */
-  bool ptr_atomic:1;                /* pointer is atomic          */
-  ARRAY_LENGTH_TYPE array_length_type; // Array is known to be a VLA?
-  bool vla_check_visited:1;         // Already visited in check for VLA - implementation detail to prevent infinite recursion
-  struct symbol *ptr_addrspace;     /* pointer is in named address space  */
-
-  struct sym_link *tspec;           /* pointer type specifier     */
+  unsigned ptr_const:1;                 // pointer is constant
+  unsigned ptr_volatile:1;              // pointer is volatile
+  unsigned ptr_restrict:1;              // pointer is resticted
+  bool ptr_atomic:1;                    // pointer is atomic
+  bool ptr_optional:1;                  // pointer or function is _Optional
+  ARRAY_LENGTH_TYPE array_length_type;  // Array is known to be a VLA?
+  bool vla_check_visited:1;             // Already visited in check for VLA - implementation detail to prevent infinite recursion
+  struct symbol *ptr_addrspace;         // pointer is in named address space
+  struct sym_link *tspec;               // pointer type specifier
 }
 declarator;
 
@@ -270,31 +271,31 @@ typedef struct sym_link
     unsigned intrtn:1;              /* this is an interrupt routine         */
     unsigned rbank:1;               /* separate register bank               */
     unsigned inlinereq:1;           /* inlining requested                   */
-    unsigned noreturn:1;            /* promised not to return               */
-    bool noprototype:1;             /* Up to C17 function declaratos without prototypes were allowed */
-    signed sdcccall;                /* ABI version used                     */
-    unsigned smallc:1;              /* Small-C calling convention: Parameters on stack are passed left-to-right */
-    unsigned raisonance:1;          /* Raisonance calling convention for STM8 */
-    unsigned iar:1;                 /* IAR calling convention               */
-    unsigned cosmic:1;              /* Cosmic calling convention            */
-    unsigned dynamicc:1;            /* Dynamic C calling convention         */
-    unsigned z88dk_fastcall:1;      /* For the z80-related ports: Function has a single parameter of at most 32 bits that is passed in dehl */
-    unsigned z88dk_callee:1;        /* Stack pointer adjustment for parameters passed on the stack is done by the callee */
-    unsigned z88dk_shortcall:1;     /* Short call available via rst (see values later) (Z80 only) */
-    unsigned z88dk_has_params_offset:1;     /* Has a parameter offset (Z80 only) */
-    unsigned intno;                 /* Number of interrupt for interrupt service routine */
-    short regbank;                  /* register bank 2b used                */
-    bool builtin;                   // is a builtin function
-    unsigned javaNative;            /* is a JavaNative Function (TININative ONLY) */
-    unsigned overlay;               /* force parameters & locals into overlay segment */
-    unsigned hasStackParms;         /* function has parameters on stack     */
-    bool preserved_regs[11];        /* Registers preserved by the function - may be an underestimate */
-    unsigned char z88dk_shortcall_rst;  /* Rst for a short call */
-    unsigned short z88dk_shortcall_val; /* Value for a short call */
-    unsigned short z88dk_params_offset;  /* Additional offset from for arguments */
+    bool noreturn:1;                    // promised not to return
+    bool noprototype:1;                 // Up to C17 function declaratos without prototypes were allowed
+    signed sdcccall;                    // ABI version used
+    bool smallc:1;                      // Small-C calling convention: Parameters on stack are passed left-to-right
+    bool raisonance:1;                  // Raisonance calling convention for STM8
+    bool iar:1;                         // IAR calling convention
+    bool cosmic:1;                      // Cosmic calling convention
+    bool dynamicc:1;                    // Dynamic C calling convention
+    bool z88dk_fastcall:1;              // For the z80-related ports: Function has a single parameter of at most 32 bits that is passed in dehl
+    bool z88dk_callee:1;                // Stack pointer adjustment for parameters passed on the stack is done by the callee
+    bool z88dk_shortcall:1;             // Short call available via rst (see values later) (Z80 only)
+    bool z88dk_has_params_offset:1;     // Has a parameter offset (Z80 only)
+    unsigned intno;                     // Number of interrupt for interrupt service routine
+    short regbank;                      // register bank 2b used
+    bool builtin;                       // is a builtin function
+    unsigned javaNative;                // is a JavaNative Function (TININative ONLY)
+    unsigned overlay;                   // force parameters & locals into overlay segment
+    unsigned hasStackParms;             // function has parameters on stack
+    bool preserved_regs[11];            // Registers preserved by the function - may be an underestimate
+    unsigned char z88dk_shortcall_rst;  // Rst for a short call
+    unsigned short z88dk_shortcall_val; // Value for a short call
+    unsigned short z88dk_params_offset; // Additional offset from for arguments
   } funcAttrs;
 
-  struct sym_link *next;            /* next element on the chain  */
+  struct sym_link *next;                // next element on the chain
 }
 sym_link;
 
@@ -423,6 +424,7 @@ extern sym_link *validateLink (sym_link * l,
 #define DCL_PTR_VOLATILE(l) validateLink(l, "DCL_PTR_VOLATILE", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_volatile
 #define DCL_PTR_RESTRICT(l) validateLink(l, "DCL_PTR_RESTRICT", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_restrict
 #define DCL_PTR_ATOMIC(l) validateLink(l, "DCL_PTR_ATOMIC", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_atomic
+#define DCL_PTR_OPTIONAL(l) validateLink(l, "DCL_PTR_OPTIONAL", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_optional
 #define DCL_ARRAY_LENGTH_TYPE(l) validateLink(l, "DCL_ARRAY_LENGTH_TYPE", #l, DECLARATOR, __FILE__, __LINE__)->select.d.array_length_type
 #define DCL_PTR_ADDRSPACE(l) validateLink(l, "DCL_PTR_ADDRSPACE", #l, DECLARATOR, __FILE__, __LINE__)->select.d.ptr_addrspace
 #define DCL_TSPEC(l) validateLink(l, "DCL_TSPEC", #l, DECLARATOR, __FILE__, __LINE__)->select.d.tspec
@@ -529,6 +531,7 @@ extern sym_link *validateLink (sym_link * l,
 #define SPEC_RESTRICT(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_restrict
 #define SPEC_VOLATILE(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_volatile
 #define SPEC_ATOMIC(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_atomic
+#define SPEC_OPTIONAL(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_optional
 #define SPEC_ADDRSPACE(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.addrspace
 #define SPEC_STRUCT(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.v_struct
 #define SPEC_TYPEDEF(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_typedef
@@ -761,14 +764,16 @@ void *findSymWithLevel (bucket **, struct symbol *sym);
 void *findSymWithBlock (bucket **, struct symbol *sym, int, long);
 void changePointer (sym_link * p);
 void checkTypeSanity (sym_link * etype, const char *name);
+void checkQualifiers (symbol *sym, sym_link *type, bool check_vla_unspec);
 sym_link *typeFromStr (const char *);
 STORAGE_CLASS sclsFromPtr (sym_link * ptr);
 sym_link *newEnumType (symbol *enumlist, sym_link *userRequestedType);
 void promoteAnonStructs (int, structdef *);
-int isConstant (sym_link *type);
-int isVolatile (sym_link *type);
-int isRestrict (sym_link *type);
-int isAtomic (sym_link *type);
+bool isConstant (sym_link *type);
+bool isVolatile (sym_link *type);
+bool isRestrict (sym_link *type);
+bool isAtomic (sym_link *type);
+bool isOptional (sym_link *type);
 value *aggregateToPointer (value *);
 void leaveBlockScope (int block);
 void mergeKRDeclListIntoFuncDecl (symbol *funcDecl, symbol *kr_decls);
