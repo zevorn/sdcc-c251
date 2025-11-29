@@ -35,7 +35,7 @@ PERFORMANCE OF THIS SOFTWARE.
 #elif defined (__SDCC_sm83)
 #define ADDRESS_PFI_2G 0xdff8
 #else
-#define ADDRESS_PFI_2G 0
+#define ADDRESS_PFI_2G 1
 #endif
 
 void f() {

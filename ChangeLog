@@ -1,3 +1,22 @@
+2025-11-29 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge arraybounds branch.
+
+2025-11-29 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCopt.c,
+	  src/SDCCsymt.c,
+	  support/valdiag/tests/arraybounds.c
+	  src/SDCCdflow.h,
+	  src/SDCCgenconstprop.cc,
+	  support/regression/tests/arraybounds.c,
+	  support/regression/tests/mm-pnvi-ae-udi-pointer_from_integer_2g.c:
+	  Additional diagnostics for potential array bound issues.
+	* src/z80/gen.c:
+	  Fix a r3la codegen issue triggered by previous changes.
+
 2025-11-29 Gabriele Gorla <gorlik@yahoo.com>
 
 	* src/mos6502/genplus.c,

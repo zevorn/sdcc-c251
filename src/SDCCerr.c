@@ -769,6 +769,10 @@ struct
      "types other than the referenced type of a pointer type shall not be optional-qualified", 0 },
   { W_SIZETCONST_C2Y, ERROR_LEVEL_WARNING,
      "integer literal of type size_t or ptrdiff_t requires C2y", 0 },
+  { W_ARRAY_PARAM_LENGTH, ERROR_LEVEL_WARNING,
+     "argument for array parameter might not be of sufficient length", 0},
+  { W_MAYBE_INVALID_PTR_DEREF, ERROR_LEVEL_WARNING,
+     "maybe invalid pointer dereferenced or array index out of bounds (assuming array parameters are arrays of given size)", 0},
 };
 
 /* -------------------------------------------------------------------------------

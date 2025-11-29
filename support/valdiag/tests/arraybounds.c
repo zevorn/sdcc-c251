@@ -145,7 +145,7 @@ char g(void)
 }
 #endif
 
-// Check that parameters only reference known other parametrs (C99/C23 syntax)
+// Check that parameters only reference known other parameters (C99/C23 syntax)
 #ifdef TEST6a
 #pragma disable_warning 85
 void f(int i, char a[j]); /* ERROR */
@@ -322,6 +322,107 @@ void f(void)
 	stdc_memreverse8(6, a);
 	stdc_memreverse8(8, a); /* WARNING */
 	stdc_memreverse8(9, a); /* WARNING */
+}
+#endif
+
+// Diagnostics for non-static array parameters
+#ifdef TEST12
+int f3(char c[2]);
+
+// Passing null pointer
+void g0(void)
+{
+	f3(NULL); /* WARNING */
+}
+
+// Passing array that is too short
+void g1a(void)
+{
+	char a[1];
+	f3(a); /* WARNING */
+}
+
+// Passing address of single object, where array of length more than 1 is needed
+void g1b(void)
+{
+	char a;
+	f3(&a); /* WARNING */
+}
+
+// Passing suitable array
+void g2(void)
+{
+	char a[2];
+	f3(a);
+}
+#endif
+
+// Diagnostics for write beyond end of array
+#ifdef TEST12
+char a[2];
+char c;
+
+void f(void)
+{
+	int i = 3;
+	a[i] = 1; /* WARNING */
+}
+
+void g(_Bool b)
+{
+	int i;
+	if (b)
+		i = 3;
+	else
+		i = 4;
+	a[i] = 1; /* WARNING */
+}
+#endif
+
+// Tight bounds across change of type
+#ifdef TEST13
+short la[2]; // Assumes sizeof(short) == 2
+
+void f(char a[static 3]);
+
+void g(void)
+{
+	f((char *)la + 1);
+	f((char *)la + 2); /* WARNING */
+}
+
+char c, d;
+
+void h(void)
+{
+	c = ((char *)la)[3];
+	c = ((char *)la)[4]; /* WARNING */
+}
+#endif
+
+// Diagnostics based on non-static array parameters
+#ifdef TEST14
+void g1(char a[3])
+{
+	a[2] = 7;
+	a[3] = 8; /* WARNING */
+}
+
+char c, d;
+
+void g2(char a[3])
+{
+	c = a[2];
+	d = a[3]; /* WARNING */
+}
+
+void f0(char a[3]);
+void f1(char a[static 3]);
+
+void g(char a[2])
+{
+	f0(a); /* WARNING */
+	f1(a); /* WARNING */
 }
 #endif
 
