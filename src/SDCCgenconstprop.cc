@@ -108,6 +108,8 @@ getTypeValinfo (sym_link *type, bool loose)
   v.knownbits = 0ull;
   v.minsize = 0;
   v.maxsize = ULONG_MAX;
+  v.maybeminsize = 0;
+  v.maybemaxsize = ULONG_MAX;
 
   if (IS_BOOLEAN (type))
     {
@@ -156,6 +158,7 @@ getTypeValinfo (sym_link *type, bool loose)
             wassert (0);
         }
       v.maxsize = v.max;
+      v.maybemaxsize = v.max;
     }
   else if (IS_INTEGRAL (type) && IS_UNSIGNED (type) && bitsForType (type) < 64)
     {
@@ -236,13 +239,18 @@ getOperandValinfo (const iCode *ic, const operand *op)
     {
       v = getTypeValinfo (type, true);
       if (IS_SYMOP (op) && OP_SYMBOL_CONST (op)->ismyparm &&
-        IS_DECL (type) && DCL_STATIC_ARRAY_PARAM (type) && DCL_ELEM (type))
+        IS_DECL (type) && DCL_ELEM (type))
         {
-          // Valid pointer to an array of at least DCL_ELEM (type) elements.
-          v.nonnull = true;
-          v.min = 1;
-          v.minsize = DCL_ELEM (type) * getSize (type->next);
-          v.max -= v.minsize;
+          if ( DCL_STATIC_ARRAY_PARAM (type)) // Valid pointer to an array of at least DCL_ELEM (type) elements.
+            {
+              v.nonnull = true;
+              v.min = 1;
+              v.minsize = DCL_ELEM (type) * getSize (type->next);
+              v.max -= v.minsize;
+            }
+          else
+            v.maybemaxsize = DCL_ELEM (type) * getSize (type->next);
+          v.maybeminsize = DCL_ELEM (type) * getSize (type->next);
         }
     }
   return (v);
@@ -276,6 +284,12 @@ valinfo_union (struct valinfo *v0, const struct valinfo v1)
   auto new_maxsize = std::max (v0->maxsize, v1.maxsize);
   change |= (v0->maxsize != new_maxsize);
   v0->maxsize = new_maxsize;
+  auto new_maybeminsize = std::min (v0->maybeminsize, v1.maybeminsize);
+  change |= (v0->maybeminsize != new_maybeminsize);
+  v0->maybeminsize = new_maybeminsize;
+  auto new_maybemaxsize = std::max (v0->maybemaxsize, v1.maybemaxsize);
+  change |= (v0->maybemaxsize != new_maybemaxsize);
+  v0->maybemaxsize = new_maybemaxsize;
   return (change);
 }
 
@@ -394,6 +408,8 @@ valinfoUpdate (struct valinfo *v)
    {
      v->minsize = 0;
      v->maxsize = 0;
+     v->maybeminsize = 0;
+     v->maybemaxsize = 0;
    }
 }
 
@@ -438,6 +454,14 @@ valinfoPlus (struct valinfo *result, sym_link *resulttype, const struct valinfo 
         result->maxsize = (long long)(left.maxsize) - right.min;
       else
         result->maxsize = 0;
+      if ((long long)(left.maybeminsize) >= right.max)
+        result->maybeminsize = (long long)(left.maybeminsize) - right.max;
+      else
+        result->maybeminsize = 0;
+      if ((long long)(left.maybemaxsize) >= right.min)
+        result->maybemaxsize = (long long)(left.maybemaxsize) - right.min;
+      else
+        result->maybemaxsize = 0;
     }
   if (!left.anything && !right.anything &&
     left.min >= 0 && right.min >= 0)
@@ -727,6 +751,10 @@ valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo 
         result->maxsize = right.maxsize;
       if (result->minsize)
         result->nonnull = true;
+      if (result->maybeminsize < right.maybeminsize)
+        result->maybeminsize = right.maybeminsize;
+      if (result->maybemaxsize > right.maybemaxsize)
+        result->maybemaxsize = right.maybemaxsize;
     }
 }
 
@@ -863,9 +891,9 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
       else if (ic->op == RECEIVE)
         {
           sym_link *type = operandType (ic->result);
-          if (IS_DECL (type) && DCL_STATIC_ARRAY_PARAM (type))
+          if (IS_DECL (type) && DCL_ELEM (type))
             {
-              if (DCL_ELEM (type))
+              if (DCL_STATIC_ARRAY_PARAM (type))
                 {
                   // Valid pointer to an array of at least DCL_ELEM (type) elements.
                   resultvalinfo.min = 1;
@@ -873,6 +901,9 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
                   resultvalinfo.max -= resultvalinfo.minsize;
                   resultvalinfo.nonnull = true;
                 }
+              else
+                resultvalinfo.maybemaxsize = DCL_ELEM (type) * getSize (type->next);
+              resultvalinfo.maybeminsize = DCL_ELEM (type) * getSize (type->next);
             }
         }
       else if (ic->op == ADDRESS_OF)
@@ -885,18 +916,18 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
           if (!IS_ARRAY (objtype) && !(IS_STRUCT (objtype) && SPEC_STRUCT (objtype)->b_flexArrayMember)) // Single object. We know the size unless it has a flexible array memeber.
             {
               if (getSize (objtype) >= roff)
-                resultvalinfo.minsize = resultvalinfo.maxsize = getSize (objtype) - roff;
+                resultvalinfo.maybeminsize = resultvalinfo.maybemaxsize = resultvalinfo.minsize = resultvalinfo.maxsize = getSize (objtype) - roff;
               else
-                resultvalinfo.minsize = resultvalinfo.maxsize = 0;
+                resultvalinfo.maybeminsize = resultvalinfo.maybemaxsize = resultvalinfo.minsize = resultvalinfo.maxsize = 0;
             }
           else if (IS_ARRAY (objtype) && DCL_ARRAY_LENGTH_TYPE (objtype) == ARRAY_LENGTH_KNOWN_CONST)
             {
               unsigned long lsize = DCL_ELEM (objtype) * getSize (objtype->next);
               wassert (lsize); // There are no arrays of known constant length 0 in SDCC.
               if (lsize >= roff)
-                resultvalinfo.minsize = resultvalinfo.maxsize = lsize - roff;
+                resultvalinfo.maybeminsize = resultvalinfo.maybemaxsize = resultvalinfo.minsize = resultvalinfo.maxsize = lsize - roff;
               else
-                resultvalinfo.minsize = resultvalinfo.maxsize = 0;
+                resultvalinfo.maybeminsize = resultvalinfo.maybemaxsize = resultvalinfo.minsize = resultvalinfo.maxsize = 0;
             }
           resultvalinfo.max -= resultvalinfo.minsize;
         }

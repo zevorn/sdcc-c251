@@ -380,6 +380,8 @@ enum {
   W_VARARG_ONLY_C23             = 350, // function with variable arguments only requires ISO C23 or later
   E_BAD_OPTIONAL                = 351, // types other than the referenced type of a pointer type shall not be optional-qualified
   W_SIZETCONST_C2Y              = 352, // integer literal of type size_t or ptrdiff_t requires C2y
+  W_ARRAY_PARAM_LENGTH          = 353, // argument for array parameter might not be of sufficient length
+  W_MAYBE_INVALID_PTR_DEREF     = 354, // maybe invalid pointer dereferenced or array index out of bounds (assuming array parameters are arrays of given size)
 
   // If you get a merge conflict here, some #pragma disable_warning in support/valdiag and support/regression will likely need to be adapted to the resolution. Check there!
 

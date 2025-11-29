@@ -7,6 +7,7 @@
 #include <stddef.h>
 
 #pragma disable_warning 85
+#pragma disable_warning 353
 
 int f1(char c[static 1])
 {

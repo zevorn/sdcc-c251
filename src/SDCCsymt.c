@@ -1559,9 +1559,9 @@ addSymChain (symbol **symHead)
             {
               if (!IS_DECL (args->type) || !DCL_ELEM_AST(args->type))
                 continue;
-              if (args->sym && IS_DECL(args->sym->type) && DCL_ELEM_AST(args->sym->type) && IS_AST_LIT_VALUE (DCL_ELEM_AST(args->sym->type))) // todo: make this work for non-constant array size! And check that the symbols are really in scope from prev. param!
+              if (args->sym && IS_DECL(args->sym->type) && DCL_ELEM_AST(args->sym->type) && IS_AST_LIT_VALUE (DCL_ELEM_AST(args->sym->type)))
                 checkDecl (args->sym, 1);
-              if (IS_DECL(args->type) && DCL_ELEM_AST(args->type) && IS_AST_LIT_VALUE (DCL_ELEM_AST(args->type))) // todo: make this work for non-constant array size! And check that the symbols are really in scope from prev. param!
+              if (IS_DECL(args->type) && DCL_ELEM_AST(args->type) && IS_AST_LIT_VALUE (DCL_ELEM_AST(args->type)))
                 arraySizes (args->type, args->sym ? args->sym->name : "");
             }
         }

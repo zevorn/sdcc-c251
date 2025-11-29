@@ -12819,6 +12819,8 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
             _pop (PAIR_HL);
 
           // Only emit jump now if there is no following test for 0 (which would just or to a current result in a)
+          if (a_result && left->aop->type == AOP_STL) // But we can't or a stacklocation to a.
+            a_result = false;
           if (!(next_zero && a_result))
             emitJP (lbl, "nz", 0.5f, false);
         }
