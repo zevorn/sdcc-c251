@@ -11167,6 +11167,29 @@ containerof
  Macro
 \end_layout
 
+\begin_layout Itemize
+\begin_inset CommandInset href
+LatexCommand href
+name "N3485"
+target "https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3485.htm"
+literal "false"
+
+\end_inset
+
+:
+ Literal Suffixes for
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+size_t
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
 Embedded C
 \end_layout

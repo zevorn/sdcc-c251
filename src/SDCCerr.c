@@ -767,6 +767,8 @@ struct
      "function with variable arguments only requires ISO C23 or later", 0 },
   { E_BAD_OPTIONAL, ERROR_LEVEL_ERROR,
      "types other than the referenced type of a pointer type shall not be optional-qualified", 0 },
+  { W_SIZETCONST_C2Y, ERROR_LEVEL_WARNING,
+     "integer literal of type size_t or ptrdiff_t requires C2y", 0 },
 };
 
 /* -------------------------------------------------------------------------------

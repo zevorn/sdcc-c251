@@ -1310,7 +1310,7 @@ constIntVal (const char *s)
   double dval;
   long long int llval;
   value *val = newValue ();
-  bool decimal, u_suffix = false, l_suffix = false, ll_suffix = false, wb_suffix = false;
+  bool decimal, u_suffix = false, l_suffix = false, ll_suffix = false, wb_suffix = false, z_suffix = false;
 
   val->type = val->etype = newLink (SPECIFIER);
   SPEC_SCLS (val->type) = S_LITERAL;
@@ -1382,15 +1382,24 @@ constIntVal (const char *s)
     {
       ll_suffix = TRUE;
       p2 += 2;
-      if (strchr (p2, 'l') || strchr (p2, 'L') || strstr (p, "wb") || strstr (p, "WB"))
+      if (strchr (p2, 'l') || strchr (p2, 'L') || strchr (p2, 'z') || strchr (p2, 'Z') || strstr (p, "wb") || strstr (p, "WB"))
         werror (E_INTEGERSUFFIX, p);
     }
   else if ((p2 = strchr (p, 'l')) || (p2 = strchr (p, 'L')))
     {
       l_suffix = TRUE;
       p2++;
-      if (strchr (p2, 'l') || strchr (p2, 'L') || strstr (p, "wb") || strstr (p, "WB"))
+      if (strchr (p2, 'l') || strchr (p2, 'L') || strchr (p2, 'z') || strchr (p2, 'Z') || strstr (p, "wb") || strstr (p, "WB"))
         werror (E_INTEGERSUFFIX, p);
+    }
+  else if ((p2 = strchr (p, 'z')) || (p2 = strchr (p, 'Z')))
+    {
+      z_suffix = TRUE;
+      p2++;
+      if (strchr (p2, 'l') || strchr (p2, 'L') || strchr (p2, 'z') || strchr (p2, 'Z') || strstr (p, "wb") || strstr (p, "WB"))
+        werror (E_INTEGERSUFFIX, p);
+      else if (!options.std_c2y)
+        werror (W_SIZETCONST_C2Y);
     }
   else if ((p2 = strstr (p, "wb")) || (p2 = strstr (p, "WB")))
     {
@@ -1433,6 +1442,9 @@ constIntVal (const char *s)
     }
   else
     {  
+      if (z_suffix && (TARGET_IS_MCS51 || TARGET_IS_DS390)) // Special case for ptrdiff_t literals, see stddef.h
+        l_suffix = true;
+
       if (decimal) // Choose first of int, long int, long long int that fits.
         {
           if (ll_suffix || dval > 0x7fffffff || dval < -0x80000000ll)

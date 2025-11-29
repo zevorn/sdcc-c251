@@ -37,7 +37,7 @@ L       [a-zA-Z_$]
 E       [Ee][+-]?{D}+
 BE      [Pp][+-]?{D}+
 FS      (f|F|l|L|df|dd|dl|DF|DD|DL)
-IS      [uUlL]*
+IS      [uUlLzZ]*
 WB      (((u|U)(wb|WB))|((wb|WB)(u|U)?))
 CP      (L|u|U|u8)
 HASH    (#|%:)
