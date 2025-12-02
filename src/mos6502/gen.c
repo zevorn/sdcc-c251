@@ -5484,6 +5484,7 @@ genCmp (iCode * ic, iCode * ifx)
       emitBranch (branchInstCmp (negatedCmp(opcode), sign), skiplbl);
       loadRegFromConst (m6502_reg_a, 1);
       safeEmitLabel (skiplbl);
+      m6502_dirtyReg (m6502_reg_a);
     }
   else
     {
@@ -6318,14 +6319,17 @@ genRotX(iCode *ic, int shCount)
 
 	}
 
-      if(ror)
-	{
-	  // rotate right
-	  shCount=8-shCount;
-	  storeRegToAop (m6502_reg_a, AOP (result), msb);
+  if(IS_AOP_XA(AOP(left)))
+    m6502_reg_x->isFree=true;
 
-	  while(shCount--)
-	    {
+  if(ror)
+    {
+      // rotate right
+      shCount=8-shCount;
+      storeRegToAop (m6502_reg_a, AOP (result), msb);
+
+      while(shCount--)
+           {
 	      loadRegFromAop (m6502_reg_a, AOP (result), 0);
 	      rmwWithReg ("lsr", m6502_reg_a);
 

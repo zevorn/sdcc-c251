@@ -1,3 +1,19 @@
+2025-12-01 Janko Stamenović
+
+	* src/SDCCmain.c
+	  Better _pipe call in Windows
+
+2025-11-30 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/tempops.c:
+	  Add more debugging information to temp reg operations.
+	* src/mos6502/gen.c,
+	  src/mos6502/genand.c,
+	  src/mos6502/genlshift.c,
+	  src/mos6502/genrshift.c,
+	  src/mos6502/genplus.c:
+	  Fix several stack-auto regressions.
+	
 2025-11-29 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge arraybounds branch.

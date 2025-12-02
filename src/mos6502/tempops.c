@@ -179,7 +179,10 @@ loadRegTempAt (reg_info * reg, int offset)
   char loadOp[4] = "ld?";
   
   if (offset<0 || offset>_S.tempOfs)
-    emitcode("ERROR", " %s - called with illegal offset %d (tempOfs=%d)", __func__, offset, _S.tempOfs);
+    {
+      emitcode("ERROR", " %s - called with illegal offset %d (tempOfs=%d)", __func__, offset, _S.tempOfs);
+      return;
+    }
 
   if(_S.tempAttr[offset].isLiteral)
     {
@@ -221,7 +224,10 @@ loadRegTemp (reg_info * reg)
 {
 
   if(_S.tempOfs==0)
-    emitcode("ERROR", "%s - temp stack is empty", __func__);
+    {
+      emitcode("ERROR", "%s - temp stack is empty", __func__);
+      return;
+    }
 
   // pop off stack, unused
   if (reg == NULL)
@@ -297,8 +303,12 @@ loadRegTempNoFlags (reg_info * reg, bool needpull)
 void
 emitRegTempOp( char *op, int offset)
 {
+
   if (offset<0 || offset>=_S.tempOfs)
-    emitcode("ERROR", " %s - called with illegal offset %d (tempOfs=%d)", __func__, offset, _S.tempOfs);
+    {
+      emitcode("ERROR", " %s - called with illegal offset %d (tempOfs=%d)", __func__, offset, _S.tempOfs);
+      return;
+    }
 
   if(_S.tempAttr[offset].isLiteral)
     {

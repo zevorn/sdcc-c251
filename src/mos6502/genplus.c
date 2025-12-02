@@ -71,7 +71,7 @@ genPlusInc (iCode * ic)
             {
 	      //              loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
               emit6502op ("ldx", "0x%02x", (m6502_reg_x->litConst + bcount)&0xff );
-             return true;
+	      return true;
             }
           else if(bcount<4)
             {
@@ -269,14 +269,17 @@ m6502_genPlus (iCode * ic)
 
   if ( IS_AOP_XA (AOP(result)) && IS_AOP_XA(AOP(left)) && AOP_TYPE(right) == AOP_SOF )
     {
+      emitComment (TRACEGEN|VVDBG, "    %s: XA = XA + SOF", __func__);
       storeRegTemp(m6502_reg_x, true);
+      int xloc = getLastTempOfs();
       emitSetCarry(0);
       accopWithAop ("adc", AOP (right), 0);
       fastSaveA();
-      loadRegTemp(m6502_reg_a);
+      loadRegTempAt(m6502_reg_a, xloc);
       accopWithAop ("adc", AOP (right), 1);
       transferRegReg(m6502_reg_a, m6502_reg_x, true);
       fastRestoreA();
+      loadRegTemp(NULL);
       goto release;
     }
 
