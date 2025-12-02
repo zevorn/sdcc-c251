@@ -24,6 +24,7 @@
 
 #ifdef _WIN32
 #include <io.h>
+#include <fcntl.h>
 #else
 #include <unistd.h>
 #include <libgen.h>
@@ -2885,12 +2886,13 @@ main (int argc, char **argv, char **envp)
       initPeepHole ();
 
       // Emit preamble for declarations for port-specific built-in functions.
-      if (port->c_preamble && strlen (port->c_preamble))
+      unsigned L;
+      if (port->c_preamble && (L = strlen (port->c_preamble))!=0)
         {
           int p[2];
           FILE *preamble;
 #ifdef _WIN32
-          wassert (!_pipe (p));
+          wassert (!_pipe (p, L+1, _O_BINARY));
 #else
           wassert (!pipe (p));
 #endif

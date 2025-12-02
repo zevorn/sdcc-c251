@@ -298,6 +298,9 @@ m6502_genAnd (iCode * ic, iCode * ifx)
       }
     }
 
+  if(IS_AOP_Y(AOP(result)))
+    m6502_reg_y->isFree=false;
+
   needpulla = fastSaveAIfSurv();
 
   // prevent from saving A again
