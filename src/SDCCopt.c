@@ -259,7 +259,7 @@ prependCast (iCode *ic, operand *op, sym_link *type, eBBlock *ebb)
 {
   if (IS_OP_LITERAL (op))
     {
-      operand *newop = operandFromValue (valCastLiteral (type, operandLitValue (op), operandLitValue (op)), false);
+      operand *newop = operandFromValue (valCastLiteral (type, operandLitValue (op), operandLitValueUll (op)), false);
       if (isOperandEqual (op, IC_LEFT (ic)))
         IC_LEFT (ic) = newop;
       if (isOperandEqual (op, IC_RIGHT (ic)))
@@ -860,7 +860,7 @@ convilong (iCode *ic, eBBlock *ebp)
                   OP_SYMBOL (left)->type = newIntLink ();
                 }
               else
-                ic->left = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (left), operandLitValue (left)), false);
+                ic->left = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (left), operandLitValueUll (left)), false);
 
               if (ric)
                 {
@@ -868,7 +868,7 @@ convilong (iCode *ic, eBBlock *ebp)
                   OP_SYMBOL (right)->type = newIntLink ();
                 }
               else
-                ic->right = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (right), operandLitValue (right)), false);
+                ic->right = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (right), operandLitValueUll (right)), false);
 
               if (func) // Use 16x16->32 support function
                 goto found;
@@ -900,7 +900,7 @@ convilong (iCode *ic, eBBlock *ebp)
                   SPEC_USIGN (OP_SYMBOL (left)->type) = 1;
                 }
               else
-                ic->left = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (left), operandLitValue (left)), false);
+                ic->left = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (left), operandLitValueUll (left)), false);
 
               if (ric)
                 {
@@ -909,7 +909,7 @@ convilong (iCode *ic, eBBlock *ebp)
                   SPEC_USIGN (OP_SYMBOL (left)->type) = 1;
                 }
               else
-                ic->right = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (right), operandLitValue (right)), false);
+                ic->right = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (right), operandLitValueUll (right)), false);
 
               if (func) // Use 32x8->64 support function
                 goto found;
@@ -2676,8 +2676,8 @@ optimize:
                     }
                   else
                     {
-                      wassert (IS_OP_LITERAL (IC_LEFT (ic)));
-                      IC_LEFT (ic) = operandFromValue (valCastLiteral (clefttype, operandLitValue (IC_LEFT (ic)), operandLitValue (IC_LEFT (ic))), false);
+                      wassert (IS_OP_LITERAL (ic->left));
+                      ic->left = operandFromValue (valCastLiteral (clefttype, operandLitValue (ic->left), operandLitValueUll (ic->left)), false);
                     }
                   if (ic->op != LEFT_OP && IS_SYMOP (IC_RIGHT (ic)))
                     {
@@ -2695,8 +2695,8 @@ optimize:
                     }
                   else if (ic->op != LEFT_OP && ic->op != UNARYMINUS)
                     {
-                      wassert (IS_OP_LITERAL (IC_RIGHT (ic)));
-                      IC_RIGHT (ic) = operandFromValue (valCastLiteral (crighttype, operandLitValue (IC_RIGHT (ic)), operandLitValue (IC_RIGHT (ic))), false);
+                      wassert (IS_OP_LITERAL (ic->right));
+                      ic->right = operandFromValue (valCastLiteral (crighttype, operandLitValue (ic->right), operandLitValueUll (ic->right)), false);
                     }
                 }
               if (uic->op == CAST && ic->op != RIGHT_OP)
@@ -2943,7 +2943,7 @@ optimizeCastCast (eBBlock **ebbs, int count)
                       if (!SPEC_USIGN (type1) && (mask >> (bitsForType (type1))))
                         continue;
 
-                      IC_RIGHT (uic) = operandFromValue (valCastLiteral (type1, operandLitValue (uic->right), operandLitValue (uic->right)), false);
+                      uic->right = operandFromValue (valCastLiteral (type1, operandLitValue (uic->right), operandLitValue (uic->right)), false);
                     }
                   else if (uic->op == CAST) /* Otherwise this use must be a second cast */
                     {
@@ -3006,7 +3006,6 @@ optimizeCastCast (eBBlock **ebbs, int count)
                 }
               else
                 continue;
-
 
               /* Change the first cast to a simple assignment and */
               /* let the second cast do all the work */
@@ -3749,7 +3748,7 @@ eBBlockFromiCode (iCode *ic)
       separateLiveRanges (ic, ebbi);
     }
 
-  removeRedundantTemps (ic); // Remove some now-redundant leftovers iTemps that can confuse later optimizations.
+  removeRedundantTemps (ic); // Remove some now-redundant leftover iTemps that can confuse later optimizations.
 
   /* Break down again and redo some steps to not confuse live range analysis later. */
   freeeBBlockData (ebbi);

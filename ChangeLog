@@ -1,3 +1,29 @@
+2025-12-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* sdas/asz80/tz80.asm:
+	  sdas Z80N test cases.
+
+2025-12-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* configure,
+	  configure.ac,
+	  sdas/linksrc/clean.mk,
+	  sdas/linksrc/lkelf.c:
+	  Replace type macros by ISO C99 typedefs.
+
+2025-12-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* configure,
+	  configure.ac,
+	  src/SDCCsymt.h,
+	  src/SDCCval.c:
+	  Replace type macros by ISO C99 typedefs.
+
+2025-12-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCopt.c:
+	  Fix bug #3899.
+
 2025-12-01 Janko Stamenović
 
 	* src/SDCCmain.c

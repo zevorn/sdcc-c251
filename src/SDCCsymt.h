@@ -21,6 +21,8 @@
 #ifndef  SDCCSYMT_H
 #define  SDCCSYMT_H
 
+#include <stdint.h>
+
 #define MAX_NEST_LEVEL  256
 #define SDCC_SYMNAME_MAX 256
 #define SDCC_NAME_MAX  3*SDCC_SYMNAME_MAX       // big enough for _<func>_<var>_etc
@@ -113,14 +115,14 @@ typedef enum
 }
 STORAGE_CLASS;
 
-#define TYPE_TARGET_CHAR  TYPE_BYTE
-#define TYPE_TARGET_INT   TYPE_WORD
-#define TYPE_TARGET_LONG  TYPE_DWORD
-#define TYPE_TARGET_UCHAR TYPE_UBYTE
-#define TYPE_TARGET_UINT  TYPE_UWORD
-#define TYPE_TARGET_ULONG TYPE_UDWORD
-#define TYPE_TARGET_LONGLONG TYPE_QWORD
-#define TYPE_TARGET_ULONGLONG TYPE_UQWORD
+#define TYPE_TARGET_CHAR      int8_t // Confusing name - by default char is unsigned on targets.
+#define TYPE_TARGET_UCHAR     uint8_t
+#define TYPE_TARGET_INT       int16_t
+#define TYPE_TARGET_UINT      uint16_t
+#define TYPE_TARGET_LONG      int32_t
+#define TYPE_TARGET_ULONG     uint32_t
+#define TYPE_TARGET_LONGLONG  int64_t
+#define TYPE_TARGET_ULONGLONG uint64_t
 
 /* specifier is the last in the type-chain */
 typedef struct specifier
