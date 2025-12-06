@@ -1011,3 +1011,35 @@ jr5:
 	tstio	#n			;ED 74 20
 	;***********************************************************
 
+	.page
+	;***********************************************************
+	; ZX Spectrum Next Z80N Codes
+	;***********************************************************
+
+	.zxn
+	swap	a			; ED 23
+	mirror	a			; ED 24
+	tst	#n			; ED 27 20
+	bsla	de, b			; ED 28
+	bsra	de, b			; ED 29
+	bsrl	de, b			; ED 2A
+	bsrf	de, b			; ED 2B
+	brlc	de, b			; ED 2C
+	mlt	de			; ED 30
+	add	hl, a			; ED 31
+	add	de, a			; ED 32
+	add	bc, a			; ED 33
+	add	hl, #nn			; ED 34 84 05
+	add	de, #nn			; ED 34 84 05
+	add	bc, #nn			; ED 34 84 05
+	push	#nn			; ED 8A 05 84
+	outinb				; ED 90
+	pixeldn				; ED 93
+	pixelad				; ED 94
+	setae				; ED 95
+	jp	(c)			; ED 98
+	ldix				; ED A4
+	lddx				; ED A6
+	ldirx				; ED B4
+	lddrx				; ED BC
+

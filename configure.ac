@@ -9,7 +9,7 @@ AC_CONFIG_SRCDIR([Makefile.in])
 # ===========================================================================
 AC_CANONICAL_HOST
 
-AC_CONFIG_HEADERS([sdccconf.h:sdccconf_in.h sdas/linksrc/asxxxx_config.h])
+AC_CONFIG_HEADERS([sdccconf.h:sdccconf_in.h])
 
 AC_PROG_AWK
 
@@ -428,66 +428,6 @@ fi
 
 # Checks for typedefs, structures, and compiler characteristics.
 # ===========================================================================
-
-AC_CHECK_SIZEOF(char)
-AC_CHECK_SIZEOF(short)
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(long long)
-AC_C_CHAR_UNSIGNED
-
-type_name()
-{
-  if expr "$ac_cv_sizeof_char" '>=' "$1" >/dev/null; then
-      echo "char"
-    exit
-  fi
-  if expr "$ac_cv_sizeof_short" '>=' "$1" >/dev/null; then
-    echo "short"
-    exit
-  fi
-  if expr "$ac_cv_sizeof_int" '>=' "$1" >/dev/null; then
-    echo "int"
-    exit
-  fi
-  if expr "$ac_cv_sizeof_long" '>=' "$1" >/dev/null; then
-    echo "long"
-    exit
-  fi
-  if expr "$ac_cv_sizeof_long_long" '>=' "$1" >/dev/null; then
-    echo "long long"
-    exit
-  fi
-  echo "long"
-}
-
-AC_MSG_CHECKING(type name for byte)
-TYPE_CHAR=`type_name 1`
-if test "$ac_cv_c_char_unsigned" = "yes"; then
-  TYPE_BYTE="signed $TYPE_CHAR"
-else
-  TYPE_BYTE=$TYPE_CHAR
-fi
-AC_MSG_RESULT($TYPE_BYTE)
-AC_MSG_CHECKING(type name for word)
-TYPE_WORD=`type_name 2`
-AC_MSG_RESULT($TYPE_WORD)
-AC_MSG_CHECKING(type name for dword)
-TYPE_DWORD=`type_name 4`
-AC_MSG_RESULT($TYPE_DWORD)
-AC_MSG_CHECKING(type name for qword)
-TYPE_QWORD=`type_name 8`
-AC_MSG_RESULT($TYPE_QWORD)
-
-AC_DEFINE_UNQUOTED(TYPE_BYTE,  $TYPE_BYTE,  [XXX])
-AC_DEFINE_UNQUOTED(TYPE_WORD,  $TYPE_WORD,  [XXX])
-AC_DEFINE_UNQUOTED(TYPE_DWORD, $TYPE_DWORD, [XXX])
-AC_DEFINE_UNQUOTED(TYPE_QWORD, $TYPE_QWORD, [XXX])
-
-AC_DEFINE_UNQUOTED(TYPE_UBYTE,  unsigned $TYPE_CHAR,  [XXX])
-AC_DEFINE_UNQUOTED(TYPE_UWORD,  unsigned $TYPE_WORD,  [XXX])
-AC_DEFINE_UNQUOTED(TYPE_UDWORD, unsigned $TYPE_DWORD, [XXX])
-AC_DEFINE_UNQUOTED(TYPE_UQWORD, unsigned $TYPE_QWORD, [XXX])
 
 case "${host}" in
   *x86_64*cygwin*)
