@@ -3071,7 +3071,11 @@ comparePtrType (sym_link *dest, sym_link *src, bool mustCast, bool ignoreimplici
 #endif
 
   if (getAddrspace (src->next) != getAddrspace (dest->next))
-    mustCast = 1;
+    mustCast = true;
+
+  // Cast when introducing volatile (for correctness) or _Optional (for diagnostics) on the target.
+  if (isVolatile (dest->next) && !isVolatile (src->next) || isOptional (dest->next) && !isOptional (src->next)) 
+    mustCast = true;
 
   if (IS_VOID (src->next) && IS_VOID (dest->next))
     return mustCast ? -1 : 1;
