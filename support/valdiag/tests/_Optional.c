@@ -63,7 +63,7 @@ static_assert(_Generic(typeof(pci2), const int *: 1, default: 0));
 #ifdef TEST5
 int *_Optional opi; /* ERROR */ // invalid: "int *" is not a referenced type
 _Optional int oi; /* ERROR */ // invalid: "int" is not a referenced type
-_Optional struct s; /*todo! - shouldbe an error! */ // invalid: "struct s" is not a referenced type
+_Optional struct s; /* ERROR */ // invalid: "struct s" is not a referenced type
 _Optional int oa[2][3]; /* ERROR */ // invalid: int is not a referenced type
 #endif
 
@@ -126,6 +126,154 @@ void fred(_Optional int *i)
 	i = &k;
 	j = i; /* WARNING */ // violates type constraints for =
 	foo(i); /* WARNING */ // violates type constraints for function call
+}
+#endif
+
+// Basic test for diagnostics based on the interaction of _Optional with information from generalized constant propagation analysis.
+#ifdef TEST12
+int i, j;
+
+void f(_Optional int *pi, _Optional int *pj)
+{
+	i = *pi; /* WARNING */
+	if (pj)
+		j = *pj;
+}
+#endif
+
+// Test case from N3422 - a rather bad testcase, since large parts of it get eliminated before we get to possible _Optional warnings based on data-flow.
+#ifdef TEST13
+void foo(int *);
+
+void jim(_Optional int *i)
+{
+	//void foo(int *);
+	int *j, k;
+
+	// A diagnostic is recommended for the following statements,
+	// because of the type and unconstrained value of i
+	*i = 10; /* WARNING */
+	k = *i; /* IGNORE */
+	j = &*i;
+	foo(&*i);
+	foo(&i[15]);
+	// No diagnostic is recommended for the following
+	// statements because the value of i is constrained
+	// to non-null
+	if (i) {
+		*i = 5;
+		foo(&*i);
+		foo(&i[15]);
+	}
+	for (; i;) {
+		*i = 6;
+		foo(&*i);
+		foo(&i[15]);
+	}
+	while (i) { /* IGNORE */
+		*i = 7; /* IGNORE */
+		foo(&*i);
+		foo(&i[15]);
+	}
+	if (!i) { /* IGNORE */
+	} else {
+		*i = 8; /* IGNORE */
+	foo(&*i);
+	foo(&i[15]);
+	}
+	k = i ? *i : 0; /* IGNORE */
+}
+#endif
+
+// Test case from N3422
+#ifdef TEST14
+void sheila(int *j)
+{
+	int k;
+	_Optional int *i, *m;
+
+	if (!j) return;
+	// Conversion preserves non-null constraint on value
+	i = j;
+	// No diagnostic is recommended for the following
+	// statements, because the value of i is constrained
+	// to non-null
+	*i = 10;
+	k = *i;
+	// Cast preserves non-null constraint on value
+	*(_Optional int *)i = 10;
+	k = *(_Optional int *)i;
+	// Assignment preserves non-null constraint on value
+	m = i;
+	// No diagnostic is recommended for the following statements,
+	// because the value of m is constrained to non-null
+	*m = 10;
+	k = *m;
+}
+#endif
+
+// Test case from N3422 - TODO!
+#ifdef TEST15
+void andy(_Optional int *i)
+{
+	int *j, k;
+	// A diagnostic is recommended for the following statements,
+	// because of the unconstrained value of i
+	*i = 10; /* WARNING */
+	k = *i; /* IGNORE */
+	// No diagnostic is recommended for the following statements,
+	// despite the unconstrained value of i
+	*(int *)i = 10;
+	k = *(int *)i;
+	// A diagnostic is recommended for the following statements,
+	// because of the unconstrained value of i
+	*(_Optional int *)(int *)i = 10; /* WARNING */
+	k = *(_Optional int *)(int *)i; /* IGNORE */
+
+	// Cast does not constrain value to non-null
+	j = (int *)i;
+	// No diagnostic is recommended for the following statements,
+	// despite the unconstrained value of j
+	*j = 1;
+	k = *j;
+	// A diagnostic is recommended for the following statements,
+	// because of the unconstrained value of j
+	*(_Optional int *)j = 10; /* WARNING */
+	k = *(_Optional int *)j; /* IGNORE */
+	// Conversion does not constrain value to non-null
+	j = i; /* WARNING */ // violates type constraints for =
+	// No diagnostic is recommended for the following statements,
+	// despite the unconstrained value of j
+	*j = 2;
+	k = *j;
+}
+#endif
+
+// Test case from N3422 - TODO!
+#ifdef TEST16
+void hazel(int *i)
+{
+	_Optional int *j;
+	int k;
+	// A diagnostic is recommended for the following statements,
+	// because of the unconstrained value of i
+	*(_Optional int *)i = 10; /* WARNING */
+	k = *(_Optional int *)i; /* IGNORE */
+	// No diagnostic is recommended for the following statements,
+	// despite the unconstrained value of i
+	*(int *)(_Optional int *)i = 10;
+	k = *(int *)(_Optional int *)i;
+	// Conversion does not constrain value to non-null
+	j = i;
+	// A diagnostic is recommended for the following statements,
+	// because of the unconstrained value of j
+	*j = 10; /* WARNING */
+	k = *j; /* IGNORE */
+
+	// No diagnostic is recommended for the following statements,
+	// despite the unconstrained value of j
+	*(int *)j = 10;
+	k = *(int *)j;
 }
 #endif
 

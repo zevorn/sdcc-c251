@@ -773,6 +773,8 @@ struct
      "argument for array parameter might not be of sufficient length", 0},
   { W_MAYBE_INVALID_PTR_DEREF, ERROR_LEVEL_WARNING,
      "maybe invalid pointer dereferenced or array index out of bounds (assuming array parameters are arrays of given size)", 0},
+  { W_OPTIONAL_PTR_DEREF, ERROR_LEVEL_WARNING,
+     "pointer to _Optional could not be proven to be non-null at dereference", 0 },
 };
 
 /* -------------------------------------------------------------------------------

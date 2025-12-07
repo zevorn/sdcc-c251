@@ -187,6 +187,29 @@ valinfoUpdate (struct valinfo *v);
 static void
 valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right, sym_link *sourcetype);
 
+static struct valinfo
+getParamValinfo (const operand *op)
+{
+  wassert (op);
+  sym_link *type = operandType (op);
+  struct valinfo v = getTypeValinfo (type, true);
+  if (IS_SYMOP (op) && OP_SYMBOL_CONST (op)->ismyparm &&
+    IS_DECL (type) && DCL_ELEM (type))
+    {
+      if (DCL_STATIC_ARRAY_PARAM (type)) // Valid pointer to an array of at least DCL_ELEM (type) elements.
+        {
+          v.nonnull = true;
+          v.min = 1;
+          v.minsize = DCL_ELEM (type) * getSize (type->next);
+          v.max -= v.minsize;
+        }
+      else
+        v.maybemaxsize = DCL_ELEM (type) * getSize (type->next);
+      v.maybeminsize = DCL_ELEM (type) * getSize (type->next);
+    }
+  return (v);
+}
+
 struct valinfo
 getOperandValinfo (const iCode *ic, const operand *op)
 {
@@ -226,7 +249,7 @@ getOperandValinfo (const iCode *ic, const operand *op)
       valinfoUpdate (&v);
     }
   else if ((IS_ITEMP (op) ||
-    IS_SYMOP (op) && OP_SYMBOL_CONST (op)->islocal && // Also include a few non-iTemps in the analysis, since since they don't always get replaced by register-equivalent iTemps without --stack-auto.
+    IS_SYMOP (op) && (OP_SYMBOL_CONST (op)->islocal || OP_SYMBOL_CONST (op)->ismyparm) && // Also include a few non-iTemps in the analysis, since since they don't always get replaced by register-equivalent iTemps without --stack-auto.
       !OP_SYMBOL_CONST (op)->addrtaken && !IS_STATIC (OP_SYMBOL_CONST (op)->etype) && !IS_EXTERN (OP_SYMBOL_CONST (op)->etype)) // Exclude what might change in between, e.g. by a backjump via longjmp, or for extern/addrtaken by an intermediate call to another function.
     && !IS_OP_VOLATILE (op) && ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end ())
     return (ic->valinfos->map[op->key]);
@@ -236,23 +259,7 @@ getOperandValinfo (const iCode *ic, const operand *op)
       v.anything = false;
     }
   else
-    {
-      v = getTypeValinfo (type, true);
-      if (IS_SYMOP (op) && OP_SYMBOL_CONST (op)->ismyparm &&
-        IS_DECL (type) && DCL_ELEM (type))
-        {
-          if ( DCL_STATIC_ARRAY_PARAM (type)) // Valid pointer to an array of at least DCL_ELEM (type) elements.
-            {
-              v.nonnull = true;
-              v.min = 1;
-              v.minsize = DCL_ELEM (type) * getSize (type->next);
-              v.max -= v.minsize;
-            }
-          else
-            v.maybemaxsize = DCL_ELEM (type) * getSize (type->next);
-          v.maybeminsize = DCL_ELEM (type) * getSize (type->next);
-        }
-    }
+    v = getTypeValinfo (type, true);
   return (v);
 }
 
@@ -298,13 +305,10 @@ valinfos_union (iCode *ic, int key, const struct valinfo &v)
 {
   if (!ic /*|| !bitVectBitValue(ic->rlive, key)*/) // Unfortunately, rlive info is inaccurate, so we can't rely on it.
     return (false);
-
   if (ic->valinfos && ic->valinfos->map.find (key) != ic->valinfos->map.end())
     return (valinfo_union (&ic->valinfos->map[key], v));
   else
     {
-      if (!ic->valinfos)
-        ic->valinfos = new struct valinfos;
       ic->valinfos->map[key] = v;
       return (true);
     }
@@ -810,47 +814,87 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
               todo.second.insert (boost::target(*out, G));
             }
         }
-      if (ic->op == IFX && bitVectnBitsOn (OP_DEFS (ic->left)) == 1) // Propagate some info on the condition into the branches.
+      if (ic->op == IFX) // Propagate some info on the condition into the branches.
         {
-          iCode *cic = (iCode *)hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (ic->left)));
-          struct valinfo v = getOperandValinfo (ic, cic->left);
-          if (cic->op == '>' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
-            IS_OP_LITERAL (IC_RIGHT (cic)) && !v.anything && !v.nothing && operandLitValueUll(IC_RIGHT (cic)) < +1000)
+          int key_true = IC_TRUE (ic) ? eBBWithEntryLabel(ebbi, IC_TRUE(ic))->sch->key : ic->next->key;
+          int key_false = IC_FALSE (ic) ? eBBWithEntryLabel(ebbi, IC_FALSE(ic))->sch->key : ic->next->key;
+          if (IS_SYMOP (ic->left) && !OP_SYMBOL (ic->left)->addrtaken && !IS_OP_VOLATILE (ic->left))
             {
-              long long litval = operandLitValueUll (IC_RIGHT (cic));
+              struct valinfo v = getOperandValinfo (ic, ic->left);
               struct valinfo v_true = v;
               struct valinfo v_false = v;
-              v_true.min = std::max (v.min, litval + 1);
-              v_false.max = std::min (v.max, litval);
+              if (v_true.min == 0)
+                v_true.min = 1;
+              v_true.nonnull = true;
+              v_false.min = 0;
+              v_false.max = 0;
               valinfoUpdate (&v_true);
               valinfoUpdate (&v_false);
-              int key_true = IC_TRUE (ic) ? eBBWithEntryLabel(ebbi, IC_TRUE(ic))->sch->key : ic->next->key;
-              int key_false = IC_FALSE (ic) ? eBBWithEntryLabel(ebbi, IC_FALSE(ic))->sch->key : ic->next->key;
               boost::tie(out, out_end) = boost::out_edges(i, G);
+              iCode *extraic;
+              for(extraic = ic->prev; extraic; extraic = extraic->prev)
+                {
+                  if (extraic->op == '=' && !POINTER_SET (extraic) && isOperandEqual (extraic->right, ic->left) && bitVectnBitsOn (OP_DEFS (extraic->result)) == 1)
+                    break; // Found a good candidate
+                  if (extraic->op == LABEL || bitVectBitValue (OP_DEFS (ic->left), extraic->key))
+                    {
+                      extraic = NULL;
+                      break;
+                    }
+                }
               for(; out != out_end; ++out)
                 if (G[boost::target(*out, G)].ic->key == key_true)
-                  G[*out].map[cic->left->key] = v_true;
+                  {
+                    G[*out].map[ic->left->key] = v_true;
+                    if (extraic)
+                      G[*out].map[extraic->result->key] = v_true;
+                  }
                 else if (G[boost::target(*out, G)].ic->key == key_false)
-                  G[*out].map[cic->left->key] = v_false;
+                  {
+                    G[*out].map[ic->left->key] = v_false;
+                    if (extraic)
+                      G[*out].map[extraic->result->key] = v_false;
+                  }
             }
-          if (cic->op == '<' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
-            IS_OP_LITERAL (IC_RIGHT (cic)) && !v.anything && !v.nothing && operandLitValueUll(IC_RIGHT (cic)) < 0xffffffff)
+          if (IS_SYMOP (ic->left) && !OP_SYMBOL (ic->left)->addrtaken && !IS_OP_VOLATILE (ic->left) &&
+            (bitVectnBitsOn (OP_DEFS (ic->left)) == 1 && !OP_SYMBOL (ic->left)->ismyparm || ic->prev && !POINTER_SET (ic->prev) && isOperandEqual (ic->left, ic->prev->result)))
             {
-              long long litval = operandLitValueUll (IC_RIGHT (cic));
-              struct valinfo v_true = v;
-              struct valinfo v_false = v;
-              v_true.max = std::min (v.max, litval - 1);
-              v_false.min = std::max (v.min, litval);
-              valinfoUpdate (&v_true);
-              valinfoUpdate (&v_false);
-              int key_true = IC_TRUE (ic) ? eBBWithEntryLabel(ebbi, IC_TRUE(ic))->sch->key : ic->next->key;
-              int key_false = IC_FALSE (ic) ? eBBWithEntryLabel(ebbi, IC_FALSE(ic))->sch->key : ic->next->key;
-              boost::tie(out, out_end) = boost::out_edges(i, G);
-              for(; out != out_end; ++out)
-                if (G[boost::target(*out, G)].ic->key == key_true)
-                  G[*out].map[cic->left->key] = v_true;
-                else if (G[boost::target(*out, G)].ic->key == key_false)
-                  G[*out].map[cic->left->key] = v_false;
+              iCode *cic = (iCode *)hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (ic->left)));
+              struct valinfo v = getOperandValinfo (ic, cic->left);
+              if (cic->op == '>' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
+                IS_OP_LITERAL (cic->right) && !v.anything && !v.nothing && operandLitValueUll(cic->right) < +1000)
+                {
+                  long long litval = operandLitValueUll (cic->right);
+                  struct valinfo v_true = v;
+                  struct valinfo v_false = v;
+                  v_true.min = std::max (v.min, litval + 1);
+                  v_false.max = std::min (v.max, litval);
+                  valinfoUpdate (&v_true);
+                  valinfoUpdate (&v_false);
+                  boost::tie(out, out_end) = boost::out_edges(i, G);
+                  for(; out != out_end; ++out)
+                    if (G[boost::target(*out, G)].ic->key == key_true)
+                      G[*out].map[cic->left->key] = v_true;
+                    else if (G[boost::target(*out, G)].ic->key == key_false)
+                      G[*out].map[cic->left->key] = v_false;
+                }
+              if (cic->op == '<' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
+                IS_OP_LITERAL (cic->right) && !v.anything && !v.nothing && operandLitValueUll(cic->right) < 0xffffffff)
+                {
+                  long long litval = operandLitValueUll (cic->right);
+                  struct valinfo v_true = v;
+                  struct valinfo v_false = v;
+                  v_true.max = std::min (v.max, litval - 1);
+                  v_false.min = std::max (v.min, litval);
+                  valinfoUpdate (&v_true);
+                  valinfoUpdate (&v_false);
+                  boost::tie(out, out_end) = boost::out_edges(i, G);
+                  for(; out != out_end; ++out)
+                    if (G[boost::target(*out, G)].ic->key == key_true)
+                      G[*out].map[cic->left->key] = v_true;
+                    else if (G[boost::target(*out, G)].ic->key == key_false)
+                      G[*out].map[cic->left->key] = v_false;
+                }
             }
         }
       break;
@@ -1066,15 +1110,25 @@ recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix)
 
   std::pair <std::queue<unsigned int>, std::set<unsigned int> > todo; // Nodes where valinfos need to be updated. We need a pair of a queue and a set to implement a queue with uniqe entries. A plain set wouldn't work, as we'd be working on some nodes all the time while never getting to others before we reach the round limit.
 
-  // Process each node at least once.
+  // Process each node at least once, and handle incoming non-register parameters.
+  typedef /*typename*/ boost::graph_traits<cfg_t>::out_edge_iterator out_iter_t;
+  out_iter_t out, out_end;
+  boost::tie(out, out_end) = boost::out_edges(0, G);
   for (unsigned int i = 0; i < boost::num_vertices (G); i++)
     {
       delete G[i].ic->valinfos;
-      G[i].ic->valinfos = NULL;
+      G[i].ic->valinfos = new struct valinfos;;
       delete G[i].ic->resultvalinfo;
       G[i].ic->resultvalinfo = NULL;
-      recompute_node (G, i, ebbi, todo, true, 0);
+      if (G[i].ic->left && IS_SYMOP (G[i].ic->left) && OP_SYMBOL (G[i].ic->left)->ismyparm)
+        G[0].ic->valinfos->map[G[i].ic->left->key] = getParamValinfo (G[i].ic->left);
+      if (G[i].ic->right && IS_SYMOP (G[i].ic->right) && OP_SYMBOL (G[i].ic->right)->ismyparm)
+        G[0].ic->valinfos->map[G[i].ic->right->key] = getParamValinfo (G[i].ic->right);
+      if (POINTER_SET (G[i].ic) && IS_SYMOP (G[i].ic->result) && OP_SYMBOL (G[i].ic->result)->ismyparm)
+        G[0].ic->valinfos->map[G[i].ic->result->key] = getParamValinfo (G[i].ic->result);
     }
+  for (unsigned int i = 0; i < boost::num_vertices (G); i++)
+    recompute_node (G, i, ebbi, todo, true, 0);
 
   // Forward pass to get first approximation.
   for (unsigned long round = 0; !todo.first.empty (); round++)
@@ -1127,6 +1181,7 @@ optimizeValinfoConst (iCode *sic)
               detachiCodeOperand (&ic->right, ic);
               ic->op = '=';
               ic->right = operandFromValue (valCastLiteral (operandType (result), vresult.min, vresult.min), false);
+              ic->result->isaddr = 0; // Don't know how this can be 1, but it happened once, and made a test fail. Apparenlty some issue in an early stage (the isaddr flag is already set at dumpraw0).
             }
           else
             {

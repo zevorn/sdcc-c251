@@ -8,6 +8,7 @@
  */
 
 #ifdef TEST1
+#pragma disable_warning 110
 char p0;
 
 void wait (void);

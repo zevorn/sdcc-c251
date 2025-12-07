@@ -533,6 +533,7 @@ declaration
                  addSym (StructTab, sdef, sdef->tag, sdef->level, currBlockno, false);
                  uselessDecl = false;
                }
+             checkQualifiers (sdef->tagsym, $1, false);
            }
          if (uselessDecl)
            werror(W_USELESS_DECL);

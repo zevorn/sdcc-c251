@@ -1,3 +1,29 @@
+2025-12-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge _Optional branch.
+
+2025-12-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCgenconstprop.cc,
+	  src/SDCCicode.c,
+	  src/SDCCsymt.c:
+	  Steps towards a fix for bug #3898. Better diagnostics for _Optional.
+
+2025-12-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCcse.c,
+	  src/SDCCicode.c:
+	  Steps towards a fix for bug #3898 and better diagnostics for _Optional.
+
+2025-12-06 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCcse.c,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCicode.c,
+	  src/SDCCopt.c,
+	  support/valdiag/tests/_Optional.c:
+	  Steps towards a fix for bug #3898 and better diagnostics for _Optional.
+
 2025-12-05 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* sdas/asz80/tz80.asm:
@@ -24,10 +50,23 @@
 	* src/SDCCopt.c:
 	  Fix bug #3899.
 
+2025-12-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCicode.c,
+	  src/SDCCopt.c,
+	  support/valdiag/tests/_Optional.c:
+	  Steps towards a fix for bug #3898 and better diagnostics for _Optional.
+
 2025-12-01 Janko Stamenović
 
 	* src/SDCCmain.c
 	  Better _pipe call in Windows
+
+2025-12-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCgenconstprop.cc,
+	  support/valdiag/tests/bug-895992.c:
+	  Improve generalized constant propagation for pointers to prepare for diagnostics based on combination of _Optional with information from generalized constant propagation analysis.
 
 2025-11-30 Gabriele Gorla <gorlik@yahoo.com>
 
@@ -57,7 +96,7 @@
 	  support/regression/tests/mm-pnvi-ae-udi-pointer_from_integer_2g.c:
 	  Additional diagnostics for potential array bound issues.
 	* src/z80/gen.c:
-	  Fix a r3la codegen issue triggered by previous changes.
+	  Fix a r3ka codegen issue triggered by previous changes.
 
 2025-11-29 Gabriele Gorla <gorlik@yahoo.com>
 
@@ -74,6 +113,18 @@
 	  src/SDCCval.c,
 	  support/regression/tests/size_t_suffix.c:
 	  Add Literal Suffixes for size_t (C2y, N3485).
+
+2025-11-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCerr.h,
+	  src/SDCCerr.c:
+	  Prepare for diagnostics based on combination of _Optional with information from generalized constant propagation analysis.
+
+2025-11-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.y,
+	  support/valdiag/tests/_Optional.c:
+	  Fix diagnostics for _Optional on struct/union forward declarations.
 
 2025-11-28 Philipp Klaus Krause <philipp@colecovision.eu>
 

@@ -191,7 +191,15 @@ void ReplaceOpWithCheaperOp(operand **op, operand *cop) {
   }
   printf ("\n");
 #endif
-  *op=cop;
+  if (IS_PTR (operandType (*op)) && IS_PTR (operandType (cop)) &&
+    (!isOptional (operandType (*op)->next) || (*op)->isOptionalEliminated) != (!isOptional (operandType (cop)->next) || (cop)->isOptionalEliminated))
+    {
+      operand *nop = operandFromOperand (cop);
+      nop->isOptionalEliminated = (!isOptional (operandType (*op)->next) || (*op)->isOptionalEliminated);
+      *op = nop;
+    }
+  else
+    *op=cop;
 }
 
 /*-----------------------------------------------------------------*/
@@ -1335,7 +1343,11 @@ algebraicOpts (iCode * ic, eBBlock * ebp)
               SET_ISADDR (IC_RESULT (ic), 0);
             }
           /* if casting to the same */
-          if (compareType (operandType (IC_RESULT (ic)), operandType (IC_RIGHT (ic)), false) == 1)
+          if (compareType (operandType (ic->result), operandType (ic->right), false) == 1 &&
+            // Don't remove _Optional to target - would mess up diagnostics
+            (!(IS_PTR (operandType (ic->result)) && isOptional (operandType (ic->result)->next) && !ic->result->isOptionalEliminated) || IS_PTR (operandType (ic->right)) && isOptional (operandType (ic->right)->next) && !ic->right->isOptionalEliminated) && 
+            // Don't remove volatile - could result in wrong code
+            (!(IS_PTR (operandType (ic->result)) && isVolatile (operandType (ic->result)->next)) || IS_PTR (operandType (ic->right)) && isVolatile (operandType (ic->right)->next)))
             {
               ic->op = '=';
               IC_LEFT (ic) = NULL;

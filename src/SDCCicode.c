@@ -201,13 +201,14 @@ dbuf_printOperand (operand * op, struct dbuf_s *dbuf)
 //#if REGA      /* { */
       if (REGA && !getenv ("PRINT_SHORT_OPERANDS"))
         {
-          dbuf_printf (dbuf, "%s [k%d lr%d:%d so:%d]{ ia%d a2p%d re%d rm%d nos%d ru%d dp%d}",   /*{ar%d rm%d ru%d p%d a%d u%d i%d au%d k%d ks%d}"  , */
+          dbuf_printf (dbuf, "%s [k%d lr%d:%d so:%d]{ ia%d a2p%d re%d rm%d nos%d ru%d dp%d oe%d}",   /*{ar%d rm%d ru%d p%d a%d u%d i%d au%d k%d ks%d}"  , */
                        (OP_SYMBOL (op)->rname[0] ? OP_SYMBOL (op)->rname : OP_SYMBOL (op)->name),
                        op->key,
                        OP_LIVEFROM (op), OP_LIVETO (op),
                        OP_SYMBOL (op)->stack,
                        op->isaddr, op->aggr2ptr, OP_SYMBOL (op)->isreqv,
-                       OP_SYMBOL (op)->remat, OP_SYMBOL (op)->noSpilLoc, OP_SYMBOL (op)->ruonly, OP_SYMBOL (op)->dptr);
+                       OP_SYMBOL (op)->remat, OP_SYMBOL (op)->noSpilLoc, OP_SYMBOL (op)->ruonly, OP_SYMBOL (op)->dptr,
+                       op->isOptionalEliminated);
           {
             dbuf_append_char (dbuf, '{');
             dbuf_printTypeChain (operandType (op), dbuf);
@@ -2143,6 +2144,20 @@ geniCodeRValue (operand * op, bool force)
     type = type->next;
 
   type = copyLinkChain (type);
+  if (op->isOptionalEliminated)
+    {
+      if (IS_SPEC (type))
+        SPEC_OPTIONAL (type) = false;
+      else
+        DCL_PTR_OPTIONAL (type) = false;
+    }
+  if (op->isConstEliminated)
+    {
+      if (IS_SPEC (type))
+        SPEC_CONST (type) = false;
+      else
+        DCL_PTR_CONST (type) = false;
+    }
 
   IC_RESULT (ic) = newiTempOperand (type, 1);
   IC_RESULT (ic)->isaddr = 0;
@@ -2208,14 +2223,15 @@ geniCodeCast (sym_link *type, operand *op, bool implicit)
   {
     if (IS_PTR (type))
       {
-        if (isConstant (opetype) && !isConstant (getSpec (type)))
-          op->isConstEliminated = 1;
-        if (isRestrict (opetype) && !isRestrict (getSpec (type)))
-          op->isRestrictEliminated = 1;
-        if (isOptional (opetype) && !isOptional (getSpec (type)))
-          op->isOptionalEliminated = 1;
+        op->isConstEliminated = (isConstant (opetype) && !isConstant (getSpec (type)));
+        op->isRestrictEliminated = (isRestrict (opetype) && !isRestrict (getSpec (type)));
+        op->isOptionalEliminated = (isOptional (opetype) && !isOptional (getSpec (type)));
       }
-    return op;
+    if (IS_PTR (type) && compareTypeExact (type, optype, -1) != 1 &&
+      (isVolatile (type->next) && !isVolatile (optype->next) || isOptional (type->next) && !isOptional (optype->next)))
+      ; // Need to keep the cast - can't drop volatile, since it could result in reads/writes being optimized out. Can't drop _Optional since it would mess up some warnings (could drop _Optional later, though, after checkStaticArrayParams).
+    else
+      return op;
   }
 
   /* if this is a literal then just change the type & return */
@@ -3097,13 +3113,9 @@ geniCodeDerefPtr (operand *op, int lvl)
   // just in case someone screws up
   wassert (IS_PTR (optype));
 
-  if (IS_TRUE_SYMOP (op))
+  if (IS_TRUE_SYMOP (op) || IS_OP_LITERAL (op))
     {
-      op->isaddr = 1;
-      op = geniCodeRValue (op, TRUE);
-    }
-  else if (IS_OP_LITERAL (op))
-    {
+      // For a true symop, we need the iTemp copy, since setOperandType below will fail otherwise.
       /* To avoid problems converting a dereferenced literal pointer */
       /* back and forth between lvalue and rvalue formats, replace   */
       /* the literal pointer with an iTemp and assign the literal    */
@@ -3115,6 +3127,11 @@ geniCodeDerefPtr (operand *op, int lvl)
       ic = newiCode ('=', NULL, op);
       IC_RESULT (ic) = iop;
       ADDTOCHAIN (ic);
+      if (op->isOptionalEliminated)
+        if (IS_SPEC (operandType (iop)->next))
+          SPEC_OPTIONAL (operandType (iop)->next) = false;
+        else
+          DCL_PTR_OPTIONAL (operandType (iop)->next) = false;
       op = operandFromOperand (iop); /* now use the iTemp as operand */
       optype = operandType (op);
     }
