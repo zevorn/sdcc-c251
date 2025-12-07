@@ -1,5 +1,9 @@
 2025-12-07 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* Merge _Optional branch.
+
+2025-12-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/SDCCgenconstprop.cc,
 	  src/SDCCicode.c,
 	  src/SDCCsymt.c:
