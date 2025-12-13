@@ -43,7 +43,7 @@ genPlusInc (iCode * ic)
   int icount;
   unsigned int size = AOP_SIZE (result);
   symbol *tlbl = NULL;
-  bool needpulla = false;
+  bool savea = false;
   unsigned int offset;
 
   /* will try to generate an increment */
@@ -65,18 +65,18 @@ genPlusInc (iCode * ic)
   if (icount>255)
     {
       int bcount = icount>>8;
-      if (IS_AOP_XA (AOP (result)) && IS_AOP_XA (AOP (left)) )
+
+      if(size==2 && sameRegs (AOP (left), AOP (result)))
         {
-          if(m6502_reg_x->isLitConst)
+          if (IS_AOP_XA (AOP (result)) && m6502_reg_x->isLitConst)
             {
-	      //              loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
-              emit6502op ("ldx", "0x%02x", (m6502_reg_x->litConst + bcount)&0xff );
+	      loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst + bcount);
 	      return true;
             }
-          else if(bcount<4)
+          else if(bcount<3)
             {
 	      while (bcount--)
-		emit6502op ("inx", "");
+                rmwWithAop ("inc", AOP (result), 1);
 
 	      return true;
             }
@@ -93,7 +93,7 @@ genPlusInc (iCode * ic)
           emitSetCarry (0);
           accopWithAop ("adc", AOP (right), 0);
           emitBranch ("bcc", tlbl);
-          emit6502op ("inx", "");
+	  rmwWithReg ("inc", m6502_reg_x);
           safeEmitLabel (tlbl);
           m6502_dirtyReg(m6502_reg_x);
         }
@@ -155,8 +155,7 @@ genPlusInc (iCode * ic)
     }
   else
     {
-      if (!IS_AOP_A (AOP (result)) && !IS_AOP_XA (AOP (result)))
-	needpulla = pushRegIfUsed (m6502_reg_a);
+      savea = fastSaveAIfSurv ();
 
       loadRegFromAop (m6502_reg_a, AOP (result), 0);
       emitSetCarry(0);
@@ -178,7 +177,7 @@ genPlusInc (iCode * ic)
   if (size > 1)
     safeEmitLabel (tlbl);
 
-  pullOrFreeReg (m6502_reg_a, needpulla);
+  fastRestoreOrFreeA (savea);
 
   return true;
 }
@@ -254,7 +253,20 @@ m6502_genPlus (iCode * ic)
       goto release;
     }
 
-  if ( IS_AOP_XA(AOP(result)) && IS_AOP_A(AOP(left)) && AOP_TYPE(right) != AOP_SOF) 
+  if ( IS_AOP_XA(AOP(result)) && is_right_byte && !maskedtopbyte && AOP_TYPE(right) != AOP_SOF) 
+    {
+      symbol *skipInc = safeNewiTempLabel (NULL);
+      loadRegFromAop (m6502_reg_xa, AOP(left), 0);
+      emitSetCarry(0);
+      accopWithAop ("adc", AOP(right), 0);
+      emitBranch ("bcc", skipInc);
+      rmwWithAop ("inc", AOP(result), 1);
+      m6502_dirtyReg(m6502_reg_x);
+      safeEmitLabel (skipInc);
+      goto release;
+    }
+
+  if ( IS_AOP_XA(AOP(result)) && !maskedtopbyte && IS_AOP_A(AOP(left)) && AOP_TYPE(right) != AOP_SOF) 
     {
       symbol *skipInc = safeNewiTempLabel (NULL);
       emitSetCarry(0);

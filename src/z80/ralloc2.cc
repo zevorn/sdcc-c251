@@ -564,6 +564,9 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
     ic->op == RECEIVE || ic->op == '=' && !POINTER_SET (ic) || ic->op == CAST || ic->op == GET_VALUE_AT_ADDRESS)
     return(true);
 
+  if ((ic->op == '-' || ic->op == UNARYMINUS) && !IS_SM83)
+    return(true);
+
   // Can use non-destructive cp on < (> might swap operands).
   if(((ic->op == '<' || ic->op == '>') && SPEC_USIGN(getSpec(operandType(left))) && SPEC_USIGN(getSpec(operandType(right)))) &&
     getSize(operandType(IC_LEFT(ic))) == 1 && ifxForOp (IC_RESULT(ic), ic) && operand_in_reg(left, REG_A, ia, i, G) &&
@@ -573,11 +576,11 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
   const cfg_dying_t &dying = G[i].dying;
   const bool dying_A = result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end();
 
-  if((ic->op == '+' || ic->op == '-' && !operand_in_reg(right, REG_A, ia, i, G) || ic->op == UNARYMINUS && !IS_SM83) &&
+  if((ic->op == '+' || ic->op == '-' && !operand_in_reg(right, REG_A, ia, i, G)) &&
     getSize(operandType(IC_RESULT(ic))) == 1 && dying_A)
     return(true);
 
-  if((ic->op == '+' || ic->op == '-' && !operand_in_reg(right, REG_A, ia, i, G) || ic->op == UNARYMINUS && !IS_SM83) && // First byte of input and last byte of output may be in A.
+  if((ic->op == '+' || ic->op == '-' && !operand_in_reg(right, REG_A, ia, i, G)) && // First byte of input and last byte of output may be in A.
     IS_ITEMP(result) && dying_A &&
     (IS_ITEMP(left) || IS_OP_LITERAL(left) || operand_on_stack(left, a, i, G)) &&
     (!right || IS_ITEMP(right) || IS_OP_LITERAL(right) || operand_on_stack(right, a, i, G)))

@@ -785,7 +785,7 @@ PORT mos6502_port =
       1,                        /* sp points to next free stack location */
     },
     {
-      5,                        /* shifts up to 5 use support routines */
+      -1,                       /* shifts never use support routines */
       false,                    /* do not use support routine for int x int -> long multiplication */
       false,                    /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
     },
@@ -957,7 +957,7 @@ PORT mos65c02_port =
       1                         /* sp is offset by 1 from last item pushed */
     },
     {
-      5,                        // Shifts up to 5 use support routines.
+      -1,                       /* shifts never use support routines */
       false,                    // Do not use support routine for int x int -> long multiplication.
       false,                    // Do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication.
     },

@@ -2740,7 +2740,7 @@ doPrintSearchDirs (void)
 static void
 sig_handler (int signal)
 {
-  char *sig_string;
+  const char *sig_string;
 
   switch (signal)
     {

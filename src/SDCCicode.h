@@ -213,8 +213,8 @@ iCode;
 typedef struct icodeFuncTable
 {
   int icode;
-  char *printName;
-  void (*iCodePrint) (struct dbuf_s *, const iCode *, char *);
+  const char *printName;
+  void (*iCodePrint) (struct dbuf_s *, const iCode *, const char *);
   iCode *(*iCodeCopy) (iCode *);
 }
 iCodeTable;

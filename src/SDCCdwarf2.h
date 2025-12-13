@@ -309,7 +309,7 @@ typedef struct dwloc
   struct
   {
     symbol * sym;
-    const char * label;
+    const char *label;
     int offset;
   } operand;
   struct dwloc * next;
@@ -349,7 +349,7 @@ typedef struct dwattr
   {
     struct
     {
-      char * label;
+      const char *label;
       int offset;
     } symaddr;
     struct
@@ -388,7 +388,7 @@ typedef struct dwfile
 
 typedef struct dwline
 {
-  char * label;
+  const char *label;
   int offset;
   int fileIndex;
   int line;
@@ -409,7 +409,7 @@ typedef struct dwblock
 typedef struct dwcfop
 {
   int opcode;
-  char * label;
+  const char *label;
   int operand1;
   int operand2;
   struct dwcfop * next;

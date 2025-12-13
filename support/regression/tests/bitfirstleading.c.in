@@ -5,8 +5,8 @@
 
 #include <testfwk.h>
 
-#if __STDC_VERSION_STDBIT_H__ >= 202311L
 #pragma std_c23
+#if __STDC_VERSION__ >= 202311L || defined(__SDCC) // todo: drop the || defined(__SDCC) once we can test in propoer c23 mode.
 #include <stdbit.h>
 #endif
 
@@ -19,7 +19,8 @@ volatile {type} i;
 void
 testTrailing(void)
 {
-#if __STDC_VERSION_STDBIT_H__ >= 202311L
+#if __STDC_VERSION_STDBIT_H__ >= 202311L || defined(__SDCC)  // todo: drop the || defined(__SDCC) once we can test in propoer c23 mode.
+#ifndef __SDCC_pdk14 // bug
 	i = 0x0;
 	ASSERT (stdc_first_leading_one(i) == 0);
 	ASSERT (stdc_first_leading_zero(i) == 1);
@@ -47,6 +48,7 @@ testTrailing(void)
 	i = 0x9;
 	ASSERT (stdc_first_leading_one(i) == OTHERBYTEBITS(i) + 5);
 	ASSERT (stdc_first_leading_zero(i) == 1);
+#endif
 #endif
 }
 
