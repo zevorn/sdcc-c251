@@ -114,7 +114,7 @@ dwNewDebugSymbol (void)
 /* The label and comment parameters are optional                        */
 /*----------------------------------------------------------------------*/
 static void
-dwWriteByte (const char * label, int offset, const char * comment)
+dwWriteByte (const char *label, int offset, const char *comment)
 {
   tfprintf (dwarf2FilePtr, "\t!db\t");
   if (label)
@@ -141,7 +141,7 @@ dwWriteByte (const char * label, int offset, const char * comment)
 /* The label and comment parameters are optional                        */
 /*----------------------------------------------------------------------*/
 static void
-dwWriteHalf (const char * label, int offset, char * comment)
+dwWriteHalf (const char *label, int offset, const char *comment)
 {
   tfprintf (dwarf2FilePtr, "\t!dw\t");
   if (label)
@@ -168,7 +168,7 @@ dwWriteHalf (const char * label, int offset, char * comment)
 /* The label and comment parameters are optional                        */
 /*----------------------------------------------------------------------*/
 static void
-dwWriteWord (const char * label, int offset, char * comment)
+dwWriteWord (const char *label, int offset, const char *comment)
 {
   /* FIXME: need to implement !dd pseudo-op in the assembler. In the */
   /* meantime, we use dw with zero padding and hope the values fit  */
@@ -228,7 +228,7 @@ dwWriteWord (const char * label, int offset, char * comment)
 /* The label and comment parameters are optional                        */
 /*----------------------------------------------------------------------*/
 static void
-dwWriteULEB128 (char * label, int offset, char * comment)
+dwWriteULEB128 (const char *label, int offset, const char *comment)
 {
   tfprintf (dwarf2FilePtr, "\t.uleb128\t");
   if (label)
@@ -256,7 +256,7 @@ dwWriteULEB128 (char * label, int offset, char * comment)
 /* The label and comment parameters are optional                        */
 /*----------------------------------------------------------------------*/
 static void
-dwWriteSLEB128 (char * label, int offset, char * comment)
+dwWriteSLEB128 (const char *label, int offset, const char *comment)
 {
   tfprintf (dwarf2FilePtr, "\t.sleb128\t");
   if (label)
@@ -329,7 +329,7 @@ dwSizeofSLEB128 (int value)
 /* non-null characters                                                  */
 /*----------------------------------------------------------------------*/
 static void
-dwWriteString (const char * string, const char * comment)
+dwWriteString (const char *string, const char *comment)
 {
   char * escaped = string_escape (string);
   tfprintf (dwarf2FilePtr, "\t!ascii\n", escaped);
@@ -349,7 +349,7 @@ dwWriteString (const char * string, const char * comment)
 /* parameters are optional                                              */
 /*----------------------------------------------------------------------*/
 static void
-dwWriteAddress (const char * label, int offset, char * comment)
+dwWriteAddress (const char *label, int offset, const char *comment)
 {
   switch (port->debugger.dwarf.addressSize)
     {
@@ -375,7 +375,7 @@ dwWriteAddress (const char * label, int offset, char * comment)
 /* The offset parameter is optional                                     */
 /*----------------------------------------------------------------------*/
 static void
-dwWriteHalfDelta (char * label1, char * label2, int offset)
+dwWriteHalfDelta (const char *label1, const char *label2, int offset)
 {
   if (offset)
     tfprintf (dwarf2FilePtr, "\t!dw\t%d+%s-%s\n", offset, label1, label2);
@@ -390,7 +390,7 @@ dwWriteHalfDelta (char * label1, char * label2, int offset)
 /*       .dd label1-label2                                              */
 /*----------------------------------------------------------------------*/
 static void 
-dwWriteWordDelta (char * label1, char * label2)
+dwWriteWordDelta (const char *label1, const char *label2)
 {
   /* FIXME: need to implement !dd pseudo-op; this hack only */
   /* works for positive offsets of less than 64k            */
@@ -419,7 +419,7 @@ dwWriteWordDelta (char * label1, char * label2)
 /* larger than the CPU's actual address size)                           */
 /*----------------------------------------------------------------------*/
 static void
-dwWriteAddressDelta (char * label1, char * label2)
+dwWriteAddressDelta (const char *label1, const char *label2)
 {
   switch (port->debugger.dwarf.addressSize)
     {
@@ -473,7 +473,7 @@ dwNewCFIlist ()
 /* dwNewLoc - allocates a new location expression node                  */
 /*----------------------------------------------------------------------*/
 dwloc *
-dwNewLoc (int opcode, const char * label, int offset)
+dwNewLoc (int opcode, const char *label, int offset)
 {
   dwloc * lp;
   
@@ -782,9 +782,9 @@ dwFreeAttr (dwattr * ap)
 /* dwNewAttrString - allocate a new tag attribute node with a string value */
 /*-------------------------------------------------------------------------*/
 static dwattr *
-dwNewAttrString (int attr, const char * string)
+dwNewAttrString (int attr, const char *string)
 {
-  dwattr * ap;
+  dwattr *ap;
   
   ap = dwNewAttr (attr);
   ap->form = DW_FORM_string;
@@ -876,9 +876,9 @@ dwNewAttrAddrSymbol (int attr, symbol * sym, int offset)
 /*                      address of an assembler label plus an offset   */
 /*---------------------------------------------------------------------*/
 static dwattr *
-dwNewAttrAddrLabel (int attr, char * label, int offset)
+dwNewAttrAddrLabel (int attr, const char *label, int offset)
 {
-  dwattr * ap;
+  dwattr *ap;
   
   ap = dwNewAttr (attr);
   ap->form = DW_FORM_addr;
@@ -925,7 +925,7 @@ dwNewAttrLocRef (int attr, dwloclist * llp)
 /*                     the address of an assembler label plus an offset  */
 /*-----------------------------------------------------------------------*/
 static dwattr *
-dwNewAttrLabelRef (int attr, char * label, int offset)
+dwNewAttrLabelRef (int attr, const char *label, int offset)
 {
   dwattr * ap;
   
@@ -1636,7 +1636,7 @@ dwWriteLineNumber (dwline * lp)
 {
   static int curFileIndex = 1;
   static int curLine = 1;
-  static char * curLabel = NULL;
+  static const char *curLabel = NULL;
   static int curOffset = 0;
   int deltaLine = lp->line - curLine;
   int deltaAddr = lp->offset - curOffset;

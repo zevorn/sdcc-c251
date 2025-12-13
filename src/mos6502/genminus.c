@@ -67,16 +67,15 @@ genMinusDec (iCode * ic)
         {
           if(m6502_reg_x->isLitConst)
             {
-	      //              loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
-              emit6502op ("ldx", "0x%02x", (m6502_reg_x->litConst - bcount)&0xff );
+	      loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
               return true;
             }
           else if(bcount<4)
             {
 	      while (bcount--)
-		emit6502op ("dex", "");
-	      return true;
+		rmwWithReg ("dec", m6502_reg_x);
 
+	      return true;
             }
         }
       return false;
@@ -91,7 +90,7 @@ genMinusDec (iCode * ic)
 	  emitSetCarry (1);
 	  accopWithAop ("sbc", AOP (right), 0);
 	  emitBranch ("bcs", tlbl);
-	  emit6502op ("dex", "");
+	  rmwWithReg ("dec", m6502_reg_x);
 	  safeEmitLabel (tlbl);
 	  m6502_dirtyReg(m6502_reg_x);
 	}
@@ -227,7 +226,6 @@ m6502_genMinus (iCode * ic)
       goto release;
     }
 
-  //  if ( IS_AOP_XA(AOP(left)) && AOP_TYPE(result) == AOP_SOF)
   if ( IS_AOP_XA (AOP(left)) && !IS_AOP_XA(AOP(result)) &&
        (AOP_TYPE(result) == AOP_SOF || AOP_TYPE(right) == AOP_SOF) )
     {
@@ -268,6 +266,8 @@ m6502_genMinus (iCode * ic)
     m6502_useReg(m6502_reg_y);
 
   savea = fastSaveAIfSurv ();
+
+  emitComment (TRACEGEN|VVDBG, "    %s - general case size=%d", __func__, size);
 
   for(offset=0; offset<size; offset++)
     {

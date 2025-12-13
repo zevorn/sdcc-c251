@@ -83,27 +83,11 @@ replace restart {
 replace restart {
 	ldx	%2
 	iny
-	pha
         tax
 } by {
 	; Peephole genPointerSet 1 - removed useless ldx %2
 	iny
-	pha
         tax
-}
-
-replace restart {
-	pha
-	tax
-	tya
-        sta	%1,x
-	pla
-} by {
-	; Peephole genPointerSet 2 - removed useless pha/pla
-	tax
-	tya
-        sta	%1,x
-	txa
 }
 
 replace restart {
@@ -556,13 +540,21 @@ replace restart {
 }
 
 replace restart {
+	txa
+	tax
+} by {
+	txa
+	; Peephole regop 7a - removed redundant tax
+}
+
+replace restart {
 	tax
 	ldy %1
 	txa
 } by {
         ldy %1
 	tax
-	; Peephole regop 7a - removed redundant txa
+	; Peephole regop 7b - removed redundant txa
 }
 
 replace restart {
@@ -580,6 +572,24 @@ replace restart {
 	tya
 	; Peephole regop 8a - removed redundant tay preceded by tya
 }
+
+replace restart {
+	tya
+	txa
+} by {
+	; Peephole regop 8b - removed useless tya followed by txa
+	txa
+}
+
+replace restart {
+	tya
+	%1
+        lda %2
+} by {
+	; Peephole regop 8d - removed useless tya followed by lda %2
+	%1
+        lda %2
+} if same(%1 'clc' 'sec')
 
 replace restart {
 	tax
@@ -610,6 +620,37 @@ replace restart {
         %1 %2
 	ldx %3
 } if notSame(%1 'stx' 'cpx' 'bne' 'beq' 'bpl' 'bmi' 'jsr' 'jmp')
+
+
+replace restart {
+	ldy %1
+	tya
+	ldy %2
+} by {
+        lda %1
+	; Peephole regop 12 - replaced ldy/tya with lda %1
+	ldy %2
+}
+
+replace restart {
+	tya
+	sta %1
+	lda %2
+} by {
+        sty %1
+	; Peephole regop 12 - replaced tya/sta with sty %1
+	lda %2
+}
+
+replace restart {
+	tax
+	stx %1
+	tsx
+} by {
+        sta %1
+	; Peephole regop 13 - replaced tax/stx with sta %1
+	tsx
+}
 
 ////////////////////////////////////////////////////////
 // Remove redundant/unnecessary stack operations

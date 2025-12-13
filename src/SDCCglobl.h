@@ -408,7 +408,7 @@ enum {
 
 struct _dumpFiles {
   int id;
-  char *ext;
+  const char *ext;
   FILE *filePtr;
 };
 

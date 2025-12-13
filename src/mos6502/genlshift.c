@@ -588,7 +588,6 @@ shiftLLong4 (operand * left, operand * result, int shift)
       if(shift!=7)
 	{
           fastRestoreA();
-	  //        loadRegTemp(m6502_reg_a);
 	  while(shift!=7)
 	    {
 	      rmwWithReg ("lsr", m6502_reg_a);
@@ -804,7 +803,7 @@ m6502_genLeftShift (iCode * ic)
       //	emitcode("ERROR", "%s: countreg is null", __func__);
       if(!m6502_reg_y->isDead && !IS_AOP_WITH_Y (AOP (result)))
         {
-	  storeRegTemp(m6502_reg_y, true);
+	  storeRegTemp(m6502_reg_y, !IS_AOP_WITH_Y (AOP (right)));
 	  restore_y=true;
         }
       countreg = m6502_reg_y;
@@ -887,10 +886,9 @@ m6502_genLeftShift (iCode * ic)
 	transferAopAop (AOP (left), offset, AOP (result), offset);
 
       loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
-
     }
   else
-      loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
+    loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
 
 
   if(!early_load_count)
@@ -902,6 +900,53 @@ m6502_genLeftShift (iCode * ic)
   m6502_useReg (countreg);
   if(IS_AOP_XA(AOP(right)))
     m6502_freeReg(m6502_reg_xa);
+
+  // FIXME: make this conditional on opt code-speed
+  if(size==8 /*|| size==4*/)
+    {
+      symbol *skiplbl = safeNewiTempLabel (NULL);
+      symbol *looplbl = safeNewiTempLabel (NULL);
+
+      emitCmp(countreg, 8);
+      emitBranch ("bcc", skiplbl);
+      safeEmitLabel (looplbl);
+
+      if(size==8)
+	{
+	  loadRegFromAop (m6502_reg_a, AOP (result), 6);
+	  storeRegToAop (m6502_reg_a, AOP(result) , 7);
+	  loadRegFromAop (m6502_reg_a, AOP (result), 5);
+	  storeRegToAop (m6502_reg_a, AOP(result) , 6);
+	  loadRegFromAop (m6502_reg_a, AOP (result), 4);
+	  storeRegToAop (m6502_reg_a, AOP(result) , 5);
+	  loadRegFromAop (m6502_reg_a, AOP (result), 3);
+	  storeRegToAop (m6502_reg_a, AOP(result) , 4);
+	}
+
+      loadRegFromAop (m6502_reg_a, AOP (result), 2);
+      storeRegToAop (m6502_reg_a, AOP(result) , 3);
+      loadRegFromAop (m6502_reg_a, AOP (result), 1);
+      storeRegToAop (m6502_reg_a, AOP(result) , 2);
+      loadRegFromAop (m6502_reg_a, AOP (result), 0);
+      storeRegToAop (m6502_reg_a, AOP(result) , 1);
+
+      loadRegFromConst (m6502_reg_a, 0);
+
+      storeRegToAop (m6502_reg_a, AOP(result) , 0);
+
+
+      transferRegReg(countreg, m6502_reg_a, true);
+      emitSetCarry (1);
+      emit6502op ("sbc", IMMDFMT, 8);
+      transferRegReg(m6502_reg_a, countreg, true);
+      //if(size==8)
+      {
+	emitCmp(countreg, 8);
+	emitBranch ("bcs", looplbl);
+      }
+      loadRegFromAop (m6502_reg_a, AOP (result), a_loc);
+      safeEmitLabel (skiplbl);
+    }
 
   emitCmp(countreg, 0);
   emitBranch ("beq", tlbl1);
@@ -964,18 +1009,18 @@ m6502_genLeftShift (iCode * ic)
 
   storeRegToAop (m6502_reg_a, AOP(result) , a_loc);
 
-//  if(op_is_xa || size==1)
-//    {
-//      storeRegToAop (m6502_reg_a, AOP(result) , 0);
-//      if(size==2)
-    if(op_is_xa)
-        {
-	  if(msb_in_x)
-	    storeRegToAop (m6502_reg_x, AOP(result) , 1);
-        }
-//    }
-//  else
-//    storeRegToAop (m6502_reg_a, AOP(result) , size-1);
+  //  if(op_is_xa || size==1)
+  //    {
+  //      storeRegToAop (m6502_reg_a, AOP(result) , 0);
+  //      if(size==2)
+  if(op_is_xa)
+    {
+      if(msb_in_x)
+	storeRegToAop (m6502_reg_x, AOP(result) , 1);
+    }
+  //    }
+  //  else
+  //    storeRegToAop (m6502_reg_a, AOP(result) , size-1);
 
   // After loop, countreg is always 0
   m6502_dirtyReg(countreg);

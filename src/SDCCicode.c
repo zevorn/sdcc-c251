@@ -58,7 +58,7 @@ operand *geniCodeDerefPtr (operand *, int);
 static int isLvaluereq (int lvl);
 static operand *geniCodeCast (sym_link *, operand *, bool);
 
-#define PRINTFUNC(x) void x (struct dbuf_s *dbuf, const iCode *ic, char *s)
+#define PRINTFUNC(x) void x (struct dbuf_s *dbuf, const iCode *ic, const char *s)
 /* forward definition of ic print functions */
 PRINTFUNC (picGetValueAtAddr);
 PRINTFUNC (picPushValueAtAddr);
