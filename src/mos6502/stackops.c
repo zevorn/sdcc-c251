@@ -182,7 +182,7 @@ adjustStack (int n)
   int sx_cycle = (m6502_reg_x->isFree)?0:6;
   int abs_n = (n>0)?n:-n;
 
-  emitComment (REGOPS, __func__ );
+  emitComment (TRACEGEN, "%s - adjust: %d", __func__, n );
   emitComment (REGOPS, "  %s reg:  %s", __func__, regInfoStr());
 
   // unrolled PHA      1b, 3c x n
@@ -201,7 +201,7 @@ adjustStack (int n)
       incdec-=2;
     }
 
-  emitComment (ALWAYS /*REGOPS|VVDBG*/, "  %s : cycles stk:%d  incdec:%d  adc:%d", __func__,
+  emitComment (REGOPS|VVDBG, "  %s : cycles stk:%d  incdec:%d  adc:%d", __func__,
                stack, incdec, adc);
 
   if(stack<=incdec && stack<=adc)

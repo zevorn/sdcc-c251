@@ -21,13 +21,26 @@
 	  support/regression/tests/far_rabbit_pointers.c:
 	  Further work on Rabbit __far support.
 
+2025-12-14 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+	  genPointerSet improvements.
+  	* src/mos6502/gen.c:
+	  genFunction improvements.
+  	* src/mos6502/stackops.c:
+	  debugging logs improvements.
+  	* src/mos6502/gen.c:
+	  Fix most of the stack-auto regression failures.
+
 2025-12-13 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
 	  Improve restoring registers from DPTR.
   	* src/mos6502/gen.c:
 	  Fix structparam regressions failures in stack-auto.
-
+  	* src/mos6502/gen.c:
+	  Additional stack pointer tracking.
+	  
 2025-12-13 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c,
