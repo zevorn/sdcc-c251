@@ -988,6 +988,9 @@ _setDefaultOptions (void)
   else
     options.data_loc = 0x8000;
 
+  if (IS_RAB) // The RCM have RAM physically at 0x80000, the lower 16K can be used in the generic address space (mapped from data_loc), leaving the rest from 0x84000 for xdata.
+    options.xdata_loc = 0x84000;
+
   options.out_fmt = 'i';        /* Default output format is ihx */
 }
 

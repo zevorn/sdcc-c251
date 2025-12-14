@@ -712,7 +712,7 @@ valinfoRight (struct valinfo *result, const struct valinfo &left, const struct v
 static void
 valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right, sym_link *sourcetype)
 {
-  bool genptrtarget = IS_GENPTR (targettype) || (TARGET_Z80_LIKE || TARGET_F8_LIKE || TARGET_IS_STM8); // Some ports have no tag bits in pointers.
+  bool genptrtarget = IS_GENPTR (targettype) || (TARGET_Z80_LIKE && !IS_FARPTR (targettype) && !IS_FARPTR (sourcetype) || TARGET_IS_TLCS90 || TARGET_F8_LIKE || TARGET_IS_STM8); // Some ports have no tag bits in pointers.
 
   *result = getTypeValinfo (targettype, false);
   if (right.nothing)
@@ -957,6 +957,22 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
           resultvalinfo.nonnull = true;
           sym_link *objtype = operandType (ic->left);
           unsigned long roff = operandLitValue (ic->right);
+
+          // This assumes a map where code (flash) is before data (ram) in the 64K address space.
+          if (TARGET_RABBIT_LIKE && IS_SPEC (objtype) && IN_CODESPACE (SPEC_OCLS (getSpec (objtype))) &&
+            !getAddrspace (objtype) && !IN_FARSPACE (SPEC_OCLS (getSpec (objtype))) && resultvalinfo.max >= options.data_loc)
+            {
+              // In Rabbit Root segement, which extends from 0x0 to somewhere just before the start of the "Data" of unknown size which in turn is just before the "Stack" segement at __data_loc.
+              resultvalinfo.max = options.data_loc - 1;
+            }
+          else if (TARGET_RABBIT_LIKE && IS_SPEC (objtype) && !IN_CODESPACE (SPEC_OCLS (getSpec (objtype))) &&
+            !getAddrspace (objtype) && !IN_FARSPACE (SPEC_OCLS (getSpec (objtype))) && resultvalinfo.min < options.data_loc)
+            {
+              // In Rabbit Stack segement, which extends from data_loc to 0xdfff, just before the XPC segment.
+              resultvalinfo.min = options.data_loc;
+              resultvalinfo.max = 0xdfff;
+            }
+
           if (!IS_ARRAY (objtype) && !(IS_STRUCT (objtype) && SPEC_STRUCT (objtype)->b_flexArrayMember)) // Single object. We know the size unless it has a flexible array memeber.
             {
               if (getSize (objtype) >= roff)

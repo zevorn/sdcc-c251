@@ -1,3 +1,26 @@
+2025-12-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/malloc.c,
+	  device/lib/r2k/crt0.s,
+	  device/lib/r2ka/crt0.s,
+	  device/lib/r3ka/crt0.s,
+	  device/lib/r3ka/heap.s,
+	  device/lib/r4k/crt0.s,
+	  device/lib/r5k/crt0.s,
+	  device/lib/r6k/crt0.s,
+	  doc/sdccman.lyx,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCmain.c,
+	  src/SDCCsymt.c,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  src/z80/ralloc.c,
+	  support/regression/tests/far_rabbit_fields.c,
+	  support/regression/tests/far_rabbits.c.in,
+	  doc/rabbit-memory.svg,
+	  support/regression/tests/far_rabbit_pointers.c:
+	  Further work on Rabbit __far support.
+
 2025-12-13 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:

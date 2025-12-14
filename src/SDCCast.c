@@ -4930,7 +4930,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
     case CAST:                 /* change the type   */
       /* cannot cast to struct / union */
       if (IS_AGGREGATE (LTYPE (tree)))
-        {printTypeChain (LTYPE (tree), 0);
+        {
           werrorfl (tree->filename, tree->lineno, E_CAST_ILLEGAL);
           goto errorTreeReturn;
         }
@@ -5132,21 +5132,21 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
               TETYPE (tree) = getSpec (TTYPE (tree));
               return tree;
             }
-        }
+        }//printf("C\n");printTypeChain (LTYPE (tree), 0);printTypeChain (RTYPE (tree), 0);
       checkPtrCast (LTYPE (tree), RTYPE (tree), tree->values.cast.implicitCast, FALSE);
-      if (IS_GENPTR (LTYPE (tree)) && (resultType != RESULT_TYPE_GPTR))
+      /*if (IS_GENPTR (LTYPE (tree)) && (resultType != RESULT_TYPE_GPTR))
         {
           if (IS_PTR (RTYPE (tree)) && !IS_GENPTR (RTYPE (tree)))
             DCL_TYPE (LTYPE (tree)) = DCL_TYPE (RTYPE (tree));
           if (IS_ARRAY (RTYPE (tree)) && SPEC_OCLS (RETYPE (tree)))
             DCL_TYPE (LTYPE (tree)) = PTR_TYPE (SPEC_OCLS (RETYPE (tree)));
-        }
+        }*/
       TTYPE (tree) = LTYPE (tree);
       TRVAL (tree) = LRVAL (tree) = 1;
 
 #endif
       TETYPE (tree) = getSpec (TTYPE (tree));
-
+//printf("D\n");printTypeChain (LTYPE (tree), 0);printTypeChain (RTYPE (tree), 0);
       return tree;
 
       /*------------------------------------------------------------------*/

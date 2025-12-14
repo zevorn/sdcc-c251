@@ -1,10 +1,10 @@
 ;--------------------------------------------------------------------------
-;  crt0.s - Generic crt0.s for a Rabbit 3000A
+;  crt0.s - Generic crt0.s for a Rabbit 5000
 ;	derived from "Generic crt0.s for a Z80"
 ;
 ;  Copyright (C) 2000, Michael Hope
 ;  Modified for Rabbit by Leland Morrison 2011
-;  Copyright (C) 2020, Philipp Klaus Krause
+;  Copyright (C) 2020-2025, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -144,6 +144,12 @@ skip_gsinit:
 	.area	_BSEG
 	.area   _BSS
 	.area   _HEAP
+	.area   _HEAP_END
+	.area   _SSEG
+
+	.area   _XCONST
+
+	.area   _XDATA
 
 	.area   _CODE
 _exit::
@@ -170,7 +176,6 @@ gsinit::
 	ld	d, h
 	inc	de
 	ldir
-
 zeroed_data:
 
 	ld	bc, #l__INITIALIZER

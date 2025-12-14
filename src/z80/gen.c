@@ -265,7 +265,7 @@ bool z80_regs_preserved_in_calls_from_current_function[IYH_IDX + 1];
 
 static const char *aopGet (asmop *aop, int offset, bool bit16);
 
-static struct asmop asmop_a, asmop_b, asmop_c, asmop_d, asmop_e, asmop_h, asmop_l, asmop_iyh, asmop_iyl, asmop_hl, asmop_de, asmop_bc, asmop_iy, asmop_jk, asmop_dehl, asmop_hlde, asmop_hlbc, asmop_debc, asmop_bcde, asmop_jkhl, asmop_ahl, asmop_aiy, asmop_zero, asmop_one, asmop_mone, asmop_fsign;
+static struct asmop asmop_a, asmop_b, asmop_c, asmop_d, asmop_e, asmop_h, asmop_l, asmop_iyh, asmop_iyl, asmop_hl, asmop_de, asmop_bc, asmop_iy, asmop_jk, asmop_ahl, asmop_aiy, asmop_ehl, asmop_lde, asmop_ebc, asmop_dehl, asmop_hlde, asmop_hlbc, asmop_debc, asmop_bcde, asmop_jkhl, asmop_zero, asmop_one, asmop_mone, asmop_fsign;
 static struct asmop *const ASMOP_A = &asmop_a;
 static struct asmop *const ASMOP_B = &asmop_b;
 static struct asmop *const ASMOP_C = &asmop_c;
@@ -280,14 +280,17 @@ static struct asmop *const ASMOP_DE = &asmop_de;
 static struct asmop *const ASMOP_BC = &asmop_bc;
 static struct asmop *const ASMOP_IY = &asmop_iy;
 static struct asmop *const ASMOP_JK = &asmop_jk;
+static struct asmop *const ASMOP_AHL = &asmop_ahl;
+static struct asmop *const ASMOP_AIY = &asmop_aiy;
+static struct asmop *const ASMOP_EHL = &asmop_ehl;
+static struct asmop *const ASMOP_LDE = &asmop_lde;
+static struct asmop *const ASMOP_EBC = &asmop_ebc;
 static struct asmop *const ASMOP_DEHL = &asmop_dehl;
 static struct asmop *const ASMOP_HLDE = &asmop_hlde;
 static struct asmop *const ASMOP_HLBC = &asmop_hlbc;
 static struct asmop *const ASMOP_DEBC = &asmop_debc;
 static struct asmop *const ASMOP_BCDE = &asmop_bcde;
 static struct asmop *const ASMOP_JKHL = &asmop_jkhl;
-static struct asmop *const ASMOP_AHL = &asmop_ahl;
-static struct asmop *const ASMOP_AIY = &asmop_aiy;
 static struct asmop *const ASMOP_ZERO = &asmop_zero;
 static struct asmop *const ASMOP_ONE = &asmop_one;
 static struct asmop *const ASMOP_MONE = &asmop_mone;
@@ -331,6 +334,9 @@ z80_init_asmops (void)
   z80_init_reg_asmop(&asmop_hl, (const signed char[]){L_IDX, H_IDX, -1});
   z80_init_reg_asmop(&asmop_iy, (const signed char[]){IYL_IDX, IYH_IDX, -1});
   z80_init_reg_asmop(&asmop_jk, (const signed char[]){K_IDX, J_IDX, -1});
+  z80_init_reg_asmop(&asmop_ehl, (const signed char[]){L_IDX, H_IDX, E_IDX, -1});
+  z80_init_reg_asmop(&asmop_lde, (const signed char[]){E_IDX, D_IDX, L_IDX, -1});
+  z80_init_reg_asmop(&asmop_ebc, (const signed char[]){C_IDX, B_IDX, E_IDX, -1});
   z80_init_reg_asmop(&asmop_dehl, (const signed char[]){L_IDX, H_IDX, E_IDX, D_IDX, -1});
   z80_init_reg_asmop(&asmop_hlde, (const signed char[]){E_IDX, D_IDX, L_IDX, H_IDX, -1});
   z80_init_reg_asmop(&asmop_hlbc, (const signed char[]){C_IDX, B_IDX, L_IDX, H_IDX, -1});
@@ -2486,8 +2492,9 @@ aopRet (sym_link *ftype)
       case 2:
         return (IS_SM83 ? ASMOP_DE : ASMOP_HL);
       case 3:
+        return (IS_SM83 ? ASMOP_LDE : ASMOP_EHL);
       case 4:
-        return (IS_SM83 ? ASMOP_HLDE : ASMOP_DEHL);   
+        return (IS_SM83 ? ASMOP_HLDE : ASMOP_DEHL);
       default:
         return 0;
       }
@@ -2506,8 +2513,9 @@ aopRet (sym_link *ftype)
       else
         return ASMOP_DE;
     case 3:
+      return (IS_SM83 ? ASMOP_EBC : ASMOP_LDE);
     case 4:
-      return (IS_SM83 ? ASMOP_DEBC : ASMOP_HLDE);   
+      return (IS_SM83 ? ASMOP_DEBC : ASMOP_HLDE);
     default:
       return 0;
     }
@@ -4927,7 +4935,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
         regsize--;
         size--;
       }
-  
+
   // Move everything from registers to the stack.
   wassert (source->type != AOP_REG || source->size < 8);
   for (int i = 0; i < n && source->type == AOP_REG;)
@@ -5065,6 +5073,18 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
           size -= 2;
           i += 2;
         }
+      else if (result->type == AOP_EXSTK && !IY_RESERVED && !IS_SM83 && !IS_TLCS870)
+        {
+          if (!iy_free)
+            _push (PAIR_IY);
+          cheapMove (result, roffset + i, source, soffset + i, a_free);
+          if (!iy_free)
+            _pop (PAIR_IY);
+          assigned[i] = true;
+          regsize--;
+          size--;
+          i++;
+        }
       else if (aopOnStack (result, roffset + i, 1) && requiresHL (result) && !hl_free)
         {
           _push(PAIR_HL);
@@ -5137,14 +5157,16 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
       if (assigned[i] || assigned[i + 1])
         continue;
 
-      for (int j = 0; j + 1 < n; j++)
+      for (int j = 0; j < n; j++)
         {
           if (!assigned[j] && i != j && i + 1 != j && !aopOnStack(result, roffset + i, 2) && !aopOnStack(source, soffset + i, 1) &&
-            (result->aopu.aop_reg[roffset + i] == source->aopu.aop_reg[soffset + j] || result->aopu.aop_reg[roffset + i + 1] == source->aopu.aop_reg[soffset + j]))
+            (aopInReg (source, soffset + j, result->aopu.aop_reg[roffset + i]->rIdx) || aopInReg (source, soffset + j, result->aopu.aop_reg[roffset + i + 1]->rIdx)))
             goto skip_byte_push_iy; // We can't write this one without overwriting the source.
         }
 
-      if (IS_RAB && (getPairId_o (result, roffset + i) == PAIR_HL || getPairId_o (result, roffset + i) == PAIR_IY) && (getPairId_o (source, soffset + i) == PAIR_HL || getPairId_o (source, soffset + i) == PAIR_IY))
+      if (IS_RAB &&
+        (getPairId_o (result, roffset + i) == PAIR_HL && getPairId_o (source, soffset + i) == PAIR_IY ||
+        getPairId_o (result, roffset + i) == PAIR_IY && getPairId_o (source, soffset + i) == PAIR_HL))
         {
           emit2 ("ld %s, %s", _pairs[getPairId_o (result, roffset + i)].name, _pairs[getPairId_o (source, soffset + i)].name);
           cost (2, 4);
@@ -18618,8 +18640,9 @@ genCast (const iCode *ic)
       goto release;
     }
 
-  /* if they are the same size or less */
-  if (result->aop->size <= right->aop->size)
+  // if they are the same size or less
+  if (result->aop->size <= right->aop->size &&
+    !(IS_RAB && IS_FARPTR (righttype))) // Except Rabbit pointers to __far, which needs special handling.
     {
       genAssign (ic);
       goto release;
@@ -18629,7 +18652,7 @@ genCast (const iCode *ic)
 
   /* now depending on the sign of the destination */
   size = result->aop->size - right->aop->size;
-  
+
   /* Unsigned or not an integral type - fill with zeros */
   if (IS_BOOL (righttype) || !IS_SPEC (righttype) || SPEC_USIGN (righttype) || right->aop->type == AOP_CRY)
     {
@@ -18638,6 +18661,65 @@ genCast (const iCode *ic)
         {
           emit3w (A_BOOL, ASMOP_HL, 0);
           emit3 (A_LD, ASMOP_L, right->aop);
+        }
+      else if (IS_RAB && IS_FARPTR (resulttype) && IS_PTR (righttype) && !IS_FARPTR (righttype) &&
+        !(!right->aop->valinfo.anything && right->aop->valinfo.max < options.data_loc)) // If we know we are not in ram, just fall through to unconditional zero-extension.
+        {
+          genMove_o (result->aop, 0, right->aop, 0, right->aop->size, !surviving_a, isPairDead (PAIR_HL, ic), isPairDead (PAIR_DE, ic), isPairDead (PAIR_IY, ic), true);
+          surviving_a |= (result->aop->regs[A_IDX] >= 0 && result->aop->regs[A_IDX] < right->aop->size);
+          if (surviving_a && !pushed_a)
+            _push (PAIR_AF), pushed_a = true;
+
+          // Mapping flash into __far space is just zero extension, mapping RAM is harder.
+          // This assumes that data RAM is always at physical address 0x80000.
+          symbol *tlbl = NULL;
+          if (right->aop->valinfo.anything || right->aop->valinfo.min < options.data_loc) // Test at run-time if we don't know that the pointer points to RAM.
+            {
+              tlbl = regalloc_dry_run ? NULL : newiTempLabel (NULL);
+              cheapMove (ASMOP_A, 0, result->aop, 1, true);
+              emit2 ("cp a, !immedbyte", (options.data_loc >> 8));
+              cost (2, 4);
+              emit3 (A_LD, ASMOP_A, ASMOP_ZERO);
+              emitJP (tlbl, "c", 0.5f, true);
+            }
+          cheapMove (ASMOP_A, 0, result->aop, 1, true);
+          emit2 ("sub a, !immedbyte", (options.data_loc >> 8));
+          cost (2, 4);
+          cheapMove (result->aop, 1, ASMOP_A, 0, true);
+          emit2 ("ld a, !immedbyte", 0x08);
+          cost (2, 4);
+          emitLabel (tlbl);
+          cheapMove (result->aop, 2, ASMOP_A, 0, true);
+        }
+      else if (IS_RAB && IS_PTR (resulttype) && !IS_FARPTR (resulttype) && IS_FARPTR (righttype) &&
+        !(!right->aop->valinfo.anything && right->aop->valinfo.max < 0x80000)) // If we know we are not in ram, just fall through to unconditional zero-extension. This assumes that data RAM is always at physical address 0x80000.
+        {
+          symbol *tlbl = regalloc_dry_run ? NULL : newiTempLabel (NULL);
+          if (aopInReg (right->aop, 2, A_IDX) || aopInReg (right->aop, 2, B_IDX) || aopInReg (right->aop, 2, C_IDX) || aopInReg (right->aop, 2, D_IDX) || aopInReg (right->aop, 2, E_IDX) || aopInReg (right->aop, 2, H_IDX) || aopInReg (right->aop, 2, L_IDX))
+            {
+              emit2 ("bit 3, %s", aopGet (right->aop, 2, false));
+              cost (2, 4);
+            }
+          else
+            {
+              if (right->aop->regs[A_IDX] >= 0 && right->aop->regs[A_IDX] < 2)
+                UNIMPLEMENTED;
+              if (surviving_a && !pushed_a)
+                _push (PAIR_AF), pushed_a = true;
+              cheapMove (ASMOP_A, 0, right->aop, 2, true);
+              emit2 ("bit 3, a");
+              cost (2, 4);
+            }
+          genMove_o (result->aop, 0, right->aop, 0, 2, !surviving_a || pushed_a, isPairDead (PAIR_HL, ic), isPairDead (PAIR_DE, ic), isPairDead (PAIR_IY, ic), false);
+          surviving_a |= (result->aop->regs[A_IDX] >= 0 && result->aop->regs[A_IDX] < result->aop->size);
+          if (surviving_a && !pushed_a)
+            _push (PAIR_AF), pushed_a = true;
+          emitJP (tlbl, "z", 0.5f, true);
+          cheapMove (ASMOP_A, 0, result->aop, 1, true);
+          emit2 ("add a, !immedbyte", (options.data_loc >> 8));
+          cost (2, 4);
+          cheapMove (result->aop, 1, ASMOP_A, 0, true);
+          emitLabel (tlbl);
         }
       else
         {
