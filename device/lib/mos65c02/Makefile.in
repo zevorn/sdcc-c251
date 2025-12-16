@@ -37,14 +37,11 @@ MOS6502_INT = $(COMMON_INT) \
   _modsint.c
 
 MOS6502_LONG = $(COMMON_LONG) \
-  _divulong.c \
-  _mullong.c
+  _mullong.c \
+  _divslong.c \
+  _divulong.c
 
 MOS6502_LONGLONG = $(COMMON_LONGLONG) \
-  _srulonglong.c \
-  _srslonglong.c \
-  _slulonglong.c \
-  _slslonglong.c \
   _mullonglong.c \
   _divslonglong.c \
   _divulonglong.c \

@@ -1,3 +1,112 @@
+2025-12-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/funcptrcmp.c.in:
+	  Test for function pointer comparison semantics.
+
+2025-12-14 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+	  genPointerSet improvements.
+  	* src/mos6502/gen.c:
+	  genFunction improvements.
+  	* src/mos6502/stackops.c:
+	  debugging logs improvements.
+  	* src/mos6502/gen.c:
+	  Fix most of the stack-auto regression failures.
+	* support/regression/test/bug-2663.c
+	  Fix typo that disabled the test.
+
+2025-12-13 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+	  Improve restoring registers from DPTR.
+  	* src/mos6502/gen.c:
+	  Fix structparam regressions failures in stack-auto.
+  	* src/mos6502/gen.c:
+	  Additional stack pointer tracking.
+	  
+2025-12-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peeph.def,
+	  support/regression/tests/far_rabbit_fields.c,
+	  support/regression/tests/far_rabbits.c.in:
+	  Fixes for TLCS-90 and Rabbit __far support.
+
+2025-12-13 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/gen.c:
+	  Fix register tracking bug.
+
+2025-12-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  src/SDCCglobl.h,
+	  src/SDCCglue.c,
+	  src/SDCCicode.c,
+	  src/SDCCicode.h,
+	  src/SDCCmain.c,
+	  src/SDCCpeeph.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/SDCCdwarf2.c,
+	  src/SDCCdwarf2.h:
+	  Improve const correctness for strings.
+
+2025-12-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peeph.def,
+	  src/z80/ralloc2.cc:
+	  Mitigate z80 code size regression from _Optional branch merge.
+
+2025-12-09 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genplus.c:
+	  Minor genPlus optimizations.
+  	* src/mos6502/gen.c:
+  	  Pointer handling improvements.
+	  
+2025-12-10 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/bitcount.c.in,
+	  support/regression/tests/bitcountleading.c.in,
+	  support/regression/tests/bitfirst.c.in,
+	  support/regression/tests/bitfirstleading.c.in,
+	  device/include/stdbit.h,
+	  device/lib/__stdc_trailing_ones.c,
+	  support/regression/tests/bitcounttrailing.c.in:
+	  Fix bug #3900.
+
+2025-12-10 Gabriele Gorla <gorlik@yahoo.com>
+
+	* device/lib/mos6502/__stdc_bit_width.s,
+	  device/lib/mos6502/__stdc_count_ones.s:
+	  Add assembly implementations of stdc_bit_width and stdc_count_ones.
+  	* src/mos6502/genlshift.c,
+	  src/mos6502/genrshift.c:
+	  Add optimization for longlong shifts.
+
+2025-12-09 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genplus.c,
+	  src/mos6502/genminus.c:
+	  Fix bug in c90-isort.
+  	* src/mos6502/gen.c:
+  	  Improve genPointerGet and genPointerSet.
+  	* src/mos6502/main.c,
+  	  src/mos6502/genlshift.c,
+  	  device/lib/mos6502/Makefile.in,
+  	  device/lib/mos6502/_srulonglong.c,
+  	  device/lib/mos6502/_srslonglong.c,
+  	  device/lib/mos6502-stack-auto/Makefile.in,
+  	  device/lib/mos6502-stack-auto/_srulonglong.c,
+  	  device/lib/mos6502-stack-auto/_srslonglong.c,
+  	  device/lib/mos65c02/Makefile.in,
+  	  device/lib/mos65c02/_srulonglong.c,
+  	  device/lib/mos65c02/_srslonglong.c:
+  	  Enable longlong shifts without support routines.
+
 2025-12-07 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge _Optional branch.

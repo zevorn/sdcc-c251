@@ -1298,7 +1298,7 @@ createIvalArray (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
           if (iloop && (lcnt && size > lcnt))
             {
               // is this a better way? at least it won't crash
-              char *name = (IS_AST_SYM_VALUE (sym)) ? AST_SYMBOL (sym)->name : "";
+              const char *name = (IS_AST_SYM_VALUE (sym)) ? AST_SYMBOL (sym)->name : "";
               werrorfl (iloop->filename, iloop->lineno, W_EXCESS_INITIALIZERS, "array", name);
 
               break;
@@ -1380,7 +1380,7 @@ createIvalCharPtr (ast * sym, sym_link * type, ast * iexpr, ast * rootVal)
         {
           if (size > symsize)
             {
-              char *name = (IS_AST_SYM_VALUE (sym)) ? AST_SYMBOL (sym)->name : "";
+              const char *name = (IS_AST_SYM_VALUE (sym)) ? AST_SYMBOL (sym)->name : "";
 
               TYPE_TARGET_ULONG c;
               if (IS_CHAR (type->next))

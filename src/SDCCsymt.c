@@ -44,7 +44,7 @@ printFromToType (sym_link * from, sym_link * to)
 }
 
 /* noun strings */
-char *
+const char *
 nounName (sym_link * sl)
 {
   switch (SPEC_NOUN (sl))
@@ -605,7 +605,7 @@ addDecl (symbol *sym, int type, sym_link *p)
 void
 checkTypeSanity (sym_link *etype, const char *name)
 {
-  char *noun;
+  const char *noun;
 
   if (!etype)
     {
@@ -4091,7 +4091,7 @@ dbuf_printTypeChain (sym_link * start, struct dbuf_s *dbuf)
           switch (DCL_TYPE (type))
             {
             case FUNCTION:
-              dbuf_printf (dbuf, "function %s%s",
+              dbuf_printf (dbuf, "function %s %s %s",
                 (DCL_PTR_OPTIONAL (type) ? "_Optional " : ""),
                 (IFFUNC_ISBUILTIN (type) ? "__builtin__ " : ""),
                 (IFFUNC_ISJAVANATIVE (type) ? "_JavaNative " : ""));

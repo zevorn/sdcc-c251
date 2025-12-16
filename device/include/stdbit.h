@@ -246,7 +246,7 @@ unsigned _BitInt(8) __stdc_trailing_ones(unsigned long long value);
 #define stdc_trailing_ones_ull(value) ((unsigned int)(stdc_trailing_ones((unsigned long long)(value)))
 
 // C23 7.18.5 Count Trailing Zeros
-#define stdc_trailing_zeros(value) stdc_count_trailing_ones((typeof(value))~(value))
+#define stdc_trailing_zeros(value) __stdc_trailing_ones((typeof(value))~(value))
 #define stdc_trailing_zeros_uc(value) ((unsigned int)(stdc_count_trailing_ones((unsigned char)(~(value))))
 #define stdc_trailing_zeros_us(value) ((unsigned int)(stdc_count_trailing_ones((unsigned short)(~(value))))
 #define stdc_trailing_zeros_ui(value) ((unsigned int)(stdc_count_trailing_ones((unsigned int)(~(value))))

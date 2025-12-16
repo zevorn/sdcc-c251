@@ -34,7 +34,7 @@
 
 static_assert(INT_FAST8_MAX >= ULLONG_WIDTH, "Unsuitable return type");
 
-unsigned _BitInt(8) __stdc_count_trailing_ones(unsigned long long value)
+unsigned _BitInt(8) __stdc_trailing_ones(unsigned long long value)
 {
 	int_fast8_t count = 0;
 	for(uint_fast8_t i = 0; i < ULLONG_WIDTH; i++)

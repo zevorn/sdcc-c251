@@ -343,7 +343,7 @@ emitRegularMap (memmap *map, bool addPublics, bool arFlag)
          an equate for this no need to allocate space */
       if (SPEC_ABSA (sym->etype) && !sym->ival)
         {
-          char *equ = "=";
+          const char *equ = "=";
 
           /* print extra debug info if required */
           if (options.debug)
@@ -2108,12 +2108,12 @@ createInterruptVect (struct dbuf_s *vBuf)
     }
 }
 
-char *iComments1 = {
+const char *iComments1 = {
   ";--------------------------------------------------------\n"
   "; File Created by SDCC : free open source ISO C Compiler\n"
 };
 
-char *iComments2 = {
+const char *iComments2 = {
   ";--------------------------------------------------------\n"
 };
 
