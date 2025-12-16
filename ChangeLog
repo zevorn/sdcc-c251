@@ -1,3 +1,8 @@
+2025-12-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/funcptrcmp.c.in:
+	  Test for function pointer comparison semantics.
+
 2025-12-14 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* device/lib/malloc.c,
@@ -31,6 +36,8 @@
 	  debugging logs improvements.
   	* src/mos6502/gen.c:
 	  Fix most of the stack-auto regression failures.
+	* support/regression/test/bug-2663.c
+	  Fix typo that disabled the test.
 
 2025-12-13 Gabriele Gorla <gorlik@yahoo.com>
 
