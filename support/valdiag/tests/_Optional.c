@@ -212,7 +212,7 @@ void sheila(int *j)
 }
 #endif
 
-// Test case from N3422 - TODO!
+// Test case from N3422
 #ifdef TEST15
 void andy(_Optional int *i)
 {
@@ -249,7 +249,7 @@ void andy(_Optional int *i)
 }
 #endif
 
-// Test case from N3422 - TODO!
+// Test case from N3422
 #ifdef TEST16
 void hazel(int *i)
 {
@@ -274,6 +274,43 @@ void hazel(int *i)
 	// despite the unconstrained value of j
 	*(int *)j = 10;
 	k = *(int *)j;
+}
+#endif
+
+// Revised version of jim above
+#ifdef TEST17
+int spider(_Optional int *i)
+{
+	int k;
+	extern void foo(int *);
+	// No diagnostic is recommended for the following
+	// statements because the value of i is constrained
+	// to non-null
+	if (i) {
+		*i = 5;
+		foo(&*i);
+		foo(&i[15]);
+	}
+	for (; i;) {
+		*i = 6;
+		foo(&*i);
+		foo(&i[15]);
+		break;
+	}
+	while (i) {
+		*i = 7;
+		foo(&*i);
+		foo(&i[15]);
+		break;
+	}
+	if (!i) {
+	} else {
+		*i = 8;
+		foo(&*i);
+		foo(&i[15]);
+	}
+	k = i ? *i : 0;
+	return (k);
 }
 #endif
 

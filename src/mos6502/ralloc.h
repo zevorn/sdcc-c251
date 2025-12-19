@@ -71,6 +71,7 @@ typedef struct reg_info
   short mask;			/* bitmask for pair allocation */
   struct asmop *aop;		/* last operand */
   int aopofs;			/* last operand offset */
+  int stackOffset;          /* stack offset for tsxaop */
   unsigned isFree:1;		/* is currently unassigned */
   unsigned isDead:1;      /* does not need to survive current instruction */
   unsigned isLitConst:1;      /* has an literal constant loaded */
