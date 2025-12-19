@@ -2286,10 +2286,8 @@ checkStaticArrayParams (ebbIndex *ebbi)
               werrorfl (ic->filename, ic->lineno, W_INVALID_PTR_DEREF);
             else if (!v.anything && roff + size > (long long)v.maybemaxsize)
               werrorfl (ic->filename, ic->lineno, W_MAYBE_INVALID_PTR_DEREF);
-#if 1 // Needs full fix for bug #3898 before we can enable it
             if ((v.anything || !v.nonnull) && isOptional(operandType (ic->left)->next) && !ic->left->isOptionalEliminated)
               werrorfl (ic->filename, ic->lineno, W_OPTIONAL_PTR_DEREF);
-#endif
           }
         else if (POINTER_SET (ic))
           {
@@ -2299,10 +2297,8 @@ checkStaticArrayParams (ebbIndex *ebbi)
               werrorfl (ic->filename, ic->lineno, W_INVALID_PTR_DEREF);
             else if (!v.anything && size > (long long)v.maybemaxsize)
               werrorfl (ic->filename, ic->lineno, W_MAYBE_INVALID_PTR_DEREF);
-#if 1 // Needs full fix for bug #3898 before we can enable it
             if ((v.anything || !v.nonnull) && isOptional(operandType (ic->result)->next) && !ic->result->isOptionalEliminated)
               werrorfl (ic->filename, ic->lineno, W_OPTIONAL_PTR_DEREF);
-#endif
           }
       }
 }

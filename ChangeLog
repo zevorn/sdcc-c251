@@ -1,7 +1,16 @@
+2025-12-16 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+  	  genFunction cleanup.
+  	  refactor stack offset code.
+
 2025-12-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/funcptrcmp.c.in:
 	  Test for function pointer comparison semantics.
+	* src/SDCCopt.c,
+	  support/valdiag/tests/_Optional.c:
+	  A bit of _Optional code cleanup and additional testing.
 
 2025-12-14 Philipp Klaus Krause <philipp@colecovision.eu>
 

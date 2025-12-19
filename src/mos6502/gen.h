@@ -118,10 +118,9 @@ struct attr_t
 
 struct m6502_state_t
 {
-  int stackOfs;
+  int stackBase;
   int funcHasBasePtr;
   int stackPushes;
-  int tsxStackPushes;
   //  int baseStackPushes;
   set *sendSet;
   int tempOfs;

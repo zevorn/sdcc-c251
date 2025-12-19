@@ -223,6 +223,7 @@ adjustStack (int n)
         {
           inst = (n>0) ? "inx" : "dex";
           emitTSX();
+
           while((abs_n--)>0)
             emit6502op(inst, "");
         }
