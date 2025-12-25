@@ -415,13 +415,13 @@ regInfoStr()
   char *flagreg;
 
   if(m6502_reg_a->aop == &tsxaop) snprintf(regstring[0],10,"A:%c%c:S%+-3d",
-                                       (m6502_reg_a->isFree)?'-':'U',
-                                       (m6502_reg_a->isDead)?'-':'L',
-                                                m6502_reg_a->stackOffset);
+					   (m6502_reg_a->isFree)?'-':'U',
+					   (m6502_reg_a->isDead)?'-':'L',
+					   m6502_reg_a->stackOffset);
   else if(m6502_reg_a->isLitConst) snprintf(regstring[0],10,"A:%c%c:#%02X ",
-                                                (m6502_reg_a->isFree)?'-':'U',
-                                                (m6502_reg_a->isDead)?'-':'L',
-                                       m6502_reg_a->litConst&0xff );
+					    (m6502_reg_a->isFree)?'-':'U',
+					    (m6502_reg_a->isDead)?'-':'L',
+					    m6502_reg_a->litConst&0xff );
   else if(m6502_reg_a->aop) snprintf(regstring[0],10,"A:%c%c:A%+-3d",
 				     (m6502_reg_a->isFree)?'-':'U',
 				     (m6502_reg_a->isDead)?'-':'L',
@@ -431,13 +431,13 @@ regInfoStr()
                 (m6502_reg_a->isDead)?'-':'L');
   
   if(m6502_reg_x->aop == &tsxaop) snprintf(regstring[1],10,"X:%c%c:S%+-3d",
-                                       (m6502_reg_x->isFree)?'-':'U',
-                                       (m6502_reg_x->isDead)?'-':'L',
-                                                m6502_reg_x->stackOffset);
+					   (m6502_reg_x->isFree)?'-':'U',
+					   (m6502_reg_x->isDead)?'-':'L',
+					   m6502_reg_x->stackOffset);
   else if(m6502_reg_x->isLitConst) snprintf(regstring[1],10,"X:%c%c:#%02X ",
-                                                (m6502_reg_x->isFree)?'-':'U',
-                                                (m6502_reg_x->isDead)?'-':'L',
-                                       m6502_reg_x->litConst&0xff  );
+					    (m6502_reg_x->isFree)?'-':'U',
+					    (m6502_reg_x->isDead)?'-':'L',
+					    m6502_reg_x->litConst&0xff  );
   else if(m6502_reg_x->aop) snprintf(regstring[1],10,"X:%c%c:A%+-3d",
 				     (m6502_reg_x->isFree)?'-':'U',
 				     (m6502_reg_x->isDead)?'-':'L',
@@ -447,13 +447,13 @@ regInfoStr()
                 (m6502_reg_x->isDead)?'-':'L');
   
   if(m6502_reg_y->aop == &tsxaop) snprintf(regstring[2],10,"Y:%c%c:S%+-3d",
-                                       (m6502_reg_y->isFree)?'-':'U',
-                                       (m6502_reg_y->isDead)?'-':'L',
-                                                m6502_reg_y->stackOffset);
+					   (m6502_reg_y->isFree)?'-':'U',
+					   (m6502_reg_y->isDead)?'-':'L',
+					   m6502_reg_y->stackOffset);
   else if(m6502_reg_y->isLitConst) snprintf(regstring[2],10,"Y:%c%c:#%02X ",
-                                                (m6502_reg_y->isFree)?'-':'U',
-                                                (m6502_reg_y->isDead)?'-':'L',
-                                       m6502_reg_y->litConst&0xff );
+					    (m6502_reg_y->isFree)?'-':'U',
+					    (m6502_reg_y->isDead)?'-':'L',
+					    m6502_reg_y->litConst&0xff );
   else if(m6502_reg_y->aop) snprintf(regstring[2],10,"Y:%c%c:A%+-3d",
 				     (m6502_reg_y->isFree)?'-':'U',
 				     (m6502_reg_y->isDead)?'-':'L',
@@ -2992,6 +2992,7 @@ aopCanIncDec (asmop * aop)
         return IS_MOS65C02;
     case AOP_DIR:
     case AOP_EXT:
+    case AOP_SOF:
       return true;
     default:
       break;
@@ -5424,6 +5425,18 @@ genCmp (iCode * ic, iCode * ifx)
       bit=true;
       bmi=false;
     }
+  else if (sign && right_zero && opcode=='<' && AOP_TYPE(left)==AOP_REG) 
+    {
+      emitCmp(AOP (left)->aopu.aop_reg[size-1], 0);
+      bit=true;
+      bmi=true;
+    }
+  else if (sign && right_zero && opcode==GE_OP && AOP_TYPE(left)==AOP_REG) 
+    {
+      emitCmp(AOP (left)->aopu.aop_reg[size-1], 0);
+      bit=true;
+      bmi=false;
+    }
   else if (!sign && size == 1 && IS_AOP_X (AOP (left)) && isAddrSafe(right, m6502_reg_x) )
     {
       if(IS_AOP_A(AOP(result)))
@@ -7240,8 +7253,18 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 
         if(idx_reg=='A' || idx_reg=='M')
 	  {
-            // FIXME: add check for S+x in A and reuse x
-            if(dst_reg[2]=='x' || m6502_reg_x->aop==&tsxaop || AOP_TYPE(result)==AOP_SOF)
+            if(idx_reg=='A' && m6502_reg_a->aop==&tsxaop && AOP_TYPE(result)==AOP_SOF)
+              {
+                // A is a stack offset
+                idx_reg='x';
+                px = storeRegTempIfSurv(m6502_reg_x);
+                emitTSX();
+                hi_offset+=(m6502_reg_a->stackOffset-m6502_reg_x->stackOffset);
+                emitComment (TRACEGEN|VVDBG, "    %s: sofx:%d  sofa:%d  sof:%d",
+			     __func__, m6502_reg_x->stackOffset, m6502_reg_a->stackOffset,
+			     m6502_reg_a->stackOffset-m6502_reg_x->stackOffset);
+              }
+            else if(dst_reg[2]=='x' || m6502_reg_x->aop==&tsxaop || AOP_TYPE(result)==AOP_SOF)
 	      {
 		py = storeRegTempIfSurv(m6502_reg_y);
 		loadRegFromAop(m6502_reg_y, AOP(left), 0 );
@@ -7256,7 +7279,6 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 		loadRegFromAop(m6502_reg_x, AOP(left), 0 );
 		idx_reg='x';
 	      }
-
 	  }
 
         if(dst_reg[2] == idx_reg || dst_reg[0]=='M')
@@ -7286,7 +7308,6 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 
         loadOrFreeRegTemp(m6502_reg_x,px);
         loadOrFreeRegTemp(m6502_reg_y,py);
-        loadOrFreeRegTemp (m6502_reg_a, needpulla);
         goto release;
       }
 

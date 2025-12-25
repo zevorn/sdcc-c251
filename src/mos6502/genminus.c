@@ -63,17 +63,18 @@ genMinusDec (iCode * ic)
   if (icount>255)
     {
       int bcount = icount>>8;
-      if (IS_AOP_XA (AOP (result)) && IS_AOP_XA (AOP (left)) )
+
+      if(size==2 && sameRegs (AOP (left), AOP (result)))
         {
-          if(m6502_reg_x->isLitConst)
+          if (IS_AOP_XA (AOP (result)) && m6502_reg_x->isLitConst)
             {
 	      loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
               return true;
             }
-          else if(bcount<4)
+          else if(bcount<3)
             {
 	      while (bcount--)
-		rmwWithReg ("dec", m6502_reg_x);
+		rmwWithAop ("dec", AOP (result), 1);
 
 	      return true;
             }
@@ -129,7 +130,7 @@ genMinusDec (iCode * ic)
   if (!aopCanIncDec (AOP (result)))
     return false;
 
-  emitComment (TRACEGEN|VVDBG, "    %s", __func__);
+  emitComment (TRACEGEN|VVDBG, "    %s - sameregs", __func__);
 
   if (size==1 && AOP(result)->type==AOP_REG)
     {

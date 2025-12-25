@@ -1,3 +1,20 @@
+2025-12-21 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+      Optimize compare with zero.
+
+2025-12-20 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/support/regression/tests/bug-3410.c.in,
+  	  src/mos6502/support/regression/tests/bug-3385.c,
+  	  src/mos6502/support/regression/tests/bug-2767.c,
+  	  src/mos6502/support/regression/tests/bigreturn-remat.c.in:
+  	  Enable several additional tests for mos6502.
+  	* src/mos6502/gen.c,
+  	  src/mos6502/genplus.c,
+  	  src/mos6502/genminus.c:
+  	  Allow inc/dec on objects on the stack.
+  	  	
 2025-12-16 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
