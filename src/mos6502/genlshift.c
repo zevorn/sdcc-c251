@@ -572,7 +572,7 @@ shiftLLong4 (operand * left, operand * result, int shift)
       rmwWithReg ("lsr", m6502_reg_a);
       if(shift!=7)
         fastSaveA();
-      //             storeRegTempAlways(m6502_reg_a, true);
+
       loadRegFromAop (m6502_reg_a, AOP (left), 2);
       rmwWithReg ("ror", m6502_reg_a);
       storeRegToAop (m6502_reg_a, AOP (result), 3);
@@ -907,7 +907,7 @@ m6502_genLeftShift (iCode * ic)
       symbol *skiplbl = safeNewiTempLabel (NULL);
       symbol *looplbl = safeNewiTempLabel (NULL);
 
-      emitCmp(countreg, 8);
+      m6502_emitCmp(countreg, 8);
       emitBranch ("bcc", skiplbl);
       safeEmitLabel (looplbl);
 
@@ -936,19 +936,19 @@ m6502_genLeftShift (iCode * ic)
 
 
       transferRegReg(countreg, m6502_reg_a, true);
-      emitSetCarry (1);
+      m6502_emitSetCarry (1);
       emit6502op ("sbc", IMMDFMT, 8);
       transferRegReg(m6502_reg_a, countreg, true);
       //if(size==8)
       {
-	emitCmp(countreg, 8);
+	m6502_emitCmp(countreg, 8);
 	emitBranch ("bcs", looplbl);
       }
       loadRegFromAop (m6502_reg_a, AOP (result), a_loc);
       safeEmitLabel (skiplbl);
     }
 
-  emitCmp(countreg, 0);
+  m6502_emitCmp(countreg, 0);
   emitBranch ("beq", tlbl1);
 
   // FIXME: find a good solution for this

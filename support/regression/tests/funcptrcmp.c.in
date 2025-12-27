@@ -35,7 +35,9 @@
 void
 testFuncPtrCmp(void)
 {
+#ifndef __SDCC_mcs51 // bug #3903
 	ASSERT (&f1 != &g1);
 	ASSERT (&f2 != &g2);
+#endif
 }
 

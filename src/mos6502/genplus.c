@@ -91,7 +91,7 @@ genPlusInc (iCode * ic)
       if(icount)
         {
           tlbl = safeNewiTempLabel (NULL);
-          emitSetCarry (0);
+          m6502_emitSetCarry (0);
           accopWithAop ("adc", AOP (right), 0);
           emitBranch ("bcc", tlbl);
 	  rmwWithReg ("inc", m6502_reg_x);
@@ -161,7 +161,7 @@ genPlusInc (iCode * ic)
       savea = fastSaveAIfSurv ();
 
       loadRegFromAop (m6502_reg_a, AOP (result), 0);
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP (right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       if (size > 1)
@@ -242,7 +242,7 @@ m6502_genPlus (iCode * ic)
 
       emitComment (TRACEGEN|VVDBG, "    %s: size==2 && one byte", __func__);
       savea = fastSaveAIfSurv ();
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       accopWithAop ("adc", AOP(right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
@@ -261,7 +261,7 @@ m6502_genPlus (iCode * ic)
     {
       symbol *skipInc = safeNewiTempLabel (NULL);
       loadRegFromAop (m6502_reg_xa, AOP(left), 0);
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP(right), 0);
       emitBranch ("bcc", skipInc);
       rmwWithAop ("inc", AOP(result), 1);
@@ -273,7 +273,7 @@ m6502_genPlus (iCode * ic)
   if ( IS_AOP_XA(AOP(result)) && !maskedtopbyte && IS_AOP_A(AOP(left)) && AOP_TYPE(right) != AOP_SOF) 
     {
       symbol *skipInc = safeNewiTempLabel (NULL);
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP(right), 0);
       loadRegFromAop (m6502_reg_x, AOP(right), 1);
       emitBranch ("bcc", skipInc);
@@ -288,7 +288,7 @@ m6502_genPlus (iCode * ic)
       emitComment (TRACEGEN|VVDBG, "    %s: XA = XA + SOF", __func__);
       storeRegTemp(m6502_reg_x, true);
       int xloc = getLastTempOfs();
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP (right), 0);
       fastSaveA();
       loadRegTempAt(m6502_reg_a, xloc);
@@ -307,7 +307,7 @@ m6502_genPlus (iCode * ic)
       savea = fastSaveAIfSurv();
       bool restore_x = !m6502_reg_x->isDead;
       storeRegTemp(m6502_reg_x, true);
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP (right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );
@@ -339,7 +339,7 @@ m6502_genPlus (iCode * ic)
       if (!opskip || AOP_TYPE (right) != AOP_LIT || (byteOfVal (AOP (right)->aopu.aop_lit, offset) != 0x00) )
 	{
           if (init_carry)
-	    emitSetCarry(0);
+	    m6502_emitSetCarry(0);
 
 	  accopWithAop ("adc", AOP(right), offset);
 	  opskip = false;

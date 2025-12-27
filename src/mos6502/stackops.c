@@ -206,9 +206,9 @@ adjustStack (int n)
 
   if(stack<=incdec && stack<=adc)
     {
-     inst = (n>0) ? "pla" : "pha";
-     if(n>0)
-       restore_a=storeRegTempIfUsed (m6502_reg_a);
+      inst = (n>0) ? "pla" : "pha";
+      if(n>0)
+	restore_a=storeRegTempIfUsed (m6502_reg_a);
 
       while((abs_n--)>0)
         emit6502op(inst, "");
@@ -222,7 +222,7 @@ adjustStack (int n)
       if(incdec<=adc)
         {
           inst = (n>0) ? "inx" : "dex";
-          emitTSX();
+          m6502_emitTSX();
 
           while((abs_n--)>0)
             emit6502op(inst, "");
@@ -230,12 +230,13 @@ adjustStack (int n)
       else
         {
           restore_a = storeRegTempIfUsed(m6502_reg_a);
-          emitTSX();
+          m6502_emitTSX();
           transferRegReg (m6502_reg_x, m6502_reg_a, true);
-          emitSetCarry(0);
+          m6502_emitSetCarry(0);
           emit6502op ("adc", IMMDFMT, (unsigned int)(n & 0xff));
           transferRegReg (m6502_reg_a, m6502_reg_x, true);
         }
+
       _S.stackPushes -= n;
       emit6502op ("txs", "");
       loadOrFreeRegTemp(m6502_reg_a, restore_a);

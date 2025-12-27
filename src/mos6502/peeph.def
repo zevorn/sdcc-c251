@@ -45,6 +45,54 @@ replace restart {
 }  if notUsed('x')
 
 replace restart {
+        txa
+	ldx %1
+	sta %2
+	txa
+	tsx
+} by {
+	; Peephole genPointerSet 2
+	stx %2
+        lda %1
+        tsx
+
+}
+
+replace restart {
+        ldx %1
+	tay
+	lda %2,%3
+	tsx
+} by {
+	; Peephole genAddrOf 1 - removed useless ldx %1
+	tay
+	lda %2,%3
+	tsx
+}
+
+replace restart {
+        ldx %1
+	tay
+	lda %2
+	tsx
+} by {
+	; Peephole genAddrOf 1a - removed useless ldx %1
+	tay
+	lda %2
+	tsx
+}
+
+replace restart {
+        ldx %1
+	lda %2
+	tsx
+} by {
+	; Peephole genAddrOf 1b - removed useless ldx %1
+	lda %2
+	tsx
+}
+
+replace restart {
 	bne	%1
         txa
 %1:
@@ -91,6 +139,19 @@ replace restart {
 }
 
 replace restart {
+	ldx	%1
+	lda	%2,%4
+	sta	%3
+	ldx	%1
+	lda	%2,%4
+} by {
+	; Peephole genPointerSet 3 - removed redundant ldx/lda
+	ldx	%1
+	lda	%2,%4
+	sta	%3
+} if notSame(%3 %1)
+
+replace restart {
 	ldx %2
 	lda %1
         sta %1
@@ -107,6 +168,18 @@ replace restart {
 } by {
 	; Peephole setupDPTR 2 - removed lda/ldx
 } if notUsed('a' 'x')
+
+replace restart {
+	tya
+	sta %3
+	stx %4
+        lda %5
+} by {
+	; peephole setupDPTR 3 - replaced tya/sta with sty %3
+	sty %3
+	stx %4
+        lda %5
+}
 
 replace restart {
 	ldx %1
@@ -149,6 +222,53 @@ replace restart {
 	lda %3
 } if same(%1 'adc' 'sbc')
 
+// this rule should be implemented by fusing add/minus followed by assign icode
+replace restart {
+	tay
+	txa
+	%1 %2
+        tax
+	tya
+	sta %3
+	stx %4
+        ldy %5
+} by {
+	; genPlus/Minus 2a - removed tay/tya
+	sta %3
+	txa
+	%1 %2
+	sta %4
+        tax
+	lda %3
+        ldy %5
+} if same(%1 'adc' 'sbc')
+
+replace restart {
+	sty %3
+	stx %4
+        lda %3
+} by {
+	sty %3
+	stx %4
+        tya
+	; genPlus/Minus 2c - replaced lda %3 with tya
+}
+
+//replace restart {
+//	ldx	%1
+//	lda	%2
+//	stx	%3
+//	lsr	%3
+//	ror	a
+//} by {
+//        ; gen rightshift 1 - changed ldx/stx/lsr to lda/lsr/sta
+//	lda	%1
+//	lsr	a
+//	sta	%3
+//	lda	%2
+//	ror	a
+//}  if notUsed('x')
+
 replace restart {
 	lda %1
         tay
@@ -157,6 +277,46 @@ replace restart {
 	; Peephole genIpush 1 - replaced lda/tay with ldy
 	ldy %1
         txa
+}
+
+replace restart {
+	tya
+	sta	%1
+	lda	%2, %3
+} by {
+        ; peephole fastRestoreA - replaced tya/sta with sty %1
+	sty	%1
+	lda	%2, %3
+}
+
+replace restart {
+        ldy %1
+	sta %2
+	tya
+	%3 %4
+	tay
+} by {
+	; Peephole copy/accOp - replaced ldy/tya with lda %1
+	sta %2
+	lda %1
+	%3 %4
+	tay
+} if same(%3 'and' 'ora' 'eor' 'asl' 'lsr' 'sbc' 'adc' )
+
+replace restart {
+        tsx
+	lda %1,x
+	sta %2,x
+	lda %3,x
+	sta %4,x
+	tsx
+} by {
+        tsx
+	lda %1,x
+	sta %2,x
+	lda %3,x
+	sta %4,x
+	; peephole gencopy 1 - removed redundant tsx
 }
 
 ////////////////////////////////////////////////////////
@@ -316,6 +476,24 @@ replace restart {
 	lda	%2,%3
 }
 
+replace restart {
+	ldy	%1
+	lda	%1
+} by {
+	ldy	%1
+	; Peephole load 7 - replaced ldy/lda with ldy/tya
+	tya
+}
+
+replace restart {
+	ldx	%1
+	lda	%1
+} by {
+	ldx	%1
+	; Peephole load 7a - replaced ldx/lda with ldx/txa
+	txa
+}
+
 ////////////////////////////////////////////////////////
 // Remove dead loads
 ////////////////////////////////////////////////////////
@@ -389,6 +567,16 @@ replace restart {
 
 replace restart {
 	lda	%4
+	ldx	%2
+	lda	%3
+} by {
+	; Peephole load 11aa - removed dead lda %4 followed by lda %3
+	ldx	%2
+	lda	%3
+}
+
+replace restart {
+	lda	%4
 	%1	%2
 	lda	%3,%5
 } by {
@@ -432,10 +620,23 @@ replace restart {
 	%1
 	ldx	%2
 } by {
-	; Peephole load 12a - removed dead ldx
+	; Peephole load 12a - removed dead ldx %3
 	%1 
 	ldx	%2
 } if notSame(%1 'txa' 'txs' 'phx'), notVolatile(%3)
+
+replace restart {
+	ldx	%2
+        lda	%3
+	%1	%4
+	tax
+} by {
+	; Peephole load 12b - removed dead ldx %2
+        lda	%3
+	%1	%4
+	tax
+} if notSame(%1 'stx' 'cpx' 'bne' 'beq' 'bpl' 'bmi' 'jsr' 'jmp'), notVolatile(%2)
+
 
 replace restart {
 	ldy	%4
@@ -579,6 +780,16 @@ replace restart {
 } by {
 	; Peephole regop 8b - removed useless tya followed by txa
 	txa
+}
+
+replace restart {
+	tya
+	ldx %1
+        lda %2
+} by {
+	; Peephole regop 8c - removed useless tya followed by lda %2
+	ldx %1
+        lda %2
 }
 
 replace restart {

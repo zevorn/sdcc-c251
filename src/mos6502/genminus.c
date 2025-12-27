@@ -88,7 +88,7 @@ genMinusDec (iCode * ic)
       if (icount)
 	{
 	  tlbl = safeNewiTempLabel (NULL);
-	  emitSetCarry (1);
+	  m6502_emitSetCarry (1);
 	  accopWithAop ("sbc", AOP (right), 0);
 	  emitBranch ("bcs", tlbl);
 	  rmwWithReg ("dec", m6502_reg_x);
@@ -212,7 +212,7 @@ m6502_genMinus (iCode * ic)
 
       emitComment (TRACEGEN|VVDBG, "    %s: size==2 && one byte", __func__);
       savea = fastSaveAIfSurv ();
-      emitSetCarry(1);
+      m6502_emitSetCarry(1);
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       accopWithAop ("sbc", AOP(right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
@@ -233,7 +233,7 @@ m6502_genMinus (iCode * ic)
       savea = fastSaveAIfSurv();
       bool restore_x = !m6502_reg_x->isDead;
       storeRegTemp(m6502_reg_x, true);
-      emitSetCarry(1);
+      m6502_emitSetCarry(1);
       accopWithAop ("sbc", AOP (right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );
@@ -253,7 +253,7 @@ m6502_genMinus (iCode * ic)
     {
       // op - a = neg(a - op) = not(a - op) + 1 = not(a - op - 1)
       savea = fastSaveAIfSurv ();
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("sbc", AOP(left) , 0);
       emit6502op("eor", "#0xff");
       if (maskedtopbyte)
@@ -277,7 +277,7 @@ m6502_genMinus (iCode * ic)
 	  storeRegTemp (m6502_reg_a, true);
 	  loadRegFromAop (m6502_reg_a, AOP(left), offset);
 	  if (init_carry)
-	    emitSetCarry(1);
+	    m6502_emitSetCarry(1);
 
 	  emitRegTempOp("sbc", getLastTempOfs() );
 	  loadRegTemp (NULL);
@@ -286,7 +286,7 @@ m6502_genMinus (iCode * ic)
 	{
 	  loadRegFromAop (m6502_reg_a, AOP(left), offset);
 	  if (init_carry)
-	    emitSetCarry(1);
+	    m6502_emitSetCarry(1);
 
 	  accopWithAop ("sbc", AOP(right), offset);
 	}

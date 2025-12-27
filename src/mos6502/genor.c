@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------
   genor.c - source file for OR code generation for the MOS6502
-
+  
   Copyright (C) 1998, Sandeep Dutta . sandeep.dutta@usa.net
   Copyright (C) 1999, Jean-Louis VERN.jlvern@writeme.com
   Bug Fixes - Wojciech Stryjewski  wstryj1@tiger.lsu.edu (1999 v2.1.9a)
@@ -87,7 +87,7 @@ m6502_genOr (iCode * ic, iCode * ifx)
 
       if( isLit && lit==NOP_MASK ) 
 	{
-	  emitCmp(m6502_reg_a, 0);
+	  m6502_emitCmp(m6502_reg_a, 0);
 	  genIfxJump (ifx, "z");
 	  goto release;
 	}
@@ -114,7 +114,7 @@ m6502_genOr (iCode * ic, iCode * ifx)
 	{
           if(ifx)
             {
-	      emitSetCarry(1);
+	      m6502_emitSetCarry(1);
 	      genIfxJump (ifx, "c");
 	      goto release;
 	    }
