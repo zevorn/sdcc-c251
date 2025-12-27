@@ -142,7 +142,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
         {
           if(isLit && bitpos==7)
             {
-	      emitCmp(m6502_reg_a, 0);
+	      m6502_emitCmp(m6502_reg_a, 0);
               genIfxJump (ifx, "n");
               goto release;
             }
@@ -189,7 +189,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 	{
           if(ifx)
             {
-	      emitSetCarry(0);
+	      m6502_emitSetCarry(0);
 	      genIfxJump (ifx, "c");
 	      goto release;
 	    }

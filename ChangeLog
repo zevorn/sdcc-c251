@@ -1,3 +1,35 @@
+2025-12-25 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+      Refactor of genCmpEqNeq() for ifx==false.
+      Add m6502 prefix to several functions.
+      
+2025-12-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/funcptrcmp.c.in:
+	  Disable a test for -mmcs51 --model-large, where it fails due to known bug #3903.
+	* device/include/stdlib.h,
+	  device/include/wchar.h,
+	  support/regression/tests/ato.c:
+	  Cleanup some leftover __SDCC_LONGLONG, which is no longer relevant, since all maintained ports now support long long.
+
+2025-12-25 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+      Partial refactor of genCmpEqNeq().
+    * src/mos6502/tempops.c:
+      Fix bug in instruction cycle count.
+   	* src/mos6502/peeph.def:
+   	  Additional peephole rules for new codegen paths.
+  	* src/mos6502/gen.c:
+      Small genPackBits() improvement.
+  	* src/mos6502/genlshift.c,
+  	  support/regression/tests/stack-restore.c.in:
+      Fix typos.
+   	* src/mos6502/tempops.c,
+   	  src/mos6502/gen.h:
+   	  Enable tracking of tsxaop in the tempstack.
+
 2025-12-21 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
@@ -5,10 +37,10 @@
 
 2025-12-20 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/support/regression/tests/bug-3410.c.in,
-  	  src/mos6502/support/regression/tests/bug-3385.c,
-  	  src/mos6502/support/regression/tests/bug-2767.c,
-  	  src/mos6502/support/regression/tests/bigreturn-remat.c.in:
+  	* support/regression/tests/bug-3410.c.in,
+  	  support/regression/tests/bug-3385.c,
+  	  support/regression/tests/bug-2767.c,
+  	  support/regression/tests/bigreturn-remat.c.in:
   	  Enable several additional tests for mos6502.
   	* src/mos6502/gen.c,
   	  src/mos6502/genplus.c,

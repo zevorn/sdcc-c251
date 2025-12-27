@@ -30,12 +30,6 @@
 #ifndef __STDC_VERSION_STDLIB_H__
 #define __STDC_VERSION_STDLIB_H__ 201710L /* TODO: replace by __STDC_VERSION__ when this header becomes C23-compliant! */
 
-#if !defined(__SDCC_pic14)
-#if __STDC_VERSION__ >= 199901L
-#define __SDCC_LONGLONG
-#endif
-#endif
-
 #if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_ds400) && !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16) && !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
 #define __reentrant
 #endif
@@ -137,7 +131,7 @@ int abs(int j) __preserves_regs(b, c, iyl, iyh);
 int abs(int j);
 #endif
 long int labs(long int j);
-#ifdef __SDCC_LONGLONG
+#if __STDC_VERSION__ >= 199901L
 long long int llabs(long long int j);
 #endif
 /* C2y Integer arithmetic functions */
