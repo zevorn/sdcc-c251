@@ -113,7 +113,6 @@ static FILE *debugF = NULL;
 /*-----------------------------------------------------------------*/
 /* debugLog - open a file for debugging information                */
 /*-----------------------------------------------------------------*/
-//static void debugLog(char *inst,char *fmt, ...)
 static void
 debugLog (const char *fmt,...)
 {
@@ -183,15 +182,15 @@ debugLogClose (void)
 #define AOP(op) op->aop
 
 static char *
-debugAopGet (char *str, operand * op)
+debugAopGet (const char *str, operand * op)
 {
-        if(!pic16_ralloc_debug)return NULL;
+  if(!pic16_ralloc_debug)return NULL;
 
-        if (str)
-                debugLog (str);
+  if (str)
+    debugLog (str);
 
-        printOperand (op, debugF);
-        debugNewLine ();
+  printOperand (op, debugF);
+  debugNewLine ();
 
   return NULL;
 }
@@ -199,13 +198,15 @@ debugAopGet (char *str, operand * op)
 char *
 pic16_decodeOp (unsigned int op)
 {
-        if (op < 128 && op > ' ') {
-                buffer[0] = op & 0xff;
-                buffer[1] = '\0';
-          return buffer;
-        }
+  if (op < 128 && op > ' ')
+    {
+      buffer[0] = op & 0xff;
+      buffer[1] = '\0';
+      return buffer;
+    }
 
-        switch (op) {
+  switch (op)
+    {
                 case IDENTIFIER:        return "IDENTIFIER";
                 case TYPE_NAME:         return "TYPE_NAME";
                 case CONSTANT:          return "CONSTANT";
@@ -306,37 +307,25 @@ pic16_decodeOp (unsigned int op)
                 case SEND:              return "SEND";
                 case DUMMY_READ_VOLATILE:       return "DUMMY_READ_VOLATILE";
         }
-        SNPRINTF(buffer, sizeof(buffer), "unknown op %d %c", op, op & 0xff);
+  SNPRINTF(buffer, sizeof(buffer), "unknown op %d %c", op, op & 0xff);
 
   return buffer;
 }
-
-#if 0
-static const char *decodeRegType(short type)
-{
-        switch(type) {
-                case REG_GPR: return "REG_GPR";
-                case REG_PTR: return "REG_PTR";
-                case REG_CND: return "REG_CNT";
-
-        default:
-                return "<unknown>";
-        }
-}
-#endif
 
 /*-----------------------------------------------------------------*/
 /*-----------------------------------------------------------------*/
 static const char *
 debugLogRegType (short type)
 {
-        if(!pic16_ralloc_debug)return NULL;
-        switch (type) {
+  if(!pic16_ralloc_debug)
+    return NULL;
+  switch (type)
+    {
                 case REG_GPR: return "REG_GPR";
                 case REG_PTR: return "REG_PTR";
                 case REG_CND: return "REG_CND";
-        }
-        SNPRINTF(buffer, sizeof(buffer), "unknown reg type %d", type);
+    }
+  SNPRINTF(buffer, sizeof(buffer), "unknown reg type %d", type);
 
   return buffer;
 }
@@ -360,18 +349,19 @@ static int regname2key(char const *name)
 /*-----------------------------------------------------------------*/
 /* newReg - allocate and init memory for a new register            */
 /*-----------------------------------------------------------------*/
-reg_info* newReg(int type, short pc_type, int rIdx, const char *name, unsigned size, int alias, operand *refop)
+reg_info *newReg(int type, short pc_type, int rIdx, const char *name, unsigned size, int alias, operand *refop)
 {
 
   reg_info *dReg;
 
-        dReg = Safe_alloc(sizeof(reg_info));
-        dReg->type = type;
-        dReg->pc_type = pc_type;
-        dReg->rIdx = rIdx;
-        if(name)
-                dReg->name = Safe_strdup(name);
-        else {
+  dReg = Safe_alloc(sizeof(reg_info));
+  dReg->type = type;
+  dReg->pc_type = pc_type;
+  dReg->rIdx = rIdx;
+  if(name)
+    dReg->name = Safe_strdup(name);
+  else
+    {
           if(pic16_options.xinst && pc_type == PO_GPR_TEMP) {
             SNPRINTF(buffer, sizeof(buffer), "0x%02x", dReg->rIdx);
           } else {
@@ -381,8 +371,8 @@ reg_info* newReg(int type, short pc_type, int rIdx, const char *name, unsigned s
           if(type == REG_STK) {
             *buffer = 's';
           }
-          dReg->name = Safe_strdup(buffer);
-        }
+      dReg->name = Safe_strdup(buffer);
+    }
 
 
         dReg->isFree = 0;
@@ -403,14 +393,14 @@ reg_info* newReg(int type, short pc_type, int rIdx, const char *name, unsigned s
         fprintf(stderr,"newReg @ %p: %s, rIdx = 0x%02x\taccess= %d\tregop= %p\n",dReg, dReg->name,rIdx, dReg->accessBank, refop);
 #endif
         dReg->size = size;
-        dReg->alias = alias;
-        dReg->reg_alias = NULL;
-        dReg->reglives.usedpFlows = newSet();
-        dReg->reglives.assignedpFlows = newSet();
-        dReg->regop = refop;
+  dReg->alias = alias;
+  dReg->reg_alias = NULL;
+  dReg->reglives.usedpFlows = newSet();
+  dReg->reglives.assignedpFlows = newSet();
+  dReg->regop = refop;
 
-        if(!(type == REG_SFR && alias == 0x80))
-                hTabAddItem(&dynDirectRegNames, regname2key(dReg->name), dReg);
+  if(!(type == REG_SFR && alias == 0x80))
+    hTabAddItem(&dynDirectRegNames, regname2key(dReg->name), dReg);
 
   return dReg;
 }
@@ -449,17 +439,16 @@ regFindFree (set *dRegs)
   reg_info *dReg;
 
   for (dReg = setFirstItem(dRegs) ; dReg ;
-       dReg = setNextItem(dRegs)) {
+       dReg = setNextItem(dRegs))
+    {
 
-//      fprintf(stderr, "%s:%d checking register %s (%p) [rIdx: 0x%02x] if free= %d\n",
-//              __FILE__, __LINE__, dReg->name, dReg, dReg->rIdx, dReg->isFree);
 
-    if(dReg->isFree) {
+      if(dReg->isFree) {
 //              fprintf(stderr, "%s:%d free register found, rIdx = %d\n", __FILE__, __LINE__, dReg->rIdx);
 
-      return dReg;
+          return dReg;
+        }
     }
-  }
 
   return NULL;
 }
@@ -469,7 +458,7 @@ regFindFreeNext(set *dRegs, reg_info *creg)
 {
   reg_info *dReg;
 
-    if(creg) {
+  if(creg) {
       /* position at current register */
       for(dReg = setFirstItem(dRegs); dReg != creg; dReg = setNextItem(dRegs));
     }
@@ -486,16 +475,16 @@ regFindFreeNext(set *dRegs, reg_info *creg)
 /*-----------------------------------------------------------------*
  *-----------------------------------------------------------------*/
 reg_info *
-pic16_allocProcessorRegister(int rIdx, const char * name, short po_type, int alias)
+pic16_allocProcessorRegister(int rIdx, const char *name, short po_type, int alias)
 {
   reg_info *reg = newReg(REG_SFR, po_type, rIdx, name, 1, alias, NULL);
 
 //      fprintf(stderr,"%s: %s addr =0x%x\n",__FUNCTION__, name,rIdx);
 
-        reg->wasUsed = 0;               // we do not know if they are going to be used at all
-        reg->accessBank = 1;            // implicit add access Bank
+  reg->wasUsed = 0;               // we do not know if they are going to be used at all
+  reg->accessBank = 1;            // implicit add access Bank
 
-        hTabAddItem(&dynProcRegNames, regname2key(reg->name), reg);
+  hTabAddItem(&dynProcRegNames, regname2key(reg->name), reg);
 
   return addSet(&pic16_dynProcessorRegs, reg);
 }
@@ -510,7 +499,8 @@ pic16_allocInternalRegister(int rIdx, const char *name, short po_type, int alias
 
 //  fprintf(stderr,"%s:%d: %s   %s addr =0x%x\n",__FILE__, __LINE__, __FUNCTION__, name, rIdx);
 
-    if(reg) {
+  if(reg)
+    {
       reg->wasUsed = 0;
       return addSet(&pic16_dynInternalRegs, reg);
     }
@@ -637,15 +627,15 @@ pic16_allocregWithName(const char *name)
 
   reg = hTabFirstItemWK(dynAllocRegNames, hkey);
 
-  while(reg) {
+  while(reg)
+    {
 
-    if(STRCASECMP(reg->name, name) == 0) {
-      return(reg);
+      if(STRCASECMP(reg->name, name) == 0)
+        return(reg);
+
+      reg = hTabNextItemWK (dynAllocRegNames);
+
     }
-
-    reg = hTabNextItemWK (dynAllocRegNames);
-
-  }
 
   return NULL; // name wasn't found in the hash table
 
@@ -744,7 +734,7 @@ reg_info *pic16_regWithName(const char *name)
 /* pic16_allocDirReg - allocates register of given type                  */
 /*-----------------------------------------------------------------*/
 reg_info *
-pic16_allocDirReg (operand *op )
+pic16_allocDirReg (operand *op)
 {
   reg_info *reg;
   char *name;
@@ -924,7 +914,8 @@ pic16_allocDirReg (operand *op )
                                          * why not just return it?! */
         }
 
-        if (SPEC_ABSA ( OP_SYM_ETYPE(op)) ) {
+  if (SPEC_ABSA (OP_SYM_ETYPE(op)))
+    {
                 reg->isFixed = 1;
                 reg->address = SPEC_ADDR ( OP_SYM_ETYPE(op));
 
@@ -934,7 +925,7 @@ pic16_allocDirReg (operand *op )
                         reg->accessBank = 1;
 
                 debugLog ("  -- and it is at a fixed address 0x%02x\n",reg->address);
-        }
+    }
 
   return reg;
 }
@@ -945,7 +936,6 @@ pic16_allocDirReg (operand *op )
 reg_info *
 pic16_allocRegByName(const char *name, int size, operand *op)
 {
-
   reg_info *reg;
 
   if(!name) {
@@ -1036,10 +1026,10 @@ pic16_regWithIdx (int idx)
 {
   reg_info *dReg;
 
-  if( (dReg = pic16_typeRegWithIdx(idx,REG_GPR,0)) != NULL)
+  if((dReg = pic16_typeRegWithIdx(idx,REG_GPR,0)) != NULL)
     return dReg;
 
-  if( (dReg = pic16_typeRegWithIdx(idx,REG_SFR,0)) != NULL)
+  if((dReg = pic16_typeRegWithIdx(idx,REG_SFR,0)) != NULL)
     return dReg;
 
 #if 0
@@ -1062,7 +1052,7 @@ pic16_allocWithIdx (int idx)
   debugLog ("%s - allocating with index = 0x%x\n", __FUNCTION__,idx);
 //  fprintf(stderr, "%s - allocating with index = 0x%x\n", __FUNCTION__,idx);
 
-  if( (dReg = regWithIdx ( pic16_dynAllocRegs, idx,0)) != NULL) {
+  if( (dReg = regWithIdx (pic16_dynAllocRegs, idx,0)) != NULL) {
 
     debugLog ("Found a Dynamic Register!\n");
   } else if( (dReg = regWithIdx ( pic16_dynStackRegs, idx,0)) != NULL ) {
@@ -1157,11 +1147,11 @@ pic16_findFreeRegNext(short type, reg_info *creg)
 /* freeReg - frees a register                                      */
 /*-----------------------------------------------------------------*/
 static void
-freeReg (reg_info * reg)
+freeReg (reg_info *reg)
 {
-        debugLog ("%s\n", __FUNCTION__);
-//      fprintf(stderr, "%s:%d register %s (%p) is freed\n", __FILE__, __LINE__, reg->name, reg);
-        reg->isFree = 1;
+  debugLog ("%s\n", __FUNCTION__);
+//fprintf(stderr, "%s:%d register %s (%p) is freed\n", __FILE__, __LINE__, reg->name, reg);
+  reg->isFree = 1;
 }
 
 
@@ -1363,7 +1353,6 @@ computeSpillable (iCode * ic)
   bitVectUnSetBit (spillable, ic->defKey);
   spillable = bitVectIntersect (spillable, _G.regAssigned);
   return spillable;
-
 }
 
 /*-----------------------------------------------------------------*/
@@ -1425,7 +1414,7 @@ rematable (symbol * sym, eBBlock * ebp, iCode * ic)
 /* notUsedInRemaining - not used or defined in remain of the block */
 /*-----------------------------------------------------------------*/
 static int
-notUsedInRemaining (symbol * sym, eBBlock * ebp, iCode * ic)
+notUsedInRemaining (symbol *sym, eBBlock *ebp, iCode *ic)
 {
   debugLog ("%s\n", __FUNCTION__);
   return ((usedInRemaining (operandFromSymbol (sym, false), ic) ? 0 : 1) &&
@@ -1436,7 +1425,7 @@ notUsedInRemaining (symbol * sym, eBBlock * ebp, iCode * ic)
 /* allLRs - return true for all                                    */
 /*-----------------------------------------------------------------*/
 static int
-allLRs (symbol * sym, eBBlock * ebp, iCode * ic)
+allLRs (symbol *sym, eBBlock *ebp, iCode *ic)
 {
   debugLog ("%s\n", __FUNCTION__);
   return 1;
@@ -1447,7 +1436,7 @@ allLRs (symbol * sym, eBBlock * ebp, iCode * ic)
 /*-----------------------------------------------------------------*/
 static set *
 liveRangesWith (bitVect * lrs, int (func) (symbol *, eBBlock *, iCode *),
-                eBBlock * ebp, iCode * ic)
+                eBBlock *ebp, iCode *ic)
 {
   set *rset = NULL;
   int i;
@@ -2156,7 +2145,7 @@ willCauseSpill (int nr, int rt)
 {
   debugLog ("%s\n", __FUNCTION__);
   /* first check if there are any avlb registers
-     of te type required */
+     of the type required */
   if (rt == REG_PTR)
     {
       /* special case for pointer type
@@ -2534,7 +2523,7 @@ rUmaskForOp (operand * op)
 /* regsUsedIniCode :- returns bit vector of registers used in iCode */
 /*-----------------------------------------------------------------*/
 static bitVect *
-regsUsedIniCode (iCode * ic)
+regsUsedIniCode (iCode *ic)
 {
   bitVect *rmask = newBitVect (pic16_nRegs);
 
@@ -2722,7 +2711,7 @@ rematStr (symbol * sym)
 /* regTypeNum - computes the type & number of registers required   */
 /*-----------------------------------------------------------------*/
 static void
-regTypeNum ()
+regTypeNum (void)
 {
   symbol *sym;
   int k;
@@ -3545,7 +3534,7 @@ isBitwiseOptimizable (iCode * ic)
 /* packRegsForAccUse - pack registers for acc use                  */
 /*-----------------------------------------------------------------*/
 static void
-packRegsForAccUse (iCode * ic)
+packRegsForAccUse (iCode *ic)
 {
   iCode *uic;
 
@@ -3694,8 +3683,6 @@ packRegsForAccUse (iCode * ic)
 accuse:
   debugLog ("%s - Yes we are using the accumulator\n", __FUNCTION__);
   OP_SYMBOL (IC_RESULT (ic))->accuse = 1;
-
-
 }
 #endif
 
@@ -3736,7 +3723,7 @@ packForReceive (iCode * ic, eBBlock * ebp)
 /* packForPush - hueristics to reduce iCode for pushing            */
 /*-----------------------------------------------------------------*/
 static void
-packForPush (iCode * ic, eBBlock * ebp)
+packForPush (iCode *ic, eBBlock *ebp)
 {
   iCode *dic, *lic;
   const char *iLine;
@@ -3847,16 +3834,17 @@ packForPush (iCode * ic, eBBlock * ebp)
       remiCodeFromeBBlock (ebp, dic);
       bitVectUnSetBit(OP_SYMBOL(IC_RESULT(dic))->defs,dic->key);
       hTabDeleteItem (&iCodehTab, dic->key, dic, DELETE_ITEM, NULL);
-    } // if
+    }
 }
 
 static void printSymType(char * str, sym_link *sl)
 {
-        if(!pic16_ralloc_debug)return;
+  if(!pic16_ralloc_debug)
+    return;
 
-        debugLog ("    %s Symbol type: ",str);
-        printTypeChain (sl, debugF);
-        debugLog ("\n");
+  debugLog ("    %s Symbol type: ",str);
+  printTypeChain (sl, debugF);
+  debugLog ("\n");
 }
 
 /*-----------------------------------------------------------------*/
@@ -3868,12 +3856,14 @@ static void isData(sym_link *sl)
 {
   FILE *of = stderr;
 
-    if(!pic16_ralloc_debug)return;
+  if(!pic16_ralloc_debug)
+    return;
 
-    if(!sl)return;
+  if(!sl)
+    return;
 
-    if(debugF)
-      of = debugF;
+  if(debugF)
+    of = debugF;
 
     for ( ; sl; sl=sl->next) {
       if(!IS_DECL(sl) ) {
@@ -3903,7 +3893,7 @@ static void isData(sym_link *sl)
 /*                                                                    */
 /*--------------------------------------------------------------------*/
 static void
-pic16_packRegisters (eBBlock * ebp)
+pic16_packRegisters (eBBlock *ebp)
 {
   iCode *ic;
   int change = 0;
@@ -3920,7 +3910,7 @@ pic16_packRegisters (eBBlock * ebp)
     /* TrueSym := iTempNN:1             */
     for (ic = ebp->sch; ic; ic = ic->next)
       {
-//              debugLog("%d\n", __LINE__);
+//      debugLog("%d\n", __LINE__);
         /* find assignment of the form TrueSym := iTempNN:1 */
         if ( (ic->op == '=') && !POINTER_SET (ic) ) // patch 11
           change += packRegsForAssign (ic, ebp);
@@ -3961,9 +3951,10 @@ pic16_packRegisters (eBBlock * ebp)
 
       isData(etype);
 
-        if(IS_OP_VOLATILE(IC_LEFT(ic))) {
-            debugLog ("  %d - left is not temp, allocating\n", __LINE__);
-            pic16_allocDirReg(IC_LEFT (ic));
+      if(IS_OP_VOLATILE(IC_LEFT(ic)))
+        {
+          debugLog ("  %d - left is not temp, allocating\n", __LINE__);
+          pic16_allocDirReg(IC_LEFT (ic));
         }
 
       printSymType("c  ", OP_SYMBOL(IC_LEFT(ic))->type);
@@ -4046,7 +4037,6 @@ pic16_packRegisters (eBBlock * ebp)
         OP_SYMBOL (IC_RESULT (ic))->remat = 1;
         OP_SYMBOL (IC_RESULT (ic))->rematiCode = ic;
         SPIL_LOC (IC_RESULT (ic)) = NULL;
-
       }
 
     /* if straight assignment then carry remat flag if
@@ -4393,10 +4383,10 @@ void dbg_dumpregusage(void);
 void
 pic16_assignRegisters (ebbIndex * ebbi)
 {
+  int i;
+  iCode *ic;
   eBBlock ** ebbs = ebbi->bbOrder;
   int count = ebbi->count;
-  iCode *ic;
-  int i;
 
   debugLog ("<><><><><><><><><><><><><><><><><>\nstarting\t%s:%s", __FILE__, __FUNCTION__);
   debugLog ("\nebbs before optimizing:\n");

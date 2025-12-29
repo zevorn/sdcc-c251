@@ -1,3 +1,25 @@
+2025-12-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/atoll.c,
+	  device/lib/strtoimax.c,
+	  device/lib/strtoll.c,
+	  device/lib/strtoull.c,
+	  device/lib/strtoumax.c,
+	  device/lib/wcstoll.c,
+	  device/lib/wcstoull.c:
+	  __SDCC_LONGLONG migration bits.
+
+2025-12-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/pic14/ralloc.c,
+	  src/pic16/ralloc.c:
+	  Reduce diff between pic14 and pic16 register allocator.
+
+2025-12-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/include/wchar.h:
+	  Fix pic14 library compilation.
+
 2025-12-25 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
