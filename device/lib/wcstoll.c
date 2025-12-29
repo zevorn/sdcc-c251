@@ -39,7 +39,6 @@
 
 // NOTE: wcstoll has been derived from strtoll
 
-#ifdef __SDCC_LONGLONG
 long long int wcstoll(const wchar_t *restrict nptr, wchar_t **restrict endptr, int base)
 {
   const wchar_t *ptr = nptr;
@@ -95,4 +94,4 @@ long long int wcstoll(const wchar_t *restrict nptr, wchar_t **restrict endptr, i
 
   return (neg ? -u : u);
 }
-#endif
+

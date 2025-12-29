@@ -31,7 +31,6 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-#ifdef __SDCC_LONGLONG
 long long int atoll(const char *nptr)
 {
   long long int ret = 0;
@@ -50,5 +49,5 @@ long long int atoll(const char *nptr)
 
   return (neg ? -ret : ret); // Since -LLONG_MIN is LLONG_MIN in sdcc, the result value always turns out ok.
 }
-#endif
+
 
