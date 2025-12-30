@@ -4,7 +4,7 @@
 
    The serpent cipher was an AES competition finalist, that ultimately lost to Rijndael.
 
-   The test is a C23/C2y implementation derived from the gcrypt one, but optimized a bit for code size.
+   The test is a C23/C2y implementation derived from the gcrypt one, optimized a bit for code size.
 */
 
 #include <testfwk.h>
@@ -854,6 +854,7 @@ void testSerpent (void)
     {
       serpent_setkey_internal (subkeys, test_data[i].key,
                                test_data[i].key_length);
+#ifndef __SDCC_ds390 // Bug #3908.
 #if defined (OP_encrypt)
       serpent_encrypt_internal (subkeys,
 				(const uint32_t *) test_data[i].text_plain,
@@ -866,6 +867,7 @@ void testSerpent (void)
 			      (const uint32_t *) test_data[i].text_cipher,
 			      (uint32_t *) scratch);
       ASSERT (!memcmp (scratch, test_data[i].text_plain, sizeof (serpent_block_t)));
+#endif
 #endif
     }
 #endif

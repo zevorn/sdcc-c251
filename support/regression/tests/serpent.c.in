@@ -14,6 +14,7 @@
 // This implementation needs quite some code memory and some data memory.
 #if defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) \
   || defined(__SDCC_mcs51) \
+  || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02) \
   || defined(__SDCC_sm83)
 #define LACK_OF_MEMORY
 #endif
@@ -652,15 +653,18 @@ void testSerpent (void)
   for (i = 0; test_data[i].key_length; i++)
     {
       serpentInit(&context, test_data[i].key, test_data[i].key_length);
-
-#if defined (OP_encrypt)
+#ifndef __SDCC_ds390 // Bug #3905
+#if !defined(__SDCC_stm8) && !defined(__SDCC_f8) // Bugs #3906, 3907.
+#if defined(OP_encrypt)
       serpentEncryptBlock(&context, test_data[i].text_plain, scratch);
       ASSERT (!memcmp (scratch, test_data[i].text_cipher, sizeof (scratch)));
 #endif
+#endif
 
-#if defined (OP_decrypt)
+#if defined(OP_decrypt)
       serpentDecryptBlock(&context, test_data[i].text_cipher, scratch);
       ASSERT (!memcmp (scratch, test_data[i].text_plain, sizeof (scratch)));
+#endif
 #endif
     }
 #endif
