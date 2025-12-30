@@ -41,6 +41,7 @@ inline uint_least32_t stdc_load8_leu32(const unsigned char ptr[static (32 / 8)])
 #define stdc_rotate_right(x, n) (((x) >> (n)) | ((x) << (32-(n))))
 #endif
 
+#ifndef __SDCC_ds390 // Bug #3908.
 #ifndef LACK_OF_MEMORY
 /* serpent.c - Implementation of the Serpent encryption algorithm.
  *	Copyright (C) 2003, 2004, 2005 Free Software Foundation, Inc.
@@ -842,9 +843,11 @@ const struct test
       },
     };
 #endif
+#endif
 
 void testSerpent (void)
 {
+#ifndef __SDCC_ds390 // Bug #3908.
 #ifndef LACK_OF_MEMORY
   serpent_subkeys_t subkeys;
   unsigned char scratch[16];
@@ -854,7 +857,6 @@ void testSerpent (void)
     {
       serpent_setkey_internal (subkeys, test_data[i].key,
                                test_data[i].key_length);
-#ifndef __SDCC_ds390 // Bug #3908.
 #if defined (OP_encrypt)
       serpent_encrypt_internal (subkeys,
 				(const uint32_t *) test_data[i].text_plain,
@@ -868,8 +870,8 @@ void testSerpent (void)
 			      (uint32_t *) scratch);
       ASSERT (!memcmp (scratch, test_data[i].text_plain, sizeof (serpent_block_t)));
 #endif
-#endif
     }
+#endif
 #endif
 }
 
