@@ -4248,16 +4248,19 @@ static void unsaveRegisters (iCode *ic)
 }
 
 /**************************************************************************
- * pushSide
+ * storeRegTempOp
  * store oper to the RegTemp Stack
  * TODO: change function name
  * TODO: consider using DPTR
  *************************************************************************/
 static void
-pushSide (operand *oper, int size, iCode *ic)
+storeRegTempOp (operand *oper, int size, iCode *ic)
 {
-  int offset = 0;
-  //  bool xIsFree = m6502_reg_x->isFree;
+  reg_info *reg = NULL;
+  int offset;
+  bool needloada = false;
+  bool needloadx = false;
+
 
   aopOp (oper, ic);
 
@@ -4269,24 +4272,31 @@ pushSide (operand *oper, int size, iCode *ic)
     }
   else
     {
-      // push A if not free
-      // TODO: consider other regs for 65C02
-      bool needloada = pushRegIfUsed(m6502_reg_a);
-      bool needloadx = false;
-      if(AOP_TYPE(oper)==AOP_SOF) needloadx=pushRegIfUsed(m6502_reg_x);
+      if(AOP_TYPE(oper)!=AOP_SOF)
+        reg=getFreeByteReg();
+
+      if(!reg)
+        {
+          // push A if not free
+          reg=m6502_reg_a;
+          needloada = pushRegIfUsed(m6502_reg_a);
+        }
+
+      if(AOP_TYPE(oper)==AOP_SOF)
+        needloadx=pushRegIfUsed(m6502_reg_x);
+
       /* A is free, so piecewise load operand into a and push A */
       for (offset=0; offset<size; offset++)
 	{
-	  loadRegFromAop (m6502_reg_a, AOP (oper), offset);
-	  storeRegTempAlways (m6502_reg_a, true);
+	  loadRegFromAop (reg, AOP (oper), offset);
+	  storeRegTempAlways (reg, true);
 	}
+
       pullOrFreeReg (m6502_reg_x, needloadx);
       pullOrFreeReg (m6502_reg_a, needloada);
     }
 
   freeAsmop (oper, NULL);
-  //  if (xIsFree)
-  //    m6502_freeReg (m6502_reg_x);
 }
 
 /**************************************************************************
@@ -4387,10 +4397,10 @@ genIpush (iCode * ic)
   /* then do the push */
   aopOp (left, ic);
 
-  // pushSide(IC_LEFT (ic), AOP_SIZE (IC_LEFT(ic)));
   size = AOP_SIZE (left);
 
   //  l = aopGet (AOP (left), 0, false, true);
+/*
   if (AOP_TYPE (left) == AOP_IMMD || AOP_TYPE (left) == AOP_LIT ||IS_AOP_YX (AOP (left))) {
     if ((size == 2) && m6502_reg_yx->isDead || IS_AOP_YX (AOP (left))) {
       loadRegFromAop (m6502_reg_yx, AOP (left), 0);
@@ -4398,6 +4408,7 @@ genIpush (iCode * ic)
       goto release;
     }
   }
+*/
 
   if (AOP_TYPE (left) == AOP_REG)
     {
@@ -4632,6 +4643,7 @@ genPcall (iCode * ic)
 
   dtype = operandType (left)->next;
   etype = getSpec (dtype);
+
   /* if caller saves & we have not saved then */
   if (!ic->regsSaved)
     saveRegisters (ic);
@@ -4647,7 +4659,9 @@ genPcall (iCode * ic)
   if (!IS_LITERAL (etype)) {
     updateCFA ();
     /* compute the function address */
-    pushSide (left, FARPTRSIZE, ic); // -1 is baked into initialization
+    // storeRegTempOp put address in RegTemp
+    // perhaps use DPTR instead?
+    storeRegTempOp (left, FARPTRSIZE, ic); // -1 is baked into initialization
   }
 
   /* if send set is not empty then assign */
@@ -4659,8 +4673,6 @@ genPcall (iCode * ic)
   /* make the call */
   if (!IS_LITERAL (etype)) {
     emit6502op("jsr","__sdcc_indirect_jsr");
-    // pushSide put address in RegTemp
-    // perhaps use DPTR instead?
     loadRegTemp (NULL);
     loadRegTemp (NULL);
     updateCFA ();

@@ -1,3 +1,10 @@
+2025-12-29 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* support/regression/tests/gcc-torture-execute-pr28982a.c:
+  	  Disable test for mos6502-stack-auto due to stack overflow.
+  	* src/mos6502/gen.c:
+  	  Improve genPCall.
+
 2025-12-28 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* device/lib/atoll.c,
