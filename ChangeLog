@@ -1,3 +1,9 @@
+2025-12-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/gcrypt-serpent.c.in,
+	  support/regression/tests/serpent.c.in:
+	  Add regression tests for two Serpent cipher implementations.
+
 2025-12-29 Gabriele Gorla <gorlik@yahoo.com>
 
   	* support/regression/tests/gcc-torture-execute-pr28982a.c:
