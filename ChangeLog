@@ -1,3 +1,8 @@
+2026-01-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/smallserpent.c.in:
+	  Add regression tests for a third Serpent cipher implementation.
+
 2025-12-30 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/gcrypt-serpent.c.in,

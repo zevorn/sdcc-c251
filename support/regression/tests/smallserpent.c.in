@@ -1,23 +1,33 @@
 /*
-   serpent.c.in
+   smallserpent.c.in
    op: encrypt, decrypt
 
    The serpent cipher was an AES competition finalist, that ultimately lost to Rijndael.
 
-   The test is a C23/C2y implementation derived from the CycloneCrypto one.
+   The test is a C23/C2y implementation derived from the CycloneCrypto one, substantially
+   modified to reduce memoy use (by not precomputing the subkeys), which comes at a price
+   in performance, since the subkeys will have to be recomputed on-the-fly while processing
+   individual blocks.
+
+   (c) 2025 Philipp Klaus Krause
 */
 
 #include <testfwk.h>
 
 #define OP_{op}
 
-// This implementation needs quite some code memory and some data memory.
+// This implementation needs quite some code memory.
 #if defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) \
   || defined(__SDCC_mcs51) \
   || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02) \
-  || defined(__SDCC_sm83)
+  || defined(__SDCC_hc08) || defined(__SDCC_s08) // todo: enable for s08 when we support code space larger than 32K.
 #define LACK_OF_MEMORY
 #endif
+
+#ifndef __SDCC_tlcs90 // Bug #3910
+#ifndef __SDCC_ds390 // Bug #3911
+//#ifndef __SDCC_f8 // Bug #3912
+#ifndef LACK_OF_MEMORY
 
 #if defined(__SDCC) && __STDC_VERSION__ <= 202311L
 #define __STDC_VERSION__ 202512L
@@ -28,31 +38,22 @@
 #include <stdbit.h>
 
 #if __STDC_VERSION__ <= 202311L
-//Load unaligned 32-bit integer (little-endian encoding)
- #define LOAD32LE(p) ( \
+#define stdc_load8_leu32(p) ( \
     ((uint32_t)(((uint8_t *)(p))[0]) << 0) | \
     ((uint32_t)(((uint8_t *)(p))[1]) << 8) | \
     ((uint32_t)(((uint8_t *)(p))[2]) << 16) | \
     ((uint32_t)(((uint8_t *)(p))[3]) << 24))
-//Store unaligned 32-bit integer (little-endian encoding)
- #define STORE32LE(a, p) \
+#define stdc_store8_leu32(a, p) \
     ((uint8_t *)(p))[0] = ((uint32_t)(a) >> 0) & 0xFFU, \
     ((uint8_t *)(p))[1] = ((uint32_t)(a) >> 8) & 0xFFU, \
     ((uint8_t *)(p))[2] = ((uint32_t)(a) >> 16) & 0xFFU, \
     ((uint8_t *)(p))[3] = ((uint32_t)(a) >> 24) & 0xFFU
-#define ROL32(x, n) (((x) << (n)) | ((x) >> (32-(n))))
-#define ROR32(x, n) (((x) >> (n)) | ((x) << (32-(n))))
-#else
-#define LOAD32LE(i) stdc_load8_leu32(i)
-#define STORE32LE(v, o) stdc_store8_leu32(v, o)
-#define ROL32(x, n) stdc_rotate_left(x, n)
-#define ROR32(x, n) stdc_rotate_right(x, n)
+#define stdc_rotate_left(x, n) (((x) << (n)) | ((x) >> (32-(n))))
+#define stdc_rotate_right(x, n) (((x) >> (n)) | ((x) << (32-(n))))
 #endif
 
 typedef uint_fast8_t uint_t;
 
-#if !defined(__SDCC_f8) // Bug #3907.
-#ifndef LACK_OF_MEMORY
 /**
  * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
@@ -77,24 +78,19 @@ typedef uint_fast8_t uint_t;
  * paper "Speeding up Serpent"
  **/
  
+// The context is a sliding subkey / round key window.
 typedef struct
 {
-   uint32_t k[33][4];
-} SerpentContext;
+   uint32_t wk[8]; // 4 words of w (w[i - 4] to w [i - 1]) followed by four words of k (k[0] to k[3]).
+   uint_fast8_t i_plus8;
+} serpent_context;
 
-//Serpent related functions
-void serpentInit(SerpentContext *context, const uint8_t *key, size_t keyLen);
+void serpent_init(serpent_context *context, const uint8_t *key, size_t keyLen);
 
-void serpentEncryptBlock(SerpentContext *context, const uint8_t *input,
-   uint8_t *output);
-
-void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
-   uint8_t *output);
-
-//Golden ration
+// Golden ratio
 #define PHI 0x9E3779B9
 
-//S-box 0
+// S-box 0
 #define SBOX0(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
@@ -110,8 +106,8 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r3 = r0; r0 = r1; r1 = r4; \
 }
 
-//Inverse S-box 0
-#define SBOX0_INV(r0, r1, r2, r3) \
+// Inverse S-box 0
+#define IBOX0(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
    r2 = ~r2; r4 = r1; \
@@ -128,7 +124,7 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r2 = r1; r1 = r4; \
 }
 
-//S-box 1
+// S-box 1
 #define SBOX1(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
@@ -145,8 +141,8 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r4 = r0; r0 = r2; r2 = r3; r3 = r1; r1 = r4; \
 }
 
-//Inverse S-box 1
-#define SBOX1_INV(r0, r1, r2, r3) \
+// Inverse S-box 1
+#define IBOX1(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
    r4 = r1; r1 ^= r3; \
@@ -178,8 +174,8 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r0 = r2; r2 = r1; r1 = r3; r3 = r4; \
 }
 
-//Inverse S-box 2
-#define SBOX2_INV(r0, r1, r2, r3) \
+// Inverse S-box 2
+#define IBOX2(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
    r2 ^= r3; r3 ^= r0; \
@@ -195,7 +191,7 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r0 = r1; r1 = r4; \
 }
 
-//S-box 3
+// S-box 3
 #define SBOX3(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
@@ -212,8 +208,8 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r0 = r1; r1 = r2; r2 = r3; r3 = r4; \
 }
 
-//Inverse S-box 3
-#define SBOX3_INV(r0, r1, r2, r3) \
+// Inverse S-box 3
+#define IBOX3(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
    r4 = r2; r2 ^= r1; \
@@ -229,7 +225,7 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r4 = r0; r0 = r2; r2 = r3; r3 = r4; \
 }
 
-//S-box 4
+// S-box 4
 #define SBOX4(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
@@ -247,8 +243,8 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
 }
 
 
-//Inverse S-box 4
-#define SBOX4_INV(r0, r1, r2, r3) \
+// Inverse S-box 4
+#define IBOX4(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
    r4 = r2; r2 &= r3; \
@@ -265,7 +261,7 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r1 = r3; r3 = r4; \
 }
 
-//S-box 5
+// S-box 5
 #define SBOX5(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
@@ -282,8 +278,8 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r4 = r0; r0 = r1; r1 = r3; r3 = r2; r2 = r4; \
 }
 
-//Inverse S-box 5
-#define SBOX5_INV(r0, r1, r2, r3) \
+// Inverse S-box 5
+#define IBOX5(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
    r1 = ~r1; r4 = r3; \
@@ -299,7 +295,7 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r0 = r1; r1 = r4; r4 = r2; r2 = r3; r3 = r4; \
 }
 
-//S-box 6
+// S-box 6
 #define SBOX6(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
@@ -316,8 +312,8 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r3 = r2; r2 = r4; \
 }
 
-//Inverse S-box 6
-#define SBOX6_INV(r0, r1, r2, r3) \
+// Inverse S-box 6
+#define IBOX6(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
    r0 ^= r2; r4 = r2; \
@@ -332,7 +328,7 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r0 = r1; r1 = r2; r2 = r4; \
 }
 
-//S-box 7
+// S-box 7
 #define SBOX7(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
@@ -350,8 +346,8 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r2 = r1; r1 = r3; r3 = r0; r0 = r4; \
 }
 
-//Inverse S-box 7
-#define SBOX7_INV(r0, r1, r2, r3) \
+// Inverse S-box 7
+#define IBOX7(r0, r1, r2, r3) \
 { \
    uint32_t r4; \
    r4 = r2; r2 ^= r0; \
@@ -367,37 +363,37 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    r2 = r1; r1 = r0; r0 = r3; r3 = r4; \
 }
 
-//Linear transformation
+// Linear transformation
 #define LT(x0, x1, x2, x3) \
 { \
-   x0 = ROL32(x0, 13); \
-   x2 = ROL32(x2, 3); \
+   x0 = stdc_rotate_left(x0, 13); \
+   x2 = stdc_rotate_left(x2, 3); \
    x1 ^= x0 ^ x2; \
    x3 ^= x2 ^ (x0 << 3); \
-   x1 = ROL32(x1, 1); \
-   x3 = ROL32(x3, 7); \
+   x1 = stdc_rotate_left(x1, 1); \
+   x3 = stdc_rotate_left(x3, 7); \
    x0 ^= x1 ^ x3; \
    x2 ^= x3 ^ (x1 << 7); \
-   x0 = ROL32(x0, 5); \
-   x2 = ROL32(x2, 22); \
+   x0 = stdc_rotate_left(x0, 5); \
+   x2 = stdc_rotate_left(x2, 22); \
 }
 
-//Inverse linear transformation
-#define LT_INV(x0, x1, x2, x3) \
+// Inverse linear transformation
+#define ILT(x0, x1, x2, x3) \
 { \
-   x2 = ROR32(x2, 22); \
-   x0 = ROR32(x0, 5); \
+   x2 = stdc_rotate_right(x2, 22); \
+   x0 = stdc_rotate_right(x0, 5); \
    x2 ^= x3 ^ (x1 << 7); \
    x0 ^= x1 ^ x3; \
-   x3 = ROR32(x3, 7); \
-   x1 = ROR32(x1, 1); \
+   x3 = stdc_rotate_right(x3, 7); \
+   x1 = stdc_rotate_right(x1, 1); \
    x3 ^= x2 ^ (x0 << 3); \
    x1 ^= x0 ^ x2; \
-   x2 = ROR32(x2, 3); \
-   x0 = ROR32(x0, 13); \
+   x2 = stdc_rotate_right(x2, 3); \
+   x0 = stdc_rotate_right(x0, 13); \
 }
 
-//XOR operation
+// XOR operation
 #define XOR(x0, x1, x2, x3, k) \
 { \
    x0 ^= k[0]; \
@@ -406,7 +402,7 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    x3 ^= k[3]; \
 }
 
-//Encryption round
+// Encryption round
 #define ROUND(n, x0, x1, x2, x3, k) \
 { \
    XOR(x0, x1, x2, x3, k); \
@@ -414,192 +410,207 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    LT(x0, x1, x2, x3); \
 }
 
-//Decryption round
-#define ROUND_INV(n, x0, x1, x2, x3, k) \
+// Decryption round
+#define IROUND(n, x0, x1, x2, x3, k) \
 { \
-   LT_INV(x0, x1, x2, x3); \
-   SBOX##n##_INV(x0, x1, x2, x3); \
+   ILT(x0, x1, x2, x3); \
+   IBOX##n(x0, x1, x2, x3); \
    XOR(x0, x1, x2, x3, k); \
 }
 
-/**
- * @brief Key expansion
- * @param[in] context Pointer to the Serpent context to initialize
- * @param[in] key Pointer to the key
- * @param[in] keyLen Length of the key
- **/
-
-void serpentInit(SerpentContext *context, const uint8_t *key, size_t keyLen)
+static void serpent_subkeys_increment(serpent_context *context)
 {
-   uint_t i;
-   uint32_t t;
-   uint32_t *w;
-   uint32_t p[8];
-
-   //Determine the number of 32-bit words in the key
-   keyLen /= 4;
-
-   //Copy the original key
-   for(i = 0; i < keyLen; i++)
-   {
-      p[i] = LOAD32LE(key + i * 4);
-   }
-
-   //Short keys with less than 256 bits are mapped to full-length keys of 256
-   //bits by appending one '1' bit to the MSB end
-   if(i < 8)
-   {
-      p[i++] = 0x00000001;
-   }
-
-   //Append as many '0' bits as required to make up 256 bits
-   while(i < 8)
-   {
-      p[i++] = 0;
-   }
-
-   //Point to the intermediate prekey
-   w = (uint32_t *) context->k;
-
-   //Generate the first 8 words of the prekey
-   t = p[0] ^ p[3] ^ p[5] ^ p[7] ^ PHI ^ 0;
-   w[0] = ROL32(t, 11);
-   t = p[1] ^ p[4] ^ p[6] ^ w[0] ^ PHI ^ 1;
-   w[1] = ROL32(t, 11);
-   t = p[2] ^ p[5] ^ p[7] ^ w[1] ^ PHI ^ 2;
-   w[2] = ROL32(t, 11);
-   t = p[3] ^ p[6] ^ w[0] ^ w[2] ^ PHI ^ 3;
-   w[3] = ROL32(t, 11);
-   t = p[4] ^ p[7] ^ w[1] ^ w[3] ^ PHI ^ 4;
-   w[4] = ROL32(t, 11);
-   t = p[5] ^ w[0] ^ w[2] ^ w[4] ^ PHI ^ 5;
-   w[5] = ROL32(t, 11);
-   t = p[6] ^ w[1] ^ w[3] ^ w[5] ^ PHI ^ 6;
-   w[6] = ROL32(t, 11);
-   t = p[7] ^ w[2] ^ w[4] ^ w[6] ^ PHI ^ 7;
-   w[7] = ROL32(t, 11);
-
-   //Expand the prekey using affine recurrence
-   for(i = 8; i < 132; i++)
-   {
-      t = w[i - 8] ^ w[i - 5] ^ w[i - 3] ^ w[i - 1] ^ PHI ^ i;
-      w[i] = ROL32(t, 11);
-   }
-
-   //The round keys are now calculated from the prekeys using the S-boxes
-   for(i = 0; i < 128; i += 32)
-   {
-      SBOX3(w[i + 0], w[i + 1], w[i + 2], w[i + 3]);
-      SBOX2(w[i + 4], w[i + 5], w[i + 6], w[i + 7]);
-      SBOX1(w[i + 8], w[i + 9], w[i + 10], w[i + 11]);
-      SBOX0(w[i + 12], w[i + 13], w[i + 14], w[i + 15]);
-      SBOX7(w[i + 16], w[i + 17], w[i + 18], w[i + 19]);
-      SBOX6(w[i + 20], w[i + 21], w[i + 22], w[i + 23]);
-      SBOX5(w[i + 24], w[i + 25], w[i + 26], w[i + 27]);
-      SBOX4(w[i + 28], w[i + 29], w[i + 30], w[i + 31]);
-   }
-
-   //Calculate the last round key
-   SBOX3(w[128], w[129], w[130], w[131]);
-
-   //Successful initialization
+  uint32_t *w = context->wk;
+  uint32_t t = w[0] ^ w[3] ^ w[5] ^ w[7] ^ PHI ^ context->i_plus8;
+  memmove (w, w + 1, 7 * 4);
+  w[7] = stdc_rotate_left(t, 11);
+  context->i_plus8++;
 }
 
-/**
- * @brief Encrypt a 16-byte block using Serpent algorithm
- * @param[in] context Pointer to the Serpent context
- * @param[in] input Plaintext block to encrypt
- * @param[out] output Ciphertext block resulting from encryption
- **/
-#if defined (OP_encrypt)
-void serpentEncryptBlock(SerpentContext *context, const uint8_t *input,
-   uint8_t *output)
+static void serpent_subkeys_decrement(serpent_context *context)
 {
-   uint_t i;
-   uint32_t r0;
-   uint32_t r1;
-   uint32_t r2;
-   uint32_t r3;
+  uint32_t *w = context->wk;
+  uint32_t t = stdc_rotate_right(w[7], 11);
+  context->i_plus8--;
+  memmove (w + 1, w, 7 * 4);
+  w[0] = t ^ w[3] ^ w[5] ^ w[7] ^ PHI ^ context->i_plus8;
+}
 
-   //The 16 bytes of plaintext are split into 4 words
-   r0 = LOAD32LE(input);
-   r1 = LOAD32LE(input + 4);
-   r2 = LOAD32LE(input + 8);
-   r3 = LOAD32LE(input + 12);
+// Return pointer to K[i], which is a 4-word array k[4 * i] ... k[4 * i + 3].
+static const uint32_t* serpent_roundkey(uint_fast8_t r, serpent_context *context)
+{
+  uint32_t *w = context->wk;
 
-   //The 32 rounds use 8 different S-boxes
-   for(i = 0; i < 32; i += 8)
-   {
-      ROUND(0, r0, r1, r2, r3, context->k[i]);
-      ROUND(1, r0, r1, r2, r3, context->k[i + 1]);
-      ROUND(2, r0, r1, r2, r3, context->k[i + 2]);
-      ROUND(3, r0, r1, r2, r3, context->k[i + 3]);
-      ROUND(4, r0, r1, r2, r3, context->k[i + 4]);
-      ROUND(5, r0, r1, r2, r3, context->k[i + 5]);
-      ROUND(6, r0, r1, r2, r3, context->k[i + 6]);
-      ROUND(7, r0, r1, r2, r3, context->k[i + 7]);
-   }
+  // Get back to full 8 words of w.
+  uint_fast8_t oldr = (context->i_plus8 - 4) / 4;
+  switch (oldr % 8)
+  {
+  case 0:
+    IBOX3(w[4], w[5], w[6], w[7]);
+    break;
+  case 1:
+    IBOX2(w[4], w[5], w[6], w[7]);
+    break;
+  case 2:
+    IBOX1(w[4], w[5], w[6], w[7]);
+    break;
+  case 3:
+    IBOX0(w[4], w[5], w[6], w[7]);
+    break;
+  case 4:
+    IBOX7(w[4], w[5], w[6], w[7]);
+    break;
+  case 5:
+    IBOX6(w[4], w[5], w[6], w[7]);
+    break;
+  case 6:
+    IBOX5(w[4], w[5], w[6], w[7]);
+    break;
+  case 7:
+    IBOX4(w[4], w[5], w[6], w[7]);
+    break;
+  }
 
-   //In the last round, the linear transformation is replaced by an additional
-   //key mixing
-   LT_INV(r0, r1, r2, r3);
-   XOR(r0, r1, r2, r3, context->k[32]);
+  while(context->i_plus8 < 4 + 4 * r)
+    serpent_subkeys_increment(context);
+  while(context->i_plus8 > 4 + 4 * r)
+    serpent_subkeys_decrement(context);
 
-   //The 4 words of ciphertext are then written as 16 bytes
-   STORE32LE(r0, output);
-   STORE32LE(r1, output + 4);
-   STORE32LE(r2, output + 8);
-   STORE32LE(r3, output + 12);
+  // Create four words of k from w.
+  switch (r % 8)
+  {
+  case 0:
+    SBOX3(w[4], w[5], w[6], w[7]);
+    break;
+  case 1:
+    SBOX2(w[4], w[5], w[6], w[7]);
+    break;
+  case 2:
+    SBOX1(w[4], w[5], w[6], w[7]);
+    break;
+  case 3:
+    SBOX0(w[4], w[5], w[6], w[7]);
+    break;
+  case 4:
+    SBOX7(w[4], w[5], w[6], w[7]);
+    break;
+  case 5:
+    SBOX6(w[4], w[5], w[6], w[7]);
+    break;
+  case 6:
+    SBOX5(w[4], w[5], w[6], w[7]);
+    break;
+  case 7:
+    SBOX4(w[4], w[5], w[6], w[7]);
+    break;
+  }
+
+  return(context->wk + 4);
+}
+
+// Initialize subkey/key array
+void serpent_init(serpent_context *context, const uint8_t *key, uint_fast16_t key_len)
+{
+  uint_fast8_t i;
+  uint32_t *w = context->wk;
+
+  // Convert key_len to words (Serpent is based on 32-bit words).
+  key_len /= 4;
+
+  // Copy the original key.
+  for(i = 0; i < key_len; i++)
+    w[i] = stdc_load8_leu32(key + i * 4);
+
+  // Short keys with less than 256 bits are mapped to full-length keys of
+  // 256 bits by appending one 1 bit to the MSB end.
+  if(i < 8)
+    w[i++] = 0x00000001;
+
+  // Append as many 0 bits as required to make up 256 bits.
+  while(i < 8)
+    w[i++] = 0;
+
+  context->i_plus8 = 0;
+
+  // Calculate w[0] ... w[3]
+  while(context->i_plus8 < 4)
+    serpent_subkeys_increment(context);
+
+  // Create four words of k from w.
+  SBOX3(w[4], w[5], w[6], w[7]);
+}
+
+// Encrypt a 16-byte block using Serpent algorithm
+#if defined (OP_encrypt)
+void serpent_encrypt_block(uint8_t *output, const uint8_t *input, serpent_context *context)
+{
+  // The 16 bytes of plaintext are split into 4 words
+  uint32_t r0 = stdc_load8_leu32(input + 0);
+  uint32_t r1 = stdc_load8_leu32(input + 4);
+  uint32_t r2 = stdc_load8_leu32(input + 8);
+  uint32_t r3 = stdc_load8_leu32(input + 12);
+
+  // The 32 rounds use 8 different S-boxes
+  for(uint_fast8_t i = 0; i < 32; i += 8)
+  {
+    ROUND(0, r0, r1, r2, r3, serpent_roundkey(i + 0, context));
+    ROUND(1, r0, r1, r2, r3, serpent_roundkey(i + 1, context));
+    ROUND(2, r0, r1, r2, r3, serpent_roundkey(i + 2, context));
+    ROUND(3, r0, r1, r2, r3, serpent_roundkey(i + 3, context));
+    ROUND(4, r0, r1, r2, r3, serpent_roundkey(i + 4, context));
+    ROUND(5, r0, r1, r2, r3, serpent_roundkey(i + 5, context));
+    ROUND(6, r0, r1, r2, r3, serpent_roundkey(i + 6, context));
+    ROUND(7, r0, r1, r2, r3, serpent_roundkey(i + 7, context));
+  }
+
+  // In the last round, the linear transformation is replaced by an additional
+  // key mixing
+  ILT(r0, r1, r2, r3);
+  XOR(r0, r1, r2, r3, serpent_roundkey(32, context));
+
+  // The 4 words of ciphertext are then written as 16 bytes
+  stdc_store8_leu32(r0, output + 0);
+  stdc_store8_leu32(r1, output + 4);
+  stdc_store8_leu32(r2, output + 8);
+  stdc_store8_leu32(r3, output + 12);
 }
 #endif
 
-/**
- * @brief Decrypt a 16-byte block using Serpent algorithm
- * @param[in] context Pointer to the Serpent context
- * @param[in] input Ciphertext block to decrypt
- * @param[out] output Plaintext block resulting from decryption
- **/
+// Decrypt a 16-byte block using Serpent algorithm
 #if defined (OP_decrypt)
-void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
-   uint8_t *output)
+void serpent_decrypt_block(uint8_t *output, const uint8_t *input, serpent_context *context)
 {
-   uint_t i;
-   uint32_t r0;
-   uint32_t r1;
-   uint32_t r2;
-   uint32_t r3;
+  // The 16 bytes of ciphertext are split into 4 words
+  uint32_t r0 = stdc_load8_leu32(input + 0);
+  uint32_t r1 = stdc_load8_leu32(input + 4);
+  uint32_t r2 = stdc_load8_leu32(input + 8);
+  uint32_t r3 = stdc_load8_leu32(input + 12);
 
-   //The 16 bytes of ciphertext are split into 4 words
-   r0 = LOAD32LE(input);
-   r1 = LOAD32LE(input + 4);
-   r2 = LOAD32LE(input + 8);
-   r3 = LOAD32LE(input + 12);
+  // In the first decryption round, the inverse linear transformation is
+  // replaced by an additional key mixing
+  XOR(r0, r1, r2, r3, serpent_roundkey(32, context));
+  LT(r0, r1, r2, r3);
 
-   //In the first decryption round, the inverse linear transformation is
-   //replaced by an additional key mixing
-   XOR(r0, r1, r2, r3, context->k[32]);
-   LT(r0, r1, r2, r3);
+  // Decryption is different from encryption in that the inverse of the
+  // S-boxes must be used in the reverse order, as well as the inverse linear
+  // transformation and reverse order of the subkeys
+  for(uint_fast8_t i = 0; i < 32; i += 8)
+  {
+    IROUND(7, r0, r1, r2, r3, serpent_roundkey(31 - i, context));
+    IROUND(6, r0, r1, r2, r3, serpent_roundkey(30 - i, context));
+    IROUND(5, r0, r1, r2, r3, serpent_roundkey(29 - i, context));
+    IROUND(4, r0, r1, r2, r3, serpent_roundkey(28 - i, context));
+    IROUND(3, r0, r1, r2, r3, serpent_roundkey(27 - i, context));
+    IROUND(2, r0, r1, r2, r3, serpent_roundkey(26 - i, context));
+    IROUND(1, r0, r1, r2, r3, serpent_roundkey(25 - i, context));
+    IROUND(0, r0, r1, r2, r3, serpent_roundkey(24 - i, context));
+  }
 
-   //Decryption is different from encryption in that the inverse of the
-   //S-boxes must be used in the reverse order, as well as the inverse linear
-   //transformation and reverse order of the subkeys
-   for(i = 0; i < 32; i += 8)
-   {
-      ROUND_INV(7, r0, r1, r2, r3, context->k[31 - i]);
-      ROUND_INV(6, r0, r1, r2, r3, context->k[30 - i]);
-      ROUND_INV(5, r0, r1, r2, r3, context->k[29 - i]);
-      ROUND_INV(4, r0, r1, r2, r3, context->k[28 - i]);
-      ROUND_INV(3, r0, r1, r2, r3, context->k[27 - i]);
-      ROUND_INV(2, r0, r1, r2, r3, context->k[26 - i]);
-      ROUND_INV(1, r0, r1, r2, r3, context->k[25 - i]);
-      ROUND_INV(0, r0, r1, r2, r3, context->k[24 - i]);
-   }
-
-   //The 4 words of plaintext are then written as 16 bytes
-   STORE32LE(r0, output);
-   STORE32LE(r1, output + 4);
-   STORE32LE(r2, output + 8);
-   STORE32LE(r3, output + 12);
+  // The 4 words of plaintext are then written as 16 bytes
+  stdc_store8_leu32(r0, output + 0);
+  stdc_store8_leu32(r1, output + 4);
+  stdc_store8_leu32(r2, output + 8);
+  stdc_store8_leu32(r3, output + 12);
 }
 #endif
 
@@ -643,33 +654,38 @@ const struct test
       },
     };
 #endif
+//#endif
+#endif
 #endif
 
 void testSerpent (void)
 {
-#if !defined(__SDCC_f8) // Bug #3907.
+#if !defined(__SDCC_stm8) // Bug #3914
+#if !defined(__SDCC_ds390) // Bug #3911
+#if !defined(__SDCC_z80) && !defined(__SDCC_z80n) && !defined(__SDCC_z180) && !defined(__SDCC_r2k) && !defined(__SDCC_r2ka) && !defined(__SDCC_r3ka) && !defined(__SDCC_r4k) && !defined(__SDCC_r5k) && !defined(__SDCC_r6k) && !defined(__SDCC_sm83) && !defined(__SDCC_tlcs90) && !defined(__SDCC_ez80) && !defined(__SDCC_r800) // Bug #3910
+#ifndef __SDCC_f8 // Bug #3912
 #ifndef LACK_OF_MEMORY
-  SerpentContext context;
+  serpent_context context;
   unsigned char scratch[16];
   unsigned int i;
 
   for (i = 0; test_data[i].key_length; i++)
     {
-      serpentInit(&context, test_data[i].key, test_data[i].key_length);
-#ifndef __SDCC_ds390 // Bug #3905
-#if !defined(__SDCC_stm8) // Bug #3906
+      serpent_init(&context, test_data[i].key, test_data[i].key_length);
+
 #if defined(OP_encrypt)
-      serpentEncryptBlock(&context, test_data[i].text_plain, scratch);
-      ASSERT (!memcmp (scratch, test_data[i].text_cipher, sizeof (scratch)));
-#endif
+      serpent_encrypt_block(scratch, test_data[i].text_plain, &context);
+      ASSERT(!memcmp(scratch, test_data[i].text_cipher, sizeof (scratch)));
 #endif
 
 #if defined(OP_decrypt)
-      serpentDecryptBlock(&context, test_data[i].text_cipher, scratch);
-      ASSERT (!memcmp (scratch, test_data[i].text_plain, sizeof (scratch)));
-#endif
+      serpent_decrypt_block(scratch, test_data[i].text_cipher, &context);
+      ASSERT(!memcmp(scratch, test_data[i].text_plain, sizeof (scratch)));
 #endif
     }
+#endif
+#endif
+#endif
 #endif
 #endif
 }
