@@ -1,4 +1,4 @@
-2026-01-0X Philipp Klaus Krause <philipp@colecovision.eu>
+2026-01-02 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/blake2s.c:
 	  Add regression tests for BLAKE2s hash function.
@@ -7,6 +7,17 @@
 
 	* support/regression/tests/smallserpent.c.in:
 	  Add regression tests for a third Serpent cipher implementation.
+
+2025-12-30 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+  	  genCmp improvements.
+  	  Remove unecessay constraint in genCmp.
+  	* src/mos6502/genrshift.c:
+      Special case shift XA when X is a constant.
+      Correct typo.
+  	* support/regression/tests/lonesha256.c:
+  	  Enable lonesha256 for mos6502-stack-auto.
 
 2025-12-30 Philipp Klaus Krause <philipp@colecovision.eu>
 
