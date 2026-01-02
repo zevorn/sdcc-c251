@@ -172,6 +172,28 @@ XAccRsh (int shCount, bool sign)
 
   shCount &= 0x000f;            // shCount : 0..15
 
+  if(m6502_reg_x->isLitConst)
+    {
+      unsigned long v = (m6502_reg_x->litConst<<8);
+
+      if(sign && (v&0x8000))
+        v|=0xffff0000;
+
+      v>>=shCount;
+
+      if(shCount<8)
+        {
+          AccRsh (shCount, false);
+          if(v&0xff)
+            emit6502op ("ora", IMMDFMT, v&0xff);
+        }
+      else
+        loadRegFromConst(m6502_reg_a, v&0xff);
+
+      loadRegFromConst(m6502_reg_x, (v>>8)&0xff);
+      return;
+    }
+    
   if (sign)
     {
       XAccSRsh (shCount);
