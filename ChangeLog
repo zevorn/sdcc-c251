@@ -1,3 +1,8 @@
+2026-01-0X Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/blake2s.c:
+	  Add regression tests for BLAKE2s hash function.
+
 2026-01-01 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/smallserpent.c.in:
