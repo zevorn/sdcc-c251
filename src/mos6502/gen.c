@@ -50,6 +50,9 @@ static void aopAdrUnprepare (asmop * aop, int loffset);
 static void updateiTempRegisterUse (operand * op);
 static char * aopName (asmop * aop);
 static bool keepTSX();
+static void genCmpEQorNE (iCode * ic, iCode * ifx);
+// TODO: add compareWithAop()
+// TODO: add genCmpZero 
 
 static asmop *m6502_aop_pass[8];
 asmop tsxaop;
@@ -2088,15 +2091,7 @@ static asmop * forceStackedAop (asmop * aop, bool copyOrig)
 void
 accopWithAop (const char *accop, asmop *aop, int loffset)
 {
-  bool ucp = false;
   emitComment (TRACE_AOP, __func__ );
-
-  if ( !strcmp(accop, "ucp") )
-    {
-      // special case for unsigned compare
-      ucp=true;
-      accop = "cmp";
-    }
 
   if (aop->stacked && aop->stk_aop[loffset])
     {
@@ -2127,7 +2122,7 @@ accopWithAop (const char *accop, asmop *aop, int loffset)
         {
 	  unsigned char v = (ullFromVal(aop->aopu.aop_lit))>>(loffset*8);
 
-	  if(ucp)
+	  if(strcmp(accop,"cmp")==0)
 	    {
 	      m6502_emitCmp(m6502_reg_a, v);
 
@@ -5368,6 +5363,8 @@ genCmp (iCode * ic, iCode * ifx)
   symbol *jlbl = NULL;
   bool needloada = false;
   bool bmi = false;
+  bool bpl = false;
+  bool beq = false;
   bool bit = false;
 
   opcode = ic->op;
@@ -5411,6 +5408,9 @@ genCmp (iCode * ic, iCode * ifx)
 
   // TODO: special case for compare with 0
 
+  bool right_zero = (AOP_TYPE (right) == AOP_LIT) && (ullFromVal(AOP (right)->aopu.aop_lit) == 0 );
+  bool result_in_a = false;
+
   if (ifx)
     {
       if (IC_TRUE (ifx))
@@ -5425,9 +5425,6 @@ genCmp (iCode * ic, iCode * ifx)
         }
     }
 
-  bool right_zero = (AOP_TYPE (right) == AOP_LIT) && (ullFromVal(AOP (right)->aopu.aop_lit) == 0 );
-  bool result_in_a = false;
-
   if (sign && right_zero && opcode=='<' && canBitOp(left) )
     {
       accopWithAop ("bit", AOP (left), size-1);
@@ -5438,7 +5435,7 @@ genCmp (iCode * ic, iCode * ifx)
     {
       accopWithAop ("bit", AOP (left), size-1);
       bit=true;
-      bmi=false;
+      bpl=true;
     }
   else if (sign && right_zero && opcode=='<' && AOP_TYPE(left)==AOP_REG) 
     {
@@ -5450,7 +5447,7 @@ genCmp (iCode * ic, iCode * ifx)
     {
       m6502_emitCmp(AOP (left)->aopu.aop_reg[size-1], 0);
       bit=true;
-      bmi=false;
+      bpl=true;
     }
   else if (!sign && size == 1 && IS_AOP_X (AOP (left)) && isAddrSafe(right, m6502_reg_x) )
     {
@@ -5460,6 +5457,11 @@ genCmp (iCode * ic, iCode * ifx)
           result_in_a=true;
 	}
       accopWithAop ("cpx", AOP (right), 0);
+      if(right_zero)
+        {
+          bit=true;
+          beq=true;
+        }
     }
   else if (!sign && size == 1 && IS_AOP_Y (AOP (left)) && isAddrSafe(right, m6502_reg_y) )
     {
@@ -5469,8 +5471,13 @@ genCmp (iCode * ic, iCode * ifx)
           result_in_a=true;
 	}
       accopWithAop ("cpy", AOP (right), 0);
+      if(right_zero)
+        {
+          bit=true;
+          beq=true;
+        }
     }
-  else if (!sign && size == 1 && IS_AOP_A (AOP (left))  && isAddrSafe(right, m6502_reg_a) )
+  else if (!sign && size == 1 && IS_AOP_A (AOP (left)) )
     {
       if (right_zero && opcode=='>' && IS_AOP_A(AOP(result)) )
         {
@@ -5484,6 +5491,11 @@ genCmp (iCode * ic, iCode * ifx)
       else
         {
           accopWithAop ("cmp", AOP (right), 0);
+          if(right_zero)
+            {
+              bit=true;
+              beq=true;
+            }
         }
     }
   else
@@ -5585,7 +5597,10 @@ genCmp (iCode * ic, iCode * ifx)
 	  else
 	    m6502_freeReg (m6502_reg_a);
 
-          emitBranch (inst, tlbl);
+          if(!sign && right_zero && AOP_SIZE (left)==1)
+            emitBranch ("beq", tlbl);
+          else
+            emitBranch (inst, tlbl);
         }
       else
         {
@@ -5595,7 +5610,8 @@ genCmp (iCode * ic, iCode * ifx)
 	    m6502_freeReg (m6502_reg_a);
 
           if(bmi) emitBranch ("bmi", tlbl);
-          else emitBranch ("bpl", tlbl);
+          else if(bpl) emitBranch ("bpl", tlbl);
+          else if(beq) emitBranch ("beq", tlbl);
         }
       emitBranch ("jmp", jlbl);
       safeEmitLabel (tlbl);
@@ -5801,11 +5817,11 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 	 && AOP_TYPE(right)==AOP_LIT && AOP_TYPE(left)!=AOP_SOF)
 	{
 	  bool restore_a=false;
-	  reg_info *reg;
+	  reg_info *reg = NULL;
 
 	  if(AOP_TYPE(left)==AOP_REG)
 	    {
-	      reg=m6502_regWithIdx(AOP(left)->aopu.aop_reg[0]->rIdx);
+	      reg=AOP(left)->aopu.aop_reg[0];
 	    }
 	  else
 	    {
@@ -5857,7 +5873,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 		  else
 		    {
 		      loadRegFromAop (m6502_reg_a, AOP (left), offset);
-		      accopWithAop ("ucp", AOP (right), offset);
+		      accopWithAop ("cmp", AOP (right), offset);
 		    }
 		  loadRegTempNoFlags (m6502_reg_a, needloada);
 		  needloada = false;

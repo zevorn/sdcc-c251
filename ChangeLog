@@ -1,3 +1,14 @@
+2025-12-30 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+  	  genCmp improvements.
+  	  Remove unecessay constraint in genCmp.
+  	* src/mos6502/genrshift.c:
+      Special case shift XA when X is a constant.
+      Correct typo.
+  	* support/regression/tests/lonesha256.c:
+  	  Enable lonesha256 for mos6502-stack-auto.
+  	  
 2025-12-29 Gabriele Gorla <gorlik@yahoo.com>
 
   	* support/regression/tests/gcc-torture-execute-pr28982a.c:
