@@ -8,7 +8,7 @@
   Copyright (C) 2003, Erik Petrich
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -2117,7 +2117,6 @@ accopWithAop (const char *accop, asmop *aop, int loffset)
     }
   else
     {
-
       if(aop->type==AOP_LIT)
         {
 	  unsigned char v = (ullFromVal(aop->aopu.aop_lit))>>(loffset*8);
@@ -2125,16 +2124,13 @@ accopWithAop (const char *accop, asmop *aop, int loffset)
 	  if(strcmp(accop,"cmp")==0)
 	    {
 	      m6502_emitCmp(m6502_reg_a, v);
-
 	    }
 	  else if (v==0)
 	    emit6502op (accop, "#0x00");
 	  else
 	    emit6502op (accop, IMMDFMT, v);
          
-
 	  return;          
-
         }
       aopAdrPrepare(aop, loffset);
       //    emit6502op (accop, aopAdrStr (aop, loffset, false));
@@ -4156,7 +4152,8 @@ static void genUminus (iCode * ic)
 /**************************************************************************
  * saveRegisters - will look for a call and save the registers
  *************************************************************************/
-static void saveRegisters (iCode *lic)
+static void
+saveRegisters (iCode *lic)
 {
   int i;
   iCode *ic;
@@ -4224,15 +4221,17 @@ static void unsaveRegisters (iCode *ic)
 {
   int i;
 
-  emitComment (REGOPS, "; unsaveRegisters");
+  emitComment (REGOPS, "%s", __func__);
 
   // TODO: only clobbered if m6502_reg_a->isFree
 
   bool clobbers_a = !IS_MOS65C02
     && (bitVectBitValue(ic->rSurv, X_IDX) || bitVectBitValue(ic->rSurv, Y_IDX))
     && !bitVectBitValue(ic->rSurv, A_IDX);
+
   if (clobbers_a)
     storeRegTemp (m6502_reg_a, true);
+
   for (i = Y_IDX; i >= A_IDX; i--)
     {
       if (bitVectBitValue (ic->rSurv, i))
@@ -4395,15 +4394,15 @@ genIpush (iCode * ic)
   size = AOP_SIZE (left);
 
   //  l = aopGet (AOP (left), 0, false, true);
-/*
-  if (AOP_TYPE (left) == AOP_IMMD || AOP_TYPE (left) == AOP_LIT ||IS_AOP_YX (AOP (left))) {
+  /*
+    if (AOP_TYPE (left) == AOP_IMMD || AOP_TYPE (left) == AOP_LIT ||IS_AOP_YX (AOP (left))) {
     if ((size == 2) && m6502_reg_yx->isDead || IS_AOP_YX (AOP (left))) {
-      loadRegFromAop (m6502_reg_yx, AOP (left), 0);
-      m6502_pushReg (m6502_reg_yx, true);
-      goto release;
+    loadRegFromAop (m6502_reg_yx, AOP (left), 0);
+    m6502_pushReg (m6502_reg_yx, true);
+    goto release;
     }
-  }
-*/
+    }
+  */
 
   if (AOP_TYPE (left) == AOP_REG)
     {
@@ -4559,11 +4558,12 @@ genCall (iCode * ic)
       if (IFFUNC_ISREENT (dtype))
 	{
 	  /* need to reverse the send set */
-	  //genSend (_S.sendSet);
 	  genSend (reverseSet (_S.sendSet));
-	} else {
-	genSend (_S.sendSet);
-      }
+	}
+      else
+        {
+	  genSend (_S.sendSet);
+	}
       _S.sendSet = NULL;
     }
 
@@ -4589,12 +4589,9 @@ genCall (iCode * ic)
   _S.lastflag=-1;
   _S.carryValid=0;
 
-
   /* do we need to recompute the base ptr? */
   if (_S.funcHasBasePtr)
-    {
-      saveBasePtr();
-    }
+    saveBasePtr();
 
   /* if we need assign a result value */
   if ((IS_ITEMP (result) &&
@@ -4611,9 +4608,8 @@ genCall (iCode * ic)
     }
 
   /* adjust the stack for parameters if required */
-  if (ic->parmBytes) {
+  if (ic->parmBytes)
     pullNull (ic->parmBytes);
-  }
 
   /* if we had saved some registers then unsave them */
   if (ic->regsSaved && !IFFUNC_CALLEESAVES (dtype))
