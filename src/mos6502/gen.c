@@ -2838,7 +2838,7 @@ static asmop * aopForRemat (symbol * sym)
   if (ic->op == ADDRESS_OF) {
     if (val) {
       SNPRINTF (buffer, sizeof (buffer),
-                "(%s %c 0x%04x)", OP_SYMBOL (IC_LEFT (ic))->rname, val >= 0 ? '+' : '-', abs (val) & 0xffff);
+                "(%s%c0x%04x)", OP_SYMBOL (IC_LEFT (ic))->rname, val >= 0 ? '+' : '-', abs (val) & 0xffff);
     } else {
       strncpyz (buffer, OP_SYMBOL (IC_LEFT (ic))->rname, sizeof (buffer));
     }
@@ -3484,7 +3484,7 @@ aopAdrStr (asmop * aop, int loffset, bool bit16)
       if (regalloc_dry_run)
 	return "dry";
       if (offset)
-	sprintf (s, "(%s + %d)", aop->aopu.aop_dir, offset);
+	sprintf (s, "(%s+%d)", aop->aopu.aop_dir, offset);
       else
 	sprintf (s, "%s", aop->aopu.aop_dir);
       rs = Safe_calloc (1, strlen (s) + 1);
@@ -5876,13 +5876,10 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 		}
 	      if (offset<size-1)
 		{
-		  symbol *tmp_label = safeNewiTempLabel (NULL);;
 		  if (!tlbl_NE)
 		    tlbl_NE = safeNewiTempLabel (NULL);
 
-		  emitBranch ("beq", tmp_label);
-		  emitBranch ("jmp", tlbl_NE);
-		  safeEmitLabel (tmp_label);
+		  emitBranch ("bne", tlbl_NE);
 		}
 	    }
 	}
