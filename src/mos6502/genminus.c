@@ -8,7 +8,7 @@
   Copyright (C) 2003, Erik Petrich
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -238,6 +238,8 @@ m6502_genMinus (iCode * ic)
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );
       accopWithAop ("sbc", AOP (right), 1);
+      if (maskedtopbyte)
+	    emit6502op ("and", IMMDFMT, topbytemask);
       storeRegToAop (m6502_reg_a, AOP (result), 1);
 
       if(restore_x)

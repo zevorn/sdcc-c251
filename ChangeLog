@@ -1,3 +1,13 @@
+2026-01-05 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c,
+  	  src/mos6502/genminus.c,
+  	  src/mos6502/genplus.c,
+  	  src/mos6502/genrshift.c:
+  	  Cosmetic cleanups.
+  	* src/mos6502/gen.c:
+  	  Small genCmpEQorNE improvemetns.
+
 2025-12-30 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:

@@ -8,7 +8,7 @@
   Copyright (C) 2003, Erik Petrich
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -1292,18 +1292,11 @@ m6502_genRightShift (iCode * ic)
 
   storeRegToAop (m6502_reg_a, AOP(result) , a_loc);
 
-  //  if(op_is_xa || size==1)
-  //    {
-  //      storeRegToAop (m6502_reg_a, AOP(result) , 0);
-  //      if(size==2)
   if(op_is_xa)
     {
       if(msb_in_x)
 	storeRegToAop (m6502_reg_x, AOP(result) , 1);
     }
-  //    }
-  //  else
-  //    storeRegToAop (m6502_reg_a, AOP(result) , size-1);
 
   // After loop, countreg is always 0
   m6502_dirtyReg(countreg);
