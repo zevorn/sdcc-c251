@@ -8,7 +8,7 @@
 	  src/SDCCicode.h,
 	  src/SDCCopt.c,
 	  support/valdiag/tests/_Optional.c:
-	  Fix warnings on &* semantic dereference of pointer to _Optional.
+	  Fix warnings on &* and &[] semantic dereferences of pointer to _Optional.
 
 2026-01-05 Gabriele Gorla <gorlik@yahoo.com>
 

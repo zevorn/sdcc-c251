@@ -3010,7 +3010,7 @@ geniCodeBitwise (operand * left, operand * right, int oper, sym_link * resType)
 /* geniCodeAddressOf - gens icode for '&' address of operator      */
 /*-----------------------------------------------------------------*/
 operand *
-geniCodeAddressOf (operand * op)
+geniCodeAddressOf (operand *op)
 {
   iCode *ic;
   sym_link *p;
@@ -3021,6 +3021,7 @@ geniCodeAddressOf (operand * op)
     {
       op = operandFromOperand (op);
       op->isaddr = 0;
+      op->isSemDeref = isOptional (optype->next);
       return op;
     }
 
@@ -4731,7 +4732,7 @@ ast2iCode (ast * tree, int lvl)
 #else // bug #604575, is it a bug ????
       {
         operand *op = geniCodeCast (operandType (left), geniCodeRValue (right, false), false);
-        op->isSemDeref = tree->values.cast.semDeref;
+        op->isSemDeref |= tree->values.cast.semDeref;
         return op;
       }
 #endif

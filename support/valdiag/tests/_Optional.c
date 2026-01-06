@@ -156,7 +156,7 @@ void jim(_Optional int *i)
 	k = *i; /* IGNORE */
 	j = &*i; /* IGNORE */
 	foo(&*i); /* WARNING */
-	foo(&i[15]);
+	foo(&i[15]); /* IGNORE */
 	// No diagnostic is recommended for the following
 	// statements because the value of i is constrained
 	// to non-null
