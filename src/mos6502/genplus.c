@@ -8,7 +8,7 @@
   Copyright (C) 2003, Erik Petrich
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -45,6 +45,7 @@ genPlusInc (iCode * ic)
   symbol *tlbl = NULL;
   bool savea = false;
   unsigned int offset;
+  bool needpullx = false;
 
   /* will try to generate an increment */
   /* if the right side is not a literal
@@ -90,7 +91,7 @@ genPlusInc (iCode * ic)
       if(icount)
         {
           tlbl = safeNewiTempLabel (NULL);
-          emitSetCarry (0);
+          m6502_emitSetCarry (0);
           accopWithAop ("adc", AOP (right), 0);
           emitBranch ("bcc", tlbl);
 	  rmwWithReg ("inc", m6502_reg_x);
@@ -132,7 +133,7 @@ genPlusInc (iCode * ic)
   if (!aopCanIncDec (AOP (result)))
     return false;
 
-  emitComment (TRACEGEN|VVDBG, "    %s", __func__);
+  emitComment (TRACEGEN|VVDBG, "    %s - sameregs", __func__);
 
   if (size==1 && AOP(result)->type==AOP_REG)
     {
@@ -147,8 +148,12 @@ genPlusInc (iCode * ic)
   if (size > 1)
     tlbl = safeNewiTempLabel (NULL);
 
+  // FIXME: SAVING x SHOULD BE HERE
+
   if (icount == 1)
     {
+      if(AOP_TYPE(result)==AOP_SOF)
+        needpullx=storeRegTempIfSurv(m6502_reg_x);
       rmwWithAop ("inc", AOP (result), 0);
       if (size > 1)
 	emitBranch ("bne", tlbl);
@@ -158,7 +163,7 @@ genPlusInc (iCode * ic)
       savea = fastSaveAIfSurv ();
 
       loadRegFromAop (m6502_reg_a, AOP (result), 0);
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP (right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       if (size > 1)
@@ -178,6 +183,7 @@ genPlusInc (iCode * ic)
     safeEmitLabel (tlbl);
 
   fastRestoreOrFreeA (savea);
+  loadOrFreeRegTemp(m6502_reg_x, needpullx);
 
   return true;
 }
@@ -238,7 +244,7 @@ m6502_genPlus (iCode * ic)
 
       emitComment (TRACEGEN|VVDBG, "    %s: size==2 && one byte", __func__);
       savea = fastSaveAIfSurv ();
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       accopWithAop ("adc", AOP(right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
@@ -257,7 +263,7 @@ m6502_genPlus (iCode * ic)
     {
       symbol *skipInc = safeNewiTempLabel (NULL);
       loadRegFromAop (m6502_reg_xa, AOP(left), 0);
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP(right), 0);
       emitBranch ("bcc", skipInc);
       rmwWithAop ("inc", AOP(result), 1);
@@ -269,7 +275,7 @@ m6502_genPlus (iCode * ic)
   if ( IS_AOP_XA(AOP(result)) && !maskedtopbyte && IS_AOP_A(AOP(left)) && AOP_TYPE(right) != AOP_SOF) 
     {
       symbol *skipInc = safeNewiTempLabel (NULL);
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP(right), 0);
       loadRegFromAop (m6502_reg_x, AOP(right), 1);
       emitBranch ("bcc", skipInc);
@@ -284,11 +290,13 @@ m6502_genPlus (iCode * ic)
       emitComment (TRACEGEN|VVDBG, "    %s: XA = XA + SOF", __func__);
       storeRegTemp(m6502_reg_x, true);
       int xloc = getLastTempOfs();
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP (right), 0);
       fastSaveA();
       loadRegTempAt(m6502_reg_a, xloc);
       accopWithAop ("adc", AOP (right), 1);
+      if (maskedtopbyte)
+	emit6502op ("and", IMMDFMT, topbytemask);
       transferRegReg(m6502_reg_a, m6502_reg_x, true);
       fastRestoreA();
       loadRegTemp(NULL);
@@ -298,14 +306,19 @@ m6502_genPlus (iCode * ic)
   if ( IS_AOP_XA (AOP(left)) && !IS_AOP_XA(AOP(result)) &&
        (AOP_TYPE(result) == AOP_SOF || AOP_TYPE(right) == AOP_SOF) )
     {
+      if(m6502_reg_a->aop && sameRegs (m6502_reg_a->aop,AOP(result)) )
+        m6502_dirtyReg(m6502_reg_xa);
+
       savea = fastSaveAIfSurv();
       bool restore_x = !m6502_reg_x->isDead;
       storeRegTemp(m6502_reg_x, true);
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("adc", AOP (right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );
       accopWithAop ("adc", AOP (right), 1);
+      if (maskedtopbyte)
+	emit6502op ("and", IMMDFMT, topbytemask);
       storeRegToAop (m6502_reg_a, AOP (result), 1);
 
       if(restore_x)
@@ -331,7 +344,7 @@ m6502_genPlus (iCode * ic)
       if (!opskip || AOP_TYPE (right) != AOP_LIT || (byteOfVal (AOP (right)->aopu.aop_lit, offset) != 0x00) )
 	{
           if (init_carry)
-	    emitSetCarry(0);
+	    m6502_emitSetCarry(0);
 
 	  accopWithAop ("adc", AOP(right), offset);
 	  opskip = false;

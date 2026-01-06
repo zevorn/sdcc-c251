@@ -86,7 +86,7 @@ m6502_genXor (iCode * ic, iCode * ifx)
 
       if( isLit && lit==NOP_MASK ) 
 	{
-	  emitCmp(m6502_reg_a, 0);
+	  m6502_emitCmp(m6502_reg_a, 0);
 	  genIfxJump (ifx, "z");
 	  goto release;
 	}

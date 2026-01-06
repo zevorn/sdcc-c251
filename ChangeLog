@@ -1,7 +1,115 @@
+2026-01-05 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c,
+  	  src/mos6502/genminus.c,
+  	  src/mos6502/genplus.c,
+  	  src/mos6502/genrshift.c:
+  	  Cosmetic cleanups.
+  	* src/mos6502/gen.c:
+  	  Small genCmpEQorNE improvemetns.
+
+2025-12-30 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+  	  genCmp improvements.
+  	  Remove unecessay constraint in genCmp.
+  	* src/mos6502/genrshift.c:
+      Special case shift XA when X is a constant.
+      Correct typo.
+  	* support/regression/tests/lonesha256.c:
+  	  Enable lonesha256 for mos6502-stack-auto.
+  	  
+2025-12-29 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* support/regression/tests/gcc-torture-execute-pr28982a.c:
+  	  Disable test for mos6502-stack-auto due to stack overflow.
+  	* src/mos6502/gen.c:
+  	  Improve genPCall.
+
+2025-12-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/atoll.c,
+	  device/lib/strtoimax.c,
+	  device/lib/strtoll.c,
+	  device/lib/strtoull.c,
+	  device/lib/strtoumax.c,
+	  device/lib/wcstoll.c,
+	  device/lib/wcstoull.c:
+	  __SDCC_LONGLONG migration bits.
+
+2025-12-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/pic14/ralloc.c,
+	  src/pic16/ralloc.c:
+	  Reduce diff between pic14 and pic16 register allocator.
+
+2025-12-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/include/wchar.h:
+	  Fix pic14 library compilation.
+
+2025-12-25 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+      Refactor of genCmpEqNeq() for ifx==false.
+      Add m6502 prefix to several functions.
+      
+2025-12-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/funcptrcmp.c.in:
+	  Disable a test for -mmcs51 --model-large, where it fails due to known bug #3903.
+	* device/include/stdlib.h,
+	  device/include/wchar.h,
+	  support/regression/tests/ato.c:
+	  Cleanup some leftover __SDCC_LONGLONG, which is no longer relevant, since all maintained ports now support long long.
+
+2025-12-25 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+      Partial refactor of genCmpEqNeq().
+    * src/mos6502/tempops.c:
+      Fix bug in instruction cycle count.
+   	* src/mos6502/peeph.def:
+   	  Additional peephole rules for new codegen paths.
+  	* src/mos6502/gen.c:
+      Small genPackBits() improvement.
+  	* src/mos6502/genlshift.c,
+  	  support/regression/tests/stack-restore.c.in:
+      Fix typos.
+   	* src/mos6502/tempops.c,
+   	  src/mos6502/gen.h:
+   	  Enable tracking of tsxaop in the tempstack.
+
+2025-12-21 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+      Optimize compare with zero.
+
+2025-12-20 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* support/regression/tests/bug-3410.c.in,
+  	  support/regression/tests/bug-3385.c,
+  	  support/regression/tests/bug-2767.c,
+  	  support/regression/tests/bigreturn-remat.c.in:
+  	  Enable several additional tests for mos6502.
+  	* src/mos6502/gen.c,
+  	  src/mos6502/genplus.c,
+  	  src/mos6502/genminus.c:
+  	  Allow inc/dec on objects on the stack.
+  	  	
+2025-12-16 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+  	  genFunction cleanup.
+  	  refactor stack offset code.
+
 2025-12-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/funcptrcmp.c.in:
 	  Test for function pointer comparison semantics.
+	* src/SDCCopt.c,
+	  support/valdiag/tests/_Optional.c:
+	  A bit of _Optional code cleanup and additional testing.
 
 2025-12-14 Gabriele Gorla <gorlik@yahoo.com>
 

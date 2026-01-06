@@ -8,7 +8,7 @@
   Copyright (C) 2003, Erik Petrich
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -63,17 +63,18 @@ genMinusDec (iCode * ic)
   if (icount>255)
     {
       int bcount = icount>>8;
-      if (IS_AOP_XA (AOP (result)) && IS_AOP_XA (AOP (left)) )
+
+      if(size==2 && sameRegs (AOP (left), AOP (result)))
         {
-          if(m6502_reg_x->isLitConst)
+          if (IS_AOP_XA (AOP (result)) && m6502_reg_x->isLitConst)
             {
 	      loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
               return true;
             }
-          else if(bcount<4)
+          else if(bcount<3)
             {
 	      while (bcount--)
-		rmwWithReg ("dec", m6502_reg_x);
+		rmwWithAop ("dec", AOP (result), 1);
 
 	      return true;
             }
@@ -87,7 +88,7 @@ genMinusDec (iCode * ic)
       if (icount)
 	{
 	  tlbl = safeNewiTempLabel (NULL);
-	  emitSetCarry (1);
+	  m6502_emitSetCarry (1);
 	  accopWithAop ("sbc", AOP (right), 0);
 	  emitBranch ("bcs", tlbl);
 	  rmwWithReg ("dec", m6502_reg_x);
@@ -129,7 +130,7 @@ genMinusDec (iCode * ic)
   if (!aopCanIncDec (AOP (result)))
     return false;
 
-  emitComment (TRACEGEN|VVDBG, "    %s", __func__);
+  emitComment (TRACEGEN|VVDBG, "    %s - sameregs", __func__);
 
   if (size==1 && AOP(result)->type==AOP_REG)
     {
@@ -211,7 +212,7 @@ m6502_genMinus (iCode * ic)
 
       emitComment (TRACEGEN|VVDBG, "    %s: size==2 && one byte", __func__);
       savea = fastSaveAIfSurv ();
-      emitSetCarry(1);
+      m6502_emitSetCarry(1);
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       accopWithAop ("sbc", AOP(right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
@@ -232,11 +233,13 @@ m6502_genMinus (iCode * ic)
       savea = fastSaveAIfSurv();
       bool restore_x = !m6502_reg_x->isDead;
       storeRegTemp(m6502_reg_x, true);
-      emitSetCarry(1);
+      m6502_emitSetCarry(1);
       accopWithAop ("sbc", AOP (right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );
       accopWithAop ("sbc", AOP (right), 1);
+      if (maskedtopbyte)
+	    emit6502op ("and", IMMDFMT, topbytemask);
       storeRegToAop (m6502_reg_a, AOP (result), 1);
 
       if(restore_x)
@@ -252,7 +255,7 @@ m6502_genMinus (iCode * ic)
     {
       // op - a = neg(a - op) = not(a - op) + 1 = not(a - op - 1)
       savea = fastSaveAIfSurv ();
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       accopWithAop ("sbc", AOP(left) , 0);
       emit6502op("eor", "#0xff");
       if (maskedtopbyte)
@@ -276,7 +279,7 @@ m6502_genMinus (iCode * ic)
 	  storeRegTemp (m6502_reg_a, true);
 	  loadRegFromAop (m6502_reg_a, AOP(left), offset);
 	  if (init_carry)
-	    emitSetCarry(1);
+	    m6502_emitSetCarry(1);
 
 	  emitRegTempOp("sbc", getLastTempOfs() );
 	  loadRegTemp (NULL);
@@ -285,7 +288,7 @@ m6502_genMinus (iCode * ic)
 	{
 	  loadRegFromAop (m6502_reg_a, AOP(left), offset);
 	  if (init_carry)
-	    emitSetCarry(1);
+	    m6502_emitSetCarry(1);
 
 	  accopWithAop ("sbc", AOP(right), offset);
 	}

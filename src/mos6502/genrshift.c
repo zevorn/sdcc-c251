@@ -8,7 +8,7 @@
   Copyright (C) 2003, Erik Petrich
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -51,10 +51,10 @@ AccSRsh (int shCount)
     {
       symbol *tlbl = safeNewiTempLabel (NULL);
       emit6502op ("ora", "#0x3f");
-      emitSetCarry(1);
+      m6502_emitSetCarry(1);
       emit6502op ("bmi", "%05d$", safeLabelNum (tlbl));
       emit6502op ("and", "#0xc0");
-      emitSetCarry(0);
+      m6502_emitSetCarry(0);
       safeEmitLabel(tlbl);
       emit6502op ("rol", "a");
       emit6502op ("rol", "a");
@@ -65,7 +65,7 @@ AccSRsh (int shCount)
       // TODO: optimize?
       for (i = 0; i < shCount; i++)
         {
-          emitCmp (m6502_reg_a, 0x80);
+          m6502_emitCmp (m6502_reg_a, 0x80);
           emit6502op ("ror", "a");
         }
     }
@@ -140,7 +140,7 @@ XAccSRsh (int shCount)
   case 8:
     transferRegReg (m6502_reg_x, m6502_reg_a, false);
     loadRegFromConst (m6502_reg_x, 0);
-    emit6502op("cmp","#0x00");
+    m6502_emitCmp (m6502_reg_a, 0x00);
     tlbl = safeNewiTempLabel (NULL);
     emit6502op ("bpl", "%05d$", safeLabelNum (tlbl));
     loadRegFromConst (m6502_reg_x, 0xff);
@@ -172,6 +172,28 @@ XAccRsh (int shCount, bool sign)
 
   shCount &= 0x000f;            // shCount : 0..15
 
+  if(m6502_reg_x->isLitConst)
+    {
+      unsigned long v = (m6502_reg_x->litConst<<8);
+
+      if(sign && (v&0x8000))
+        v|=0xffff0000;
+
+      v>>=shCount;
+
+      if(shCount<8)
+        {
+          AccRsh (shCount, false);
+          if(v&0xff)
+            emit6502op ("ora", IMMDFMT, v&0xff);
+        }
+      else
+        loadRegFromConst(m6502_reg_a, v&0xff);
+
+      loadRegFromConst(m6502_reg_x, (v>>8)&0xff);
+      return;
+    }
+    
   if (sign)
     {
       XAccSRsh (shCount);
@@ -271,7 +293,7 @@ genrsh16 (operand * result, operand * left, int shCount, int sign)
           loadRegFromAop (m6502_reg_a, AOP (left), 1);
           if(sign)
             {
-	      emit6502op ("cmp", "#0x80");
+	      m6502_emitCmp (m6502_reg_a, 0x80);
 	      emit6502op ("ror", "a");
             }
           else 
@@ -359,7 +381,7 @@ shiftRLongInPlace (operand * result, int shift, int ofs, int sign, bool msb_in_a
     {
       if(sign)
 	{
-	  emitCmp(m6502_reg_a, 0x80);
+	  m6502_emitCmp(m6502_reg_a, 0x80);
 	  rmwWithReg ("ror", m6502_reg_a);
 	}
       else
@@ -445,7 +467,7 @@ shiftRLong1 (operand * left, operand * result, int shift, int sign)
       loadRegFromAop (m6502_reg_a, AOP (left), 3);
       if(sign)
 	{
-	  emitCmp(m6502_reg_a, 0x80);     
+	  m6502_emitCmp(m6502_reg_a, 0x80);     
 	  rmwWithReg ("ror", m6502_reg_a);
         }
       else
@@ -545,7 +567,7 @@ shiftRLong2 (operand * left, operand * result, int shift, int sign)
       loadRegFromAop (m6502_reg_a, AOP (left), 3);
       if(sign)
 	{
-	  emitCmp(m6502_reg_a, 0x80);
+	  m6502_emitCmp(m6502_reg_a, 0x80);
 	  rmwWithReg ("ror", m6502_reg_a);
 	}
       else
@@ -660,7 +682,7 @@ shiftRLong3 (operand * left, operand * result, int shift, int sign)
       //              {
       symbol *tlbl = safeNewiTempLabel (NULL);
 
-      emitCmp(m6502_reg_a, 0x80);
+      m6502_emitCmp(m6502_reg_a, 0x80);
       emitBranch ("bcc", tlbl);
       rmwWithReg ("dec", m6502_reg_x);
       safeEmitLabel(tlbl);
@@ -723,7 +745,7 @@ shiftRLong3 (operand * left, operand * result, int shift, int sign)
 	  loadRegFromAop (m6502_reg_a, AOP (left), 3);
 	  if(sign)
 	    {
-	      emitCmp(m6502_reg_a, 0x80);
+	      m6502_emitCmp(m6502_reg_a, 0x80);
 	      rmwWithReg ("ror", m6502_reg_a);
 	    }
 	  else
@@ -742,7 +764,7 @@ shiftRLong3 (operand * left, operand * result, int shift, int sign)
 	  loadRegFromAop (m6502_reg_a, AOP (left), 3);
 	  if(sign)
 	    {
-	      emitCmp(m6502_reg_a, 0x80);
+	      m6502_emitCmp(m6502_reg_a, 0x80);
 	      rmwWithReg ("ror", m6502_reg_a);
 	    }
 	  else
@@ -847,7 +869,7 @@ shiftRLong4 (operand * left, operand * result, int shift, int sign)
 	  loadRegFromAop (m6502_reg_a, AOP (left), 3);
           if(sign)
             {
-              emitCmp(m6502_reg_a, 0x80);
+              m6502_emitCmp(m6502_reg_a, 0x80);
               rmwWithReg ("ror", m6502_reg_a);
 	    }
           else
@@ -1173,7 +1195,7 @@ m6502_genRightShift (iCode * ic)
       storeRegToAop (m6502_reg_a, AOP(result) , a_loc);
       m6502_dirtyReg(m6502_reg_x);
 
-      emitCmp(countreg, 8);
+      m6502_emitCmp(countreg, 8);
       emitBranch ("bcc", skiplbl);
       safeEmitLabel (looplbl);
 
@@ -1205,19 +1227,19 @@ m6502_genRightShift (iCode * ic)
 
 
       transferRegReg(countreg, m6502_reg_a, true);
-      emitSetCarry (1);
+      m6502_emitSetCarry (1);
       emit6502op ("sbc", IMMDFMT, 8);
       transferRegReg(m6502_reg_a, countreg, true);
       //if(size==8)
       {
-	emitCmp(countreg, 8);
+	m6502_emitCmp(countreg, 8);
 	emitBranch ("bcs", looplbl);
       }
       loadRegFromAop (m6502_reg_a, AOP (result), a_loc);
       safeEmitLabel (skiplbl);
     }
 
-  emitCmp(countreg, 0);
+  m6502_emitCmp(countreg, 0);
   emitBranch ("beq", tlbl1);
 
   // FIXME: find a good solution for this
@@ -1231,7 +1253,7 @@ m6502_genRightShift (iCode * ic)
     {
       if(sign)
 	{
-          emitCmp(m6502_reg_x, 0x80);
+          m6502_emitCmp(m6502_reg_x, 0x80);
 	  if(msb_in_x)
 	    emitRegTempOp("ror", getLastTempOfs() );
 	  else
@@ -1250,7 +1272,7 @@ m6502_genRightShift (iCode * ic)
     {
       if(sign)
         {
-          emitCmp(m6502_reg_a, 0x80);
+          m6502_emitCmp(m6502_reg_a, 0x80);
           rmwWithReg ("ror", m6502_reg_a);
         }
       else
@@ -1270,18 +1292,11 @@ m6502_genRightShift (iCode * ic)
 
   storeRegToAop (m6502_reg_a, AOP(result) , a_loc);
 
-  //  if(op_is_xa || size==1)
-  //    {
-  //      storeRegToAop (m6502_reg_a, AOP(result) , 0);
-  //      if(size==2)
   if(op_is_xa)
     {
       if(msb_in_x)
 	storeRegToAop (m6502_reg_x, AOP(result) , 1);
     }
-  //    }
-  //  else
-  //    storeRegToAop (m6502_reg_a, AOP(result) , size-1);
 
   // After loop, countreg is always 0
   m6502_dirtyReg(countreg);

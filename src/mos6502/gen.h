@@ -114,14 +114,14 @@ struct attr_t
   unsigned char literalValue;
   struct asmop *aop;		/* last operand */
   int aopofs;			/* last operand offset */
+  int stackOffset;              /* stack offset when aop==tsxaop */
 };
 
 struct m6502_state_t
 {
-  int stackOfs;
+  int stackBase;
   int funcHasBasePtr;
   int stackPushes;
-  int tsxStackPushes;
   //  int baseStackPushes;
   set *sendSet;
   int tempOfs;
@@ -168,11 +168,11 @@ symbol * safeNewiTempLabel(const char * a);
 void safeEmitLabel(symbol * a);
 int safeLabelNum(symbol * a);
 
-bool emitCmp (reg_info *reg, unsigned char v);
-void emitBranch (char *branchop, symbol * tlbl);
-void emitTSX(void);
 void emit6502op (const char *inst, const char *fmt, ...);
-void emitSetCarry(int c);
+bool m6502_emitCmp (reg_info *reg, unsigned char v);
+void emitBranch (char *branchop, symbol * tlbl);
+void m6502_emitTSX(void);
+void m6502_emitSetCarry(int c);
 
 void genIfxJump (iCode * ic, char *jval);
 
@@ -182,7 +182,7 @@ void storeConstToAop (int c, asmop * aop, int loffset);
 void transferAopAop (asmop * srcaop, int srcofs, asmop * dstaop, int dstofs);
 void storeRegToAop (reg_info *reg, asmop * aop, int loffset);
 void transferRegReg (reg_info *sreg, reg_info *dreg, bool freesrc);
-void accopWithAop (char *accop, asmop *aop, int loffset);
+void accopWithAop (const char *accop, asmop *aop, int loffset);
 void rmwWithAop (char *rmwop, asmop * aop, int loffset);
 void rmwWithReg (char *rmwop, reg_info * reg);
 void storeRegToFullAop (reg_info *reg, asmop *aop, bool isSigned);
@@ -226,10 +226,12 @@ void loadRegTemp (reg_info * reg);
 void loadOrFreeRegTemp (reg_info * reg, bool needload);
 void loadRegTempAt (reg_info * reg, int offset);
 void loadRegTempNoFlags (reg_info * reg, bool needpull);
-void emitRegTempOp(char *op, int offset);
+void emitRegTempOp(const char *op, int offset);
 int getLastTempOfs();
 void dirtyRegTemp (int temp_reg_idx);
 void signExtendA();
+
+void m6502_unimplemented(const char *msg);
 
 // gen functions
 void m6502_genOr (iCode * ic, iCode * ifx);

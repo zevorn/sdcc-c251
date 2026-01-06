@@ -88,7 +88,7 @@ size_t wcrtomb(char *restrict s, wchar_t wc, mbstate_t *restrict ps);
 /* C99 Wide string numeric conversion functions (ISO C 11 7.29.4.1) */
 long int wcstol(const wchar_t nptr[restrict static 1], wchar_t **restrict endptr, int base);
 unsigned long int wcstoul(const wchar_t nptr[restrict static 1], wchar_t **restrict endptr, int base);
-#ifdef __SDCC_LONGLONG
+#if !defined(__SDCC_pic14) // Unmaintained pic14 port never got long long support
 long long int wcstoll(const wchar_t nptr[restrict static 1], wchar_t **restrict endptr, int base);
 unsigned long long int wcstoull(const wchar_t nptr[restrict  static 1], wchar_t **restrict endptr, int base);
 #endif
