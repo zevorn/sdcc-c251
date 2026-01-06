@@ -1783,6 +1783,7 @@ replaceRegEqvOperand (iCode *ic, operand **opp, int force_isaddr, int new_isaddr
       nop->isConstEliminated = op->isConstEliminated;
       nop->isRestrictEliminated = op->isRestrictEliminated;
       nop->isOptionalEliminated = op->isOptionalEliminated;
+      nop->isSemDeref = op->isSemDeref;
 
       /* Copy def/use info from true symbol to register equivalent */
       /* but only if this hasn't been done already. */
@@ -2164,6 +2165,25 @@ checkStaticArrayParams (ebbIndex *ebbi)
   for (int i = 0; i < count; i++)
     for (iCode *ic = ebbs[i]->sch; ic; ic = ic->next)
       {
+        if (ic->left && ic->left->isSemDeref)
+          {
+            const struct valinfo v = getOperandValinfo (ic, ic->left);
+            if ((v.anything || !v.nonnull) && ic->left->isSemDeref)
+              werrorfl (ic->filename, ic->lineno, W_OPTIONAL_PTR_DEREF);
+          }
+        if (ic->right && ic->right->isSemDeref)
+          {
+            const struct valinfo v = getOperandValinfo (ic, ic->right);
+            if ((v.anything || !v.nonnull) && ic->right->isSemDeref)
+              werrorfl (ic->filename, ic->lineno, W_OPTIONAL_PTR_DEREF);
+          }
+        if (ic->result && ic->result->isSemDeref)
+          {
+            const struct valinfo v = getOperandValinfo (ic, ic->right);
+            if ((v.anything || !v.nonnull) && ic->result->isSemDeref)
+              werrorfl (ic->filename, ic->lineno, W_OPTIONAL_PTR_DEREF);
+          }
+          
         if ((ic->op == IPUSH || ic->op == SEND) &&
           ic->right || // variable arguments lack type information (and so do some arguments to builtin functions).
           ic->op == '=' && IS_PARM (ic->result))
@@ -2286,7 +2306,8 @@ checkStaticArrayParams (ebbIndex *ebbi)
               werrorfl (ic->filename, ic->lineno, W_INVALID_PTR_DEREF);
             else if (!v.anything && roff + size > (long long)v.maybemaxsize)
               werrorfl (ic->filename, ic->lineno, W_MAYBE_INVALID_PTR_DEREF);
-            if ((v.anything || !v.nonnull) && isOptional(operandType (ic->left)->next) && !ic->left->isOptionalEliminated)
+            if ((v.anything || !v.nonnull) &&
+              (isOptional(operandType (ic->left)->next) && !ic->left->isOptionalEliminated || ic->left->isSemDeref))
               werrorfl (ic->filename, ic->lineno, W_OPTIONAL_PTR_DEREF);
           }
         else if (POINTER_SET (ic))
@@ -2297,7 +2318,8 @@ checkStaticArrayParams (ebbIndex *ebbi)
               werrorfl (ic->filename, ic->lineno, W_INVALID_PTR_DEREF);
             else if (!v.anything && size > (long long)v.maybemaxsize)
               werrorfl (ic->filename, ic->lineno, W_MAYBE_INVALID_PTR_DEREF);
-            if ((v.anything || !v.nonnull) && isOptional(operandType (ic->result)->next) && !ic->result->isOptionalEliminated)
+            if ((v.anything || !v.nonnull) &&
+              (isOptional(operandType (ic->result)->next) && !ic->result->isOptionalEliminated || ic->result->isSemDeref))
               werrorfl (ic->filename, ic->lineno, W_OPTIONAL_PTR_DEREF);
           }
       }

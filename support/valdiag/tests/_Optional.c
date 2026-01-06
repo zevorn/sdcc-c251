@@ -154,8 +154,8 @@ void jim(_Optional int *i)
 	// because of the type and unconstrained value of i
 	*i = 10; /* WARNING */
 	k = *i; /* IGNORE */
-	j = &*i;
-	foo(&*i);
+	j = &*i; /* IGNORE */
+	foo(&*i); /* WARNING */
 	foo(&i[15]);
 	// No diagnostic is recommended for the following
 	// statements because the value of i is constrained
