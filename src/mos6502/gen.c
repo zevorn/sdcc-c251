@@ -3497,6 +3497,7 @@ aopAdrStr (asmop * aop, int loffset, bool bit16)
     case AOP_SOF: // TODO?
       if (regalloc_dry_run)
 	{
+	  m6502_emitTSX();
 	  return "0x100,x"; // fake result, not needed
 	}
       else
@@ -3688,11 +3689,12 @@ asmopToBool (asmop *aop, bool resultInA)
 
     case AOP_DIR:
     case AOP_EXT:
-      emitComment (TRACE_AOP|VVDBG, "asmopToBool - AOP_DIR || AOP_EXT");
+      emitComment (TRACE_AOP|VVDBG, "  %s - AOP_DIR || AOP_EXT", __func__);
 
 #if 1
       if (!resultInA && (size == 1) && !IS_AOP_A (aop) && !m6502_reg_a->isFree && m6502_reg_x->isFree)
         {
+          emitComment (TRACE_AOP|VVDBG, "  %s - load", __func__);
           loadRegFromAop (m6502_reg_x, aop, 0);
           return;
         }
@@ -3700,9 +3702,12 @@ asmopToBool (asmop *aop, bool resultInA)
       if (!resultInA && (size == 1) )
         {
           reg_info *reg=getFreeByteReg();
+          emitComment (TRACE_AOP|VVDBG, "  %s - reg:%s", __func__,(reg)?reg->name:"NULL");
+
           if(reg)
             {
               loadRegFromAop (reg, aop, 0);
+	      m6502_emitCmp(reg, 0x00);
               return;
             }
         }
@@ -5832,12 +5837,9 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 	{
           for(offset=0; offset<size; offset++)
 	    {
-	      if (AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx == X_IDX 
-		  && isAddrSafe(right, m6502_reg_x))
-		accopWithAop ("cpx", AOP (right), offset);
-	      else if (AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx == Y_IDX
-		       && isAddrSafe(right, m6502_reg_y))
-		accopWithAop ("cpy", AOP (right), offset);
+	      if (AOP_TYPE (left) == AOP_REG 
+		  && (AOP (left)->aopu.aop_reg[offset]==m6502_reg_a || AOP_TYPE(right)!=AOP_SOF) )
+		accopWithAop (m6502_cmp[AOP (left)->aopu.aop_reg[offset]->rIdx], AOP (right), offset);
 	      else 
 		{
                   emitComment (TRACEGEN|VVDBG, "    %s - not a reg", __func__);

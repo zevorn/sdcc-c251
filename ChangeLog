@@ -5,6 +5,8 @@
   	  src/mos6502/ralloc.h,
   	  src/mos6502/genrshift.c:
   	  Allow signExtend on any register.
+   	* src/mos6502/gen.c:
+   	  improve codegen for stack-auto
   	
 2026-01-05 Gabriele Gorla <gorlik@yahoo.com>
 
