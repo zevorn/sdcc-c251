@@ -1775,12 +1775,20 @@ storeImmToAop (char *c, asmop * aop, int loffset)
 }
 
 void
-signExtendA ()
+m6502_signExtendReg(reg_info *reg)
 {
-  emit6502op ("asl", "a");
-  loadRegFromConst (m6502_reg_a, 0);
-  emit6502op ("adc", "#0xff");
-  emit6502op ("eor", "#0xff");
+  symbol *tlbl = safeNewiTempLabel (NULL);
+
+  if(reg==m6502_reg_a)
+    emit6502op ("asl", "a");
+  else
+    m6502_emitCmp (reg, 0x80);
+
+  loadRegFromConst (reg, 0);
+  emitBranch ("bcc", tlbl);
+  loadRegFromConst (reg, 0xff);
+  safeEmitLabel (tlbl);
+  m6502_dirtyReg (reg);
 }
 
 /**************************************************************************
@@ -1810,22 +1818,8 @@ storeRegSignToUpperAop (reg_info * reg, asmop * aop, int loffset, bool isSigned)
   else
     {
       /* Signed case */
-      if(reg!=m6502_reg_a)
-        {
-          symbol *tlbl = safeNewiTempLabel (NULL);
+      m6502_signExtendReg(reg);
 
-          m6502_emitCmp (reg, 0x80);
-          loadRegFromConst (reg, 0);
-          emitBranch ("bcc", tlbl);
-          loadRegFromConst (reg, 0xff);
-          safeEmitLabel (tlbl);
-          m6502_dirtyReg (reg);
-        }
-      else
-        {
-          signExtendA ();
-          m6502_useReg (m6502_reg_a);
-        }
       while (loffset < size)
         storeRegToAop (reg, aop, loffset++);
       m6502_freeReg (reg);
@@ -6822,7 +6816,7 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
       else
 	{
 	  /* signed bitfield: sign extension with 0x00 or 0xff */
-	  signExtendA();
+	  m6502_signExtendReg(m6502_reg_a);
 	  while (rsize--)
 	    storeRegToAop (m6502_reg_a, AOP (result), offset++);
 	}
@@ -7016,7 +7010,7 @@ static void genUnpackBitsImmed (operand * left, operand *right, operand * result
 	    }
 
 	  /* signed bitfield: sign extension with 0x00 or 0xff */
-	  signExtendA();
+	  m6502_signExtendReg(m6502_reg_a);
 	  while (rsize--)
 	    storeRegToAop (m6502_reg_a, AOP (result), offset++);
 	}
@@ -8483,7 +8477,7 @@ static void genCast (iCode * ic)
 	{
 	  save_a = result->aop->aopu.aop_reg[0] == m6502_reg_a || !m6502_reg_a->isDead;
 	  if (save_a)
-	    m6502_pushReg(m6502_reg_a, false);
+	    fastSaveA();
 	  loadRegFromAop (m6502_reg_a, result->aop, result->aop->size - 1);
 	}
       emit6502op ("and", IMMDFMT, topbytemask);
@@ -8552,9 +8546,17 @@ static void genCast (iCode * ic)
  
   wassert (AOP (result)->type != AOP_REG);
   
-  save_a = !m6502_reg_a->isDead && signExtend;
-  if (save_a)
-    m6502_pushReg(m6502_reg_a, true);
+  reg_info *reg = NULL;
+
+  if(!IS_AOP_A(AOP(right)))
+    reg=getFreeByteReg();
+
+  if(!reg 
+     && (signExtend|| AOP_TYPE(right)==AOP_SOF || AOP_TYPE(result)==AOP_SOF))
+    {
+      save_a = fastSaveAIfSurv();
+      reg=m6502_reg_a;
+    }
   
   offset = 0;
   size = AOP_SIZE (right);
@@ -8563,8 +8565,8 @@ static void genCast (iCode * ic)
     {
       if (size == 1 && signExtend)
 	{
-	  loadRegFromAop (m6502_reg_a, AOP (right), offset);
-	  storeRegToAop (m6502_reg_a, AOP (result), offset);
+	  loadRegFromAop (reg, AOP (right), offset);
+	  storeRegToAop (reg, AOP (result), offset);
 	  offset++;
 	  size--;
 	}
@@ -8584,18 +8586,18 @@ static void genCast (iCode * ic)
     }
   else if (size)
     {
-      signExtendA();
+      m6502_signExtendReg(reg);
       while (size--)
 	{
 	  if (!size && masktopbyte)
 	    emit6502op ("and", IMMDFMT, topbytemask);
-	  storeRegToAop (m6502_reg_a, AOP (result), offset++);
+
+	  storeRegToAop (reg, AOP (result), offset++);
 	}
     }
 
  release:
-  if (save_a)
-    m6502_pullReg(m6502_reg_a);
+  fastRestoreOrFreeA(save_a);
 
   freeAsmop (right, NULL);
   freeAsmop (result, NULL);

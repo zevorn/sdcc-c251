@@ -1,3 +1,11 @@
+2026-01-07 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c,
+  	  src/mos6502/gen.h,
+  	  src/mos6502/ralloc.h,
+  	  src/mos6502/genrshift.c:
+  	  Allow signExtend on any register.
+  	
 2026-01-05 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c,
