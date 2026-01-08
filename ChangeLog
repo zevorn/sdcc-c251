@@ -3,6 +3,21 @@
 	* src/SDCCgenconstprop.cc:
 	  Improve warnings on &[] semantic dereferences of pointer to _Optional.
 
+2025-01-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx:
+	  Remove some index links for #pragma that won't compile with some LaTeX.
+
+2026-01-07 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c,
+  	  src/mos6502/gen.h,
+  	  src/mos6502/ralloc.h,
+  	  src/mos6502/genrshift.c:
+  	  Allow signExtend on any register.
+   	* src/mos6502/gen.c:
+   	  improve codegen for stack-auto
+
 2026-01-06 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCC.y,
@@ -31,8 +46,8 @@
   	  genCmp improvements.
   	  Remove unecessay constraint in genCmp.
   	* src/mos6502/genrshift.c:
-      Special case shift XA when X is a constant.
-      Correct typo.
+	  Special case shift XA when X is a constant.
+	  Correct typo.
   	* support/regression/tests/lonesha256.c:
   	  Enable lonesha256 for mos6502-stack-auto.
   	  
@@ -68,8 +83,8 @@
 2025-12-25 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
-      Refactor of genCmpEqNeq() for ifx==false.
-      Add m6502 prefix to several functions.
+	  Refactor of genCmpEqNeq() for ifx==false.
+	  Add m6502 prefix to several functions.
       
 2025-12-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -83,9 +98,9 @@
 2025-12-25 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
-      Partial refactor of genCmpEqNeq().
-    * src/mos6502/tempops.c:
-      Fix bug in instruction cycle count.
+	  Partial refactor of genCmpEqNeq().
+	* src/mos6502/tempops.c:
+	  Fix bug in instruction cycle count.
    	* src/mos6502/peeph.def:
    	  Additional peephole rules for new codegen paths.
   	* src/mos6502/gen.c:
