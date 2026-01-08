@@ -1,3 +1,8 @@
+2026-01-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCgenconstprop.cc:
+	  Improve warnings on &[] semantic dereferences of pointer to _Optional.
+
 2026-01-06 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCC.y,

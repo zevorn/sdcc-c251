@@ -762,6 +762,18 @@ valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo 
     }
 }
 
+static void update_out_edges (cfg_t &G, unsigned int i, int key_false, int key_true, const valinfo &v_false, const valinfo &v_true, int opkey)
+{
+  typedef /*typename*/ boost::graph_traits<cfg_t>::out_edge_iterator out_iter_t;
+  out_iter_t out, out_end;
+  boost::tie(out, out_end) = boost::out_edges(i, G);
+  for(; out != out_end; ++out)
+    if (G[boost::target(*out, G)].ic->key == key_true)
+      G[*out].map[opkey] = v_true;
+    else if (G[boost::target(*out, G)].ic->key == key_false)
+      G[*out].map[opkey] = v_false;
+}
+
 static void
 recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<unsigned int>, std::set<unsigned int> > &todo, bool externchange, int end_it_quickly)
 {
@@ -830,31 +842,22 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
               v_false.max = 0;
               valinfoUpdate (&v_true);
               valinfoUpdate (&v_false);
-              boost::tie(out, out_end) = boost::out_edges(i, G);
-              iCode *extraic;
-              for(extraic = ic->prev; extraic; extraic = extraic->prev)
+              for(iCode *extraic = ic->prev; extraic; extraic = extraic->prev)
                 {
-                  if (extraic->op == '=' && !POINTER_SET (extraic) && isOperandEqual (extraic->right, ic->left) && bitVectnBitsOn (OP_DEFS (extraic->result)) == 1)
-                    break; // Found a good candidate
-                  if (extraic->op == LABEL || bitVectBitValue (OP_DEFS (ic->left), extraic->key))
+                  if (extraic->op == '=' && !POINTER_SET (extraic) && isOperandEqual (extraic->right, ic->left) &&
+                    IS_SYMOP (extraic->result) && !IS_OP_GLOBAL (extraic->result) && bitVectnBitsOn (OP_DEFS (extraic->result)) <= 1)
+                    update_out_edges (G, i, key_false, key_true, v_false, v_true, extraic->result->key);
+                  else if (extraic->op == '=' && !POINTER_SET (extraic) && isOperandEqual (extraic->result, ic->left) &&
+                    IS_SYMOP (extraic->right) && !IS_OP_GLOBAL (extraic->right) && bitVectnBitsOn (OP_DEFS (extraic->right)) <= 1)
+                    update_out_edges (G, i, key_false, key_true, v_false, v_true, extraic->right->key);
+                  if (extraic->op == LABEL || bitVectBitValue (OP_DEFS (ic->left), extraic->key) ||
+                    IS_OP_GLOBAL (ic->left) && (extraic->op == CALL || extraic->op == PCALL))
                     {
                       extraic = NULL;
                       break;
                     }
                 }
-              for(; out != out_end; ++out)
-                if (G[boost::target(*out, G)].ic->key == key_true)
-                  {
-                    G[*out].map[ic->left->key] = v_true;
-                    if (extraic)
-                      G[*out].map[extraic->result->key] = v_true;
-                  }
-                else if (G[boost::target(*out, G)].ic->key == key_false)
-                  {
-                    G[*out].map[ic->left->key] = v_false;
-                    if (extraic)
-                      G[*out].map[extraic->result->key] = v_false;
-                  }
+              update_out_edges (G, i, key_false, key_true, v_false, v_true, ic->left->key);
             }
           if (IS_SYMOP (ic->left) && !OP_SYMBOL (ic->left)->addrtaken && !IS_OP_VOLATILE (ic->left) &&
             (bitVectnBitsOn (OP_DEFS (ic->left)) == 1 && !OP_SYMBOL (ic->left)->ismyparm || ic->prev && !POINTER_SET (ic->prev) && isOperandEqual (ic->left, ic->prev->result)))
@@ -871,12 +874,7 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
                   v_false.max = std::min (v.max, litval);
                   valinfoUpdate (&v_true);
                   valinfoUpdate (&v_false);
-                  boost::tie(out, out_end) = boost::out_edges(i, G);
-                  for(; out != out_end; ++out)
-                    if (G[boost::target(*out, G)].ic->key == key_true)
-                      G[*out].map[cic->left->key] = v_true;
-                    else if (G[boost::target(*out, G)].ic->key == key_false)
-                      G[*out].map[cic->left->key] = v_false;
+                  update_out_edges (G, i, key_false, key_true, v_false, v_true, cic->left->key);
                 }
               if (cic->op == '<' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
                 IS_OP_LITERAL (cic->right) && !v.anything && !v.nothing && operandLitValueUll(cic->right) < 0xffffffff)
@@ -888,12 +886,7 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
                   v_false.min = std::max (v.min, litval);
                   valinfoUpdate (&v_true);
                   valinfoUpdate (&v_false);
-                  boost::tie(out, out_end) = boost::out_edges(i, G);
-                  for(; out != out_end; ++out)
-                    if (G[boost::target(*out, G)].ic->key == key_true)
-                      G[*out].map[cic->left->key] = v_true;
-                    else if (G[boost::target(*out, G)].ic->key == key_false)
-                      G[*out].map[cic->left->key] = v_false;
+                  update_out_edges (G, i, key_false, key_true, v_false, v_true, cic->left->key);
                 }
             }
         }

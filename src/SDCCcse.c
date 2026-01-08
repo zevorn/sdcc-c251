@@ -193,7 +193,7 @@ void ReplaceOpWithCheaperOp(operand **op, operand *cop) {
 #endif
   if (IS_PTR (operandType (*op)) && IS_PTR (operandType (cop)) &&
     ((!isOptional (operandType (*op)->next) || (*op)->isOptionalEliminated) != (!isOptional (operandType (cop)->next) || cop->isOptionalEliminated) || (*op)->isSemDeref != cop->isSemDeref))
-    {printf("Here %d %d\n", (*op)->isSemDeref, cop->isSemDeref);
+    {
       operand *nop = operandFromOperand (cop);
       nop->isOptionalEliminated = (!isOptional (operandType (*op)->next) || (*op)->isOptionalEliminated);
       nop->isSemDeref = (*op)->isSemDeref;
