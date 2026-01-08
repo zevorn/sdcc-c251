@@ -428,7 +428,7 @@ shiftRLong1 (operand * left, operand * result, int shift, int sign)
 	storeRegTemp(m6502_reg_a, true);
       if(sign)
 	{
-	  //	  signExtendA();
+	  //	  m6502_signExtendReg(m6502_reg_a);
 	  //  emit6502op ("asl", "a");
 	  loadRegFromConst (m6502_reg_a, 0);
 	  emit6502op ("adc", "#0xff");
@@ -481,7 +481,7 @@ shiftRLong1 (operand * left, operand * result, int shift, int sign)
 
   if(sign)
     {
-      signExtendA();
+      m6502_signExtendReg(m6502_reg_a);
       storeRegToAop (m6502_reg_a, AOP (result), 1);
       storeRegToAop (m6502_reg_a, AOP (result), 2);
       storeRegToAop (m6502_reg_a, AOP (result), 3);
@@ -587,7 +587,7 @@ shiftRLong2 (operand * left, operand * result, int shift, int sign)
 
   if(sign)
     {
-      signExtendA();
+      m6502_signExtendReg(m6502_reg_a);
       storeRegToAop (m6502_reg_a, AOP (result), 2);
       storeRegToAop (m6502_reg_a, AOP (result), 3);
 
@@ -728,7 +728,7 @@ shiftRLong3 (operand * left, operand * result, int shift, int sign)
           if(sign)
 	    {
 	      loadRegFromAop (m6502_reg_a, AOP (left), 3);
-	      signExtendA();
+	      m6502_signExtendReg(m6502_reg_a);
 	      storeRegToAop (m6502_reg_a, AOP (result), 3);
 	      emit6502op("and", "#0xf0");
 	      rmwWithAop ("ora", AOP(result), 2);
@@ -788,7 +788,7 @@ shiftRLong3 (operand * left, operand * result, int shift, int sign)
   if(sign)
     {
       loadRegFromAop (m6502_reg_a, AOP (result), 2);
-      signExtendA();
+      m6502_signExtendReg(m6502_reg_a);
       storeRegToAop (m6502_reg_a, AOP (result), 3);
     }
   else
@@ -951,7 +951,7 @@ genRightShiftLiteral (operand * left, operand * result, int shCount, int sign)
         {
 	  bool needpulla = pushRegIfSurv (m6502_reg_a);
 	  loadRegFromAop (m6502_reg_a, AOP (left), size - 1);
-	  signExtendA();
+	  m6502_signExtendReg(m6502_reg_a);
 	  for(offset=0;offset<size; offset++)
 	    storeRegToAop (m6502_reg_a, AOP (result), offset);
 
@@ -975,7 +975,7 @@ genRightShiftLiteral (operand * left, operand * result, int shCount, int sign)
       int size = (AOP_SIZE (result) - offset);
       if (size > 0) {
 	if (sign) {
-	  signExtendA();
+	  m6502_signExtendReg(m6502_reg_a);
 	  while (size--)
 	    storeRegToAop (m6502_reg_a, AOP (result), offset++);
 	} else
@@ -1219,7 +1219,7 @@ m6502_genRightShift (iCode * ic)
 	}
 
       if(sign)
-        signExtendA();
+        m6502_signExtendReg(m6502_reg_a);
       else
         loadRegFromConst (m6502_reg_a, 0);
 
