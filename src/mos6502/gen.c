@@ -1723,12 +1723,18 @@ storeConstToAop (int c, asmop * aop, int loffset)
 }
 
 /**************************************************************************
- * storeImmToAop - Store immediate value c to logical offset
- *                 loffset of asmop aop.
+ * Store immediate value to asmop
+ *
+ * @param c  pointer to the immediate value
+ * @param aop pointer to the asmop
+ * @param loffset asmop offset
  *************************************************************************/
 static void
 storeImmToAop (char *c, asmop * aop, int loffset)
 {
+  reg_info *reg = NULL;
+  bool savea = false;
+
   emitComment (TRACE_AOP, __func__ );
 
   if (aop->stacked && aop->stk_aop[loffset])
@@ -1746,34 +1752,35 @@ storeImmToAop (char *c, asmop * aop, int loffset)
   case AOP_DUMMY:
     break;
   case AOP_DIR:
+  case AOP_EXT:
     if (!strcmp (c, "#0x00") && IS_MOS65C02 )
       {
         emit6502op ("stz", "%s", aopAdrStr (aop, loffset, false));
         break;
       }
   default:
-    if (m6502_reg_x->isFree)
+      
+      if(aop->type!=AOP_SOF)
+        reg = getFreeByteReg();
+
+      if (reg == NULL)
       {
-        loadRegFromImm (m6502_reg_x, c);
-        storeRegToAop (m6502_reg_x, aop, loffset);
-        m6502_freeReg (m6502_reg_x);
+          savea = fastSaveAIfUsed ();
+          reg = m6502_reg_a;
       }
-    else if (m6502_reg_y->isFree)
-      {
-	loadRegFromImm (m6502_reg_y, c);
-	storeRegToAop (m6502_reg_y, aop, loffset);
-	m6502_freeReg (m6502_reg_y);
-      }
-    else
-      {
-	bool needpulla = pushRegIfUsed (m6502_reg_a);
-	loadRegFromImm (m6502_reg_a, c);
-	storeRegToAop (m6502_reg_a, aop, loffset);
-	pullOrFreeReg (m6502_reg_a, needpulla);
-      }
+        loadRegFromImm (reg, c);
+        storeRegToAop (reg, aop, loffset);
+        m6502_freeReg (reg);
+      fastRestoreOrFreeA (savea);
+
   }
 }
 
+/**************************************************************************
+ * sign extends the register
+ *
+ * @param reg  pointer to the register
+ *************************************************************************/
 void
 m6502_signExtendReg(reg_info *reg)
 {
