@@ -1144,26 +1144,6 @@ aopName (asmop * aop)
   return "?";
 }
 
-// can we BIT aop ?
-bool
-canBitOp (const operand* aop)
-{
-  switch (AOP_TYPE(aop))
-    {
-      // bit aa, bit aaaa
-    case AOP_DIR:
-    case AOP_EXT:
-      return true;
-      // bit #aa
-    case AOP_LIT:
-      return IS_MOS65C02;
-      // TODO: ind,x for 65c02?
-    default:
-      break;
-    }
-  return false;
-}
-
 /**************************************************************************
  * Load register reg from logical offset loffset of aop.
  * For multi-byte registers, loffset is of the lsb reg.
@@ -1760,18 +1740,18 @@ storeImmToAop (char *c, asmop * aop, int loffset)
       }
   default:
       
-      if(aop->type!=AOP_SOF)
-        reg = getFreeByteReg();
+    if(aop->type!=AOP_SOF)
+      reg = getFreeByteReg();
 
-      if (reg == NULL)
+    if (reg == NULL)
       {
-          savea = fastSaveAIfUsed ();
-          reg = m6502_reg_a;
+	savea = fastSaveAIfUsed ();
+	reg = m6502_reg_a;
       }
-        loadRegFromImm (reg, c);
-        storeRegToAop (reg, aop, loffset);
-        m6502_freeReg (reg);
-      fastRestoreOrFreeA (savea);
+    loadRegFromImm (reg, c);
+    storeRegToAop (reg, aop, loffset);
+    m6502_freeReg (reg);
+    fastRestoreOrFreeA (savea);
 
   }
 }
@@ -2186,10 +2166,6 @@ rmwWithReg (char *rmwop, reg_info * reg)
           m6502_emitSetCarry (0);
           emit6502op ("adc", "#0x01");
         }
-      else if (!strcmp(rmwop, "bit"))
-        { // TODO???
-	  emitcode("ERROR", "   %s : called with unsupported opcode: %s", __func__, rmwop);
-        } 
       else
         {
           emit6502op (rmwop, "a");
@@ -3011,6 +2987,31 @@ aopCanShift (asmop * aop)
   default:
     break;
   }
+  return false;
+}
+
+/**************************************************************************
+ * aopCanBitOp - asmop is EXT or DIR
+ *
+ *************************************************************************/
+bool
+aopCanBit (asmop * aop)
+{
+  switch (aop->type)
+    {
+      // bit aa, bit aaaa
+    case AOP_DIR:
+    case AOP_EXT:
+      return true;
+
+      // bit #aa
+    case AOP_LIT:
+      return IS_MOS65C02;
+
+      // TODO: ind,x for 65c02?
+    default:
+      break;
+    }
   return false;
 }
 
@@ -5427,13 +5428,13 @@ genCmp (iCode * ic, iCode * ifx)
         }
     }
 
-  if (sign && right_zero && opcode=='<' && canBitOp(left) )
+  if (sign && right_zero && opcode=='<' && aopCanBit(AOP(left)) )
     {
       accopWithAop ("bit", AOP (left), size-1);
       bit=true;
       bmi=true;
     }
-  else if (sign && right_zero && opcode==GE_OP && canBitOp(left) )
+  else if (sign && right_zero && opcode==GE_OP && aopCanBit(AOP(left)) )
     {
       accopWithAop ("bit", AOP (left), size-1);
       bit=true;

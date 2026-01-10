@@ -6,6 +6,10 @@
   	  Fix bug with logical or.
   	* sdas/linksrc/Makefile.in:
   	  Install sdld6808 for mos6502.
+   	* src/mos6502/gen.h,
+   	  src/mos6502/gen.c,
+   	  src/mos6502/genand.c:
+  	  Rename canBitOp to aopCanBit().
   	  
 2026-01-09 Gabriele Gorla <gorlik@yahoo.com>
 

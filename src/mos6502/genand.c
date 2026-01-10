@@ -8,7 +8,7 @@
   Copyright (C) 2003, Erik Petrich
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -111,17 +111,17 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 #endif
 
   // special case for bit 7 and 6
-  if (AOP_TYPE (result) == AOP_CRY && isLit && canBitOp(left))
+  if (AOP_TYPE (result) == AOP_CRY && bitpos >= 0 && aopCanBit(AOP(left)))
     {
       emitComment (TRACEGEN|VVDBG, "  %s: special case bit %d", __func__, bitpos);
 
-      if (bitpos >= 0 && (bitpos & 7) == 7)
+      if ((bitpos & 7) == 7)
 	{
 	  rmwWithAop ("bit", AOP (left), bitpos >> 3);
 	  genIfxJump (ifx, "n");
 	  goto release;
 	}
-      if (bitpos >= 0 && (bitpos & 7) == 6)
+      if ( (bitpos & 7) == 6)
 	{
 	  rmwWithAop ("bit", AOP (left), bitpos >> 3);
 	  genIfxJump (ifx, "v");
@@ -136,7 +136,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 
       if (m6502_reg_a->isDead)
         accopWithAop ("and", AOP (right), 0);
-      else if (canBitOp(right))
+      else if (aopCanBit(AOP(right)))
         accopWithAop ("bit", AOP (right), 0);
       else
         {
@@ -151,7 +151,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
             {
               // FIXME: this can be improved for 65C02
               storeRegTempAlways(m6502_reg_a, false);
-              emit6502op ("bit", TEMPFMT, getLastTempOfs() );
+              emitRegTempOp("bit", getLastTempOfs());
               loadRegTemp(NULL);
               genIfxJump(ifx, "v");
               goto release; 
@@ -259,43 +259,40 @@ m6502_genAnd (iCode * ic, iCode * ifx)
     {
       emitComment (TRACEGEN|VVDBG, "  %s: XA", __func__);
 
-      //    if(/*AOP_TYPE(right)==AOP_LIT &&*/ AOP_TYPE(left)!=AOP_SOF)
-      {
-        if (IS_AOP_A(AOP(left)))
-          storeConstToAop(0x00, AOP(result), 1);
-        else if (bmask1==NOP_MASK)
-          transferAopAop(AOP(left), 1, AOP(result), 1);
-        else if(bmask1==CONST_MASK)
-          storeConstToAop(0x00, AOP(result), 1);
-        else  if(IS_AOP_XA(AOP(left)) && m6502_reg_x->isLitConst && m6502_reg_x->litConst==0xff)
-          transferAopAop(AOP(right), 1, AOP(result), 1);
-        else
-          {
-            if(IS_AOP_XA(AOP(left)) && (bmask0!=CONST_MASK))
-	      {
-		fastSaveA();
-		needpulla=true;
-	      }
-            loadRegFromAop (m6502_reg_a, AOP (left), 1);
-            accopWithAop ("and", AOP (right), 1);
-            storeRegToAop (m6502_reg_a, AOP (result), 1);          
-          }
+      if (IS_AOP_A(AOP(left)))
+	storeConstToAop(0x00, AOP(result), 1);
+      else if (bmask1==NOP_MASK)
+	transferAopAop(AOP(left), 1, AOP(result), 1);
+      else if(bmask1==CONST_MASK)
+	storeConstToAop(0x00, AOP(result), 1);
+      else  if(IS_AOP_XA(AOP(left)) && m6502_reg_x->isLitConst && m6502_reg_x->litConst==0xff)
+	transferAopAop(AOP(right), 1, AOP(result), 1);
+      else
+	{
+	  if(IS_AOP_XA(AOP(left)) && (bmask0!=CONST_MASK))
+	    {
+	      fastSaveA();
+	      needpulla=true;
+	    }
+	  loadRegFromAop (m6502_reg_a, AOP (left), 1);
+	  accopWithAop ("and", AOP (right), 1);
+	  storeRegToAop (m6502_reg_a, AOP (result), 1);          
+	}
 
-        if(bmask0==CONST_MASK)
-          storeConstToAop(0x00, AOP(result), 0);
-        else
-	  {
-	    if(needpulla)
-	      fastRestoreA();
-	    else
-	      {
-		loadRegFromAop (m6502_reg_a, AOP (left), 0);
-	      }
-	    if (bmask0!=NOP_MASK)
-	      accopWithAop ("and", AOP (right), 0);
-	  }
-        goto release;
-      }
+      if(bmask0==CONST_MASK)
+	storeConstToAop(0x00, AOP(result), 0);
+      else
+	{
+	  if(needpulla)
+	    fastRestoreA();
+	  else
+	    {
+	      loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	    }
+	  if (bmask0!=NOP_MASK)
+	    accopWithAop ("and", AOP (right), 0);
+	}
+      goto release;
     }
 
   if(IS_AOP_Y(AOP(result)))
