@@ -1,6 +1,11 @@
-2026-01-00 Gabriele Gorla <gorlik@yahoo.com>
+2026-01-10 Gabriele Gorla <gorlik@yahoo.com>
 
-  	* src/mos6502/gen.c,
+  	* support/regression/tests/logical_ops.c.in:
+  	  Add test for logical operations.
+  	  
+2026-01-09 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
   	  Improve storeImmToAop().
   	
 2025-01-07 Philipp Klaus Krause <philipp@colecovision.eu>
