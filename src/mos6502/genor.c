@@ -135,7 +135,6 @@ m6502_genOr (iCode * ic, iCode * ifx)
 
             if(((offset+1)%2)==0)
 	      emitBranch ("bne", tlbl);
-            offset++;
 	  }
 
       m6502_freeReg (m6502_reg_a);
