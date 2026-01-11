@@ -10,6 +10,28 @@
 	  src/mcs51/gen.c:
 	  Further improve warnings on semantic dereferences of pointers to _Optional. Fix bugs in CSE and in mcs51 codegen.
 
+2026-01-10 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* support/regression/tests/logical_ops.c.in:
+  	  Add test for logical operations.
+   	* src/mos6502/genor.c:
+  	  Fix bug with logical or.
+  	* sdas/linksrc/Makefile.in:
+  	  Install sdld6808 for mos6502.
+   	* src/mos6502/gen.h,
+   	  src/mos6502/gen.c,
+   	  src/mos6502/genand.c:
+  	  Rename canBitOp to aopCanBit().
+   	* src/mos6502/genand.c,
+   	  src/mos6502/genor.c,
+   	  src/mos6502/genxor.c:
+   	  Refactor genAnd(), genOr() and genXor().
+  	  
+2026-01-09 Gabriele Gorla <gorlik@yahoo.com>
+
+  	* src/mos6502/gen.c:
+  	  Improve storeImmToAop().
+  	
 2026-01-08 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCgenconstprop.cc:

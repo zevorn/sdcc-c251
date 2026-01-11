@@ -100,6 +100,11 @@ install: all installdirs
 	  $(INSTALL) $(top_builddir)/bin/sdld6808$(EXEEXT) $(DESTDIR)$(bindir)/`echo 'sdld6808' | sed '$(transform)'`$(EXEEXT); \
 	  $(STRIP) $(DESTDIR)$(bindir)/`echo 'sdld6808' | sed '$(transform)'`$(EXEEXT); \
 	fi
+	if [ "`grep mos6502 $(top_builddir)/ports.build`" = "mos6502" ]; \
+	then \
+	  $(INSTALL) $(top_builddir)/bin/sdld6808$(EXEEXT) $(DESTDIR)$(bindir)/`echo 'sdld6808' | sed '$(transform)'`$(EXEEXT); \
+	  $(STRIP) $(DESTDIR)$(bindir)/`echo 'sdld6808' | sed '$(transform)'`$(EXEEXT); \
+	fi
 	if [ "`grep z80 $(top_builddir)/ports.build`" = "z80" ]; \
 	then \
 	  $(INSTALL) $(top_builddir)/bin/sdldz80$(EXEEXT) $(DESTDIR)$(bindir)/`echo 'sdldz80' | sed '$(transform)'`$(EXEEXT); \
