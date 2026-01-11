@@ -1,3 +1,15 @@
+2026-01-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* .version,
+	  src/SDCCBBlock.c,
+	  src/SDCCcse.c,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCglobl.h,
+	  src/SDCCloop.c,
+	  src/SDCCopt.c,
+	  src/mcs51/gen.c:
+	  Further improve warnings on semantic dereferences of pointers to _Optional. Fix bugs in CSE and in mcs51 codegen.
+
 2026-01-08 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCgenconstprop.cc:

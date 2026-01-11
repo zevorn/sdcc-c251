@@ -3307,10 +3307,10 @@ offsetFoldGet (eBBlock **ebbs, int count)
     {
       for (ic = ebbs[i]->sch; ic; ic = ic->next)
         {
-          if (ic->op == ADDRESS_OF && IC_RESULT (ic) && IS_ITEMP (IC_RESULT (ic)))
+          if (ic->op == ADDRESS_OF && IS_ITEMP (ic->result) && bitVectnBitsOn (OP_DEFS (ic->result)) == 1)
             {
               /* There must be only one use of the result */
-              if (bitVectnBitsOn (OP_USES (IC_RESULT (ic))) != 1)
+              if (bitVectnBitsOn (OP_USES (ic->result)) != 1)
                 continue;
 
               /* This use must be an addition / subtraction */
@@ -3698,7 +3698,24 @@ eBBlockFromiCode (iCode *ic)
   // Before they will get lifted out of loops, and have their life-ranges
   // extended across multiple blocks.
   optimizeCastCast (ebbi->bbOrder, ebbi->count);
-  optimizeRot (ebbi->bbOrder, ebbi->count); // Now it is worth trying, after all parameters of inline functions have been propagated.
+  optimizeRot (ebbi->bbOrder, ebbi->count); // Now it is worth trying to optimize rotations, after all parameters of inline functions have been propagated.
+
+  // Generalized constant propagation - do it here a first time before the first call to computeLiveRanges to ensure uninitalized variables are still recognized as such.
+  if (optimize.genconstprop)
+    {
+      ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
+      recomputeValinfos (ic, ebbi, "_0");
+      optimizeValinfo (ic);
+      freeeBBlockData (ebbi);
+      ebbi = iCodeBreakDown (ic);
+      computeControlFlow (ebbi);
+      loops = createLoopRegions (ebbi);
+      computeDataFlow (ebbi);
+      killDeadCode (ebbi);
+      if (options.dump_i_code)
+        dumpEbbsToFileExt (DUMP_GENCONSTPROP0, ebbi);
+      checkStaticArrayParams (ebbi); // Only do this after dead code elimination and generalized constant propagation, so we can avoid false positives in dead branches, and have the necessary information.
+    }
 
   /* do loop optimizations */
   change += (lchange = loopOptimizations (loops, ebbi));
@@ -3734,20 +3751,8 @@ eBBlockFromiCode (iCode *ic)
   computeControlFlow (ebbi);
   loops = createLoopRegions (ebbi);
   computeDataFlow (ebbi);
-  computeLiveRanges (ebbi->bbOrder, ebbi->count, true);
 
-  // Generalized constant propagation - do it here a first time before the first call to computeLiveRanges to ensure uninitalized variables are still recognized as such.
-  if (optimize.genconstprop)
-    {
-      ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
-      recomputeValinfos (ic, ebbi, "_0");
-      optimizeValinfo (ic);
-      freeeBBlockData (ebbi);
-      ebbi = iCodeBreakDown (ic);
-      computeControlFlow (ebbi);
-      loops = createLoopRegions (ebbi);
-      computeDataFlow (ebbi);
-    }
+  computeLiveRanges (ebbi->bbOrder, ebbi->count, true);
 
   // lospre
   recomputeLiveRanges (ebbi->bbOrder, ebbi->count, false);
@@ -3762,13 +3767,13 @@ eBBlockFromiCode (iCode *ic)
   if (optimize.lospre && (TARGET_Z80_LIKE || TARGET_HC08_LIKE || TARGET_IS_STM8 || TARGET_F8_LIKE)) /* For mcs51, we get a code size regression with lospre enabled, since the backend can't deal well with the added temporaries */
     {
       lospre (ic, ebbi);
-      if (options.dump_i_code)
-        dumpEbbsToFileExt (DUMP_LOSPRE, ebbi);
 
       /* GCSE, lospre and maybe other optimizations sometimes create temporaries that have non-connected live ranges, which is bad (e.g. for offsetFoldUse and register allocation). Split them. */
       freeeBBlockData (ebbi);
       ebbi = iCodeBreakDown (ic);
       computeControlFlow (ebbi);
+      if (options.dump_i_code)
+        dumpEbbsToFileExt (DUMP_LOSPRE, ebbi);
       loops = createLoopRegions (ebbi);
       computeDataFlow (ebbi);
       recomputeLiveRanges (ebbi->bbOrder, ebbi->count, false);
@@ -3865,8 +3870,7 @@ eBBlockFromiCode (iCode *ic)
       computeDataFlow (ebbi);
       killDeadCode (ebbi);
       if (options.dump_i_code)
-        dumpEbbsToFileExt (DUMP_GENCONSTPROP, ebbi);
-      checkStaticArrayParams (ebbi); // Only do this after dead code elimination and generalized constant propagation, so we can avoid false positives in dead branches, and have the necessary information.
+        dumpEbbsToFileExt (DUMP_GENCONSTPROP1, ebbi);
     }
 
   optimizeFinalCast (ebbi);
