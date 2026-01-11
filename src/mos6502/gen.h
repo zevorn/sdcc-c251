@@ -1,22 +1,23 @@
 /*-------------------------------------------------------------------------
   gen.h - header file for code generation for mos6502
 
-             Written By -  Sandeep Dutta . sandeep.dutta@usa.net (1998)
+  Copyright (C) 1998, Sandeep Dutta . sandeep.dutta@usa.net
+  Copyright (C) 2026, Gabriele Gorla
 
-   This program is free software; you can redistribute it and/or modify it
-   under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2, or (at your option) any
-   later version.
-   
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
--------------------------------------------------------------------------*/
+  This program is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; either version 2, or (at your option) any
+  later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+  -------------------------------------------------------------------------*/
 
 #ifndef SDCCGENM6502_H
 #define SDCCGENM6502_H
@@ -24,19 +25,20 @@
 // keep this in sync with __sdcc_regs.s in the library
 #define NUM_TEMP_REGS 6
 
-enum debug_messages {
-  ALWAYS=0x01,
-  VASM=0x02,
-  TRACEGEN=0x04,
-  DEEPTRACE=0x08,
-  COST=0x10,
-  REGALLOC=0x20,
-  REGOPS=0x40,
-  TRACE_AOP=0x80,
-  TRACE_STACK=0x100,
-  VVDBG=0x80000000,
-  DEBUG_ALL=0x7fffffff
-};
+enum debug_messages
+  {
+    ALWAYS=0x01,
+    VASM=0x02,
+    TRACEGEN=0x04,
+    DEEPTRACE=0x08,
+    COST=0x10,
+    REGALLOC=0x20,
+    REGOPS=0x40,
+    TRACE_AOP=0x80,
+    TRACE_STACK=0x100,
+    VVDBG=0x80000000,
+    DEBUG_ALL=0x7fffffff
+  };
 
 //#define DBG_MSG (REGALLOC)
 #define DBG_MSG (REGALLOC|TRACEGEN/*|COST*/)
@@ -69,44 +71,44 @@ enum debug_messages {
 
 typedef enum
   {
-  AOP_INVALID,
-  AOP_LIT = 1,   /* operand is a literal value */
-  AOP_REG,       /* is in registers */
-  AOP_DIR,       /* operand using direct addressing mode */
-  AOP_STK,       /* should be pushed on stack this
-                    can happen only for the result */
-  AOP_IMMD,      /* immediate value for eg. remateriazable */
-  AOP_STR,       /* array of strings */
-  AOP_CRY,       /* carry contains the value of this */
-  AOP_EXT,       /* operand using extended addressing mode */
-  AOP_SOF,       /* operand at an offset on the stack */
-  AOP_DUMMY,     /* Read undefined, discard writes */
-  AOP_IDX        /* operand using indexed addressing mode */
-}
-AOP_TYPE;
+    AOP_INVALID,
+    AOP_LIT = 1,   /* operand is a literal value */
+    AOP_REG,       /* is in registers */
+    AOP_DIR,       /* operand using direct addressing mode */
+    AOP_STK,       /* should be pushed on stack this
+		      can happen only for the result */
+    AOP_IMMD,      /* immediate value for eg. remateriazable */
+    AOP_STR,       /* array of strings */
+    AOP_CRY,       /* carry contains the value of this */
+    AOP_EXT,       /* operand using extended addressing mode */
+    AOP_SOF,       /* operand at an offset on the stack */
+    AOP_DUMMY,     /* Read undefined, discard writes */
+    AOP_IDX        /* operand using indexed addressing mode */
+  }
+  AOP_TYPE;
 
 /* asmop: A homogenised type for all the different
    spaces an operand can be in */
 typedef struct asmop
+{
+  AOP_TYPE type;		
+  short coff;			/* current offset */
+  short size;			/* total size */    	
+  short regmask;              /* register mask if AOP_REG */
+  operand *op;		/* originating operand */
+  unsigned freed:1;		/* already freed    */
+  unsigned stacked:1;		/* partial results stored on stack */
+  struct asmop *stk_aop[4];	/* asmops for the results on the stack */
+  union
   {
-    AOP_TYPE type;		
-    short coff;			/* current offset */
-    short size;			/* total size */    	
-    short regmask;              /* register mask if AOP_REG */
-    operand *op;		/* originating operand */
-    unsigned freed:1;		/* already freed    */
-    unsigned stacked:1;		/* partial results stored on stack */
-    struct asmop *stk_aop[4];	/* asmops for the results on the stack */
-    union
-      {
-	value *aop_lit;		/* if literal */
-	reg_info *aop_reg[4];	/* array of registers */
-	char *aop_dir;		/* if direct  */
-        char *aop_immd;         /* if immediate */
-	int aop_stk;		/* stack offset when AOP_STK */
-    } aopu;
-  }
-asmop;
+    value *aop_lit;		/* if literal */
+    reg_info *aop_reg[4];	/* array of registers */
+    char *aop_dir;		/* if direct  */
+    char *aop_immd;         /* if immediate */
+    int aop_stk;		/* stack offset when AOP_STK */
+  } aopu;
+}
+  asmop;
 
 struct attr_t
 {
@@ -191,14 +193,14 @@ void genCopy (operand * result, operand * source);
 void updateCFA (void);
 
 bool smallAdjustReg (reg_info *reg, int n);
-bool aopCanIncDec (asmop * aop);
-bool sameRegs (asmop * aop1, asmop * aop2);
+bool aopCanIncDec (asmop *aop);
+bool aopCanBit (asmop *aop);
+bool sameRegs (asmop *aop1, asmop *aop2);
 unsigned long long litmask (int size);
 int isLiteralBit (unsigned long long lit);
 reg_info* getDeadByteReg();
 reg_info* getFreeByteReg();
 reg_info* getFreeIdxReg();
-bool canBitOp (const operand* aop);
 
 // stack
 bool m6502_pushReg (reg_info * reg, bool freereg);
@@ -207,9 +209,8 @@ void adjustStack (int n); // candidate for moving back into gen.c
 
 #define pushRegIfUsed(r)     (!r->isFree)?m6502_pushReg(r,true):false
 #define pushRegIfSurv(r)     (!r->isDead)?m6502_pushReg(r,true):false
-#define pullOrFreeReg(r,np)  (np)?m6502_pullReg(r):false
+#define pullOrFreeReg(r,np)  (np)?m6502_pullReg(r):m6502_freeReg(r)
 #define pullNull(n)          adjustStack(n)
-
 
 // regtemp
 bool fastSaveA();
@@ -229,7 +230,7 @@ void loadRegTempNoFlags (reg_info * reg, bool needpull);
 void emitRegTempOp(const char *op, int offset);
 int getLastTempOfs();
 void dirtyRegTemp (int temp_reg_idx);
-void signExtendA();
+void m6502_signExtendReg(reg_info *reg);
 
 void m6502_unimplemented(const char *msg);
 

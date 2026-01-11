@@ -1144,26 +1144,6 @@ aopName (asmop * aop)
   return "?";
 }
 
-// can we BIT aop ?
-bool
-canBitOp (const operand* aop)
-{
-  switch (AOP_TYPE(aop))
-    {
-      // bit aa, bit aaaa
-    case AOP_DIR:
-    case AOP_EXT:
-      return true;
-      // bit #aa
-    case AOP_LIT:
-      return IS_MOS65C02;
-      // TODO: ind,x for 65c02?
-    default:
-      break;
-    }
-  return false;
-}
-
 /**************************************************************************
  * Load register reg from logical offset loffset of aop.
  * For multi-byte registers, loffset is of the lsb reg.
@@ -1723,12 +1703,18 @@ storeConstToAop (int c, asmop * aop, int loffset)
 }
 
 /**************************************************************************
- * storeImmToAop - Store immediate value c to logical offset
- *                 loffset of asmop aop.
+ * Store immediate value to asmop
+ *
+ * @param c  pointer to the immediate value
+ * @param aop pointer to the asmop
+ * @param loffset asmop offset
  *************************************************************************/
 static void
 storeImmToAop (char *c, asmop * aop, int loffset)
 {
+  reg_info *reg = NULL;
+  bool savea = false;
+
   emitComment (TRACE_AOP, __func__ );
 
   if (aop->stacked && aop->stk_aop[loffset])
@@ -1746,41 +1732,50 @@ storeImmToAop (char *c, asmop * aop, int loffset)
   case AOP_DUMMY:
     break;
   case AOP_DIR:
+  case AOP_EXT:
     if (!strcmp (c, "#0x00") && IS_MOS65C02 )
       {
         emit6502op ("stz", "%s", aopAdrStr (aop, loffset, false));
         break;
       }
   default:
-    if (m6502_reg_x->isFree)
+      
+    if(aop->type!=AOP_SOF)
+      reg = getFreeByteReg();
+
+    if (reg == NULL)
       {
-        loadRegFromImm (m6502_reg_x, c);
-        storeRegToAop (m6502_reg_x, aop, loffset);
-        m6502_freeReg (m6502_reg_x);
+	savea = fastSaveAIfUsed ();
+	reg = m6502_reg_a;
       }
-    else if (m6502_reg_y->isFree)
-      {
-	loadRegFromImm (m6502_reg_y, c);
-	storeRegToAop (m6502_reg_y, aop, loffset);
-	m6502_freeReg (m6502_reg_y);
-      }
-    else
-      {
-	bool needpulla = pushRegIfUsed (m6502_reg_a);
-	loadRegFromImm (m6502_reg_a, c);
-	storeRegToAop (m6502_reg_a, aop, loffset);
-	pullOrFreeReg (m6502_reg_a, needpulla);
-      }
+    loadRegFromImm (reg, c);
+    storeRegToAop (reg, aop, loffset);
+    m6502_freeReg (reg);
+    fastRestoreOrFreeA (savea);
+
   }
 }
 
+/**************************************************************************
+ * sign extends the register
+ *
+ * @param reg  pointer to the register
+ *************************************************************************/
 void
-signExtendA ()
+m6502_signExtendReg(reg_info *reg)
 {
-  emit6502op ("asl", "a");
-  loadRegFromConst (m6502_reg_a, 0);
-  emit6502op ("adc", "#0xff");
-  emit6502op ("eor", "#0xff");
+  symbol *tlbl = safeNewiTempLabel (NULL);
+
+  if(reg==m6502_reg_a)
+    emit6502op ("asl", "a");
+  else
+    m6502_emitCmp (reg, 0x80);
+
+  loadRegFromConst (reg, 0);
+  emitBranch ("bcc", tlbl);
+  loadRegFromConst (reg, 0xff);
+  safeEmitLabel (tlbl);
+  m6502_dirtyReg (reg);
 }
 
 /**************************************************************************
@@ -1810,22 +1805,8 @@ storeRegSignToUpperAop (reg_info * reg, asmop * aop, int loffset, bool isSigned)
   else
     {
       /* Signed case */
-      if(reg!=m6502_reg_a)
-        {
-          symbol *tlbl = safeNewiTempLabel (NULL);
+      m6502_signExtendReg(reg);
 
-          m6502_emitCmp (reg, 0x80);
-          loadRegFromConst (reg, 0);
-          emitBranch ("bcc", tlbl);
-          loadRegFromConst (reg, 0xff);
-          safeEmitLabel (tlbl);
-          m6502_dirtyReg (reg);
-        }
-      else
-        {
-          signExtendA ();
-          m6502_useReg (m6502_reg_a);
-        }
       while (loffset < size)
         storeRegToAop (reg, aop, loffset++);
       m6502_freeReg (reg);
@@ -2185,10 +2166,6 @@ rmwWithReg (char *rmwop, reg_info * reg)
           m6502_emitSetCarry (0);
           emit6502op ("adc", "#0x01");
         }
-      else if (!strcmp(rmwop, "bit"))
-        { // TODO???
-	  emitcode("ERROR", "   %s : called with unsupported opcode: %s", __func__, rmwop);
-        } 
       else
         {
           emit6502op (rmwop, "a");
@@ -3014,6 +2991,31 @@ aopCanShift (asmop * aop)
 }
 
 /**************************************************************************
+ * aopCanBitOp - asmop is EXT or DIR
+ *
+ *************************************************************************/
+bool
+aopCanBit (asmop * aop)
+{
+  switch (aop->type)
+    {
+      // bit aa, bit aaaa
+    case AOP_DIR:
+    case AOP_EXT:
+      return true;
+
+      // bit #aa
+    case AOP_LIT:
+      return IS_MOS65C02;
+
+      // TODO: ind,x for 65c02?
+    default:
+      break;
+    }
+  return false;
+}
+
+/**************************************************************************
  * addSign - complete with sign
  *************************************************************************/
 //void
@@ -3503,6 +3505,7 @@ aopAdrStr (asmop * aop, int loffset, bool bit16)
     case AOP_SOF: // TODO?
       if (regalloc_dry_run)
 	{
+	  m6502_emitTSX();
 	  return "0x100,x"; // fake result, not needed
 	}
       else
@@ -3694,11 +3697,12 @@ asmopToBool (asmop *aop, bool resultInA)
 
     case AOP_DIR:
     case AOP_EXT:
-      emitComment (TRACE_AOP|VVDBG, "asmopToBool - AOP_DIR || AOP_EXT");
+      emitComment (TRACE_AOP|VVDBG, "  %s - AOP_DIR || AOP_EXT", __func__);
 
 #if 1
       if (!resultInA && (size == 1) && !IS_AOP_A (aop) && !m6502_reg_a->isFree && m6502_reg_x->isFree)
         {
+          emitComment (TRACE_AOP|VVDBG, "  %s - load", __func__);
           loadRegFromAop (m6502_reg_x, aop, 0);
           return;
         }
@@ -3706,9 +3710,12 @@ asmopToBool (asmop *aop, bool resultInA)
       if (!resultInA && (size == 1) )
         {
           reg_info *reg=getFreeByteReg();
+          emitComment (TRACE_AOP|VVDBG, "  %s - reg:%s", __func__,(reg)?reg->name:"NULL");
+
           if(reg)
             {
               loadRegFromAop (reg, aop, 0);
+	      m6502_emitCmp(reg, 0x00);
               return;
             }
         }
@@ -5421,13 +5428,13 @@ genCmp (iCode * ic, iCode * ifx)
         }
     }
 
-  if (sign && right_zero && opcode=='<' && canBitOp(left) )
+  if (sign && right_zero && opcode=='<' && aopCanBit(AOP(left)) )
     {
       accopWithAop ("bit", AOP (left), size-1);
       bit=true;
       bmi=true;
     }
-  else if (sign && right_zero && opcode==GE_OP && canBitOp(left) )
+  else if (sign && right_zero && opcode==GE_OP && aopCanBit(AOP(left)) )
     {
       accopWithAop ("bit", AOP (left), size-1);
       bit=true;
@@ -5838,12 +5845,9 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 	{
           for(offset=0; offset<size; offset++)
 	    {
-	      if (AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx == X_IDX 
-		  && isAddrSafe(right, m6502_reg_x))
-		accopWithAop ("cpx", AOP (right), offset);
-	      else if (AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx == Y_IDX
-		       && isAddrSafe(right, m6502_reg_y))
-		accopWithAop ("cpy", AOP (right), offset);
+	      if (AOP_TYPE (left) == AOP_REG 
+		  && (AOP (left)->aopu.aop_reg[offset]==m6502_reg_a || AOP_TYPE(right)!=AOP_SOF) )
+		accopWithAop (m6502_cmp[AOP (left)->aopu.aop_reg[offset]->rIdx], AOP (right), offset);
 	      else 
 		{
                   emitComment (TRACEGEN|VVDBG, "    %s - not a reg", __func__);
@@ -6822,7 +6826,7 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
       else
 	{
 	  /* signed bitfield: sign extension with 0x00 or 0xff */
-	  signExtendA();
+	  m6502_signExtendReg(m6502_reg_a);
 	  while (rsize--)
 	    storeRegToAop (m6502_reg_a, AOP (result), offset++);
 	}
@@ -7016,7 +7020,7 @@ static void genUnpackBitsImmed (operand * left, operand *right, operand * result
 	    }
 
 	  /* signed bitfield: sign extension with 0x00 or 0xff */
-	  signExtendA();
+	  m6502_signExtendReg(m6502_reg_a);
 	  while (rsize--)
 	    storeRegToAop (m6502_reg_a, AOP (result), offset++);
 	}
@@ -8483,7 +8487,7 @@ static void genCast (iCode * ic)
 	{
 	  save_a = result->aop->aopu.aop_reg[0] == m6502_reg_a || !m6502_reg_a->isDead;
 	  if (save_a)
-	    m6502_pushReg(m6502_reg_a, false);
+	    fastSaveA();
 	  loadRegFromAop (m6502_reg_a, result->aop, result->aop->size - 1);
 	}
       emit6502op ("and", IMMDFMT, topbytemask);
@@ -8552,9 +8556,17 @@ static void genCast (iCode * ic)
  
   wassert (AOP (result)->type != AOP_REG);
   
-  save_a = !m6502_reg_a->isDead && signExtend;
-  if (save_a)
-    m6502_pushReg(m6502_reg_a, true);
+  reg_info *reg = NULL;
+
+  if(!IS_AOP_A(AOP(right)))
+    reg=getFreeByteReg();
+
+  if(!reg 
+     && (signExtend|| AOP_TYPE(right)==AOP_SOF || AOP_TYPE(result)==AOP_SOF))
+    {
+      save_a = fastSaveAIfSurv();
+      reg=m6502_reg_a;
+    }
   
   offset = 0;
   size = AOP_SIZE (right);
@@ -8563,8 +8575,8 @@ static void genCast (iCode * ic)
     {
       if (size == 1 && signExtend)
 	{
-	  loadRegFromAop (m6502_reg_a, AOP (right), offset);
-	  storeRegToAop (m6502_reg_a, AOP (result), offset);
+	  loadRegFromAop (reg, AOP (right), offset);
+	  storeRegToAop (reg, AOP (result), offset);
 	  offset++;
 	  size--;
 	}
@@ -8584,18 +8596,18 @@ static void genCast (iCode * ic)
     }
   else if (size)
     {
-      signExtendA();
+      m6502_signExtendReg(reg);
       while (size--)
 	{
 	  if (!size && masktopbyte)
 	    emit6502op ("and", IMMDFMT, topbytemask);
-	  storeRegToAop (m6502_reg_a, AOP (result), offset++);
+
+	  storeRegToAop (reg, AOP (result), offset++);
 	}
     }
 
  release:
-  if (save_a)
-    m6502_pullReg(m6502_reg_a);
+  fastRestoreOrFreeA(save_a);
 
   freeAsmop (right, NULL);
   freeAsmop (result, NULL);
