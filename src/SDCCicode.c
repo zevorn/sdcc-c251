@@ -201,14 +201,14 @@ dbuf_printOperand (operand * op, struct dbuf_s *dbuf)
 //#if REGA      /* { */
       if (REGA && !getenv ("PRINT_SHORT_OPERANDS"))
         {
-          dbuf_printf (dbuf, "%s [k%d lr%d:%d so:%d]{ ia%d a2p%d re%d rm%d nos%d ru%d dp%d oe%d}",   /*{ar%d rm%d ru%d p%d a%d u%d i%d au%d k%d ks%d}"  , */
+          dbuf_printf (dbuf, "%s [k%d lr%d:%d so:%d]{ ia%d a2p%d re%d rm%d nos%d ru%d dp%d oe%d sdr%d}",   /*{ar%d rm%d ru%d p%d a%d u%d i%d au%d k%d ks%d}"  , */
                        (OP_SYMBOL (op)->rname[0] ? OP_SYMBOL (op)->rname : OP_SYMBOL (op)->name),
                        op->key,
                        OP_LIVEFROM (op), OP_LIVETO (op),
                        OP_SYMBOL (op)->stack,
                        op->isaddr, op->aggr2ptr, OP_SYMBOL (op)->isreqv,
                        OP_SYMBOL (op)->remat, OP_SYMBOL (op)->noSpilLoc, OP_SYMBOL (op)->ruonly, OP_SYMBOL (op)->dptr,
-                       op->isOptionalEliminated);
+                       op->isOptionalEliminated, op->isSemDeref);
           {
             dbuf_append_char (dbuf, '{');
             dbuf_printTypeChain (operandType (op), dbuf);
@@ -1753,6 +1753,7 @@ operandFromOperand (operand * op)
   nop->isConstEliminated = op->isConstEliminated;
   nop->isRestrictEliminated = op->isRestrictEliminated;
   nop->isOptionalEliminated = op->isOptionalEliminated;
+  nop->isSemDeref = op->isSemDeref;
 
   switch (nop->type)
     {
@@ -3009,7 +3010,7 @@ geniCodeBitwise (operand * left, operand * right, int oper, sym_link * resType)
 /* geniCodeAddressOf - gens icode for '&' address of operator      */
 /*-----------------------------------------------------------------*/
 operand *
-geniCodeAddressOf (operand * op)
+geniCodeAddressOf (operand *op)
 {
   iCode *ic;
   sym_link *p;
@@ -3020,6 +3021,7 @@ geniCodeAddressOf (operand * op)
     {
       op = operandFromOperand (op);
       op->isaddr = 0;
+      op->isSemDeref = isOptional (optype->next);
       return op;
     }
 
@@ -4728,7 +4730,11 @@ ast2iCode (ast * tree, int lvl)
         return op;
       }
 #else // bug #604575, is it a bug ????
-      return geniCodeCast (operandType (left), geniCodeRValue (right, FALSE), FALSE);
+      {
+        operand *op = geniCodeCast (operandType (left), geniCodeRValue (right, false), false);
+        op->isSemDeref |= tree->values.cast.semDeref;
+        return op;
+      }
 #endif
 
     case '~':

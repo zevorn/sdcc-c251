@@ -1394,7 +1394,6 @@ createLoopRegions (ebbIndex * ebbi)
       applyToSet (lp->regBlocks, addToExitsMarkDepth, lp->regBlocks, &lp->exits, (maxDepth - lp->containsLoops), lp);
 
       hTabAddItem (&orderedLoops, lp->containsLoops, lp);
-
     }
   return orderedLoops;
 }
