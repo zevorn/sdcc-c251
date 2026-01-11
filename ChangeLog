@@ -10,6 +10,10 @@
    	  src/mos6502/gen.c,
    	  src/mos6502/genand.c:
   	  Rename canBitOp to aopCanBit().
+   	* src/mos6502/genand.c,
+   	  src/mos6502/genor.c,
+   	  src/mos6502/genxor.c:
+   	  Refactor genAnd(), genOr() and genXor().
   	  
 2026-01-09 Gabriele Gorla <gorlik@yahoo.com>
 
