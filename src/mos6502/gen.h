@@ -193,9 +193,9 @@ void genCopy (operand * result, operand * source);
 void updateCFA (void);
 
 bool smallAdjustReg (reg_info *reg, int n);
-bool aopCanIncDec (asmop * aop);
-bool canBitOp (const operand* aop);
-bool sameRegs (asmop * aop1, asmop * aop2);
+bool aopCanIncDec (asmop *aop);
+bool aopCanBit (asmop *aop);
+bool sameRegs (asmop *aop1, asmop *aop2);
 unsigned long long litmask (int size);
 int isLiteralBit (unsigned long long lit);
 reg_info* getDeadByteReg();

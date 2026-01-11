@@ -8,7 +8,7 @@
   Copyright (C) 2003, Erik Petrich
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -30,8 +30,10 @@
 #include "gen.h"
 #include "dbuf_string.h"
 
-#define NOP_MASK   0x00
-#define CONST_MASK 0xff
+#define OPCODE "ora"
+#define NOP_MASK     0x00
+#define CONST_MASK   0xff
+#define CONST_RESULT 0xff
 
 /**************************************************************************
  * genOr  - code for or
@@ -80,23 +82,16 @@ m6502_genOr (iCode * ic, iCode * ifx)
       emitComment (TRACEGEN|VVDBG, "  %s: lit=%04x bitpos=%d", __func__, lit, bitpos);
     }
 
-  // test A for flags only
-  if (AOP_TYPE (result) == AOP_CRY && IS_AOP_A (AOP (left)))
-    {
-      emitComment (TRACEGEN|VVDBG, "  %s: test A for flags", __func__);
-
-      if( isLit && lit==NOP_MASK ) 
-	{
-	  m6502_emitCmp(m6502_reg_a, 0);
-	  genIfxJump (ifx, "z");
-	  goto release;
-	}
-    }
-
-  // test for flags only (general case)
+  // test for flags only
   if (AOP_TYPE (result) == AOP_CRY)
     {
-      symbol *tlbl = safeNewiTempLabel (NULL);
+      if (isLit && lit != 0)
+	{
+          // trivial case - always true
+	  m6502_emitSetCarry(1);
+	  genIfxJump (ifx, "c");
+	  goto release;
+	}
 
 #if 0
       // FIXME: good optmization but currently not working
@@ -108,35 +103,56 @@ m6502_genOr (iCode * ic, iCode * ifx)
 	}
 #endif
 
-      needpulla = storeRegTempIfSurv (m6502_reg_a);
-
-      if (isLit && lit != 0)
+      if(AOP_TYPE(left)==AOP_REG)
 	{
-          if(ifx)
-            {
-	      m6502_emitSetCarry(1);
-	      genIfxJump (ifx, "c");
+	  emitComment (TRACEGEN|VVDBG, "  %s: special case reg bit %d", __func__, bitpos);
+
+	  if( size==1 && isLit && lit==NOP_MASK ) 
+	    {
+	      m6502_emitCmp(AOP (left)->aopu.aop_reg[0], 0);
+	      genIfxJump (ifx, "z");
 	      goto release;
 	    }
-	  loadRegFromConst (m6502_reg_a, 0xff);
+        }
+
+      // test A for flags only
+      if (IS_AOP_A (AOP (left)))
+	{
+	  emitComment (TRACEGEN|VVDBG, "  %s: test A for flags", __func__);
+
+	  if (m6502_reg_a->isDead)
+	    accopWithAop (OPCODE, AOP (right), 0);
+	  else
+	    {
+	      // no dead register available
+	      storeRegTemp(m6502_reg_a, true);
+	      accopWithAop (OPCODE, AOP(right), 0);
+	      loadRegTempNoFlags(m6502_reg_a, true); // preserve flags
+	    }
+	  genIfxJump (ifx, "z");
+	  goto release;
 	}
-      else
-	for(offset=0; offset<size; offset++)
-	  {
-	    bytemask = (isLit) ? (lit >> (offset * 8)) & 0xff : 0x100;
 
-	    if(offset==0)
-              loadRegFromAop (m6502_reg_a, AOP (left), offset);
-	    else 
-              accopWithAop ("ora", AOP(left), offset);
+      // test for flags only (general case)
+      symbol *tlbl = safeNewiTempLabel (NULL);
 
-	    if (bytemask != NOP_MASK)
-	      accopWithAop ("ora", AOP(right), offset);
+      needpulla = storeRegTempIfSurv (m6502_reg_a);
 
-            if(((offset+1)%2)==0)
-	      emitBranch ("bne", tlbl);
-            offset++;
-	  }
+      for(offset=0; offset<size; offset++)
+	{
+	  bytemask = (isLit) ? (lit >> (offset * 8)) & 0xff : 0x100;
+
+	  if(offset==0)
+	    loadRegFromAop (m6502_reg_a, AOP (left), offset);
+	  else 
+	    accopWithAop (OPCODE, AOP(left), offset);
+
+	  if (bytemask != NOP_MASK)
+	    accopWithAop (OPCODE, AOP(right), offset);
+
+	  if(((offset+1)%2)==0)
+	    emitBranch ("bne", tlbl);
+	}
 
       m6502_freeReg (m6502_reg_a);
       safeEmitLabel (tlbl);
@@ -161,7 +177,6 @@ m6502_genOr (iCode * ic, iCode * ifx)
   // Rockwell and WDC only - works but limited usefulness
   if (IS_MOS65C02 && AOP_TYPE (right) == AOP_LIT)
     {
-
       if (sameRegs (AOP (left), AOP (result)) && (AOP_TYPE (left) == AOP_DIR) 
 	  && isLiteralBit (lit))
 	{
@@ -175,54 +190,55 @@ m6502_genOr (iCode * ic, iCode * ifx)
 
   unsigned int bmask0 = (isLit) ? ((lit >> (0 * 8)) & 0xff) : 0x100;
   unsigned int bmask1 = (isLit) ? ((lit >> (1 * 8)) & 0xff) : 0x100;
+  bool x_zero = IS_AOP_XA(AOP(left)) && (m6502_reg_x->isLitConst) && (m6502_reg_x->litConst==0);
 
-  if (IS_AOP_XA(AOP(left)))
+  if (/*IS_AOP_A(AOP(left)) ||*/ x_zero)
     {
-      //    if(m6502_reg_a->isLitConst) bmask0 |= m6502_reg_a->litConst;
-      //   if(m6502_reg_x->isLitConst && m6502_reg_x->litConst==0) bmask1=0x00;
+      transferAopAop(AOP(right), 1, AOP(result), 1);
+      loadRegFromAop (m6502_reg_a, AOP (left), 0);
+      accopWithAop (OPCODE, AOP (right), 0);
+      storeRegToAop (m6502_reg_a, AOP (result), 0);
+      goto release;
     }
 
   if(IS_AOP_XA(AOP(result)))
     {
       emitComment (TRACEGEN|VVDBG, "  %s: XA", __func__);
 
-      //    if(/*AOP_TYPE(right)==AOP_LIT &&*/ AOP_TYPE(left)!=AOP_SOF)
-      {
-        if (IS_AOP_A(AOP(left)))
-          storeConstToAop(0x00, AOP(result), 1);
-        else if (bmask1==NOP_MASK)
-          transferAopAop(AOP(left), 1, AOP(result), 1);
-        else if(bmask1==CONST_MASK)
-          storeConstToAop(0xff, AOP(result), 1);
-        else if(IS_AOP_XA(AOP(left)) && m6502_reg_x->isLitConst && m6502_reg_x->litConst==0)
-          transferAopAop(AOP(right), 1, AOP(result), 1);
-        else
-          {
-            if(IS_AOP_XA(AOP(left)) && (bmask0!=CONST_MASK) )
-	      {
-		fastSaveA();
-		needpulla=true;
-	      }
-            loadRegFromAop (m6502_reg_a, AOP (left), 1);
-            accopWithAop ("ora", AOP (right), 1);
-            storeRegToAop (m6502_reg_a, AOP (result), 1);            
-          }
+      if (IS_AOP_A(AOP(left)))
+	storeConstToAop(0x00, AOP(result), 1);
+      else if (bmask1==NOP_MASK)
+	transferAopAop(AOP(left), 1, AOP(result), 1);
+      else if(bmask1==CONST_MASK)
+	storeConstToAop(CONST_RESULT, AOP(result), 1);
+      else if(IS_AOP_XA(AOP(left)) && m6502_reg_x->isLitConst && m6502_reg_x->litConst==NOP_MASK)
+	transferAopAop(AOP(right), 1, AOP(result), 1);
+      else
+	{
+	  if(IS_AOP_XA(AOP(left)) && (bmask0!=CONST_MASK) )
+	    {
+	      fastSaveA();
+	      needpulla=true;
+	    }
+	  loadRegFromAop (m6502_reg_a, AOP (left), 1);
+	  accopWithAop (OPCODE, AOP (right), 1);
+	  storeRegToAop (m6502_reg_a, AOP (result), 1);            
+	}
 
-        if(bmask0==CONST_MASK)
-          storeConstToAop(0xff, AOP(result), 0);
-        else
-	  {
-	    if(needpulla) 
-	      fastRestoreA();
-	    else
-	      {
-		loadRegFromAop (m6502_reg_a, AOP (left), 0);
-	      }
-	    if (bmask0!=NOP_MASK)
-              accopWithAop ("ora", AOP (right), 0);
-	  }
-        goto release;
-      }
+      if(bmask0==CONST_MASK)
+	storeConstToAop(CONST_RESULT, AOP(result), 0);
+      else
+	{
+	  if(needpulla) 
+	    fastRestoreA();
+	  else
+	    {
+	      loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	    }
+	  if (bmask0!=NOP_MASK)
+            accopWithAop (OPCODE, AOP (right), 0);
+	}
+      goto release;
     }
 
   needpulla = fastSaveAIfSurv();
@@ -243,12 +259,12 @@ m6502_genOr (iCode * ic, iCode * ifx)
 	}
       else if ( bytemask==CONST_MASK )
 	{
-	  storeConstToAop(0xff, AOP(result), offset);
+	  storeConstToAop(CONST_RESULT, AOP(result), offset);
 	}
       else 
 	{
 	  loadRegFromAop (m6502_reg_a, AOP (left), offset);
-	  accopWithAop ("ora", AOP (right), offset);
+	  accopWithAop (OPCODE, AOP (right), offset);
 	  storeRegToAop (m6502_reg_a, AOP (result), offset);
 	}
     }
