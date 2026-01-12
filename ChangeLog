@@ -1,3 +1,15 @@
+2026-01-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* .version,
+	  src/SDCCBBlock.c,
+	  src/SDCCcse.c,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCglobl.h,
+	  src/SDCCloop.c,
+	  src/SDCCopt.c,
+	  src/mcs51/gen.c:
+	  Further improve warnings on semantic dereferences of pointers to _Optional. Fix bugs in CSE and in mcs51 codegen.
+
 2026-01-10 Gabriele Gorla <gorlik@yahoo.com>
 
   	* support/regression/tests/logical_ops.c.in:
@@ -20,6 +32,11 @@
   	* src/mos6502/gen.c:
   	  Improve storeImmToAop().
   	
+2026-01-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCgenconstprop.cc:
+	  Improve warnings on &[] semantic dereferences of pointer to _Optional.
+
 2025-01-07 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* doc/sdccman.lyx:
@@ -34,7 +51,19 @@
   	  Allow signExtend on any register.
    	* src/mos6502/gen.c:
    	  improve codegen for stack-auto
-  	
+
+2026-01-06 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.y,
+	  src/SDCCast.c,
+	  src/SDCCast.h,
+	  src/SDCCcse.c,
+	  src/SDCCicode.c,
+	  src/SDCCicode.h,
+	  src/SDCCopt.c,
+	  support/valdiag/tests/_Optional.c:
+	  Fix warnings on &* and &[] semantic dereferences of pointer to _Optional.
+
 2026-01-05 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c,

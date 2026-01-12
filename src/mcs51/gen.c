@@ -7073,12 +7073,12 @@ genCmpGt (iCode * ic, iCode * ifx)
       sign = !((SPEC_USIGN (letype) && !(IS_CHAR (letype) && IS_LITERAL (letype))) ||
                (SPEC_USIGN (retype) && !(IS_CHAR (retype) && IS_LITERAL (retype))));
     }
-  /* assign the asmops */
+  /* assign the asmops - the order here nees tomatch the freeing in genCmp. Note that for genCmp the order in which they are passed to genCmp matters. */
   aopOp (result, ic, TRUE);
-  aopOp (left, ic, FALSE);
   aopOp (right, ic, FALSE);
-
-  genCmp (right, left, result, ifx, sign, ic);
+  aopOp (left, ic, FALSE);
+  
+  genCmp (right, left, result, ifx, sign, ic);emitcode(";","free result");
 
   freeAsmop (result, NULL, ic, TRUE);
 }
@@ -7106,10 +7106,10 @@ genCmpLt (iCode * ic, iCode * ifx)
       sign = !((SPEC_USIGN (letype) && !(IS_CHAR (letype) && IS_LITERAL (letype))) ||
                (SPEC_USIGN (retype) && !(IS_CHAR (retype) && IS_LITERAL (retype))));
     }
-  /* assign the asmops */
+  /* assign the asmops - the order here nees tomatch the freeing in genCmp. Note that for genCmp the order in which they are passed to genCmp matters. */
+  aopOp (result, ic, TRUE);
   aopOp (left, ic, FALSE);
   aopOp (right, ic, FALSE);
-  aopOp (result, ic, TRUE);
 
   genCmp (left, right, result, ifx, sign, ic);
 

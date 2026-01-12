@@ -218,6 +218,7 @@ copyAstValues (ast * dest, ast * src)
       dest->values.cast.literalFromCast = src->values.cast.literalFromCast;
       dest->values.cast.removedCast = src->values.cast.removedCast;
       dest->values.cast.implicitCast = src->values.cast.implicitCast;
+      dest->values.cast.semDeref = src->values.cast.semDeref;
     }
 }
 
