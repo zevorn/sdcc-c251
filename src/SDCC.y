@@ -321,6 +321,7 @@ unary_expression
                  else
                    SPEC_OPTIONAL (type->next) = false;
                  $$ = newNode (CAST, newAst_LINK(type), $$);
+                 $$->values.cast.semDeref = true;
                }
            }
          else if ($1 == '*' && IS_AST_OP ($2) && $2->opval.op == '&' && $2->right == NULL)

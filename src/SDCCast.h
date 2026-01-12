@@ -99,6 +99,7 @@ typedef struct ast
                                          */
       unsigned removedCast:1;   /* true if the explicit cast has been removed */
       unsigned implicitCast:1;  /* true if compiler added this cast */
+      bool semDeref:1;          /* semantic dereference, i.e. a &* removing _Optional represented as cast - we just need to pass this flag from the parser to the iCode */
     } cast;
     int argreg;                 /* argreg number when operand type == EX_OPERAND */
   }
