@@ -105,9 +105,9 @@ storeRegTempi(reg_info * reg, bool freereg, bool force)
       storeRegTempi (m6502_reg_a, freereg, force);
       storeRegTempi (m6502_reg_x, freereg, force);
       break;
-    case YX_IDX:
-      storeRegTempi (m6502_reg_x, freereg, force);
+    case XY_IDX:
       storeRegTempi (m6502_reg_y, freereg, force);
+      storeRegTempi (m6502_reg_x, freereg, force);
       break;
     default:
       emitcode("ERROR", "%s : bad reg %02x (%s)", __func__, regidx, reg->name);
@@ -259,9 +259,9 @@ loadRegTemp (reg_info * reg)
       loadRegTemp(m6502_reg_x);
       loadRegTemp(m6502_reg_a);
       break;
-    case YX_IDX:
-      loadRegTemp(m6502_reg_y);
+    case XY_IDX:
       loadRegTemp(m6502_reg_x);
+      loadRegTemp(m6502_reg_y);
       break;
     default:
       emitcode("ERROR", "%s - called with illegal regidx %d", __func__, reg->rIdx);

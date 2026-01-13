@@ -91,9 +91,9 @@ m6502_pushReg (reg_info * reg, bool freereg)
 	  m6502_pushReg(m6502_reg_a, freereg);
         }
       break;
-    case YX_IDX:
-      m6502_pushReg(m6502_reg_y, freereg);
+    case XY_IDX:
       m6502_pushReg(m6502_reg_x, freereg);
+      m6502_pushReg(m6502_reg_y, freereg);
       break;
     default:
       emitcode("ERROR", "    %s: bad reg idx: 0x%02x", __func__, regidx);
@@ -155,9 +155,9 @@ m6502_pullReg (reg_info * reg)
     m6502_pullReg(m6502_reg_a);
     m6502_pullReg(m6502_reg_x);
     break;
-  case YX_IDX:
-    m6502_pullReg(m6502_reg_x);
+  case XY_IDX:
     m6502_pullReg(m6502_reg_y);
+    m6502_pullReg(m6502_reg_x);
     break;
   default:
     emitcode("ERROR", "    %s: bad reg idx: 0x%02x", __func__, regidx);

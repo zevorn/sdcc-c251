@@ -56,7 +56,7 @@ reg_info regsm6502[] =
     {REG_CND, CND_IDX, "C",  0, NULL, 0, 1},
     {REG_GPR, XA_IDX,  "xa", M6502MASK_XA, NULL, 0, 1},
     //  {REG_GPR, YA_IDX,  "ya", M6502MASK_YA, NULL, 0, 1},
-    {REG_GPR, YX_IDX,  "yx", M6502MASK_YX, NULL, 0, 1},
+    {REG_GPR, XY_IDX,  "xy", M6502MASK_XY, NULL, 0, 1},
     {0,       SP_IDX,  "sp", 0, NULL, 0, 1},
   };
 
@@ -70,7 +70,7 @@ reg_info *m6502_reg_x;
 reg_info *m6502_reg_y;
 reg_info *m6502_reg_xa;
 //reg_info *m6502_reg_ya;
-reg_info *m6502_reg_yx;
+reg_info *m6502_reg_xy;
 reg_info *m6502_reg_sp;
 
 static void m6502SpillThis (symbol *);
@@ -119,25 +119,25 @@ m6502_freeReg (reg_info * reg)
       if (m6502_reg_a->isFree)
 	m6502_reg_xa->isFree = 1;
       if (m6502_reg_y->isFree)
-	m6502_reg_yx->isFree = 1;
+	m6502_reg_xy->isFree = 1;
       break;
     case Y_IDX:
       if (m6502_reg_x->isFree)
-	m6502_reg_yx->isFree = 1;
+	m6502_reg_xy->isFree = 1;
       break;
     case XA_IDX:
       m6502_reg_x->isFree = 1;
       m6502_reg_a->isFree = 1;
       if (m6502_reg_y->isFree)
-	m6502_reg_yx->isFree = 1;
+	m6502_reg_xy->isFree = 1;
       break;
       //      case YA_IDX:
       //        m6502_reg_y->isFree = 1;
       //        m6502_reg_a->isFree = 1;
       //        if (m6502_reg_x->isFree)
-      //          m6502_reg_yx->isFree = 1;
+      //          m6502_reg_xy->isFree = 1;
       //        break;
-    case YX_IDX:
+    case XY_IDX:
       m6502_reg_y->isFree = 1;
       m6502_reg_x->isFree = 1;
       if (m6502_reg_a->isFree)
@@ -156,7 +156,7 @@ m6502_freeAllRegs()
 {
   int i;
   for (i = 0; i < HW_REG_SIZE; i++)
-      m6502_freeReg (m6502_regWithIdx (i));
+    m6502_freeReg (m6502_regWithIdx (i));
 }
 
 /*-----------------------------------------------------------------*/
@@ -176,24 +176,22 @@ m6502_useReg (reg_info * reg)
       break;
     case X_IDX:
       m6502_reg_xa->isFree = 0;
-      m6502_reg_yx->isFree = 0;
+      m6502_reg_xy->isFree = 0;
       break;
     case Y_IDX:
       //        m6502_reg_ya->aop = NULL;
       //        m6502_reg_ya->isFree = 0;
-      m6502_reg_yx->isFree = 0;
+      m6502_reg_xy->isFree = 0;
       break;
     case XA_IDX:
       m6502_reg_x->isFree = 0;
       m6502_reg_a->isFree = 0;
       break;
       //      case YA_IDX:
-      //        m6502_reg_y->aop = NULL;
       //        m6502_reg_y->isFree = 0;
-      //        m6502_reg_a->aop = NULL;
       //        m6502_reg_a->isFree = 0;
       //        break;
-    case YX_IDX:
+    case XY_IDX:
       m6502_reg_y->isFree = 0;
       m6502_reg_x->isFree = 0;
       break;
@@ -222,14 +220,14 @@ m6502_dirtyReg (reg_info * reg)
     case X_IDX:
       m6502_reg_xa->aop = NULL;
       m6502_reg_xa->isLitConst = 0;
-      m6502_reg_yx->aop = NULL;
-      m6502_reg_yx->isLitConst = 0;
+      m6502_reg_xy->aop = NULL;
+      m6502_reg_xy->isLitConst = 0;
       break;
     case Y_IDX:
       //      m6502_reg_ya->aop = NULL;
       //	m6502_reg_ya->isLitConst = 0;
-      m6502_reg_yx->aop = NULL;
-      m6502_reg_yx->isLitConst = 0;
+      m6502_reg_xy->aop = NULL;
+      m6502_reg_xy->isLitConst = 0;
       break;
     case XA_IDX:
       m6502_reg_x->aop = NULL;
@@ -243,7 +241,7 @@ m6502_dirtyReg (reg_info * reg)
       //        m6502_reg_a->aop = NULL;
       //	m6502_reg_a->isLitConst = 0;
       break;
-    case YX_IDX:
+    case XY_IDX:
       m6502_reg_y->aop = NULL;
       m6502_reg_y->isLitConst = 0;
       m6502_reg_x->aop = NULL;
@@ -262,7 +260,7 @@ m6502_dirtyAllRegs()
 {
   int i;
   for (i = 0; i < HW_REG_SIZE; i++)
-      m6502_dirtyReg (m6502_regWithIdx (i));
+    m6502_dirtyReg (m6502_regWithIdx (i));
 }
 
 /*-----------------------------------------------------------------*/
@@ -1526,7 +1524,7 @@ m6502_assignRegisters (ebbIndex *ebbi)
   m6502_reg_y = m6502_regWithIdx(Y_IDX);
   m6502_reg_xa = m6502_regWithIdx(XA_IDX);
   //  m6502_reg_ya = m6502_regWithIdx(YA_IDX);
-  m6502_reg_yx = m6502_regWithIdx(YX_IDX);
+  m6502_reg_xy = m6502_regWithIdx(XY_IDX);
   m6502_reg_sp = m6502_regWithIdx(SP_IDX);
 
   //  transformPointerSet (ebbs, count);
