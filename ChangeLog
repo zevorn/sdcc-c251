@@ -1,3 +1,27 @@
+2026-01-12 Gabriele Gorla <gorlik@yahoo.com>
+   	* src/mos6502/gen.h,
+   	  src/mos6502/gen.c,
+   	  src/mos6502/genlshift.c,
+   	  src/mos6502/genrshift.c,
+   	  src/mos6502/genminus.c,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genxor.c,
+   	  src/mos6502/tempops.c,
+   	  src/mos6502/stackops.c,
+   	  src/mos6502/ralloc.h,
+   	  src/mos6502/ralloc.c,
+   	  src/mos6502/ralloc2.cc:
+   	  Allow register combination XY.
+   	  
+2026-01-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/mcs51/gen.c,
+	  src/mcs51/gen.h,
+	  src/mcs51/peep.c,
+	  support/regression/tests/bug-3711.c,
+	  support/regression/tests/bug-3712.c:
+	  Fix bug #3712.
+
 2026-01-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* .version,

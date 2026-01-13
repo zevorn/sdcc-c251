@@ -21,9 +21,7 @@ void g(void)
 	f1(1, 0);
 	f2(0, 1);
 	f3(1, 0);
-#ifndef __SDCC_mcs51 // Bug #3712
 	f4(0, 1);
-#endif
 	f5(2, 0, 3, 4, 1, 0);
 }
 
@@ -56,13 +54,11 @@ void f3(unsigned long long l, __bit b) __reentrant
 	ASSERT (b == 0);
 }
 
-#ifndef __SDCC_mcs51 // Bug #3712
 void f4(__bit b, unsigned long long l) __reentrant
 {
 	ASSERT (b == 0);
 	ASSERT (l == 1);
 }
-#endif
 
 void f5 (unsigned char c, const unsigned char __code* cp, unsigned int i, unsigned int j, __bit b, const void __code* vcp) __reentrant
 {

@@ -63,7 +63,7 @@ enum debug_messages
 #define IS_AOP_X(x) ((x)->regmask == M6502MASK_X)
 #define IS_AOP_Y(x) ((x)->regmask == M6502MASK_Y)
 #define IS_AOP_XA(x) ((x)->regmask == M6502MASK_XA)
-#define IS_AOP_YX(x) ((x)->regmask == M6502MASK_YX)
+#define IS_AOP_XY(x) ((x)->regmask == M6502MASK_XY)
 
 #define IS_AOP_WITH_A(x) (((x)->regmask & M6502MASK_A) != 0)
 #define IS_AOP_WITH_X(x) (((x)->regmask & M6502MASK_X) != 0)
