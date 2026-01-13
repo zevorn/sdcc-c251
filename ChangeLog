@@ -2,7 +2,11 @@
    	* src/mos6502/genor.c,
    	  src/mos6502/genxor.c,
    	  src/mos6502/genand.c:
-   	  minor cleanup of bitwise operators.
+   	  Minor cleanup of bitwise operators.
+   	* src/mos6502/gen.c,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c:
+   	  Cosmetic cleanup.
    	  
 2026-01-12 Gabriele Gorla <gorlik@yahoo.com>
    	* src/mos6502/gen.h,
