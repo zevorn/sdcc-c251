@@ -1464,7 +1464,7 @@ aopArg (sym_link *ftype, int i)
   for (j = 1, arg = args; j < i; j++, arg = arg->next)
     wassert (arg);
 
-  if (IS_SPEC(arg->type) && SPEC_NOUN(arg->type) == V_BIT)
+  if (IS_SPEC (arg->type) && SPEC_NOUN (arg->type) == V_BIT)
     {
       wassert (0); // todo: special handling for bits.
     }
@@ -4317,9 +4317,7 @@ genFunction (iCode * ic)
   bool switchedPSW = FALSE;
   int calleesaves_saved_register = -1;
   int stackAdjust = sym->stack;
-  int accIsFree = sym->recvSize < 4;
   char *freereg = NULL;
-  iCode *ric = (ic->next && ic->next->op == RECEIVE) ? ic->next : NULL;
   bool fReentrant = (IFFUNC_ISREENT (sym->type) || options.stackAuto);
 
   /* create the function header */
@@ -4596,9 +4594,13 @@ genFunction (iCode * ic)
 
   /* For some cases it is worthwhile to perform a RECEIVE iCode */
   /* before setting up the stack frame completely. */
-  if (ric && ric->argreg <= 1000 && IC_RESULT (ric))
+  iCode *ric = (ic->next && ic->next->op == RECEIVE) ? ic->next : NULL;
+  while (ric && ric->argreg > 1000 && ric->next && ric->next->op == RECEIVE)
+    ric = ric->next;
+  bool accIsFree = !(mcs51IsParmInCall (ftype, "a"));
+  if (ric && ric->argreg <= 1000 && ric->result)
     {
-      symbol *rsym = OP_SYMBOL (IC_RESULT (ric));
+      symbol *rsym = OP_SYMBOL (ric->result);
 
       if (rsym->isitmp)
         {
@@ -4619,12 +4621,12 @@ genFunction (iCode * ic)
 
           genLine.lineElement.ic = ric;
           D (emitcode (";", "genReceive"));
-          for (ofs = 0; ofs < sym->recvSize; ofs++)
+          for (ofs = 0; ofs < getSize (rsym->type); ofs++)
             {
               emitpush (fReturn[ofs]);
               _G.stack.pushed--; /* cancel out pushed++ from emitpush() */
             }
-          stackAdjust -= sym->recvSize;
+          stackAdjust -= getSize (rsym->type);
           if (stackAdjust < 0)
             {
               assert (stackAdjust >= 0);
@@ -4632,23 +4634,23 @@ genFunction (iCode * ic)
             }
           genLine.lineElement.ic = ic;
           ric->generated = 1;
-          accIsFree = 1;
+          accIsFree = true;
         }
       /* If the RECEIVE operand is 4 registers, we can do the moves now */
       /* to free up the accumulator. */
-      else if (rsym && rsym->nRegs && sym->recvSize == 4)
+      else if (rsym && rsym->nRegs && getSize (rsym->type) == 4) // Should be >= 4, but the loop below is fragile. TODO: Use genMove here, enable for >= 4.
         {
           int ofs;
 
           genLine.lineElement.ic = ric;
           D (emitcode (";", "genReceive"));
-          for (ofs = 0; ofs < sym->recvSize; ofs++)
+          for (ofs = 0; ofs < getSize (rsym->type); ofs++)
             {
               emitcode ("mov", "%s,%s", rsym->regs[ofs]->name, fReturn[ofs]);
             }
           genLine.lineElement.ic = ic;
           ric->generated = 1;
-          accIsFree = 1;
+          accIsFree = true;
         }
     }
 
@@ -7073,12 +7075,12 @@ genCmpGt (iCode * ic, iCode * ifx)
       sign = !((SPEC_USIGN (letype) && !(IS_CHAR (letype) && IS_LITERAL (letype))) ||
                (SPEC_USIGN (retype) && !(IS_CHAR (retype) && IS_LITERAL (retype))));
     }
-  /* assign the asmops */
+  /* assign the asmops - the order here nees tomatch the freeing in genCmp. Note that for genCmp the order in which they are passed to genCmp matters. */
   aopOp (result, ic, TRUE);
-  aopOp (left, ic, FALSE);
   aopOp (right, ic, FALSE);
-
-  genCmp (right, left, result, ifx, sign, ic);
+  aopOp (left, ic, FALSE);
+  
+  genCmp (right, left, result, ifx, sign, ic);emitcode(";","free result");
 
   freeAsmop (result, NULL, ic, TRUE);
 }
@@ -7106,10 +7108,10 @@ genCmpLt (iCode * ic, iCode * ifx)
       sign = !((SPEC_USIGN (letype) && !(IS_CHAR (letype) && IS_LITERAL (letype))) ||
                (SPEC_USIGN (retype) && !(IS_CHAR (retype) && IS_LITERAL (retype))));
     }
-  /* assign the asmops */
+  /* assign the asmops - the order here nees tomatch the freeing in genCmp. Note that for genCmp the order in which they are passed to genCmp matters. */
+  aopOp (result, ic, TRUE);
   aopOp (left, ic, FALSE);
   aopOp (right, ic, FALSE);
-  aopOp (result, ic, TRUE);
 
   genCmp (left, right, result, ifx, sign, ic);
 
@@ -13307,7 +13309,7 @@ mcs51IsParmInCall (sym_link *ftype, const char *what)
   int i;
 
   for (i = 1, args = FUNC_ARGS (ftype); args; args = args->next, i++)
-    if (mcs51IsRegArg(ftype, i, what))
+    if (!(IS_SPEC (args->type) && SPEC_NOUN (args->type) == V_BIT) && mcs51IsRegArg (ftype, i, what)) // TODO: Allow bits, once supported in aopArg!
       return true;
   return false;
 }
