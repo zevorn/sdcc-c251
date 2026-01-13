@@ -224,6 +224,9 @@ m6502_genPlus (iCode * ic)
       left = t;
     }
 
+  emitComment (TRACEGEN|VVDBG, "    %s - masktop=0x%02X  size %d = %d + %d", __func__,
+               topbytemask, AOP_SIZE(result), AOP_SIZE(left), AOP_SIZE(right) );
+
   if (!maskedtopbyte && genPlusInc (ic))
     goto release;
 
@@ -296,7 +299,7 @@ m6502_genPlus (iCode * ic)
       loadRegTempAt(m6502_reg_a, xloc);
       accopWithAop ("adc", AOP (right), 1);
       if (maskedtopbyte)
-	emit6502op ("and", IMMDFMT, topbytemask);
+        emit6502op ("and", IMMDFMT, topbytemask);
       transferRegReg(m6502_reg_a, m6502_reg_x, true);
       fastRestoreA();
       loadRegTemp(NULL);
@@ -318,7 +321,7 @@ m6502_genPlus (iCode * ic)
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );
       accopWithAop ("adc", AOP (right), 1);
       if (maskedtopbyte)
-	emit6502op ("and", IMMDFMT, topbytemask);
+        emit6502op ("and", IMMDFMT, topbytemask);
       storeRegToAop (m6502_reg_a, AOP (result), 1);
 
       if(restore_x)
@@ -332,6 +335,9 @@ m6502_genPlus (iCode * ic)
 
   if(!m6502_reg_a->isDead)
     m6502_dirtyReg(m6502_reg_a);
+  if(IS_AOP_XY (AOP(result)))
+    m6502_reg_y->isFree=false;
+
   savea = fastSaveAIfSurv ();
 
   emitComment (TRACEGEN|VVDBG, "    %s - general case size=%d", __func__, size);

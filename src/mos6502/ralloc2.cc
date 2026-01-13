@@ -26,7 +26,7 @@
 
 extern "C"
 {
-  #include "ralloc.h"
+#include "ralloc.h"
   float drym6502iCode (iCode *ic);
   bool m6502_assignment_optimal;
 }
@@ -135,39 +135,39 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   // Instructions that can handle anything.
   if(ic->op == '!' ||
-    ic->op == '~' ||
-    ic->op == UNARYMINUS ||
-    ic->op == CALL ||
-    ic->op == PCALL ||
-    ic->op == FUNCTION ||
-    ic->op == ENDFUNCTION ||
-    ic->op == RETURN ||
-    ic->op == LABEL ||
-    ic->op == GOTO ||
-    ic->op == IFX ||
-    ic->op == '+' ||
-    ic->op == '-' ||
-    ic->op == '*' ||
-    ic->op == '/' ||
-    ic->op == '%' ||
-    ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP ||
-    ic->op == NE_OP || ic->op == EQ_OP ||
-    ic->op == AND_OP ||
-    ic->op == OR_OP ||
-    ic->op == '^' ||
-    ic->op == '|' ||
-    ic->op == BITWISEAND ||
-    ic->op == GETABIT ||
-    ic->op == GETBYTE ||
-    ic->op == GETWORD ||
-    ic-> op == ROT ||
-    ic->op == LEFT_OP ||
-    ic->op == RIGHT_OP ||
-    //ic->op == '=' ||  /* both regular assignment and POINTER_SET safe */
-    //ic->op == GET_VALUE_AT_ADDRESS ||
-    ic->op == ADDRESS_OF ||
-    ic->op == CAST ||
-    ic->op == DUMMY_READ_VOLATILE)
+     ic->op == '~' ||
+     ic->op == UNARYMINUS ||
+     ic->op == CALL ||
+     ic->op == PCALL ||
+     ic->op == FUNCTION ||
+     ic->op == ENDFUNCTION ||
+     ic->op == RETURN ||
+     ic->op == LABEL ||
+     ic->op == GOTO ||
+     ic->op == IFX ||
+     ic->op == '+' ||
+     ic->op == '-' ||
+     ic->op == '*' ||
+     ic->op == '/' ||
+     ic->op == '%' ||
+     ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP ||
+     ic->op == NE_OP || ic->op == EQ_OP ||
+     ic->op == AND_OP ||
+     ic->op == OR_OP ||
+     ic->op == '^' ||
+     ic->op == '|' ||
+     ic->op == BITWISEAND ||
+     ic->op == GETABIT ||
+     ic->op == GETBYTE ||
+     ic->op == GETWORD ||
+     ic-> op == ROT ||
+     ic->op == LEFT_OP ||
+     ic->op == RIGHT_OP ||
+     //ic->op == '=' ||  /* both regular assignment and POINTER_SET safe */
+     //ic->op == GET_VALUE_AT_ADDRESS ||
+     ic->op == ADDRESS_OF ||
+     ic->op == CAST ||
+     ic->op == DUMMY_READ_VOLATILE)
     return(true);
 
   if(ic->op == IFX && ic->generated)
@@ -240,41 +240,41 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 }
 
 template <class G_t, class I_t>
-static bool AXinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static bool XYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
 
   const i_assignment_t &ia = a.i_assignment;
 
   if(ic->op == '!' ||
-    ic->op == '~' ||
-    ic->op == IPUSH ||
-    ic->op == CALL ||
-    ic->op == FUNCTION ||
-    ic->op == ENDFUNCTION ||
-    ic->op == RETURN ||
-    ic->op == LABEL ||
-    ic->op == GOTO ||
-    ic->op == '+' ||
-    ic->op == '-' ||
-    ic->op == NE_OP || ic->op == EQ_OP ||
-    ic->op == '^' ||
-    ic->op == '|' ||
-    ic->op == BITWISEAND ||
-    ic->op == GETABIT ||
-    ic->op == GETBYTE ||
-    ic->op == GETWORD ||
-    /*ic->op == LEFT_OP ||
-    ic->op == RIGHT_OP ||*/
-    ic->op == GET_VALUE_AT_ADDRESS ||
-    ic->op == '=' ||
-    ic->op == ADDRESS_OF ||
-    ic->op == RECEIVE ||
-    ic->op == SEND ||
-    ic->op == DUMMY_READ_VOLATILE ||
-    ic->op == CRITICAL ||
-    ic->op == ENDCRITICAL ||
-    ic->op == ROT && IS_OP_LITERAL (IC_RIGHT (ic)) && operandLitValueUll (IC_RIGHT (ic)) * 2 == bitsForType (operandType (IC_LEFT (ic))))
+     ic->op == '~' ||
+     ic->op == IPUSH ||
+     ic->op == CALL ||
+     ic->op == FUNCTION ||
+     ic->op == ENDFUNCTION ||
+     ic->op == RETURN ||
+     ic->op == LABEL ||
+     ic->op == GOTO ||
+     ic->op == '+' ||
+     ic->op == '-' ||
+     ic->op == NE_OP || ic->op == EQ_OP ||
+     ic->op == '^' ||
+     ic->op == '|' ||
+     ic->op == BITWISEAND ||
+     ic->op == GETABIT ||
+     ic->op == GETBYTE ||
+     ic->op == GETWORD ||
+     /*ic->op == LEFT_OP ||
+       ic->op == RIGHT_OP ||*/
+     ic->op == GET_VALUE_AT_ADDRESS ||
+     ic->op == '=' ||
+     ic->op == ADDRESS_OF ||
+     ic->op == RECEIVE ||
+     ic->op == SEND ||
+     ic->op == DUMMY_READ_VOLATILE ||
+     ic->op == CRITICAL ||
+     ic->op == ENDCRITICAL ||
+     ic->op == ROT && IS_OP_LITERAL (IC_RIGHT (ic)) && operandLitValueUll (IC_RIGHT (ic)) * 2 == bitsForType (operandType (IC_LEFT (ic))))
     return(true);
 
   bool unused_A = (ia.registers[REG_A][1] < 0);
@@ -391,8 +391,9 @@ static bool operand_sane(const operand *o, const assignment &a, unsigned short i
     {
       const reg_t l = a.global[oi->second];
       const reg_t h = a.global[oi2->second];
-//      if(l == REG_A && h == REG_Y || l == REG_Y)
-      if(l != REG_A || h != REG_X)
+      //      if(l == REG_A && h == REG_Y || l == REG_Y)
+      //      if(l != REG_A || h != REG_X)
+      if(l == REG_X || h != REG_X)
         return(false);
     }
   
@@ -407,7 +408,7 @@ static bool operand_sane(const operand *o, const assignment &a, unsigned short i
     }
   else
     {
-       while(++oi != oi_end)
+      while(++oi != oi_end)
         if(std::binary_search(a.local.begin(), a.local.end(), oi->second))
           return(false);
     }
@@ -446,27 +447,27 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
   if(ic->generated)
     {
 #if 0
-  std::cout << "Skipping, already generated.\n";
+      std::cout << "Skipping, already generated.\n";
 #endif
-    return(0.0f);
+      return(0.0f);
     }
 
   if(!XAinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
-  if(!AXinst_ok(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
+  //  if(!AXinst_ok(a, i, G, I))
+  //    return(std::numeric_limits<float>::infinity());
 
   switch(ic->op)
     {
-    // Register assignment doesn't matter for these:
+      // Register assignment doesn't matter for these:
     case FUNCTION:
     case ENDFUNCTION:
     case LABEL:
     case GOTO:
     case INLINEASM:
 #if 0
-  std::cout << "Skipping, indepent from assignment.\n";
+      std::cout << "Skipping, indepent from assignment.\n";
 #endif
       return(0.0f);
     case '!':
@@ -479,7 +480,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case BITWISEAND:
     case IPUSH:
     case IPUSH_VALUE_AT_ADDRESS:
-    //case IPOP:
+      //case IPOP:
     case CALL:
     case PCALL:
     case RETURN:
@@ -501,7 +502,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case LEFT_OP:
     case RIGHT_OP:
     case GET_VALUE_AT_ADDRESS:
-//    case SET_VALUE_AT_ADDRESS:
+      //    case SET_VALUE_AT_ADDRESS:
     case '=':
     case IFX:
     case ADDRESS_OF:
@@ -602,9 +603,9 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
 #ifdef DEBUG_RALLOC_DEC
   std::cout << "Winner: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
-  {
-  	std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
-  }
+    {
+      std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
+    }
   std::cout << "\n";
   std::cout << "Cost: " << winner.s << "\n";
   std::cout.flush();
