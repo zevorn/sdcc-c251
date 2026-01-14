@@ -172,10 +172,10 @@
    	* src/mos6502/peeph.def:
    	  Additional peephole rules for new codegen paths.
   	* src/mos6502/gen.c:
-      Small genPackBits() improvement.
+	  Small genPackBits() improvement.
   	* src/mos6502/genlshift.c,
   	  support/regression/tests/stack-restore.c.in:
-      Fix typos.
+	  Fix typos.
    	* src/mos6502/tempops.c,
    	  src/mos6502/gen.h:
    	  Enable tracking of tsxaop in the tempstack.
@@ -183,7 +183,7 @@
 2025-12-21 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
-      Optimize compare with zero.
+	  Optimize compare with zero.
 
 2025-12-20 Gabriele Gorla <gorlik@yahoo.com>
 
