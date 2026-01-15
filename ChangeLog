@@ -1,7 +1,13 @@
 2026-01-15 Gabriele Gorla <gorlik@yahoo.com>
     * support/regression/tests/blake2s.c:
       Disable blake2s for mos6502-stack-auto (insufficient stack space).
-   	  
+   	* src/mos6502/gen.c,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c,
+   	  src/mos6502/genlshift.c,
+   	  src/mos6502/genrshift.c:
+   	  Fixed several corner cases exposed by changing optimization weights.
+   	     	  
 2026-01-15 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCast.c,

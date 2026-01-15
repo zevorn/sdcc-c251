@@ -1220,8 +1220,8 @@ m6502_genRightShift (iCode * ic)
     }
 
   m6502_useReg (countreg);
-  if(IS_AOP_XA(AOP(right)))
-    m6502_freeReg(m6502_reg_xa);
+  if(IS_AOP_XA(AOP(right)) || IS_AOP_XY(AOP(right)))
+    m6502_freeReg(m6502_reg_x);
 
   // FIXME: make this conditional on opt code-speed
   if(size==8 /*|| size==4*/)

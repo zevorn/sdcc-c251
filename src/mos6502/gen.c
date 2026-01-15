@@ -583,10 +583,11 @@ emit6502op (const char *inst, const char *fmt, ...)
              fmt[0]=='#' && isdigit(fmt[1]))
             {
               unsigned char b=strtol(&fmt[1],NULL,0);
-              if(!strcmp(inst,"and")) {
-                dst_reg->litConst&=b;
-                break;
-              }
+              if(!strcmp(inst,"and"))
+                {
+		  dst_reg->litConst&=b;
+		  break;
+		}
               if(!strcmp(inst,"ora"))
                 {
                   dst_reg->litConst|=b;
@@ -6440,7 +6441,7 @@ genRotX(iCode *ic, int shCount)
     resultInXA=true;
 
   if(!resultInXA)
-    needpulla=fastSaveAIfSurv();
+    needpulla=pushRegIfSurv(m6502_reg_a);
 
   emitComment (TRACEGEN, "%s - size=%d shCount=%d (res in XA:%c)",__func__, size, shCount,
                resultInXA?'Y':'N');
@@ -6471,14 +6472,15 @@ genRotX(iCode *ic, int shCount)
 	  storeRegTempAlways(m6502_reg_x, true);
 	  dirtyRegTemp (getLastTempOfs());
 #endif
- 
 	}
+
       for(i=0;i<shCount;i++)
 	{
 	  m6502_emitCmp(m6502_reg_a, 0x80);
 	  emit6502op("rol", TEMPFMT, getLastTempOfs() );
 	  rmwWithReg ("rol", m6502_reg_a);
 	}
+
       transferRegReg(m6502_reg_a, m6502_reg_x, true);
       loadRegTemp(m6502_reg_a);
     }
@@ -7228,18 +7230,19 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 	}
 #endif
 
-      if (sameRegs(AOP(left), AOP(result)) )
+      if (sameRegs(AOP(left), AOP(result)))
 	{
 	  // pointer and destination is the same - need avoid overwriting
-          // FIXME: this only works for size=2 which is likely ok as pointers are size 2
 	  emitComment (TRACEGEN|VVDBG, "    %s - sameregs", __func__);
-          if(m6502_reg_a->aop && m6502_reg_a->aop->type==AOP_DIR &&
-	     sameRegs(m6502_reg_a->aop, AOP(result)))
+
+          if (m6502_reg_a->aop && m6502_reg_a->aop->type==AOP_DIR
+	      && sameRegs(m6502_reg_a->aop, AOP(result)) )
             {
 	      emitComment (TRACEGEN|VVDBG, "    %s - dirty A", __func__);
 	      m6502_dirtyReg(m6502_reg_a);
             }
 	  needpulla = storeRegTempIfSurv (m6502_reg_a);
+
 	  for (int i=size-1; i>=0; i--)
 	    {
 	      loadRegFromConst(m6502_reg_y, litOffset + i);
@@ -9154,11 +9157,11 @@ drym6502iCode (iCode *ic)
 
   int byte_cost_weight = 1;
   if (optimize.codeSize)
-    byte_cost_weight*=2;
-  if (!optimize.codeSpeed)
     byte_cost_weight*=4;
+  if (!optimize.codeSpeed)
+    byte_cost_weight*=2;
 
-  return ((float)regalloc_dry_run_cost_bytes * byte_cost_weight + regalloc_dry_run_cost_cycles * ic->count);
+  return ((float)regalloc_dry_run_cost_bytes * byte_cost_weight + 2 * regalloc_dry_run_cost_cycles * ic->count);
 }
 
 /**************************************************************************
