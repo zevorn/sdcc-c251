@@ -4,6 +4,16 @@
 	  support/regression/tests/asconhash256.c.in:
 	  Add regression test for fifth implementation of the Ascon-AEAD128 cipher and the Ascon-Hash256 hash function.
 
+2026-01-13 Gabriele Gorla <gorlik@yahoo.com>
+   	* src/mos6502/genor.c,
+   	  src/mos6502/genxor.c,
+   	  src/mos6502/genand.c:
+   	  Minor cleanup of bitwise operators.
+   	* src/mos6502/gen.c,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c:
+   	  Cosmetic cleanup.
+   	  
 2026-01-13 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/asconaead128.c.in,
@@ -190,10 +200,10 @@
    	* src/mos6502/peeph.def:
    	  Additional peephole rules for new codegen paths.
   	* src/mos6502/gen.c:
-      Small genPackBits() improvement.
+	  Small genPackBits() improvement.
   	* src/mos6502/genlshift.c,
   	  support/regression/tests/stack-restore.c.in:
-      Fix typos.
+	  Fix typos.
    	* src/mos6502/tempops.c,
    	  src/mos6502/gen.h:
    	  Enable tracking of tsxaop in the tempstack.
@@ -201,7 +211,7 @@
 2025-12-21 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
-      Optimize compare with zero.
+	  Optimize compare with zero.
 
 2025-12-20 Gabriele Gorla <gorlik@yahoo.com>
 
