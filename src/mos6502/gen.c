@@ -282,24 +282,6 @@ getLastTempOfs()
 }
 
 /**************************************************************************
- * Returns the last register affecting the flag
- *
- * @return last register
- *************************************************************************/
-int
-getLastFlag()
-{
-  return _S.lastflag;
-}
-
-void
-setLastFlag(int reg_idx)
-{
-  // should check for out of bound
-  _S.lastflag=reg_idx;
-}
-
-/**************************************************************************
  * Returns the cycle count for the instruction
  *
  * @param opcode  pointer to opcode entry in the opcode table
@@ -2959,24 +2941,26 @@ sameRegs (asmop * aop1, asmop * aop2)
   //  if (aop1->size != aop2->size)
   //    return false;
 
-  if (aop1->type == aop2->type) {
-    switch (aop1->type) {
-    case AOP_REG:
-      for (i = 0; i < aop1->size; i++)
-        if (aop1->aopu.aop_reg[i] != aop2->aopu.aop_reg[i])
-          return false;
-      return true;
-    case AOP_SOF:
-      return (aop1->aopu.aop_stk == aop2->aopu.aop_stk);
-    case AOP_DIR:
-      //          if (regalloc_dry_run)
-      //            return false; // TODO: why?
-    case AOP_EXT:
-      return (!strcmp (aop1->aopu.aop_dir, aop2->aopu.aop_dir));
-    default:
-      break;
+  if (aop1->type == aop2->type) 
+    {
+      switch (aop1->type)
+	{
+	case AOP_REG:
+	  for (i = 0; i < aop1->size; i++)
+	    if (aop1->aopu.aop_reg[i] != aop2->aopu.aop_reg[i])
+	      return false;
+	  return true;
+	case AOP_SOF:
+	  return (aop1->aopu.aop_stk == aop2->aopu.aop_stk);
+	case AOP_DIR:
+	  //          if (regalloc_dry_run)
+	  //            return false; // TODO: why?
+	case AOP_EXT:
+	  return (!strcmp (aop1->aopu.aop_dir, aop2->aopu.aop_dir));
+	default:
+	  break;
+	}
     }
-  }
 
   return false;
 }
@@ -3389,18 +3373,18 @@ static bool
 isAddrSafe(operand* op, reg_info* reg)
 {
   switch (AOP(op)->type)
-  {
-  case AOP_IMMD:    // #nn
-  case AOP_LIT:
-  case AOP_DIR:     // aa
-  case AOP_EXT:     // aaaa
-    return true;
-  case AOP_SOF:     // SOF,x
-    if (reg == m6502_reg_a && (m6502_reg_x->isFree || m6502_reg_y->isFree))
+    {
+    case AOP_IMMD:    // #nn
+    case AOP_LIT:
+    case AOP_DIR:     // aa
+    case AOP_EXT:     // aaaa
       return true;
-  default:
-    break;
-  }
+    case AOP_SOF:     // SOF,x
+      if (reg == m6502_reg_a && (m6502_reg_x->isFree || m6502_reg_y->isFree))
+	return true;
+    default:
+      break;
+    }
   return false;
 }
 
@@ -3437,7 +3421,7 @@ aopAdrPrepare (asmop * aop, int loffset)
           emitComment (TRACE_AOP, "    aopAdrPrepare: x!=tsxaop");
           storeRegTemp(m6502_reg_x, true);
           aopPrepareStoreTemp = true;
-          // m6502_reg_x->isFree=true;
+          // m6502_useReg(m6502_reg_x);
         }
     }
 
@@ -3766,7 +3750,7 @@ asmopToBool (asmop *aop, bool resultInA)
       loadRegFromAop (m6502_reg_a, aop, offset--);
       if (isFloat)
         emit6502op ("and", "#0x7F");
-      else if(getLastFlag()!=A_IDX && size==1)
+      else if(size==1)
 	m6502_emitCmp(m6502_reg_a, 0x00);
 
       while (--size)
@@ -4693,33 +4677,37 @@ genPcall (iCode * ic)
 
   /* Go through the send set and mark any registers used by iTemps as */
   /* in use so we don't clobber them while setting up the return address */
-  for (sendic = setFirstItem (_S.sendSet); sendic; sendic = setNextItem (_S.sendSet)) {
-    updateiTempRegisterUse (IC_LEFT (sendic));
-  }
+  for (sendic = setFirstItem (_S.sendSet); sendic; sendic = setNextItem (_S.sendSet))
+    {
+      updateiTempRegisterUse (IC_LEFT (sendic));
+    }
 
   // TODO: handle DIR/EXT with jmp [aa] or jmp [aaaa]
 
-  if (!IS_LITERAL (etype)) {
-    updateCFA ();
-    /* compute the function address */
-    // storeRegTempOp put address in RegTemp
-    // perhaps use DPTR instead?
-    storeRegTempOp (left, FARPTRSIZE, ic); // -1 is baked into initialization
-  }
+  if (!IS_LITERAL (etype))
+    {
+      updateCFA ();
+      /* compute the function address */
+      // storeRegTempOp put address in RegTemp
+      // perhaps use DPTR instead?
+      storeRegTempOp (left, FARPTRSIZE, ic); // -1 is baked into initialization
+    }
 
   /* if send set is not empty then assign */
-  if (_S.sendSet && !regalloc_dry_run) {
-    genSend (reverseSet (_S.sendSet));
-    _S.sendSet = NULL;
-  }
+  if (_S.sendSet && !regalloc_dry_run)
+    {
+      genSend (reverseSet (_S.sendSet));
+      _S.sendSet = NULL;
+    }
 
   /* make the call */
-  if (!IS_LITERAL (etype)) {
-    emit6502op("jsr","__sdcc_indirect_jsr");
-    loadRegTemp (NULL);
-    loadRegTemp (NULL);
-    updateCFA ();
-  }
+  if (!IS_LITERAL (etype))
+    {
+      emit6502op("jsr","__sdcc_indirect_jsr");
+      loadRegTemp (NULL);
+      loadRegTemp (NULL);
+      updateCFA ();
+    }
   else
     {
       emit6502op ("jsr", "0x%04X", ulFromVal (OP_VALUE (left)));
@@ -4736,27 +4724,25 @@ genPcall (iCode * ic)
 
   /* do we need to recompute the base ptr? */
   if (_S.funcHasBasePtr)
-    {
-      saveBasePtr();
-    }
+    saveBasePtr();
 
   /* if we need assign a result value */
   if ((IS_ITEMP (result) &&
-       (OP_SYMBOL (result)->nRegs || OP_SYMBOL (result)->spildir)) || IS_TRUE_SYMOP (result)) {
-    m6502_useReg (m6502_reg_a);
-    if (operandSize (result) > 1)
-      m6502_useReg (m6502_reg_x);
-    aopOp (result, ic);
+       (OP_SYMBOL (result)->nRegs || OP_SYMBOL (result)->spildir)) || IS_TRUE_SYMOP (result))
+    {
+      m6502_useReg (m6502_reg_a);
+      if (operandSize (result) > 1)
+	m6502_useReg (m6502_reg_x);
+      aopOp (result, ic);
 
-    assignResultValue (result);
+      assignResultValue (result);
 
-    freeAsmop (result, NULL);
-  }
+      freeAsmop (result, NULL);
+    }
 
   /* adjust the stack for parameters if required */
-  if (ic->parmBytes) {
+  if (ic->parmBytes)
     pullNull (ic->parmBytes);
-  }
 
   /* if we had saved some registers then unsave them */
   if (ic->regsSaved && !IFFUNC_CALLEESAVES (dtype))
@@ -4774,11 +4760,12 @@ resultRemat (iCode * ic)
   if (SKIP_IC (ic) || ic->op == IFX)
     return 0;
 
-  if (result && IS_ITEMP (result)) {
-    symbol *sym = OP_SYMBOL (result);
-    if (sym->remat && !POINTER_SET (ic))
-      return 1;
-  }
+  if (result && IS_ITEMP (result))
+    {
+      symbol *sym = OP_SYMBOL (result);
+      if (sym->remat && !POINTER_SET (ic))
+	return 1;
+    }
 
   return 0;
 }
@@ -4968,9 +4955,7 @@ genEndFunction (iCode * ic)
     }
 
   if (IFFUNC_ISCRITICAL (sym->type))
-    {
-      emit6502op ("plp", "");
-    }
+    emit6502op ("plp", "");
 
   if (IFFUNC_ISREENT (sym->type) || options.stackAuto)
     {
@@ -5003,9 +4988,7 @@ genEndFunction (iCode * ic)
 
       /* if debug then send end of function */
       if (options.debug && currFunc && !regalloc_dry_run)
-        {
-          debugFile->writeEndFunction (currFunc, ic, 1);
-        }
+	debugFile->writeEndFunction (currFunc, ic, 1);
 
       emit6502op ("rti", "");
     }
@@ -5032,9 +5015,7 @@ genEndFunction (iCode * ic)
 
       /* if debug then send end of function */
       if (options.debug && currFunc && !regalloc_dry_run)
-        {
-          debugFile->writeEndFunction (currFunc, ic, 1);
-        }
+	debugFile->writeEndFunction (currFunc, ic, 1);
 
       emit6502op ("rts", "");
     }
@@ -5139,9 +5120,8 @@ static void genRet (iCode * ic)
   /* generate a jump to the return label
      if the next is not the return statement */
   if (!(ic->next && ic->next->op == LABEL && IC_LABEL (ic->next) == returnLabel))
-    {
-      emit6502op ("jmp", "%05d$", safeLabelNum (returnLabel));
-    }
+    emit6502op ("jmp", "%05d$", safeLabelNum (returnLabel));
+
 }
 
 /**************************************************************************
@@ -5240,6 +5220,8 @@ genIfxJump (iCode * ic, char *jval)
       jlbl = IC_TRUE (ic);
       if (!strcmp (jval, "z"))
 	inst = "beq";
+      else if (!strcmp (jval, "nz"))
+	inst = "bne";
       else if (!strcmp (jval, "c"))
 	inst = "bcc";
       else if (!strcmp (jval, "n"))
@@ -5256,6 +5238,8 @@ genIfxJump (iCode * ic, char *jval)
       jlbl = IC_FALSE (ic);
       if (!strcmp (jval, "z"))
 	inst = "bne";
+      else if (!strcmp (jval, "nz"))
+	inst = "beq";
       else if (!strcmp (jval, "c"))
 	inst = "bcs";
       else if (!strcmp (jval, "n"))
@@ -6560,7 +6544,7 @@ genRotX(iCode *ic, int shCount)
 	}
 
       if(IS_AOP_XA(AOP(left)))
-	m6502_reg_x->isFree=true;
+	m6502_freeReg(m6502_reg_x);
 
       if(ror)
 	{
@@ -6793,9 +6777,8 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
       loadRegFromConst(m6502_reg_y, yoff);
       emit6502op("lda", INDFMT_IY, "DPTR" );
       if (blen < 8)
-	{
-	  emit6502op ("and", IMMDFMT, (((unsigned char) - 1) >> (8 - blen)) << bstr);
-	}
+	emit6502op ("and", IMMDFMT, (((unsigned char) - 1) >> (8 - blen)) << bstr);
+
       //      emit6502op("php", "");//TODO
       loadOrFreeRegTemp (m6502_reg_y, needpully);
       loadOrFreeRegTemp (m6502_reg_x, needpullx);
@@ -8467,16 +8450,21 @@ static void genJumpTab (iCode * ic)
     // use X or Y for index?
     bool needpullind = false;
     reg_info* indreg;
-    if (IS_AOP_X (AOP (IC_JTCOND (ic)))) {
-      indreg = m6502_reg_x;
-    } else if (IS_AOP_Y (AOP (IC_JTCOND (ic)))) {
-      indreg = m6502_reg_y;
-    } else {
-      indreg = m6502_reg_x->isFree ? m6502_reg_x : m6502_reg_y;
-      needpullind = pushRegIfSurv (indreg);
-      /* get the condition into indreg */
-      loadRegFromAop (indreg, AOP (IC_JTCOND (ic)), 0);
-    }
+    if (IS_AOP_X (AOP (IC_JTCOND (ic))))
+      {
+	indreg = m6502_reg_x;
+      } 
+    else if (IS_AOP_Y (AOP (IC_JTCOND (ic))))
+      {
+	indreg = m6502_reg_y;
+      }
+    else 
+      {
+	indreg = m6502_reg_x->isFree ? m6502_reg_x : m6502_reg_y;
+	needpullind = pushRegIfSurv (indreg);
+	/* get the condition into indreg */
+	loadRegFromAop (indreg, AOP (IC_JTCOND (ic)), 0);
+      }
     freeAsmop (IC_JTCOND (ic), NULL);
 
     if (indreg == m6502_reg_x)
@@ -8495,8 +8483,10 @@ static void genJumpTab (iCode * ic)
       }
     loadRegTemp(NULL);
     loadRegTemp(NULL);
-    if (needpullind) m6502_pullReg(indreg);
-    if (needpulla) m6502_pullReg(m6502_reg_a);
+    if (needpullind)
+      m6502_pullReg(indreg);
+    if (needpulla)
+      m6502_pullReg(m6502_reg_a);
     emit6502op ("jmp", TEMPFMT_IND, getLastTempOfs()+1);
 
     m6502_dirtyAllRegs();
