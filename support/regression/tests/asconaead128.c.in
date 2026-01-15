@@ -22,38 +22,17 @@
 #endif
 
 // Implementation does an ugly cast and uses implementation-defined endiannness check instead of standard one
-#if defined(IMPL_opt32_lowsize) && defined(__SDCC)
+#if defined(IMPL_opt32_lowsize) && defined(__SDCC) || defined(IMPL_opt8) && defined(__SDCC) || defined(IMPL_bi8) && defined(__SDCC) || defined(IMPL_opt8_lowsize) && defined(__SDCC)
 #pragma disable_warning 196
 #include <stdbit.h>
 #define __BYTE_ORDER__ __STDC_ENDIAN_NATIVE__
-#define __ORDER_LITTLE_ENDIAN__ __STDC_ENDIAN_NATIVE__
-#endif
-
-// Implementation uses implementation-defined endiannness check instead of standard one
-#if defined(IMPL_opt8) && defined(__SDCC)
-#include <stdbit.h>
-#define __BYTE_ORDER__ __STDC_ENDIAN_NATIVE__
-#define __ORDER_LITTLE_ENDIAN__ __STDC_ENDIAN_NATIVE__
-#endif
-
-// Implementation does an ugly cast and uses implementation-defined endiannness check instead of standard one
-#if defined(IMPL_bi8) && defined(__SDCC)
-#pragma disable_warning 196
-#include <stdbit.h>
-#define __BYTE_ORDER__ __STDC_ENDIAN_NATIVE__
-#define __ORDER_LITTLE_ENDIAN__ __STDC_ENDIAN_NATIVE__
-#endif
-
-// Implementation uses implementation-defined endiannness check instead of standard one
-#if defined(IMPL_opt8_lowsize) && defined(__SDCC)
-#include <stdbit.h>
-#define __BYTE_ORDER__ __STDC_ENDIAN_NATIVE__
-#define __ORDER_LITTLE_ENDIAN__ __STDC_ENDIAN_NATIVE__
+#define __ORDER_LITTLE_ENDIAN__ __STDC_ENDIAN_LITTLE__
+#define __ORDER_BIG_ENDIAN__ __STDC_ENDIAN_BIG__
 #endif
 
 
 // Lack of memory. TODO: Check again once we have better optimizations for these targets.
-#if defined(__SDCC_mcs51) || defined(__SDCC_pdk14) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15)
+#if defined(__SDCC_mcs51) || defined(__SDCC_pdk14) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
 #undef OP_{op}
 #undef IMPL_{impl}
 #endif
@@ -65,13 +44,13 @@
 #endif
 
 // Bug #3920 - fails test
-#if defined(IMPL_opt32_lowsize) && defined(__SDCC)
+#if defined(IMPL_opt32_lowsize) && defined(__SDCC) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 #undef OP_encrypt
 #undef OP_decrypt
 #endif
 
 // Bug #3920 - fails to test
-#if defined(IMPL_opt8) && defined(__SDCC)
+#if defined(IMPL_opt8) && defined(__SDCC) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 #undef OP_encrypt
 #undef OP_decrypt
 #endif
@@ -83,7 +62,7 @@
 #endif
 
 // Bug #3920 - fails to test
-#if defined(IMPL_opt8_lowsize) && defined(__SDCC)
+#if defined(IMPL_opt8_lowsize) && defined(__SDCC) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 #undef OP_encrypt
 #undef OP_decrypt
 #endif
