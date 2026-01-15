@@ -1,3 +1,9 @@
+2026-01-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/asconaead128.c.in,
+	  support/regression/tests/asconhash256.c.in:
+	  Add regression test for fifth implementation of the Ascon-AEAD128 cipher and the Ascon-Hash256 hash function.
+
 2026-01-13 Gabriele Gorla <gorlik@yahoo.com>
    	* src/mos6502/genor.c,
    	  src/mos6502/genxor.c,
@@ -8,6 +14,12 @@
    	  src/mos6502/genminus.c:
    	  Cosmetic cleanup.
    	  
+2026-01-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/asconaead128.c.in,
+	  support/regression/tests/asconhash256.c.in:
+	  Regression tests for four implementations of the Ascon-AEAD128 cipher and the Ascon-Hash256 hash function each.
+
 2026-01-12 Gabriele Gorla <gorlik@yahoo.com>
    	* src/mos6502/gen.h,
    	  src/mos6502/gen.c,
@@ -108,6 +120,16 @@
   	* src/mos6502/gen.c:
   	  Small genCmpEQorNE improvemetns.
 
+2026-01-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/blake2s.c:
+	  Add regression tests for BLAKE2s hash function.
+
+2026-01-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/smallserpent.c.in:
+	  Add regression tests for a third Serpent cipher implementation.
+
 2025-12-30 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
@@ -118,7 +140,13 @@
 	  Correct typo.
   	* support/regression/tests/lonesha256.c:
   	  Enable lonesha256 for mos6502-stack-auto.
-  	  
+
+2025-12-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/gcrypt-serpent.c.in,
+	  support/regression/tests/serpent.c.in:
+	  Add regression tests for two Serpent cipher implementations.
+
 2025-12-29 Gabriele Gorla <gorlik@yahoo.com>
 
   	* support/regression/tests/gcc-torture-execute-pr28982a.c:
