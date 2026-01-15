@@ -1,3 +1,7 @@
+2026-01-15 Gabriele Gorla <gorlik@yahoo.com>
+    * support/regression/tests/blake2s.c:
+      Disable blake2s for mos6502-stack-auto (insufficient stack space).
+   	  
 2026-01-15 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCast.c,
