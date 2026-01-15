@@ -247,6 +247,9 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 
   size = AOP_SIZE (result);
 
+  if(IS_AOP_Y(AOP(result)))
+    m6502_useReg(m6502_reg_y);
+
 #if 0
   // Rockwell and WDC only - works but limited usefulness
   if (IS_MOS65C02 && AOP_TYPE (right) == AOP_LIT)
@@ -265,9 +268,9 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 
   unsigned int bmask0 = (isLit) ? ((lit >> (0 * 8)) & 0xff) : 0x100;
   unsigned int bmask1 = (isLit) ? ((lit >> (1 * 8)) & 0xff) : 0x100;
-  bool x_zero = IS_AOP_XA(AOP(left)) && (m6502_reg_x->isLitConst) && (m6502_reg_x->litConst==0);
+  bool x_zero = (IS_AOP_XA(AOP(left)) || IS_AOP_XY(AOP(left)))&& (m6502_reg_x->isLitConst) && (m6502_reg_x->litConst==0);
 
-  if (/*IS_AOP_A(AOP(left)) ||*/ x_zero)
+  if (x_zero)
     {
       storeConstToAop(0x00, AOP(result), 1);
       loadRegFromAop (m6502_reg_a, AOP (left), 0);
