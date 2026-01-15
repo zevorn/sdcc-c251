@@ -60,9 +60,8 @@
 #define NOTEST
 #endif
 
-// Bug #3920 - fails to compile
+// Bug #3920 - fails to test
 #if defined(IMPL_opt8) && defined(__SDCC)
-#undef IMPL_{impl}
 #define NOTEST
 #endif
 
@@ -71,9 +70,8 @@
 #define NOTEST
 #endif
 
-// Bug #3920 - fails to compile
+// Bug #3920 - fails to test
 #if defined(IMPL_opt8_lowsize) && defined(__SDCC)
-#undef IMPL_{impl}
 #define NOTEST
 #endif
 

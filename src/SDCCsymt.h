@@ -317,7 +317,7 @@ typedef struct symbol
                                        in the symbol and not in v_struct or the declarator */
   unsigned implicit:1;              /* implicit flag                     */
   unsigned undefined:1;             /* undefined variable                */
-  unsigned infertype:1;             /* type should be inferred from first assign */
+  bool implicitaddtoblock:1;        /* implicit temporary to be added to block later, once that block exists */
   unsigned iscomplit:1;             /* is a temporary symbol for a compound literal */
   unsigned _isparm:1;               /* is a parameter          */
   unsigned ismyparm:1;              /* is parameter of the function being generated */
