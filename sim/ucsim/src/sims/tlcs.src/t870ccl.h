@@ -131,7 +131,11 @@ public:
   virtual char *disassc(t_addr addr, chars *comment);
   virtual int longest_inst(void) { return 5; }
   virtual int inst_length(t_addr addr);
-
+  virtual u16_t aof_dstF(u32_t code32);
+  virtual u16_t aof_dst5(u32_t code32);
+  virtual u16_t aof_srcE(u32_t code32);
+  virtual u16_t aof_srcD(u32_t code32);
+  
   virtual int exec_inst(void);
   virtual int exec1(void);
   virtual int execS(void);
@@ -294,6 +298,30 @@ public:
   virtual int LD_PSW_n(MP) { cF.W(fetch()); return resGO; }
   // 1 f0 - 1 ff
   virtual int SWAP_g(MP);
+  // 2 40 - 2 4f
+  virtual int LD_rA_src(MP) { return ld8(&cA, sdc); }
+  virtual int LD_rW_src(MP) { return ld8(&cW, sdc); }
+  virtual int LD_rC_src(MP) { return ld8(&cC, sdc); }
+  virtual int LD_rB_src(MP) { return ld8(&cB, sdc); }
+  virtual int LD_rE_src(MP) { return ld8(&cE, sdc); }
+  virtual int LD_rD_src(MP) { return ld8(&cD, sdc); }
+  virtual int LD_rL_src(MP) { return ld8(&cL, sdc); }
+  virtual int LD_rH_src(MP) { return ld8(&cH, sdc); }
+  virtual int LD_rrWA_src(MP) { return ld16(&cWA, sda); }
+  virtual int LD_rrBC_src(MP) { return ld16(&cBC, sda); }
+  virtual int LD_rrDE_src(MP) { return ld16(&cDE, sda); }
+  virtual int LD_rrHL_src(MP) { return ld16(&cHL, sda); }
+  virtual int LD_rrIX_src(MP) { return ld16(&cIX, sda); }
+  virtual int LD_rrIY_src(MP) { return ld16(&cIY, sda); }
+  virtual int LD_rrSP_src(MP) { return ld16(&cSP, sda); }
+  // 2 60 - 2 6f
+  virtual int LD_dst_rrWA(MP) { return dst16(sda, rWA); }
+  virtual int LD_dst_rrBC(MP) { return dst16(sda, rBC); }
+  virtual int LD_dst_rrDE(MP) { return dst16(sda, rDE); }
+  virtual int LD_dst_rrHL(MP) { return dst16(sda, rHL); }
+  virtual int LD_dst_rrIX(MP) { return dst16(sda, rIX); }
+  virtual int LD_dst_rrIY(MP) { return dst16(sda, rIY); }
+  virtual int LD_dst_rrSP(MP) { return dst16(sda, rSP); }
   // 2 70 - 2 7f
   virtual int LD_dst_rA(MP) { return dst8(sdc, rA); }
   virtual int LD_dst_rW(MP) { return dst8(sdc, rW); }
@@ -303,6 +331,8 @@ public:
   virtual int LD_dst_rD(MP) { return dst8(sdc, rD); }
   virtual int LD_dst_rL(MP) { return dst8(sdc, rL); }
   virtual int LD_dst_rH(MP) { return dst8(sdc, rH); }
+  // 2 f0 - 2 ff
+  virtual int LD_dst_n(MP) { return dst8(sdc, fetch()); }
 };
 
 

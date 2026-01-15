@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------------------
-  gen.h - header file for code generation for mos6502
+  ralloc.h - header file for code generation for mos6502
 
   Copyright (C) 1998, Sandeep Dutta . sandeep.dutta@usa.net
   Copyright (C) 2026, Gabriele Gorla
@@ -32,7 +32,7 @@ enum
     CND_IDX,
     XA_IDX,
     //    YA_IDX,   
-    YX_IDX,
+    XY_IDX,
     SP_IDX
   };
 
@@ -52,7 +52,7 @@ enum
 //#define M6502MASK_REV 0x80
 #define M6502MASK_XA (M6502MASK_X | M6502MASK_A)
 //#define M6502MASK_YA (M6502MASK_Y | M6502MASK_A)
-#define M6502MASK_YX (M6502MASK_Y | M6502MASK_X)
+#define M6502MASK_XY (M6502MASK_X | M6502MASK_Y)
 #define HW_REG_SIZE (Y_IDX+1)
     
 /* definition for the registers */
@@ -105,7 +105,7 @@ extern reg_info *m6502_reg_x;
 extern reg_info *m6502_reg_y;
 extern reg_info *m6502_reg_xa;
 //extern reg_info *m6502_reg_ya;
-extern reg_info *m6502_reg_yx;
+extern reg_info *m6502_reg_xy;
 extern reg_info *m6502_reg_sp;
 
 reg_info *m6502_regWithIdx (int);

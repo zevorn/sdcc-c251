@@ -1,3 +1,49 @@
+2026-01-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/asconaead128.c.in,
+	  support/regression/tests/asconhash256.c.in:
+	  Add regression test for fifth implementation of the Ascon-AEAD128 cipher and the Ascon-Hash256 hash function.
+
+2026-01-13 Gabriele Gorla <gorlik@yahoo.com>
+   	* src/mos6502/genor.c,
+   	  src/mos6502/genxor.c,
+   	  src/mos6502/genand.c:
+   	  Minor cleanup of bitwise operators.
+   	* src/mos6502/gen.c,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c:
+   	  Cosmetic cleanup.
+   	  
+2026-01-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/asconaead128.c.in,
+	  support/regression/tests/asconhash256.c.in:
+	  Regression tests for four implementations of the Ascon-AEAD128 cipher and the Ascon-Hash256 hash function each.
+
+2026-01-12 Gabriele Gorla <gorlik@yahoo.com>
+   	* src/mos6502/gen.h,
+   	  src/mos6502/gen.c,
+   	  src/mos6502/genlshift.c,
+   	  src/mos6502/genrshift.c,
+   	  src/mos6502/genminus.c,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genxor.c,
+   	  src/mos6502/tempops.c,
+   	  src/mos6502/stackops.c,
+   	  src/mos6502/ralloc.h,
+   	  src/mos6502/ralloc.c,
+   	  src/mos6502/ralloc2.cc:
+   	  Allow register combination XY.
+   	  
+2026-01-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/mcs51/gen.c,
+	  src/mcs51/gen.h,
+	  src/mcs51/peep.c,
+	  support/regression/tests/bug-3711.c,
+	  support/regression/tests/bug-3712.c:
+	  Fix bug #3712.
+
 2026-01-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* .version,
@@ -74,6 +120,16 @@
   	* src/mos6502/gen.c:
   	  Small genCmpEQorNE improvemetns.
 
+2026-01-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/blake2s.c:
+	  Add regression tests for BLAKE2s hash function.
+
+2026-01-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/smallserpent.c.in:
+	  Add regression tests for a third Serpent cipher implementation.
+
 2025-12-30 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
@@ -84,7 +140,13 @@
 	  Correct typo.
   	* support/regression/tests/lonesha256.c:
   	  Enable lonesha256 for mos6502-stack-auto.
-  	  
+
+2025-12-30 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/gcrypt-serpent.c.in,
+	  support/regression/tests/serpent.c.in:
+	  Add regression tests for two Serpent cipher implementations.
+
 2025-12-29 Gabriele Gorla <gorlik@yahoo.com>
 
   	* support/regression/tests/gcc-torture-execute-pr28982a.c:
@@ -138,10 +200,10 @@
    	* src/mos6502/peeph.def:
    	  Additional peephole rules for new codegen paths.
   	* src/mos6502/gen.c:
-      Small genPackBits() improvement.
+	  Small genPackBits() improvement.
   	* src/mos6502/genlshift.c,
   	  support/regression/tests/stack-restore.c.in:
-      Fix typos.
+	  Fix typos.
    	* src/mos6502/tempops.c,
    	  src/mos6502/gen.h:
    	  Enable tracking of tsxaop in the tempstack.
@@ -149,7 +211,7 @@
 2025-12-21 Gabriele Gorla <gorlik@yahoo.com>
 
   	* src/mos6502/gen.c:
-      Optimize compare with zero.
+	  Optimize compare with zero.
 
 2025-12-20 Gabriele Gorla <gorlik@yahoo.com>
 

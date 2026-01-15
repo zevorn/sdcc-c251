@@ -30,6 +30,10 @@
 #include "gen.h"
 #include "dbuf_string.h"
 
+#define OPCODE  "sbc"
+#define OPINCDEC "dec"
+#define INIT_CARRY()   m6502_emitSetCarry(1)
+
 /**************************************************************************
  * genMinusDec :- does subtraction with decrement if possible
  *************************************************************************/
@@ -74,7 +78,7 @@ genMinusDec (iCode * ic)
           else if(bcount<3)
             {
 	      while (bcount--)
-		rmwWithAop ("dec", AOP (result), 1);
+                rmwWithAop (OPINCDEC, AOP (result), 1);
 
 	      return true;
             }
@@ -88,10 +92,10 @@ genMinusDec (iCode * ic)
       if (icount)
 	{
 	  tlbl = safeNewiTempLabel (NULL);
-	  m6502_emitSetCarry (1);
-	  accopWithAop ("sbc", AOP (right), 0);
+	  INIT_CARRY();
+	  accopWithAop (OPCODE, AOP (right), 0);
 	  emitBranch ("bcs", tlbl);
-	  rmwWithReg ("dec", m6502_reg_x);
+	  rmwWithReg (OPINCDEC, m6502_reg_x);
 	  safeEmitLabel (tlbl);
 	  m6502_dirtyReg(m6502_reg_x);
 	}
@@ -110,12 +114,12 @@ genMinusDec (iCode * ic)
 	      if(dst_reg && dst_reg!=m6502_reg_a)
 		{
 		  transferRegReg (src_reg, dst_reg, src_reg->isDead);
-		  rmwWithReg ("dec", dst_reg);
+		  rmwWithReg (OPINCDEC, dst_reg);
 		  return true;  
 		}
 	      if(src_reg->isDead /* && src_reg!=m6502_reg_a */ )
 		{
-		  rmwWithReg ("dec", src_reg);
+		  rmwWithReg (OPINCDEC, src_reg);
 	          storeRegToAop (src_reg, AOP (result), 0);
 		  return true;  
 		}
@@ -147,12 +151,16 @@ genMinusDec (iCode * ic)
       reg_info *reg = getFreeByteReg();
       if(reg)
         {
+          bool needpullx=false;
+          if(AOP(result)->type==AOP_SOF)
+            needpullx=storeRegTempIfSurv(m6502_reg_x);
           tlbl = safeNewiTempLabel (NULL);
           loadRegFromAop (reg, AOP (left), 0);
           emitBranch ("bne", tlbl);
-          rmwWithAop ("dec", AOP (result), 1);
+          rmwWithAop (OPINCDEC, AOP (result), 1);
           safeEmitLabel (tlbl);
-          rmwWithAop ("dec", AOP (result), 0);
+          rmwWithAop (OPINCDEC, AOP (result), 0);
+          loadOrFreeRegTemp(m6502_reg_x, needpullx);
           return true;
         }
     }
@@ -160,7 +168,7 @@ genMinusDec (iCode * ic)
   if (size != 1|| icount>1)
     return false;
 
-  rmwWithAop ("dec", AOP (result), 0);
+  rmwWithAop (OPINCDEC, AOP (result), 0);
 
   return true;
 }
@@ -195,7 +203,7 @@ m6502_genMinus (iCode * ic)
   if (!maskedtopbyte && genMinusDec (ic))
     goto release;
 
-  emitComment (TRACEGEN|VVDBG, "    %s - Can't Dec", __func__);
+  emitComment (TRACEGEN|VVDBG, "    %s - Can't %s", __func__, OPINCDEC);
 
   size = AOP_SIZE (result);
   bool is_right_byte = (AOP_SIZE(right)==1) 
@@ -212,12 +220,12 @@ m6502_genMinus (iCode * ic)
 
       emitComment (TRACEGEN|VVDBG, "    %s: size==2 && one byte", __func__);
       savea = fastSaveAIfSurv ();
-      m6502_emitSetCarry(1);
+      INIT_CARRY();
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
-      accopWithAop ("sbc", AOP(right), 0);
+      accopWithAop (OPCODE, AOP(right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       emitBranch ("bcs", skiplabel);
-      rmwWithAop ("dec", AOP(result), 1);
+      rmwWithAop (OPINCDEC, AOP(result), 1);
       if(IS_AOP_WITH_X(AOP(result)))
 	m6502_dirtyReg(m6502_reg_x);
       if(IS_AOP_WITH_Y(AOP(result)))
@@ -227,19 +235,53 @@ m6502_genMinus (iCode * ic)
       goto release;
     }
 
+  if ( IS_AOP_XA (AOP(right)) && !IS_AOP_XA(AOP(result)) &&
+       (AOP_TYPE(result) == AOP_SOF || AOP_TYPE(left) == AOP_SOF) )
+    {
+      bool restore_a = !m6502_reg_a->isDead;
+      bool restore_x = !m6502_reg_x->isDead;
+      int a_loc, x_loc;
+      storeRegTemp(m6502_reg_a, true);
+      a_loc=getLastTempOfs();
+      storeRegTemp(m6502_reg_x, true);
+      x_loc=getLastTempOfs();
+
+      INIT_CARRY();
+      loadRegFromAop (m6502_reg_a, AOP(left), 0);
+      emitRegTempOp(OPCODE, a_loc);
+      storeRegToAop (m6502_reg_a, AOP (result), 0);
+
+      loadRegFromAop (m6502_reg_a, AOP(left), 1);
+      emitRegTempOp(OPCODE, x_loc);
+      if (maskedtopbyte)
+	emit6502op ("and", IMMDFMT, topbytemask);
+      storeRegToAop (m6502_reg_a, AOP (result), 1);
+
+      if(restore_x)
+        loadRegTemp(m6502_reg_x);
+      else
+        loadRegTemp(NULL);
+      if(restore_a)
+        loadRegTemp(m6502_reg_a);
+      else
+        loadRegTemp(NULL);
+
+      goto release;
+    }
+
   if ( IS_AOP_XA (AOP(left)) && !IS_AOP_XA(AOP(result)) &&
        (AOP_TYPE(result) == AOP_SOF || AOP_TYPE(right) == AOP_SOF) )
     {
       savea = fastSaveAIfSurv();
       bool restore_x = !m6502_reg_x->isDead;
       storeRegTemp(m6502_reg_x, true);
-      m6502_emitSetCarry(1);
-      accopWithAop ("sbc", AOP (right), 0);
+      INIT_CARRY();
+      accopWithAop (OPCODE, AOP (right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );
-      accopWithAop ("sbc", AOP (right), 1);
+      accopWithAop (OPCODE, AOP (right), 1);
       if (maskedtopbyte)
-	    emit6502op ("and", IMMDFMT, topbytemask);
+	emit6502op ("and", IMMDFMT, topbytemask);
       storeRegToAop (m6502_reg_a, AOP (result), 1);
 
       if(restore_x)
@@ -256,7 +298,7 @@ m6502_genMinus (iCode * ic)
       // op - a = neg(a - op) = not(a - op) + 1 = not(a - op - 1)
       savea = fastSaveAIfSurv ();
       m6502_emitSetCarry(0);
-      accopWithAop ("sbc", AOP(left) , 0);
+      accopWithAop (OPCODE, AOP(left) , 0);
       emit6502op("eor", "#0xff");
       if (maskedtopbyte)
 	emit6502op ("and", IMMDFMT, topbytemask);
@@ -279,18 +321,18 @@ m6502_genMinus (iCode * ic)
 	  storeRegTemp (m6502_reg_a, true);
 	  loadRegFromAop (m6502_reg_a, AOP(left), offset);
 	  if (init_carry)
-	    m6502_emitSetCarry(1);
+	    INIT_CARRY();
 
-	  emitRegTempOp("sbc", getLastTempOfs() );
+	  emitRegTempOp(OPCODE, getLastTempOfs() );
 	  loadRegTemp (NULL);
 	}
       else
 	{
 	  loadRegFromAop (m6502_reg_a, AOP(left), offset);
 	  if (init_carry)
-	    m6502_emitSetCarry(1);
+	    INIT_CARRY();
 
-	  accopWithAop ("sbc", AOP(right), offset);
+	  accopWithAop (OPCODE, AOP(right), offset);
 	}
 
       if ( (offset==size-1) && maskedtopbyte)

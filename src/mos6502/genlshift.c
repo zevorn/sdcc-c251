@@ -8,7 +8,7 @@
   Copyright (C) 2003, Erik Petrich
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -740,7 +740,7 @@ m6502_genLeftShift (iCode * ic)
   operand *result = IC_RESULT (ic);
 
   int size, offset;
-  symbol *tlbl, *tlbl1;
+  symbol *loop_label, *skip_label;
   reg_info *countreg = NULL;
   bool restore_a = false;
   bool restore_y = false;
@@ -772,8 +772,8 @@ m6502_genLeftShift (iCode * ic)
   /* shift count is unknown then we have to form
      a loop get the loop count in X : Note: we take
      only the lower order byte since shifting
-     more that 32 bits make no sense anyway, ( the
-     largest size of an object can be only 32 bits ) */
+     more that 64 bits make no sense anyway, ( the
+     largest size of an object can be only 64 bits ) */
 
   // TODO
 #if 0
@@ -782,8 +782,8 @@ m6502_genLeftShift (iCode * ic)
 #endif
 
   size = AOP_SIZE (result);
-  tlbl = safeNewiTempLabel (NULL);
-  tlbl1 = safeNewiTempLabel (NULL);
+  loop_label = safeNewiTempLabel (NULL);
+  skip_label = safeNewiTempLabel (NULL);
 
   if (!m6502_reg_a->isDead && !IS_AOP_WITH_A (AOP (result)))
     {
@@ -810,11 +810,13 @@ m6502_genLeftShift (iCode * ic)
     }
 
   bool op_is_xa = ( IS_AOP_XA (AOP (result)) || IS_AOP_XA (AOP (left)));
-  bool msb_in_x = op_is_xa && AOP_TYPE(result)!=AOP_DIR;
+  bool op_is_xy = ( IS_AOP_XY (AOP (result)) || IS_AOP_XY (AOP (left)));
+  bool msb_in_x = (op_is_xa || op_is_xy) && AOP_TYPE(result)!=AOP_DIR;
   bool early_load_count = (AOP_TYPE(left)==AOP_SOF || AOP_TYPE(right)==AOP_SOF || IS_AOP_WITH_A(AOP(right)));
-  int a_loc = ( op_is_xa )? 0 : size-1;
+  int a_loc = ( op_is_xa | op_is_xy )? 0 : size-1;
 
-  emitComment (TRACEGEN, "  %s - enter", __func__);
+  emitComment (TRACEGEN, "  %s - enter xa:%d xy:%d xmsb:%d countreg:%s",
+               __func__, op_is_xa, op_is_xy, msb_in_x, countreg->name);
 
   if(size==1)
     {
@@ -825,6 +827,9 @@ m6502_genLeftShift (iCode * ic)
         early_load_count = false;
       
     }
+
+  if(IS_AOP_XY(AOP(left)))
+    early_load_count = false;
 
   if(early_load_count)
     {
@@ -841,6 +846,69 @@ m6502_genLeftShift (iCode * ic)
     {
       // do nothing
       loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
+    }
+  else if(op_is_xy)
+    {
+      if(AOP_TYPE(left)==AOP_SOF)
+        {
+	  emitComment (TRACEGEN, "  %s - op is XY SOF", __func__);
+	  loadRegFromAop (m6502_reg_a, AOP (left), 1);
+	  storeRegTempAlways(m6502_reg_a, true);
+	  dirtyRegTemp (getLastTempOfs());
+	  x_in_regtemp = true;
+	  loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	  loadRegTempAt(m6502_reg_x,getLastTempOfs());
+        }
+      else if(IS_AOP_XY (AOP(left)) && IS_AOP_A(AOP(right)))
+	{
+	  emitComment (TRACEGEN, "  %s - left is XY", __func__);
+
+	  transferAopAop (AOP (left), 1, AOP (result), 1);
+
+	  storeRegTempAlways(m6502_reg_x, true);
+	  dirtyRegTemp (getLastTempOfs());
+	  //              m6502_dirtyReg(m6502_reg_x);
+	  x_in_regtemp = true;
+	  transferRegReg(m6502_reg_a, m6502_reg_x, true);
+	  transferRegReg(m6502_reg_y, m6502_reg_a, true);
+	  countreg = m6502_reg_x;
+	  early_load_count = true;
+      
+	}
+      else if(IS_AOP_XY (AOP(result)))
+	{
+          emitComment (TRACEGEN, "  %s - result is XY", __func__);
+
+	  transferAopAop (AOP (left), 1, AOP (result), 1);
+	  storeRegTempAlways(m6502_reg_x, true);
+	  dirtyRegTemp (getLastTempOfs());
+	  loadRegFromAop (m6502_reg_a, AOP (left), 0);
+
+	  //              m6502_dirtyReg(m6502_reg_x);
+	  x_in_regtemp = true;
+	  //              transferRegReg(m6502_reg_a, m6502_reg_x, true);
+	  //              transferRegReg(m6502_reg_y, m6502_reg_a, true);
+	  countreg = m6502_reg_y;
+	  //        early_load_count = true;
+      
+	}
+      else
+	{
+	  emitComment (TRACEGEN, "  %s - XY other", __func__);
+
+	  if(msb_in_x)
+	    {
+	      loadRegFromAop (m6502_reg_x, AOP (left), 1);
+	      storeRegTempAlways(m6502_reg_x, true);
+	      dirtyRegTemp (getLastTempOfs());
+	      x_in_regtemp = true;
+	    }
+	  else
+            {
+	      transferAopAop (AOP (left), 1, AOP (result), 1);
+            }
+	  loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	}
     }
   else if(op_is_xa)
     {
@@ -865,7 +933,7 @@ m6502_genLeftShift (iCode * ic)
         }
       else
 	{
-	  emitComment (TRACEGEN, "  %s - other", __func__);
+	  emitComment (TRACEGEN, "  %s - XA other", __func__);
 
 	  if(msb_in_x)
 	    {
@@ -949,17 +1017,17 @@ m6502_genLeftShift (iCode * ic)
     }
 
   m6502_emitCmp(countreg, 0);
-  emitBranch ("beq", tlbl1);
+  emitBranch ("beq", skip_label);
 
   // FIXME: find a good solution for this
   //  if(IS_AOP_WITH_A (AOP (right)) && sameRegs (AOP (left), AOP (result)) )
   //    loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
 
-  safeEmitLabel (tlbl); // loop label
+  safeEmitLabel (loop_label); // loop label
 
-  if(op_is_xa || size==1)
+  if(op_is_xa || op_is_xy || size==1)
     {
-      emitComment (TRACEGEN, "  %s - op is XA or byte", __func__);
+      emitComment (TRACEGEN, "  %s - op is XA/XY or byte", __func__);
       rmwWithReg ("asl", m6502_reg_a);
       if(size==2)
         {
@@ -978,16 +1046,16 @@ m6502_genLeftShift (iCode * ic)
     }
 
   rmwWithReg("dec", countreg);
-  emit6502op("bne", "%05d$", safeLabelNum (tlbl));
+  emitBranch ("bne", loop_label);
 
   if (x_in_regtemp)
     loadRegTemp(m6502_reg_x);
 
-  safeEmitLabel (tlbl1); // end label
+  safeEmitLabel (skip_label); // end label
 
   if (maskedtopbyte)
     {
-      if(op_is_xa)
+      if(op_is_xa || op_is_xy)
         {
           m6502_pushReg (m6502_reg_a, false);
 	  if(msb_in_x)
@@ -1013,7 +1081,7 @@ m6502_genLeftShift (iCode * ic)
   //    {
   //      storeRegToAop (m6502_reg_a, AOP(result) , 0);
   //      if(size==2)
-  if(op_is_xa)
+  if(op_is_xa || op_is_xy)
     {
       if(msb_in_x)
 	storeRegToAop (m6502_reg_x, AOP(result) , 1);
@@ -1022,10 +1090,17 @@ m6502_genLeftShift (iCode * ic)
   //  else
   //    storeRegToAop (m6502_reg_a, AOP(result) , size-1);
 
-  // After loop, countreg is always 0
-  m6502_dirtyReg(countreg);
-  countreg->isLitConst = 1;
-  countreg->litConst = 0;
+  if(msb_in_x && countreg==m6502_reg_x)
+    {
+      m6502_dirtyReg(m6502_reg_x);
+    }
+  else
+    {
+      // After loop, countreg is always 0
+      m6502_dirtyReg(countreg);
+      countreg->isLitConst = 1;
+      countreg->litConst = 0;
+    }
 
   if(restore_y)
     loadRegTemp(m6502_reg_y);
