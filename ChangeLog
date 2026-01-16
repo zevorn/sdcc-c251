@@ -1,5 +1,11 @@
 2026-01-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* support/regression/tests/asconaead128.c.in,
+	  support/regression/tests/asconhash256.c.in:
+	  Add regression test for sixth implementation of the Ascon-AEAD128 cipher and the Ascon-Hash256 hash function.
+
+2026-01-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/SDCCsymt.c:
 	  Expose prototypes of fixed-point math support functions for pic16 only, since no other port supports fixed-point math.
 
