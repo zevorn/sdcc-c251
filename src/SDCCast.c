@@ -373,26 +373,94 @@ removePostIncDecOps (ast * tree)
 #endif
 
 /*-----------------------------------------------------------------*/
+/* inlineTempVar - create a temporary variable for inlining        */
+/*-----------------------------------------------------------------*/
+static symbol *
+inlineTempVar (sym_link *type, long level)
+{
+  symbol *sym;
+
+  sym = newSymbol (genSymName (level), level);
+  sym->type = copyLinkChain (type);
+  sym->etype = getSpec (sym->type);
+  SPEC_SCLS (sym->etype) = S_AUTO;
+  SPEC_OCLS (sym->etype) = NULL;
+  SPEC_EXTR (sym->etype) = 0;
+  SPEC_STAT (sym->etype) = 0;
+  if (IS_SPEC (sym->type))
+    {
+      SPEC_CONST (sym->type) = false;
+      SPEC_VOLATILE (sym->type) = false;
+      SPEC_ATOMIC (sym->type) = false;
+      SPEC_ADDRSPACE (sym->type) = 0;
+    }
+  else
+    {
+      DCL_PTR_CONST (sym->type) = false;
+      DCL_PTR_VOLATILE (sym->type) = false;
+      DCL_PTR_ATOMIC (sym->type) = false;
+      DCL_PTR_ADDRSPACE (sym->type) = 0;
+    }
+  SPEC_ABSA (sym->etype) = 0;
+
+  return sym;
+}
+
+/*-----------------------------------------------------------------*/
+/* inlineAddDecl - add a variable declaration to an ast block. It  */
+/*                 is also added to the symbol table if addSymTab  */
+/*                 is nonzero.                                     */
+/*-----------------------------------------------------------------*/
+static void
+inlineAddDecl (symbol *sym, ast *block, bool addSymTab, bool toFront)
+{
+  sym->reqv = NULL;
+  SYM_SPIL_LOC (sym) = NULL;
+  sym->key = 0;
+  if (block != NULL)
+    {
+      symbol **decl = &(block->values.sym);
+
+      sym->level = block->level;
+      sym->block = block->block;
+
+      while (*decl)
+        {
+          if (strcmp ((*decl)->name, sym->name) == 0)
+            return;
+          decl = &((*decl)->next);
+        }
+
+      if (toFront)
+        {
+          sym->next = block->values.sym;
+          block->values.sym = sym;
+        }
+      else
+        *decl = sym;
+
+      if (addSymTab)
+        addSym (SymbolTab, sym, sym->name, sym->level, sym->block, false);
+    }
+}
+
+/*-----------------------------------------------------------------*/
 /* replaceAstWithTemporary: Replace the AST pointed to by the arg  */
 /*            with a reference to a new temporary variable. Returns*/
 /*            an AST which assigns the original value to the       */
 /*            temporary.                                           */
 /*-----------------------------------------------------------------*/
 ast *
-replaceAstWithTemporary (ast ** treeptr)
+replaceAstWithTemporary (ast **treeptr)
 {
-  symbol *sym = newSymbol (genSymName (NestLevel), NestLevel);
-  ast *tempvar;
+  ast *dtr = decorateType (resolveSymbols (*treeptr), RESULT_TYPE_NONE, true);
+  symbol *sym = inlineTempVar (TTYPE (dtr), NestLevel);
+  inlineAddDecl (sym, NULL, true, false);
 
-  /* Tell gatherImplicitVariables() to automatically give the
-     symbol the correct type */
-  sym->infertype = 1;
-  sym->type = NULL;
-  sym->etype = NULL;
-
-  tempvar = newNode ('=', newAst_VALUE (symbolVal (sym)), *treeptr);
+  ast *tempvar = newNode ('=', newAst_VALUE (symbolVal (sym)), *treeptr);
   *treeptr = newAst_VALUE (symbolVal (sym));
 
+  sym->implicitaddtoblock = true;
   addSymChain (&sym);
 
   return tempvar;
@@ -2846,13 +2914,12 @@ getLeftResultType (ast * tree, RESULT_TYPE resultType)
 }
 
 /*------------------------------------------------------------------*/
-/* gatherImplicitVariables: assigns correct type information to     */
-/*            symbols and values created by replaceAstWithTemporary */
-/*            and adds the symbols to the declarations list of the  */
-/*            innermost block that contains them                    */
+/* gatherImplicitVariables:  adds the symbols created by            */
+/*            replaceAstWithTemporary to the declarations list of   */
+/*            the innermost block that contains them                */
 /*------------------------------------------------------------------*/
 void
-gatherImplicitVariables (ast * tree, ast * block)
+gatherImplicitVariables (ast *tree, ast *block)
 {
   if (!tree)
     return;
@@ -2868,26 +2935,8 @@ gatherImplicitVariables (ast * tree, ast * block)
 
       /* special case for assignment to compiler-generated temporary variable:
          compute type of RHS, and set the symbol's type to match */
-      if (assignee->type == NULL && assignee->infertype)
+      if (assignee->implicitaddtoblock)
         {
-          ast *dtr = decorateType (resolveSymbols (tree->right), RESULT_TYPE_NONE, true);
-
-          if (dtr != tree->right)
-            tree->right = dtr;
-
-          assignee->type = copyLinkChain (TTYPE (dtr));
-          assignee->etype = getSpec (assignee->type);
-          SPEC_ADDRSPACE (assignee->etype) = 0;
-          SPEC_SCLS (assignee->etype) = S_AUTO;
-          SPEC_OCLS (assignee->etype) = NULL;
-          SPEC_EXTR (assignee->etype) = 0;
-          SPEC_STAT (assignee->etype) = 0;
-          SPEC_VOLATILE (assignee->etype) = false;
-          SPEC_ATOMIC (assignee->etype) = false;
-          SPEC_OPTIONAL (assignee->etype) = false;
-          SPEC_ABSA (assignee->etype) = 0;
-          SPEC_CONST (assignee->etype) = 0;
-
           wassertl (block != NULL, "implicit variable not contained in block");
           wassert (assignee->next == NULL);
           if (block != NULL)
@@ -2902,6 +2951,7 @@ gatherImplicitVariables (ast * tree, ast * block)
 
               *decl = assignee;
             }
+          assignee->implicitaddtoblock = false;
         }
     }
   if (tree->type == EX_VALUE && IS_AST_SYM_VALUE (tree) && AST_SYMBOL (tree)->iscomplit)
@@ -2919,14 +2969,8 @@ gatherImplicitVariables (ast * tree, ast * block)
             }
 
           *decl = tempsym;
+          AST_SYMBOL (tree)->iscomplit = false;
         }
-    }
-  if (tree->type == EX_VALUE && !(IS_LITERAL (tree->opval.val->etype)) &&
-      tree->opval.val->type == NULL && tree->opval.val->sym && tree->opval.val->sym->infertype)
-    {
-      /* fixup type of value for compiler-inferred temporary var */
-      tree->opval.val->type = tree->opval.val->sym->type;
-      tree->opval.val->etype = tree->opval.val->sym->etype;
     }
 
   /* If entering a block with symbols defined, mark the symbols in-scope */
@@ -7225,76 +7269,6 @@ fixupInline (ast * tree, long level)
 }
 
 /*-----------------------------------------------------------------*/
-/* inlineAddDecl - add a variable declaration to an ast block. It  */
-/*                 is also added to the symbol table if addSymTab  */
-/*                 is nonzero.                                     */
-/*-----------------------------------------------------------------*/
-static void
-inlineAddDecl (symbol * sym, ast * block, int addSymTab, int toFront)
-{
-  sym->reqv = NULL;
-  SYM_SPIL_LOC (sym) = NULL;
-  sym->key = 0;
-  if (block != NULL)
-    {
-      symbol **decl = &(block->values.sym);
-
-      sym->level = block->level;
-      sym->block = block->block;
-
-      while (*decl)
-        {
-          if (strcmp ((*decl)->name, sym->name) == 0)
-            return;
-          decl = &((*decl)->next);
-        }
-
-      if (toFront)
-        {
-          sym->next = block->values.sym;
-          block->values.sym = sym;
-        }
-      else
-        *decl = sym;
-
-      if (addSymTab)
-        addSym (SymbolTab, sym, sym->name, sym->level, sym->block, false);
-    }
-}
-
-/*-----------------------------------------------------------------*/
-/* inlineTempVar - create a temporary variable for inlining        */
-/*-----------------------------------------------------------------*/
-static symbol *
-inlineTempVar (sym_link * type, long level)
-{
-  symbol *sym;
-
-  sym = newSymbol (genSymName (level), level);
-  sym->type = copyLinkChain (type);
-  sym->etype = getSpec (sym->type);
-  SPEC_SCLS (sym->etype) = S_AUTO;
-  SPEC_OCLS (sym->etype) = NULL;
-  SPEC_EXTR (sym->etype) = 0;
-  SPEC_STAT (sym->etype) = 0;
-  if (IS_SPEC (sym->type))
-    {
-      SPEC_VOLATILE (sym->type) = false;
-      SPEC_ATOMIC (sym->type) = false;
-      SPEC_ADDRSPACE (sym->type) = 0;
-    }
-  else
-    {
-      DCL_PTR_VOLATILE (sym->type) = false;
-      DCL_PTR_ATOMIC (sym->type) = false;
-      DCL_PTR_ADDRSPACE (sym->type) = 0;
-    }
-  SPEC_ABSA (sym->etype) = 0;
-
-  return sym;
-}
-
-/*-----------------------------------------------------------------*/
 /* inlineFindParm - search an ast tree of parameters to find one   */
 /*                  at a particular index (0=first parameter).     */
 /*                  Returns 0 if not found.                        */
@@ -7662,6 +7636,8 @@ createFunction (symbol * name, ast * body)
   inlineState.count = 0;
   expandInlineFuncs (body, NULL);
 
+  gatherImplicitVariables (body, NULL); /* move implicit variables into blocks */
+
   if (FUNC_ISINLINE (name->type))
     name->funcTree = copyAst (body);
 
@@ -7673,8 +7649,6 @@ createFunction (symbol * name, ast * body)
   /* set the stack pointer */
   stackPtr = 0;
   xstackPtr = -1;
-
-  gatherImplicitVariables (body, NULL); /* move implicit variables into blocks */
 
   /* allocate & autoinit the block variables */
   processBlockVars (body, &stack, ALLOCATE);
