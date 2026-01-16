@@ -5,7 +5,7 @@
    Further work resulted in the BLAKE2 family and BLAKE3 has functions. Among them, the
    BLAKE2s variant is best suited for memory-constrained devices.
 
-   The test is based on the samplel coe from RFC 7693, and thus under the license for code
+   The test is based on the sample code from RFC 7693, and thus under the license for code
    components from RFCs, i.e. the “Revised BSD License”.
 */
 
@@ -13,7 +13,7 @@
 
 // While BLAKE2s is suitable for systems with very low memory, the official self-test unfortunately
 // uses about 1.5 K of stack space.
-#if defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) || defined(__SDCC_mcs51)
+#if defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) || defined(__SDCC_mcs51) || (defined(__SDCC_mos6502) && defined(__SDCC_STACK_AUTO))
 #define LACK_OF_MEMORY
 #endif
 
