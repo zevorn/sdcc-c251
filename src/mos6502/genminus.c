@@ -130,7 +130,6 @@ genMinusDec (iCode * ic)
 
   // sameRegs
 
-  // TODO: can inc blah,x
   if (!aopCanIncDec (AOP (result)))
     return false;
 
@@ -152,8 +151,10 @@ genMinusDec (iCode * ic)
       if(reg)
         {
           bool needpullx=false;
-          if(AOP(result)->type==AOP_SOF)
+
+          if(AOP_TYPE(result)==AOP_SOF || AOP_TYPE(left)==AOP_SOF)
             needpullx=storeRegTempIfSurv(m6502_reg_x);
+
           tlbl = safeNewiTempLabel (NULL);
           loadRegFromAop (reg, AOP (left), 0);
           emitBranch ("bne", tlbl);
@@ -275,13 +276,17 @@ m6502_genMinus (iCode * ic)
       savea = fastSaveAIfSurv();
       bool restore_x = !m6502_reg_x->isDead;
       storeRegTemp(m6502_reg_x, true);
+      m6502_emitTSX();
+      loadRegFromAop (m6502_reg_a, AOP(left), 0);
       INIT_CARRY();
       accopWithAop (OPCODE, AOP (right), 0);
+
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );
       accopWithAop (OPCODE, AOP (right), 1);
       if (maskedtopbyte)
 	emit6502op ("and", IMMDFMT, topbytemask);
+
       storeRegToAop (m6502_reg_a, AOP (result), 1);
 
       if(restore_x)

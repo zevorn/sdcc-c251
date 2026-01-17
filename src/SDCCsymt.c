@@ -4898,7 +4898,6 @@ initCSupport (void)
   floatType = newFloatLink ();
   fixed16x16Type = newFixed16x16Link ();
   sym_link *boolType = newLink (SPECIFIER); SPEC_NOUN (boolType) = V_BOOL; // Can't use newBoolLink, as it might give us a __bit.
-  sym_link *charType = (options.signed_char) ? SCHARTYPE : UCHARTYPE;
 
   fsadd = funcOfType ("__fsadd", floatType, floatType, 2, options.float_rent);
   fssub = funcOfType ("__fssub", floatType, floatType, 2, options.float_rent);
@@ -4907,26 +4906,6 @@ initCSupport (void)
   fseq = funcOfType ("__fseq", boolType, floatType, 2, options.float_rent);
   fsneq = funcOfType ("__fsneq", boolType, floatType, 2, options.float_rent);
   fslt = funcOfType ("__fslt", boolType, floatType, 2, options.float_rent);
-
-  // void __sdcc_atomic_load (void *val, volatile const void *obj, size_t n);
-  sdcc_atomic_load = funcOfTypeVarg ("__sdcc_atomic_load", "v", 3, (const char * []){"vg*", "CVvg*", "Ui"});
-  // void __sdcc_atomic_store (volatile void *obj, void *val, size_t n);
-  sdcc_atomic_store = funcOfTypeVarg ("__sdcc_atomic_store", "v", 3, (const char * []){"Vvg*", "Cvg*", "Ui"});
-  // void __sdcc_atomic_exchange (volatile void *obj, void *val, size_t n);
-  sdcc_atomic_exchange = funcOfTypeVarg ("__sdcc_atomic_exchange", "v", 3, (const char * []){"Vvg*", "vg*", "Ui"});
-  // void __sdcc_atomic_compare_exchange (volatile void *obj, void *exp, void *val, size_t n);
-  sdcc_atomic_compare_exchange = funcOfTypeVarg ("__sdcc_atomic_compare_exchange", "v", 4, (const char * []){"Vvg*", "vg*", "Cvg*", "Ui"});
-
-  fps16x16_add = funcOfType ("__fps16x16_add", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
-  fps16x16_sub = funcOfType ("__fps16x16_sub", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
-  fps16x16_mul = funcOfType ("__fps16x16_mul", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
-  fps16x16_div = funcOfType ("__fps16x16_div", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
-  fps16x16_eq = funcOfType ("__fps16x16_eq", charType, fixed16x16Type, 2, options.float_rent);
-  fps16x16_neq = funcOfType ("__fps16x16_neq", charType, fixed16x16Type, 2, options.float_rent);
-  fps16x16_lt = funcOfType ("__fps16x16_lt", charType, fixed16x16Type, 2, options.float_rent);
-  fps16x16_lteq = funcOfType ("__fps16x16_lteq", charType, fixed16x16Type, 2, options.float_rent);
-  fps16x16_gt = funcOfType ("__fps16x16_gt", charType, fixed16x16Type, 2, options.float_rent);
-  fps16x16_gteq = funcOfType ("__fps16x16_gteq", charType, fixed16x16Type, 2, options.float_rent);
 
   for (tofrom = 0; tofrom < 2; tofrom++)
     {
@@ -4952,36 +4931,61 @@ initCSupport (void)
         }
     }
 
-  for (tofrom = 0; tofrom < 2; tofrom++)
-    {
-      for (bwd = 0; bwd < 5; bwd++)
-        {
-          for (su = 0; su < 2; su++)
-            {
-              struct dbuf_s dbuf;
+  // void __sdcc_atomic_load (void *val, volatile const void *obj, size_t n);
+  sdcc_atomic_load = funcOfTypeVarg ("__sdcc_atomic_load", "v", 3, (const char * []){"vg*", "CVvg*", "Ui"});
+  // void __sdcc_atomic_store (volatile void *obj, void *val, size_t n);
+  sdcc_atomic_store = funcOfTypeVarg ("__sdcc_atomic_store", "v", 3, (const char * []){"Vvg*", "Cvg*", "Ui"});
+  // void __sdcc_atomic_exchange (volatile void *obj, void *val, size_t n);
+  sdcc_atomic_exchange = funcOfTypeVarg ("__sdcc_atomic_exchange", "v", 3, (const char * []){"Vvg*", "vg*", "Ui"});
+  // void __sdcc_atomic_compare_exchange (volatile void *obj, void *exp, void *val, size_t n);
+  sdcc_atomic_compare_exchange = funcOfTypeVarg ("__sdcc_atomic_compare_exchange", "v", 4, (const char * []){"Vvg*", "vg*", "Cvg*", "Ui"});
 
-              dbuf_init (&dbuf, 128);
-              if (tofrom)
+  if (TARGET_IS_PIC16)
+    {
+      sym_link *charType = (options.signed_char) ? SCHARTYPE : UCHARTYPE;
+
+      fps16x16_add = funcOfType ("__fps16x16_add", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
+      fps16x16_sub = funcOfType ("__fps16x16_sub", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
+      fps16x16_mul = funcOfType ("__fps16x16_mul", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
+      fps16x16_div = funcOfType ("__fps16x16_div", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
+      fps16x16_eq = funcOfType ("__fps16x16_eq", charType, fixed16x16Type, 2, options.float_rent);
+      fps16x16_neq = funcOfType ("__fps16x16_neq", charType, fixed16x16Type, 2, options.float_rent);
+      fps16x16_lt = funcOfType ("__fps16x16_lt", charType, fixed16x16Type, 2, options.float_rent);
+      fps16x16_lteq = funcOfType ("__fps16x16_lteq", charType, fixed16x16Type, 2, options.float_rent);
+      fps16x16_gt = funcOfType ("__fps16x16_gt", charType, fixed16x16Type, 2, options.float_rent);
+      fps16x16_gteq = funcOfType ("__fps16x16_gteq", charType, fixed16x16Type, 2, options.float_rent);
+
+      for (tofrom = 0; tofrom < 2; tofrom++)
+        {
+          for (bwd = 0; bwd < 5; bwd++)
+            {
+              for (su = 0; su < 2; su++)
                 {
-                  dbuf_printf (&dbuf, "__fps16x162%s%s", ssu[su * 3], fp16x16sbwd[bwd]);
-                  if (bwd == 4)
-                    fp16x16conv[tofrom][bwd][su] =
-                      funcOfType (dbuf_c_str (&dbuf), floatType, fixed16x16Type, 1, options.float_rent);
+                  struct dbuf_s dbuf;
+    
+                  dbuf_init (&dbuf, 128);
+                  if (tofrom)
+                    {
+                      dbuf_printf (&dbuf, "__fps16x162%s%s", ssu[su * 3], fp16x16sbwd[bwd]);
+                      if (bwd == 4)
+                        fp16x16conv[tofrom][bwd][su] =
+                          funcOfType (dbuf_c_str (&dbuf), floatType, fixed16x16Type, 1, options.float_rent);
+                      else
+                        fp16x16conv[tofrom][bwd][su] =
+                          funcOfType (dbuf_c_str (&dbuf), multypes[bwd][su], fixed16x16Type, 1, options.float_rent);
+                    }
                   else
-                    fp16x16conv[tofrom][bwd][su] =
-                      funcOfType (dbuf_c_str (&dbuf), multypes[bwd][su], fixed16x16Type, 1, options.float_rent);
+                    {
+                      dbuf_printf (&dbuf, "__%s%s2fps16x16", ssu[su * 3], fp16x16sbwd[bwd]);
+                      if (bwd == 4)
+                        fp16x16conv[tofrom][bwd][su] =
+                          funcOfType (dbuf_c_str (&dbuf), fixed16x16Type, floatType, 1, options.float_rent);
+                      else
+                        fp16x16conv[tofrom][bwd][su] =
+                          funcOfType (dbuf_c_str (&dbuf), fixed16x16Type, multypes[bwd][su], 1, options.float_rent);
+                    }
+                  dbuf_destroy (&dbuf);
                 }
-              else
-                {
-                  dbuf_printf (&dbuf, "__%s%s2fps16x16", ssu[su * 3], fp16x16sbwd[bwd]);
-                  if (bwd == 4)
-                    fp16x16conv[tofrom][bwd][su] =
-                      funcOfType (dbuf_c_str (&dbuf), fixed16x16Type, floatType, 1, options.float_rent);
-                  else
-                    fp16x16conv[tofrom][bwd][su] =
-                      funcOfType (dbuf_c_str (&dbuf), fixed16x16Type, multypes[bwd][su], 1, options.float_rent);
-                }
-              dbuf_destroy (&dbuf);
             }
         }
     }

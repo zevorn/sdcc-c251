@@ -240,14 +240,15 @@ void m6502_genXor (iCode * ic, iCode * ifx);
 void m6502_genAnd (iCode * ic, iCode * ifx);
 void m6502_genPlus (iCode * ic);
 void m6502_genMinus (iCode * ic);
+void m6502_genRot (iCode * ic);
 
 void AccRsh (int shCount, bool sign);
 void AccLsh (int shCount);
 void m6502_genRightShift (iCode * ic);
 void m6502_genLeftShift (iCode * ic);
+
 bool aopCanShift (asmop * aop);
 void addSign (operand * result, int offset, int sign);
-
 
 #endif
 
