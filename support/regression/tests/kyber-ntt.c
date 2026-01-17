@@ -18,6 +18,7 @@
 // "Public Domain (https://creativecommons.org/share-your-work/public-domain/cc0/);
 // or Apache 2.0 License (https://www.apache.org/licenses/LICENSE-2.0.html)."
 
+
 // params.h
 #ifndef PARAMS_H
 #define PARAMS_H
@@ -311,6 +312,7 @@ void basemul(int16_t r[2], const int16_t a[2], const int16_t b[2], int16_t zeta)
 }
 #endif
 
+
 #ifndef LACK_OF_MEMORY
 /*
  * Element of R_q = Z_q[X]/(X^n + 1), q = 3329. Represents polynomial
@@ -325,9 +327,10 @@ void testKyberNTT(void)
   for(int16_t i = 0; i < 256; i++)
     buf[i] = montgomery_reduce(i);
 
+  ntt(buf);
+
   invntt(buf);
 
-  ntt(buf);
 
   for(int16_t i = 0; i < 256; i++)
     ASSERT(buf[i] == i);
