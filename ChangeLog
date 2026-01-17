@@ -1,5 +1,9 @@
 2026-01-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* Merge pqc branch.
+
+2026-01-17 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* support/regression/tests/kyber-ntt.c:
 	  Regression test for Kyber PQC NTT.
 	* support/regression/tests/dilithium-ntt.c,
