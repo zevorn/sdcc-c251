@@ -172,7 +172,7 @@ int safeLabelNum(symbol * a);
 
 void emit6502op (const char *inst, const char *fmt, ...);
 bool m6502_emitCmp (reg_info *reg, unsigned char v);
-void emitBranch (char *branchop, symbol * tlbl);
+void m6502_emitBranch (char *branchop, symbol * tlbl);
 void m6502_emitTSX(void);
 void m6502_emitSetCarry(int c);
 

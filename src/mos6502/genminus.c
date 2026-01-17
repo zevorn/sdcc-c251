@@ -94,7 +94,7 @@ genMinusDec (iCode * ic)
 	  tlbl = safeNewiTempLabel (NULL);
 	  INIT_CARRY();
 	  accopWithAop (OPCODE, AOP (right), 0);
-	  emitBranch ("bcs", tlbl);
+	  m6502_emitBranch ("bcs", tlbl);
 	  rmwWithReg (OPINCDEC, m6502_reg_x);
 	  safeEmitLabel (tlbl);
 	  m6502_dirtyReg(m6502_reg_x);
@@ -157,7 +157,7 @@ genMinusDec (iCode * ic)
 
           tlbl = safeNewiTempLabel (NULL);
           loadRegFromAop (reg, AOP (left), 0);
-          emitBranch ("bne", tlbl);
+          m6502_emitBranch ("bne", tlbl);
           rmwWithAop (OPINCDEC, AOP (result), 1);
           safeEmitLabel (tlbl);
           rmwWithAop (OPINCDEC, AOP (result), 0);
@@ -225,7 +225,7 @@ m6502_genMinus (iCode * ic)
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       accopWithAop (OPCODE, AOP(right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
-      emitBranch ("bcs", skiplabel);
+      m6502_emitBranch ("bcs", skiplabel);
       rmwWithAop (OPINCDEC, AOP(result), 1);
       if(IS_AOP_WITH_X(AOP(result)))
 	m6502_dirtyReg(m6502_reg_x);
@@ -279,7 +279,7 @@ m6502_genMinus (iCode * ic)
       m6502_emitTSX();
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       INIT_CARRY();
-      accopWithAop (OPCODE, AOP (right), 0);
+        accopWithAop (OPCODE, AOP (right), 0);
 
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );

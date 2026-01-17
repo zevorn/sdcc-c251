@@ -1,3 +1,16 @@
+2026-01-17 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c,
+   	  src/mos6502/gen.h,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c,
+   	  src/mos6502/genlshift.c,
+   	  src/mos6502/genrshift.c,
+   	  src/mos6502/genor.c,
+   	  src/mos6502/genxor.c,
+   	  src/mos6502/genand.c:
+   	  Renamed emitBranch() to m6502_emitBranch().
+
 2026-01-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge pqc branch.
