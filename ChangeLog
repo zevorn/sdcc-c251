@@ -5,6 +5,8 @@
 	* support/regression/tests/dilithium-ntt.c,
 	  support/regression/ports/*/uCsim.cmd:
 	  Regression test for Dilithium PQC NTT.
+	* support/regression/tests/falcon-ntt.c:
+	  Regression test for Falcon PQC NTT.
 
 2026-01-16 Philipp Klaus Krause <philipp@colecovision.eu>
 

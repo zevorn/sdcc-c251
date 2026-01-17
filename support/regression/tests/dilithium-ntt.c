@@ -362,14 +362,13 @@ void testDilithiumNTT(void)
 #ifndef LACK_OF_MEMORY
   for(int32_t i = 0; i < N; i++)
     buf[i] = montgomery_reduce(i);
-#if 1 // BUG? Abnormal stop.
+
   ntt(buf);
 
   invntt_tomont(buf);
 
   for(int32_t i = 0; i < N; i++)
     ASSERT(buf[i] == i);
-#endif
 #endif
 }
 
