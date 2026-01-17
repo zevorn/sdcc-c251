@@ -10,6 +10,9 @@
    	  src/mos6502/genxor.c,
    	  src/mos6502/genand.c:
    	  Renamed emitBranch() to m6502_emitBranch().
+   	* support/regression/ports/uc6502,
+   	  support/regression/ports/uc6502-stack-auto:
+      Enable stack checking in uCsim.
 
 2026-01-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
