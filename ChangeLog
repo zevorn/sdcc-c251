@@ -90,6 +90,8 @@
     * support/regression/test/serpent.c.in,
       support/regression/test/smallserpent.c.in:
       Enable serpent for mos6502.
+    * support/regression/test/asconhash256.c.in:
+      Enable working tests for mos6502.
 
 2026-01-17 Philipp Klaus Krause <philipp@colecovision.eu>
 

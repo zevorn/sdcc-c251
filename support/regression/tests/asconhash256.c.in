@@ -37,11 +37,20 @@
 
 
 // Lack of memory. TODO: Check again once we have better optimizations for these targets.
-#if defined(__SDCC_mcs51) || defined(__SDCC_pdk14) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
+#if defined(__SDCC_mcs51) || defined(__SDCC_pdk14) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15)
 #undef IMPL_{impl}
 #define NOTEST
 #endif
 
+
+#if defined(SDCC_MOS) // bug 3920
+#if defined(IMPL_opt8) || defined(IMPL_opt8_lowsize) || defined(__SDCC_STACK_AUTO)
+#undef IMPL_{impl}
+#define NOTEST
+#endif
+#endif
+
+#if 0
 
 // Bug #3920 - fails test
 #if defined(IMPL_opt32_lowsize) && defined(__SDCC) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
@@ -67,7 +76,7 @@
 #if defined(IMPL_opt8_mylowsize) && defined(__SDCC) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 #define NOTEST
 #endif
-
+#endif
 
 // crypto_hash.h
 int crypto_hash(unsigned char *out, const unsigned char *in,
