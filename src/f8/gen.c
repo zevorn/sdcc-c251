@@ -4527,8 +4527,13 @@ genPlus (const iCode *ic)
          aopAre8_2 (ASMOP_X, 0, rightop, i) && aopAre8_2 (ASMOP_Y, 1, rightop, i + 1))
          {
            genMove_o (ASMOP_X, 0, leftop, i, 2, true, true, false, false, !started);
-           emit3_o (started ? A_ADC : A_ADD, ASMOP_X, 0, rightop, i);
-           emit3_o (A_ADC, ASMOP_X, 1, rightop, i + 1);
+           if (!IS_F8L && aopAre16_2 (ASMOP_X, 0, rightop, i))
+             emit3_o (started ? A_ADCW : A_ADDW, ASMOP_X, 0, rightop, i);
+           else
+             {
+               emit3_o (started ? A_ADC : A_ADD, ASMOP_X, 0, rightop, i);
+               emit3_o (A_ADC, ASMOP_X, 1, rightop, i + 1);
+             }
            genMove_o (result->aop, i, ASMOP_X, 0, 2, true, true, false, false, i + 2 == size);
            i += 2;
            started = true;
@@ -4560,7 +4565,15 @@ genPlus (const iCode *ic)
            started = true;
            continue;
          }
-
+       if (!xl_free && !maskedbyte && !started && aopInReg (leftop, i, XL_IDX) && (aopIsLitVal (rightop, i, 1, 1) || aopIsLitVal (rightop, i, 1, -1)) &&
+         (aopInReg (result->aop, i, XH_IDX) || aopInReg (result->aop, i, YL_IDX) || aopInReg (result->aop, i, YH_IDX) || aopInReg (result->aop, i, ZL_IDX) || aopInReg (result->aop, i, ZH_IDX)))
+         {
+           emit3_o (A_LD, result->aop, i, leftop, i);
+           emit3_o (aopIsLitVal (rightop, i, 1, 1) ? A_INC : A_DEC, result->aop, i, 0, 0);
+           i++;
+           started = true;
+           continue;
+         }
        if (!xl_free)
          push (ASMOP_XL, 0, 1);
        if (aopInReg (rightop, i, XL_IDX))
@@ -4637,11 +4650,13 @@ genMult (const iCode *ic)
 
   if (left->aop->size > 1 || right->aop->size > 1 || result->aop->size > 2)
     wassertl (0, "Large multiplication is handled through support function calls.");
+  wassert (!IS_F8L);
 
   int size = result->aop->size;
   asmop *mulop = 0;
 
-  if (size == 2 && aopInReg (result->aop, 0, X_IDX))
+  if (size == 2 && aopInReg (result->aop, 0, X_IDX) ||
+    size == 1 && regDead (X_IDX, ic) && aopInReg (result->aop, 0, XL_IDX) && (aopInReg (left->aop, 0, XL_IDX) || aopInReg (left->aop, 0, XH_IDX) || aopInReg (right->aop, 0, XL_IDX) || aopInReg (right->aop, 0, XH_IDX)))
     mulop = ASMOP_X;
   else if (size == 2 && aopInReg (result->aop, 0, Z_IDX))
     mulop = ASMOP_Z;
@@ -6892,7 +6907,7 @@ genPointerSet (const iCode *ic)
     {
       struct asmop stackop_impl;
       init_stackop (&stackop_impl, size, left->aop->aopu.stk_off);
-      genMove(&stackop_impl, right->aop, regDead (XL_IDX, ic), regDead (XH_IDX, ic), regDead (Y_IDX, ic), regDead (Z_IDX, ic));
+      genMove (&stackop_impl, right->aop, regDead (XL_IDX, ic), regDead (XH_IDX, ic), regDead (Y_IDX, ic), regDead (Z_IDX, ic));
       goto release;
     }
   else if (!IS_F8L && !bit_field && size == 2 && aopOnStackNotExt (left->aop, 0, 2) &&

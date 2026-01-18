@@ -15007,10 +15007,10 @@ shiftL1Left2Result (operand *left, int offl, operand *result, int offr, unsigned
      However shifting in acc using add is cheaper than shifting
      in place using sla; when shifting by more than 2 shifting in
      acc it is worth the additional effort for loading from / to acc. */
-  else if (!aopInReg(result->aop, 0, A_IDX) && sameRegs (left->aop, result->aop) && shCount <= 2 && offr == offl)
+  else if (!aopInReg(result->aop, offr, A_IDX) && sameRegs (left->aop, result->aop) && shCount <= (2 + 2 * !isRegDead (A_IDX, ic)) && offr == offl)
     {
       while (shCount--)
-        emit3 (A_SLA, result->aop, 0);
+        emit3_o (A_SLA, result->aop, offr, 0, 0);
     }
   else if ((IS_Z180 && !optimize.codeSpeed || IS_EZ80 || IS_Z80N) && // Try to use mlt
     (!IS_Z80N && aopInReg (result->aop, offr, C_IDX) && isPairDead(PAIR_BC, ic) || aopInReg (result->aop, offr, E_IDX) && isPairDead(PAIR_DE, ic) || !IS_Z80N && aopInReg (result->aop, offr, L_IDX) && isPairDead(PAIR_HL, ic)))
@@ -15025,6 +15025,14 @@ shiftL1Left2Result (operand *left, int offl, operand *result, int offr, unsigned
       cost2 (2, 2, 2, 2, 7, 6, 4, 4, 8, 4, 2, 2, 2, 2, 2);
       emit2 ("mlt %s", _pairs[pair].name);
       cost2 (2, -1, 2, 2, 8, 17, -1, -1, -1, -1, 8, 8, 13, 6, -1);
+    }
+  else if (shCount == 1 && !isRegDead (A_IDX, ic) &&
+    (left->aop->type == AOP_REG && (HAS_IYL_INST || !aopInReg (left->aop, offl, IYL_IDX) && !aopInReg (left->aop, offl, IYH_IDX)) || left->aop->type == AOP_STK) &&
+    (aopInReg (result->aop, offr, B_IDX) || aopInReg (result->aop, offr, C_IDX) || aopInReg (result->aop, offr, D_IDX) || aopInReg (result->aop, offr, E_IDX) || aopInReg (result->aop, offr, H_IDX) || aopInReg (result->aop, offr, L_IDX)))
+    {
+      if (!aopSame (result->aop, offr, left->aop, offl, 1))
+        emit3_o (A_LD, result->aop, offr, left->aop, offl);
+      emit3_o (A_SLA, result->aop, offr, 0, 0);
     }
   else
     {
