@@ -4,10 +4,6 @@ stdarg-2.c from the execute part of the gcc torture tests.
 
 #include <testfwk.h>
 
-#ifdef __SDCC
-#pragma disable_warning 93
-#endif
-
 #include <stdarg.h>
 
 int foo_arg, bar_arg;
