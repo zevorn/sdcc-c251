@@ -1364,9 +1364,13 @@ storeRegToAop (reg_info *reg, asmop * aop, int loffset)
   if (aop->type == AOP_CRY)     /* This can only happen if IFX was optimized */
     return;                     /* away, so just toss the result */
 
-  if (regidx==XA_IDX && aop->size == 1 )
+  if (aop->size == 1 && (regidx==XA_IDX || regidx==XY_IDX))
     {
-      storeRegToAop (m6502_reg_a, aop, loffset);
+      if(regidx==XA_IDX)
+        storeRegToAop (m6502_reg_a, aop, loffset);
+      else
+        storeRegToAop (m6502_reg_y, aop, loffset);
+
       return;
     }
 
@@ -3828,6 +3832,12 @@ genCopy (operand * result, operand * source)
   if (IS_AOP_XA (AOP (source)) && size <= 2  )
     {
       storeRegToAop (m6502_reg_xa, AOP (result), 0);
+      return;
+    }
+
+  if (IS_AOP_XY (AOP (source)) && size <= 2  )
+    {
+      storeRegToAop (m6502_reg_xy, AOP (result), 0);
       return;
     }
 

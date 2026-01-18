@@ -2,7 +2,9 @@
 
    	* src/mos6502/peeph.def:
    	  Fixed two incorrect rules.
-   	
+   	* src/mos6502/gen.c:
+   	  Special case register XY in genCopy().
+   	  
 2026-01-18 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* .version,
