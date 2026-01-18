@@ -38,18 +38,18 @@
 
 __muluschar:
 	; input: A_0 L_0
-	ld	e, a
-	ld	h, #0
-
-	jr      signexte  ; signextend A_0
-
-__mulsuchar:
-	; input: A_0 L_0
 	ld      e, l
 	ld	h, #0
 	ld      l, a
 
 	jr      signexte  ; signextended L_0
+
+__mulsuchar:
+	; input: A_0 L_0
+	ld	e, a
+	ld	h, #0
+
+	jr      signexte  ; signextend A_0
 
 __mulschar:
         ; input: A_0 L_0

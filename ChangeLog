@@ -1,3 +1,32 @@
+2026-01-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* .version,
+	  device/lib/_divschar.c,
+	  device/lib/_modschar.c,
+	  device/lib/_mulschar.c,
+	  device/lib/ez80/divmixed.s,
+	  device/lib/ez80/modmixed.s,
+	  device/lib/ez80/mulchar.s,
+	  device/lib/mos6502/_mulschar.s,
+	  device/lib/mos65c02/_mulschar.s,
+	  device/lib/r*/divmixed.s,
+	  device/lib/r*/modmixed.s,
+	  device/lib/r*/mulchar.s,
+	  device/lib/sm83/divint.s,
+	  device/lib/sm83/mul.s,
+	  device/lib/tlcs90/divmixed.s,
+	  device/lib/tlcs90/modmixed.s,
+	  device/lib/tlcs90/mulchar.s,
+	  device/lib/z*/divmixed.s,
+	  device/lib/z*/modmixed.s,
+	  device/lib/z*/mulchar.s,
+	  doc/sdccman.lyx,
+	  src/SDCCast.c,
+	  src/SDCCast.h,
+	  src/SDCCopt.c,
+	  src/SDCCsymt.c:
+	  Fix the names of mixed-sign support functions for multiplicative operators.
+
 2026-01-17 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c,
@@ -12,7 +41,7 @@
    	  Renamed emitBranch() to m6502_emitBranch().
    	* support/regression/ports/uc6502/spec.mk,
    	  support/regression/ports/uc6502-stack-auto/spec.mk:
-      Enable stack checking in uCsim.
+	  Enable stack checking in uCsim.
     * support/regression/fwk/include/testfwk.h,
       support/regression/test/blake2s.c,
       support/regression/test/bug-2855.c,

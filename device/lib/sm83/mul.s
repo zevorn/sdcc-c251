@@ -40,11 +40,11 @@
 
 ; operands with different sign
 
-__mulsuchar:
+__muluschar:
 	ld	c, a
         jr      signexte
 
-__muluschar:
+__mulsuchar:
 	ld	c, e
 	ld	e, a
 

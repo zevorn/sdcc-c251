@@ -44,13 +44,13 @@
 .globl	__divuint
 .globl	__moduint
 
-__divsuchar:
+__divuschar:
 	ld	c, a
 	ld	b, #0
 
 	jp	signexte
 
-__modsuchar:
+__moduschar:
 	ld	c, a
 	ld	b, #0
 
@@ -61,7 +61,7 @@ __modsuchar:
 
 	ret
 
-__divuschar:
+__divsuchar:
 	ld	d, #0
 
 	ld	c, a             ; Sign extend
@@ -71,7 +71,7 @@ __divuschar:
 
 	jp	.div16
 
-__moduschar:
+__modsuchar:
 	ld	d, #0
 
 	ld	c, a             ; Sign extend

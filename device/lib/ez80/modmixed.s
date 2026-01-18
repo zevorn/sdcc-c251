@@ -30,6 +30,15 @@
 .globl	__moduschar
 
 __moduschar:
+	ld	e, l
+	ld	l, a
+	ld	h, #0
+
+	call	__div_signexte
+
+	jp	__get_remainder
+
+__modsuchar:
 	; Zero-extend
 	ld	e, l
 	ld	d, #0
@@ -41,15 +50,6 @@ __moduschar:
 	ld	h, a
 
 	call	__div16
-
-	jp	__get_remainder
-
-__modsuchar:
-	ld	e, l
-	ld	l, a
-	ld	h, #0
-
-	call	__div_signexte
 
 	jp	__get_remainder
 
