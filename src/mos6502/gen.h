@@ -213,6 +213,7 @@ void adjustStack (int n); // candidate for moving back into gen.c
 #define pullNull(n)          adjustStack(n)
 
 // regtemp
+bool fastSaveAi(reg_info *reg);
 bool fastSaveA();
 bool fastRestoreA();
 #define fastSaveAIfUsed()     (!m6502_reg_a->isFree)?fastSaveA():false

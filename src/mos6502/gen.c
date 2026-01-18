@@ -1924,9 +1924,9 @@ storeRegToFullAop (reg_info *reg, asmop *aop, bool isSigned)
 void
 transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
 {
-  bool needpula = false;
+  bool needpulla = false;
+  bool freereg = true;
   reg_info *reg = NULL;
-  bool keepreg = false;
 
   emitComment (TRACE_AOP, __func__ );
 
@@ -1987,19 +1987,18 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
       storeConstToAop (byteOfVal (srcaop->aopu.aop_lit, srcofs), dstaop, dstofs);
       return;
     }
+
   if (dstaop->type == AOP_REG)
     {
       reg = dstaop->aopu.aop_reg[dstofs];
-      keepreg = true;
+      freereg = false;
     } 
   else if ((srcaop->type == AOP_REG) && (srcaop->aopu.aop_reg[srcofs]))
     {
       reg = srcaop->aopu.aop_reg[srcofs];
-      keepreg = true;
+      freereg = false;
     }
-
-  // TODO: pick reg based on if can load op?
-  if (!reg)
+  else
     {
       if(srcaop->type != AOP_SOF && dstaop->type != AOP_SOF)
         reg = getFreeByteReg();
@@ -2008,8 +2007,7 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
         {
           // FIXME: used vs. surv triggers failure on bug 3556 in stack-auto
           // seems to not affect the bug anymore (?)
-	  //          needpula = pushRegIfUsed (m6502_reg_a);
-          needpula = storeRegTempIfUsed (m6502_reg_a);
+          needpulla = storeRegTempIfUsed (m6502_reg_a);
           reg = m6502_reg_a;
         }
     }
@@ -2019,8 +2017,8 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
   loadRegFromAop (reg, srcaop, srcofs);
   storeRegToAop (reg, dstaop, dstofs);
 
-  if (!keepreg)
-    loadOrFreeRegTemp (reg, needpula);
+  if (freereg)
+    loadOrFreeRegTemp (reg, needpulla);
 }
 
 #if 0
@@ -6821,10 +6819,11 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 	}
 #endif
 
-      if (sameRegs(AOP(left), AOP(result)))
+      if ( sameRegs(AOP(left), AOP(result)) )
 	{
 	  // pointer and destination is the same - need avoid overwriting
-	  emitComment (TRACEGEN|VVDBG, "    %s - sameregs", __func__);
+	  emitComment (TRACEGEN|VVDBG, "    %s - sameregs off:%d",
+                       __func__, litOffset);
 
           if (m6502_reg_a->aop && m6502_reg_a->aop->type==AOP_DIR
 	      && sameRegs(m6502_reg_a->aop, AOP(result)) )
@@ -6844,14 +6843,14 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 		}
 	      else if (i==1)
 		{
-		  m6502_pushReg(m6502_reg_a, false);
+		  fastSaveAi(m6502_reg_x);
 		}
 	      else if (i==0)
 		{
 		  storeRegToAop (m6502_reg_a, AOP (result), 0);
 		  if (size>1)
 		    {
-		      m6502_pullReg(m6502_reg_a);
+		      fastRestoreA();
 		      storeRegToAop (m6502_reg_a, AOP (result), 1);
 		    }
 		}
