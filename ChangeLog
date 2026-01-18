@@ -1,3 +1,8 @@
+2026-01-18 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/peeph.def:
+   	  Fixed two incorrect rules.
+   	
 2026-01-18 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* .version,
