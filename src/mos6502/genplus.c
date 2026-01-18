@@ -47,9 +47,9 @@ genPlusInc (iCode * ic)
   int icount;
   unsigned int size = AOP_SIZE (result);
   symbol *tlbl = NULL;
+  bool needpullx = false;
   bool savea = false;
   unsigned int offset;
-  bool needpullx = false;
 
   /* will try to generate an increment */
   /* if the right side is not a literal
@@ -73,12 +73,16 @@ genPlusInc (iCode * ic)
 
       if(size==2 && sameRegs (AOP (left), AOP (result)))
         {
-          if (IS_AOP_XA (AOP (result)) && m6502_reg_x->isLitConst)
+          if (IS_AOP_WITH_X (AOP (result)) && m6502_reg_x->isLitConst)
             {
 	      loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst + bcount);
 	      return true;
             }
-          else if(bcount<3)
+          else if(IS_AOP_WITH_X (AOP (result)) && smallAdjustReg(AOP(result)->aopu.aop_reg[1], bcount))
+            {
+              return true;
+            }
+          else if(bcount<3 && aopCanIncDec(AOP(result)) ) 
             {
 	      while (bcount--)
                 rmwWithAop (OPINCDEC, AOP (result), 1);
@@ -148,11 +152,11 @@ genPlusInc (iCode * ic)
   if(icount < 0 )
     return false;
 
-  if(AOP_TYPE(result)==AOP_SOF || AOP_TYPE(left)==AOP_SOF)
-    needpullx=storeRegTempIfSurv(m6502_reg_x);
-
   if (size > 1)
     tlbl = safeNewiTempLabel (NULL);
+
+  if(AOP_TYPE(result)==AOP_SOF || AOP_TYPE(left)==AOP_SOF)
+    needpullx=storeRegTempIfSurv(m6502_reg_x);
 
   if (icount == 1)
     {

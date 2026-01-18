@@ -4,6 +4,10 @@
    	  Fixed two incorrect rules.
    	* src/mos6502/gen.c:
    	  Special case register XY in genCopy().
+   	* src/mos6502/genrot.c,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c:
+   	  Minor cleanup.
    	  
 2026-01-18 Philipp Klaus Krause <philipp@colecovision.eu>
 
