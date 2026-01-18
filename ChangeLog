@@ -87,6 +87,9 @@
       support/regression/test/z88dk.c,
       support/regression/test/z88dk_callee.c:
       Cleanup several warning in the regression suite.
+    * support/regression/test/serpent.c.in,
+      support/regression/test/smallserpent.c.in:
+      Enable serpent for mos6502.
 
 2026-01-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
