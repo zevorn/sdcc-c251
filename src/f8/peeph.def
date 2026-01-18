@@ -354,7 +354,29 @@ replace restart {
 	; peephole 20 used sp from y.
 	ldw	%1, y
 }
-      
+
+replace restart {
+	ld	xl, #%1
+	ld	(%3, sp), xl
+	ld	xl, #%2
+	ld	(%4, sp), xl
+} by {
+	ldw	y, #%6
+	; peephole 21 combined two 8-bit stores into a 16-bit store.
+	ldw	(%3, sp), y
+} if notUsed('xl'), notUsed('y'), immdInRange(1 1 '-' %4 %3 %9), operandsLiteral(%1 %2), immdInRange(0x00 0xffff '*' %2 0x100 %5), immdInRange(0x00 0xffff '|' %1 %5 %x6)
+
+replace restart {
+	ld	%5, (%1, sp)
+	ld	(%2, sp), %5
+	ld	%5, (%3, sp)
+	ld	(%1, sp), %5
+} by {
+	ldw	y, (%1, sp)
+	; common peephole 22c used y to load 16 bits at once.
+	ldw	(%2, sp), y
+} if same(%5 'xl' 'xh' 'yl' 'yh' 'zl' 'zl'), notUsed(%5), notUsed('y'), immdInRange(1 1 '-' %1 %2 %9), immdInRange(-1 -1 '-' %1 %3 %9)
+
 replace restart {
 	jp	#%5
 } by {

@@ -2812,6 +2812,16 @@ replace restart {
 } if notSame(%1 'hl'), notSame(%2 'hl'), canSplitReg(%1 %5 %6), canSplitReg(%2 %7 %8), operandsLiteral(%3 %4), immdInRange(0 0 '-' %3 %4 %9), notSame(%1 'ix' 'iy'), notSame(%2 'ix' 'iy')
 
 replace restart {
+	ld	%1, %2 (ix)
+	ld	%3 (ix), %1
+	ld	%1, %2 (ix)
+} by {
+	ld	%1, %2 (ix)
+	ld	%3 (ix), %1
+	; common peephole 174c reused value still in %1.
+}
+
+replace restart {
 	ld	%1,%2
 	ld	%2,%1
 } by {
@@ -3024,7 +3034,37 @@ replace restart {
 	ex	de, hl
 } if isPort('z80' 'ez80' 'z180' 'z80n' 'r2k' 'r2ka' 'r3ka' 'r4k' 'r5k' 'r6k' 'tlcs90'), notUsed('de')
 
-// We want this one, even if it doesn't trigger in regression tests, since it is geh last line
+replace restart {
+	ld	%1 (iy), #%2
+	inc	iy
+	ld	%1 (iy), #%3
+} by {
+	ld	hl, #%5
+	; common peephole 157a used hl to load 16 bits at once into %1 (iy)
+	ld	%1 (iy), hl
+	inc	iy
+} if isPort('ez80' 'r2k' 'r2ka' 'r3ka' 'r4k' 'r5k' 'r6k' 'tlcs90'), notUsed('hl'), operandsLiteral(%2 %3), immdInRange(0x00 0xffff '*' %3 0x100 %4), immdInRange(0x00 0xffff '|' %2 %4 %x5)
+
+replace restart {
+	inc	%1
+	ld	%2 (%1), %3
+} by {
+	; common peephole 157b merged offset into storage instruction.
+	ld	%4 (%1), %3
+} if notSame(%1 %3 %2), notUsed(%1), immdInRange(0 127 '+' %2 1 %4)
+
+replace restart {
+	ld	%5, %1 (ix)
+	ld	%2 (ix), %5
+	ld	%5, %3 (ix)
+	ld	%1 (ix), %5
+} by {
+	ld	hl, %1 (ix)
+	; common peephole 157c used hl to load 16 bits at once.
+	ld	%2 (ix), hl
+} if isPort('ez80' 'r2k' 'r2ka' 'r3ka' 'r4k' 'r5k' 'r6k' 'tlcs90'), same(%5 'a' 'b' 'c' 'd' 'e' 'h' 'l'), notUsed(%5), notUsed('hl'), immdInRange(1 1 '-' %1 %2 %9), immdInRange(-1 -1 '-' %1 %3 %9)
+
+// We want this one, even if it doesn't trigger in regression tests, since it is the last line
 // of defence against ld r, r in the compiler. ld r, r is not just an inefficiency, but dangerous
 // for Rabbits. ld r, r support is inconsistent among Rabbits, and even otherwise binary-compatible
 // Rabbits differ in their support for it.

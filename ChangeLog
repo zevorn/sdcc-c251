@@ -1,3 +1,13 @@
+2026-01-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/peeph.def,
+	  src/stm8/peeph.def,
+	  src/z80/peeph.def:
+	  Peephole optimizer rules inspired by tinyaes regression test.
+	* src/f8/peep.c,
+	  src/stm8/peep.c:
+	  Peephole optimizer condition check improvements inspired by tinyaes regression test.
+
 2026-01-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge pqc branch.
