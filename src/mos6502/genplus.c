@@ -47,9 +47,9 @@ genPlusInc (iCode * ic)
   int icount;
   unsigned int size = AOP_SIZE (result);
   symbol *tlbl = NULL;
+  bool needpullx = false;
   bool savea = false;
   unsigned int offset;
-  bool needpullx = false;
 
   /* will try to generate an increment */
   /* if the right side is not a literal
@@ -73,12 +73,16 @@ genPlusInc (iCode * ic)
 
       if(size==2 && sameRegs (AOP (left), AOP (result)))
         {
-          if (IS_AOP_XA (AOP (result)) && m6502_reg_x->isLitConst)
+          if (IS_AOP_WITH_X (AOP (result)) && m6502_reg_x->isLitConst)
             {
 	      loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst + bcount);
 	      return true;
             }
-          else if(bcount<3)
+          else if(IS_AOP_WITH_X (AOP (result)) && smallAdjustReg(AOP(result)->aopu.aop_reg[1], bcount))
+            {
+              return true;
+            }
+          else if(bcount<3 && aopCanIncDec(AOP(result)) ) 
             {
 	      while (bcount--)
                 rmwWithAop (OPINCDEC, AOP (result), 1);
@@ -97,7 +101,7 @@ genPlusInc (iCode * ic)
           tlbl = safeNewiTempLabel (NULL);
 	  INIT_CARRY();
           accopWithAop (OPCODE, AOP (right), 0);
-          emitBranch ("bcc", tlbl);
+          m6502_emitBranch ("bcc", tlbl);
 	  rmwWithReg (OPINCDEC, m6502_reg_x);
           safeEmitLabel (tlbl);
           m6502_dirtyReg(m6502_reg_x);
@@ -148,17 +152,17 @@ genPlusInc (iCode * ic)
   if(icount < 0 )
     return false;
 
-  if(AOP_TYPE(result)==AOP_SOF || AOP_TYPE(left)==AOP_SOF)
-    needpullx=storeRegTempIfSurv(m6502_reg_x);
-
   if (size > 1)
     tlbl = safeNewiTempLabel (NULL);
+
+  if(AOP_TYPE(result)==AOP_SOF || AOP_TYPE(left)==AOP_SOF)
+    needpullx=storeRegTempIfSurv(m6502_reg_x);
 
   if (icount == 1)
     {
       rmwWithAop (OPINCDEC, AOP (result), 0);
       if (size > 1)
-	emitBranch ("bne", tlbl);
+	m6502_emitBranch ("bne", tlbl);
     }
   else
     {
@@ -169,7 +173,7 @@ genPlusInc (iCode * ic)
       accopWithAop (OPCODE, AOP (right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       if (size > 1)
-	emitBranch ("bcc", tlbl);
+	m6502_emitBranch ("bcc", tlbl);
     }
 
   for (offset = 1; offset < size; offset++)
@@ -178,7 +182,7 @@ genPlusInc (iCode * ic)
       if(AOP(result)->type==AOP_REG)
         m6502_dirtyReg(AOP(result)->aopu.aop_reg[offset]);
       if ((offset + 1) < size)
-	emitBranch ("bne", tlbl);
+	m6502_emitBranch ("bne", tlbl);
     }
 
   if (size > 1)
@@ -253,7 +257,7 @@ m6502_genPlus (iCode * ic)
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       accopWithAop (OPCODE, AOP(right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
-      emitBranch ("bcc", skiplabel);
+      m6502_emitBranch ("bcc", skiplabel);
       rmwWithAop (OPINCDEC, AOP(result), 1);
       if(IS_AOP_WITH_X(AOP(result)))
 	m6502_dirtyReg(m6502_reg_x);
@@ -270,7 +274,7 @@ m6502_genPlus (iCode * ic)
       loadRegFromAop (m6502_reg_xa, AOP(left), 0);
       m6502_emitSetCarry(0);
       accopWithAop (OPCODE, AOP(right), 0);
-      emitBranch ("bcc", skipInc);
+      m6502_emitBranch ("bcc", skipInc);
       rmwWithAop (OPINCDEC, AOP(result), 1);
       m6502_dirtyReg(m6502_reg_x);
       safeEmitLabel (skipInc);
@@ -283,7 +287,7 @@ m6502_genPlus (iCode * ic)
       INIT_CARRY();
       accopWithAop (OPCODE, AOP(right), 0);
       loadRegFromAop (m6502_reg_x, AOP(right), 1);
-      emitBranch ("bcc", skipInc);
+      m6502_emitBranch ("bcc", skipInc);
       rmwWithAop (OPINCDEC, AOP(result), 1);
       m6502_dirtyReg(m6502_reg_x);
       safeEmitLabel (skipInc);
@@ -321,7 +325,7 @@ m6502_genPlus (iCode * ic)
       m6502_emitTSX();
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       INIT_CARRY();
-      accopWithAop (OPCODE, AOP (right), 0);
+        accopWithAop (OPCODE, AOP (right), 0);
 
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );

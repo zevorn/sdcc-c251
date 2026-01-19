@@ -683,7 +683,7 @@ shiftRLong3 (operand * left, operand * result, int shift, int sign)
       symbol *tlbl = safeNewiTempLabel (NULL);
 
       m6502_emitCmp(m6502_reg_a, 0x80);
-      emitBranch ("bcc", tlbl);
+      m6502_emitBranch ("bcc", tlbl);
       rmwWithReg ("dec", m6502_reg_x);
       safeEmitLabel(tlbl);
       rmwWithReg ("ror", m6502_reg_a);
@@ -1232,7 +1232,7 @@ m6502_genRightShift (iCode * ic)
       storeRegToAop (m6502_reg_a, AOP(result) , a_loc);
 
       m6502_emitCmp(countreg, 8);
-      emitBranch ("bcc", skiplbl);
+      m6502_emitBranch ("bcc", skiplbl);
       safeEmitLabel (looplbl);
       m6502_dirtyReg(m6502_reg_x);
 
@@ -1270,14 +1270,14 @@ m6502_genRightShift (iCode * ic)
       //if(size==8)
       {
 	m6502_emitCmp(countreg, 8);
-	emitBranch ("bcs", looplbl);
+	m6502_emitBranch ("bcs", looplbl);
       }
       loadRegFromAop (m6502_reg_a, AOP (result), a_loc);
       safeEmitLabel (skiplbl);
     }
 
   m6502_emitCmp(countreg, 0);
-  emitBranch ("beq", skip_label);
+  m6502_emitBranch ("beq", skip_label);
 
   // FIXME: find a good solution for this
   //  if(IS_AOP_WITH_A (AOP (right)) && sameRegs (AOP (left), AOP (result)) )
@@ -1319,8 +1319,8 @@ m6502_genRightShift (iCode * ic)
         rmwWithAop ("ror", AOP (result), offset);
     }
 
-  rmwWithReg("dec", countreg);
-  emit6502op("bne", "%05d$", safeLabelNum (loop_label));
+  rmwWithReg ("dec", countreg);
+  m6502_emitBranch ("bne", loop_label);
 
   if (x_in_regtemp)
     loadRegTemp(m6502_reg_x);
@@ -1336,14 +1336,14 @@ m6502_genRightShift (iCode * ic)
     }
 
   // After loop, countreg is always 0
-  m6502_dirtyReg(countreg);
+  m6502_dirtyReg (countreg);
   countreg->isLitConst = 1;
   countreg->litConst = 0;
 
   if(restore_y)
-    loadRegTemp(m6502_reg_y);
+    loadRegTemp (m6502_reg_y);
   if(restore_a)
-    loadRegTemp(m6502_reg_a);
+    loadRegTemp (m6502_reg_a);
 
  release:
   freeAsmop (right, NULL);

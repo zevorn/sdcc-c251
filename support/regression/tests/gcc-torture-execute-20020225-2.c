@@ -5,10 +5,6 @@
 #include <testfwk.h>
 
 #ifdef __SDCC
-#pragma disable_warning 93
-#endif
-
-#ifdef __SDCC
 #pragma std_c99
 #endif
 

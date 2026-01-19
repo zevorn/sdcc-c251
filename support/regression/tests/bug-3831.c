@@ -21,7 +21,7 @@ typedef struct foo_t
 
 /* Place at known address 0x0100 to easier see how bug changes write location from 0x0100 to 0x0101 */
 /* On 6502, 0x0100-0x0101 is virtually guaranteed to be RAM due to being used for the stack */
-#ifdef __SDCC_mos6502
+#ifdef SDCC_MOS
 foo_t __at(0x0100) foo_0100 = { 0x00, 0x00 };
 #else
 foo_t foo_0100 = { 0x00, 0x00 };

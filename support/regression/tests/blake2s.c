@@ -13,7 +13,7 @@
 
 // While BLAKE2s is suitable for systems with very low memory, the official self-test unfortunately
 // uses about 1.5 K of stack space.
-#if defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) || defined(__SDCC_mcs51) || (defined(__SDCC_mos6502) && defined(__SDCC_STACK_AUTO))
+#if defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) || defined(__SDCC_mcs51) || defined(SDCC_SMALL_STACK)
 #define LACK_OF_MEMORY
 #endif
 

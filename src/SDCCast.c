@@ -787,7 +787,7 @@ setAstFileLine (ast *tree, const char *filename, int lineno)
 /* funcOfType :- function of type with name                        */
 /*-----------------------------------------------------------------*/
 symbol *
-funcOfType (const char *name, sym_link * type, sym_link * argType, int nArgs, int rent)
+funcOfType (const char *name, sym_link *rtype, sym_link * argType, int nArgs, int rent)
 {
   symbol *sym;
   /* create the symbol */
@@ -796,7 +796,7 @@ funcOfType (const char *name, sym_link * type, sym_link * argType, int nArgs, in
   /* setup return value */
   sym->type = newLink (DECLARATOR);
   DCL_TYPE (sym->type) = FUNCTION;
-  sym->type->next = copyLinkChain (type);
+  sym->type->next = copyLinkChain (rtype);
   sym->etype = getSpec (sym->type);
   FUNC_ISREENT (sym->type) = rent ? 1 : 0;
   FUNC_NONBANKED (sym->type) = 1;
@@ -816,6 +816,39 @@ funcOfType (const char *name, sym_link * type, sym_link * argType, int nArgs, in
           args = args->next = newValue ();
         }
     }
+
+  /* save it */
+  addSymChain (&sym);
+  sym->cdef = 1;
+  allocVariables (sym);
+  return sym;
+}
+
+/*-----------------------------------------------------------------*/
+/* funcOfType2 :- function of type with name                       */
+/*-----------------------------------------------------------------*/
+symbol *
+funcOfType2 (const char *name, sym_link *rtype, sym_link *largType, sym_link *rargType, int rent)
+{
+  symbol *sym;
+  /* create the symbol */
+  sym = newSymbol (name, 0);
+
+  /* setup return value */
+  sym->type = newLink (DECLARATOR);
+  DCL_TYPE (sym->type) = FUNCTION;
+  sym->type->next = copyLinkChain (rtype);
+  sym->etype = getSpec (sym->type);
+  FUNC_ISREENT (sym->type) = rent ? 1 : 0;
+  FUNC_NONBANKED (sym->type) = 1;
+
+  value *args;
+  args = FUNC_ARGS (sym->type) = newValue ();
+  args->type = copyLinkChain (largType);
+  args->etype = getSpec (args->type);
+  args = args->next = newValue ();
+  args->type = copyLinkChain (rargType);
+  args->etype = getSpec (args->type);
 
   /* save it */
   addSymChain (&sym);

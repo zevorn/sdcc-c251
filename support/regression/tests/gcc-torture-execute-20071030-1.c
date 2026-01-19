@@ -6,7 +6,6 @@
 
 #ifdef __SDCC
 #pragma std_c99
-#pragma disable_warning 93
 #endif
 
 #include <string.h>
@@ -78,7 +77,7 @@ int CalcPing (client_t *cl)
 
 void testTortureExecute(void)
 {
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !( (defined (__SDCC_mos6502) || defined(__SDCC_mos65c02 )) && defined(__SDCC_STACK_AUTO) )// Lack of memory
+#if !defined(__SDCC_mcs51) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !defined (SDCC_SMALL_STACK)// Lack of memory
    client_t cl;
 
    memset(&cl, 0, sizeof(cl));

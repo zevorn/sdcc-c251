@@ -4,10 +4,6 @@
 
 #include <testfwk.h>
 
-#ifdef __SDCC
-#pragma disable_warning 93
-#endif
-
 /* PR middle-end/44843 */
 /* Verify that we don't use the alignment of struct S for inner accesses.  */
 
