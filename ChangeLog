@@ -12,6 +12,8 @@
    	  src/mos6502/gen.c,
    	  src/mos6502/tempops.c:
    	  Improve genPointerGet().
+    * support/regression/test/asconhash256.c.in:
+      Disabling failing big endian targets.
    	  
 2026-01-18 Philipp Klaus Krause <philipp@colecovision.eu>
 
