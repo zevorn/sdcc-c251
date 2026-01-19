@@ -1,3 +1,148 @@
+2026-01-18 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/peeph.def:
+   	  Fixed two incorrect rules.
+   	* src/mos6502/gen.c:
+   	  Special case register XY in genCopy().
+   	* src/mos6502/genrot.c,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c:
+   	  Minor cleanup.
+   	* src/mos6502/gen.h:
+   	  src/mos6502/gen.c,
+   	  src/mos6502/tempops.c:
+   	  Improve genPointerGet().
+    * support/regression/test/asconhash256.c.in:
+      Disabling failing big endian targets.
+   	  
+2026-01-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* .version,
+	  device/lib/_divschar.c,
+	  device/lib/_modschar.c,
+	  device/lib/_mulschar.c,
+	  device/lib/ez80/divmixed.s,
+	  device/lib/ez80/modmixed.s,
+	  device/lib/ez80/mulchar.s,
+	  device/lib/mos6502/_mulschar.s,
+	  device/lib/mos65c02/_mulschar.s,
+	  device/lib/r*/divmixed.s,
+	  device/lib/r*/modmixed.s,
+	  device/lib/r*/mulchar.s,
+	  device/lib/sm83/divint.s,
+	  device/lib/sm83/mul.s,
+	  device/lib/tlcs90/divmixed.s,
+	  device/lib/tlcs90/modmixed.s,
+	  device/lib/tlcs90/mulchar.s,
+	  device/lib/z*/divmixed.s,
+	  device/lib/z*/modmixed.s,
+	  device/lib/z*/mulchar.s,
+	  doc/sdccman.lyx,
+	  src/SDCCast.c,
+	  src/SDCCast.h,
+	  src/SDCCopt.c,
+	  src/SDCCsymt.c:
+	  Fix the names of mixed-sign support functions for multiplicative operators.
+
+2026-01-17 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c,
+   	  src/mos6502/gen.h,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c,
+   	  src/mos6502/genlshift.c,
+   	  src/mos6502/genrshift.c,
+   	  src/mos6502/genor.c,
+   	  src/mos6502/genxor.c,
+   	  src/mos6502/genand.c:
+   	  Renamed emitBranch() to m6502_emitBranch().
+   	* support/regression/ports/uc6502/spec.mk,
+   	  support/regression/ports/uc6502-stack-auto/spec.mk:
+	  Enable stack checking in uCsim.
+    * support/regression/fwk/include/testfwk.h,
+      support/regression/test/blake2s.c,
+      support/regression/test/bug-2855.c,
+      support/regression/test/bug-3129.c,
+      support/regression/test/bug-3831.c,
+      support/regression/test/bug3379723.c,
+      support/regression/test/div.c,
+      support/regression/test/falcon-ntt.c,
+      support/regression/test/gcc-torture-execute-20000412-2.c,
+      support/regression/test/gcc-torture-execute-20000603-1.c,
+      support/regression/test/gcc-torture-execute-20000731-1.c,
+      support/regression/test/gcc-torture-execute-20001017-1.c,
+      support/regression/test/gcc-torture-execute-20001121-1.c,
+      support/regression/test/gcc-torture-execute-20010118-1.c,
+      support/regression/test/gcc-torture-execute-20010129-1.c,
+      support/regression/test/gcc-torture-execute-20011217-1.c,
+      support/regression/test/gcc-torture-execute-20020225-2.c,
+      support/regression/test/gcc-torture-execute-20021118-2.c,
+      support/regression/test/gcc-torture-execute-20021120-1.c,
+      support/regression/test/gcc-torture-execute-20030209-1.c,
+      support/regression/test/gcc-torture-execute-20030916-1.c,
+      support/regression/test/gcc-torture-execute-20031214-1.c,
+      support/regression/test/gcc-torture-execute-20040831-1.c,
+      support/regression/test/gcc-torture-execute-20071030-1.c,
+      support/regression/test/gcc-torture-execute-20100430-1.c,
+      support/regression/test/gcc-torture-execute-20100708-1.c,
+      support/regression/test/gcc-torture-execute-920625-1.c,
+      support/regression/test/gcc-torture-execute-920710-1.c,
+      support/regression/test/gcc-torture-execute-921112-1.c,
+      support/regression/test/gcc-torture-execute-921124-1.c,
+      support/regression/test/gcc-torture-execute-921208-1.c,
+      support/regression/test/gcc-torture-execute-930614-1.c,
+      support/regression/test/gcc-torture-execute-930614-2.c,
+      support/regression/test/gcc-torture-execute-930628-1.c,
+      support/regression/test/gcc-torture-execute-930702-1.c,
+      support/regression/test/gcc-torture-execute-930818-1.c,
+      support/regression/test/gcc-torture-execute-980205.c,
+      support/regression/test/gcc-torture-execute-980604-1.c,
+      support/regression/test/gcc-torture-execute-990117-1.c,
+      support/regression/test/gcc-torture-execute-990513-1.c,
+      support/regression/test/gcc-torture-execute-990829-1.c,
+      support/regression/test/gcc-torture-execute-991112-1.c,
+      support/regression/test/gcc-torture-execute-cvt.c,
+      support/regression/test/gcc-torture-execute-float-floor.c,
+      support/regression/test/gcc-torture-execute-func-ptr-1.c,
+      support/regression/test/gcc-torture-execute-loop-8.c,
+      support/regression/test/gcc-torture-execute-pr23941.c,
+      support/regression/test/gcc-torture-execute-pr28982a.c,
+      support/regression/test/gcc-torture-execute-pr33870-1.c,
+      support/regression/test/gcc-torture-execute-pr33870.c,
+      support/regression/test/gcc-torture-execute-pr39501.c,
+      support/regression/test/gcc-torture-execute-pr47538.c,
+      support/regression/test/gcc-torture-execute-pr60017.c,
+      support/regression/test/gcc-torture-execute-pr64979.c,
+      support/regression/test/gcc-torture-execute-pr68390.c,
+      support/regression/test/gcc-torture-execute-ssad-run.c,
+      support/regression/test/gcc-torture-execute-stdarg-1.c,
+      support/regression/test/gcc-torture-execute-stdarg-2.c,
+      support/regression/test/gcc-torture-execute-stdarg-3.c,
+      support/regression/test/gcc-torture-execute-stdarg-4.c,
+      support/regression/test/gcc-torture-execute-struct-ret-1.c,
+      support/regression/test/gcc-torture-execute-usad-run.c,
+      support/regression/test/gcc-torture-execute-va-arg-12.c,
+      support/regression/test/gcc-torture-execute-va-arg-15.c,
+      support/regression/test/gcc-torture-execute-va-arg-16.c,
+      support/regression/test/gcc-torture-execute-va-arg-17.c,
+      support/regression/test/gcc-torture-execute-va-arg-18.c,
+      support/regression/test/gcc-torture-execute-va-arg-26.c,
+      support/regression/test/lonesha256.c,
+      support/regression/test/p99-conformance.c,
+      support/regression/test/sha3-256.c,
+      support/regression/test/z88dk.c,
+      support/regression/test/z88dk_callee.c:
+      Cleanup several warning in the regression suite.
+    * support/regression/test/serpent.c.in,
+      support/regression/test/smallserpent.c.in:
+      Enable serpent for mos6502.
+    * support/regression/test/asconhash256.c.in:
+      Enable working tests for mos6502.
+
+2026-01-17 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge pqc branch.
+
 2026-01-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/kyber-ntt.c:

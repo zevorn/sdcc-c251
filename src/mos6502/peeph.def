@@ -129,11 +129,11 @@ replace restart {
 }
 
 replace restart {
-	ldx	%2
+	ldx	%1
 	iny
         tax
 } by {
-	; Peephole genPointerSet 1 - removed useless ldx %2
+	; Peephole genPointerSet 2 - removed useless ldx %1
 	iny
         tax
 }
@@ -483,7 +483,7 @@ replace restart {
 	ldy	%1
 	; Peephole load 7 - replaced ldy/lda with ldy/tya
 	tya
-}
+} if notVolatile(%1)
 
 replace restart {
 	ldx	%1
@@ -492,7 +492,7 @@ replace restart {
 	ldx	%1
 	; Peephole load 7a - replaced ldx/lda with ldx/txa
 	txa
-}
+} if notVolatile(%1)
 
 ////////////////////////////////////////////////////////
 // Remove dead loads
@@ -1034,15 +1034,6 @@ replace restart {
 	; Peephole store 2 - removed redundant sta %2
 } if notSame(%1 'pla' 'txa' 'tya'), notVolatile(%2)
 
-replace restart {
-	lda	%2
-	%1 	a
-	sta	%2
-} by {
-	; Peephole store 3 - removed redundant sta %2
-	%1	%2
-	lda	%2
-} if same(%1 'asl' 'rol' 'ror'), notVolatile(%2)
 
 replace restart {
 	ldx	%2
@@ -1060,7 +1051,7 @@ replace restart {
 	ldx	%2
 	%1
 	; Peephole store 5 - removed redundant stx %2
-} if notSame(%1 'tax' 'inx' 'dex'), notVolatile(%2)
+} if notSame(%1 'tax' 'inx' 'dex' 'tsx'), notVolatile(%2)
 
 replace restart {
 	ldx	%2

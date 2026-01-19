@@ -4,10 +4,6 @@ float-floor.c from the execute part of the gcc torture tests.
 
 #include <testfwk.h>
 
-#ifdef __SDCC
-#pragma disable_warning 93
-#endif
-
 #if(__SIZEOF_DOUBLE__==8)
 double d = 1024.0 - 1.0 / 32768.0;
 #else

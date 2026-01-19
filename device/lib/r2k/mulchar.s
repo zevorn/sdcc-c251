@@ -37,16 +37,16 @@
 ; operands have different sign
 
 __muluschar:
-	ld	e, a
-	ld	c, l
+	ld	c, a
 	ld	b, #0
+	ld	e, l
 
         jr      signexte
 
 __mulsuchar:
-	ld	c, a
+	ld	e, a
+	ld	c, l
 	ld	b, #0
-	ld	e, l
 
         jr      signexte
 

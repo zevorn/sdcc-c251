@@ -3185,11 +3185,17 @@ In 4.5.13,
 \end_layout
 
 \begin_layout Itemize
-In 4.5.15 the omission of integer promotions on explicitly cast variable arguments only happens for the mcs51,
+In 4.5.15,
+ the omission of integer promotions on explicitly cast variable arguments only happens for the mcs51,
  ds390,
  mos6502,
  mos65c02,
  pic14 and pic16 ports.
+\end_layout
+
+\begin_layout Itemize
+In 4.5.17,
+ the names of mixed-sign support functions for multiplicative operators have been fixed.
 \end_layout
 
 \begin_layout Section

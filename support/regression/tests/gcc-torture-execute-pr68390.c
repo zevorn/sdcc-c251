@@ -4,10 +4,6 @@
 
 #include <testfwk.h>
 
-#ifdef __SDCC
-#pragma disable_warning 93
-#endif
-
 /* { dg-do run }  */
 /* { dg-options "-O2" } */
 

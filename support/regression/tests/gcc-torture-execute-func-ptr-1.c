@@ -6,7 +6,6 @@
 
 #ifdef __SDCC
 #pragma std_c99
-#pragma disable_warning 93 // Using float for double.
 #endif
 
 static double f (float a);

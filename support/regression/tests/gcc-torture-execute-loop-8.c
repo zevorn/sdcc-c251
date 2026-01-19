@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-#pragma disable_warning 93 // Using float for double.
-
 #ifndef __SDCC_pdk14 // Lackof memory
 double a[3] = { 0.0, 1.0, 2.0 };
 

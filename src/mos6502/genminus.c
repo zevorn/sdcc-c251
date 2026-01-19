@@ -70,12 +70,16 @@ genMinusDec (iCode * ic)
 
       if(size==2 && sameRegs (AOP (left), AOP (result)))
         {
-          if (IS_AOP_XA (AOP (result)) && m6502_reg_x->isLitConst)
+          if (IS_AOP_WITH_X (AOP (result)) && m6502_reg_x->isLitConst)
             {
 	      loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
               return true;
             }
-          else if(bcount<3)
+          else if(IS_AOP_WITH_X (AOP (result)) && smallAdjustReg(AOP(result)->aopu.aop_reg[1], -bcount))
+            {
+              return true;
+            }
+          else if(bcount<3 && aopCanIncDec(AOP(result)) )
             {
 	      while (bcount--)
                 rmwWithAop (OPINCDEC, AOP (result), 1);
@@ -94,7 +98,7 @@ genMinusDec (iCode * ic)
 	  tlbl = safeNewiTempLabel (NULL);
 	  INIT_CARRY();
 	  accopWithAop (OPCODE, AOP (right), 0);
-	  emitBranch ("bcs", tlbl);
+	  m6502_emitBranch ("bcs", tlbl);
 	  rmwWithReg (OPINCDEC, m6502_reg_x);
 	  safeEmitLabel (tlbl);
 	  m6502_dirtyReg(m6502_reg_x);
@@ -145,7 +149,7 @@ genMinusDec (iCode * ic)
   if (icount < 0)
     return false;
 
-  if(icount==1 && size==2 && aopCanIncDec(AOP(result)) )
+  if(icount==1 && size==2)
     {
       reg_info *reg = getFreeByteReg();
       if(reg)
@@ -157,7 +161,7 @@ genMinusDec (iCode * ic)
 
           tlbl = safeNewiTempLabel (NULL);
           loadRegFromAop (reg, AOP (left), 0);
-          emitBranch ("bne", tlbl);
+          m6502_emitBranch ("bne", tlbl);
           rmwWithAop (OPINCDEC, AOP (result), 1);
           safeEmitLabel (tlbl);
           rmwWithAop (OPINCDEC, AOP (result), 0);
@@ -225,7 +229,7 @@ m6502_genMinus (iCode * ic)
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       accopWithAop (OPCODE, AOP(right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
-      emitBranch ("bcs", skiplabel);
+      m6502_emitBranch ("bcs", skiplabel);
       rmwWithAop (OPINCDEC, AOP(result), 1);
       if(IS_AOP_WITH_X(AOP(result)))
 	m6502_dirtyReg(m6502_reg_x);
@@ -273,13 +277,14 @@ m6502_genMinus (iCode * ic)
   if ( IS_AOP_XA (AOP(left)) && !IS_AOP_XA(AOP(result)) &&
        (AOP_TYPE(result) == AOP_SOF || AOP_TYPE(right) == AOP_SOF) )
     {
-      savea = fastSaveAIfSurv();
       bool restore_x = !m6502_reg_x->isDead;
+
+      savea = fastSaveAIfSurv();
       storeRegTemp(m6502_reg_x, true);
       m6502_emitTSX();
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       INIT_CARRY();
-      accopWithAop (OPCODE, AOP (right), 0);
+        accopWithAop (OPCODE, AOP (right), 0);
 
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );

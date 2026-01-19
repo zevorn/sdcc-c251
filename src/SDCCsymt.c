@@ -4850,15 +4850,10 @@ initCSupport (void)
     "char", "int", "long", "longlong", "float",
   };
   const char *ssu[] = {
-    "s", "su", "us", "u"
+    "u", "s", "us", "su"
   };
   const char *srlrr[] = {
     "sl", "sr"
-  };
-  /* type as character codes for typeFromStr() */
-  const char *sbwdCodes[] = {
-    "c",  "i",  "l",  "L",
-    "Uc", "Ui", "Ul", "UL"
   };
 
   int bwd, su, muldivmod, tofrom, slsr;
@@ -4891,8 +4886,8 @@ initCSupport (void)
         }
       multypes[bwd][0] = l;
       multypes[bwd][1] = copyLinkChain (l);
-      SPEC_USIGN (multypes[bwd][0]) = 0;
-      SPEC_USIGN (multypes[bwd][1]) = 1;
+      SPEC_USIGN (multypes[bwd][0]) = 1;
+      SPEC_USIGN (multypes[bwd][1]) = 0;
     }
 
   floatType = newFloatLink ();
@@ -4918,12 +4913,12 @@ initCSupport (void)
               dbuf_init (&dbuf, 128);
               if (tofrom)
                 {
-                  dbuf_printf (&dbuf, "__fs2%s%s", ssu[su * 3], sbwd[bwd]);
+                  dbuf_printf (&dbuf, "__fs2%s%s", ssu[su], sbwd[bwd]);
                   conv[tofrom][bwd][su] = funcOfType (dbuf_c_str (&dbuf), multypes[bwd][su], floatType, 1, options.float_rent);
                 }
               else
                 {
-                  dbuf_printf (&dbuf, "__%s%s2fs", ssu[su * 3], sbwd[bwd]);
+                  dbuf_printf (&dbuf, "__%s%s2fs", ssu[su], sbwd[bwd]);
                   conv[tofrom][bwd][su] = funcOfType (dbuf_c_str (&dbuf), floatType, multypes[bwd][su], 1, options.float_rent);
                 }
               dbuf_destroy (&dbuf);
@@ -4966,7 +4961,7 @@ initCSupport (void)
                   dbuf_init (&dbuf, 128);
                   if (tofrom)
                     {
-                      dbuf_printf (&dbuf, "__fps16x162%s%s", ssu[su * 3], fp16x16sbwd[bwd]);
+                      dbuf_printf (&dbuf, "__fps16x162%s%s", ssu[su], fp16x16sbwd[bwd]);
                       if (bwd == 4)
                         fp16x16conv[tofrom][bwd][su] =
                           funcOfType (dbuf_c_str (&dbuf), floatType, fixed16x16Type, 1, options.float_rent);
@@ -4976,7 +4971,7 @@ initCSupport (void)
                     }
                   else
                     {
-                      dbuf_printf (&dbuf, "__%s%s2fps16x16", ssu[su * 3], fp16x16sbwd[bwd]);
+                      dbuf_printf (&dbuf, "__%s%s2fps16x16", ssu[su], fp16x16sbwd[bwd]);
                       if (bwd == 4)
                         fp16x16conv[tofrom][bwd][su] =
                           funcOfType (dbuf_c_str (&dbuf), fixed16x16Type, floatType, 1, options.float_rent);
@@ -5000,7 +4995,7 @@ initCSupport (void)
               struct dbuf_s dbuf;
 
               dbuf_init (&dbuf, 128);
-              dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su*3], sbwd[bwd]);
+              dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su], sbwd[bwd]);
               muldiv[muldivmod][bwd][su] = funcOfType (_mangleFunctionName(dbuf_c_str (&dbuf)), multypes[bwd][su], multypes[bwd][su], 2, options.intlong_rent);
               dbuf_destroy (&dbuf);
               FUNC_NONBANKED (muldiv[muldivmod][bwd][su]->type) = 1;
@@ -5016,26 +5011,22 @@ initCSupport (void)
 
   /* _divschar/_modschar return int, so that both
    * 100 / -4 = -25 and -128 / -1 = 128 can be handled correctly
-   * (first one would have to be sign extended, second one must not be).
-   * Similarly, modschar should be handled, but the iCode introduces cast
-   * here and forces '% : s8 x s8 -> s8' ... */
+   * (first one would have to be sign extended, second one must not be). */
   bwd = 0;
   for (su = 0; su < 4; su++)
     {
       for (muldivmod = 0; muldivmod < 3; muldivmod++)
         {
-          /* muluchar, mulschar, mulsuchar and muluschar are separate functions, because e.g. the z80
+          /* muluchar, mulschar, muluschar and mulsuchar are separate functions, because e.g. the z80
              port is sign/zero-extending to int before calling mulint() */
-          /* div and mod : s8_t x s8_t -> s8_t should be s8_t x s8_t -> s16_t, see below */
           struct dbuf_s dbuf;
 
           dbuf_init (&dbuf, 128);
           dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su], sbwd[bwd]);
-          muldiv[muldivmod][bwd][su] =
-            funcOfType (_mangleFunctionName (dbuf_c_str (&dbuf)),
-              multypes[(TARGET_IS_PIC16 && muldivmod == 1 && bwd == 0 && su == 0 || (TARGET_IS_PIC14 || TARGET_IS_STM8 || TARGET_Z80_LIKE || TARGET_PDK_LIKE || TARGET_MOS6502_LIKE || TARGET_F8_LIKE) && bwd == 0) ? 1 : bwd][su % 2],
-              multypes[bwd][su / 2],
-              2,
+          muldiv[muldivmod][bwd][su] = funcOfType2 (_mangleFunctionName (dbuf_c_str (&dbuf)),
+            multypes[(TARGET_IS_PIC16 && muldivmod == 1 && bwd == 0 && su == 0 || (TARGET_IS_PIC14 || TARGET_IS_STM8 || TARGET_Z80_LIKE || TARGET_PDK_LIKE || TARGET_MOS6502_LIKE || TARGET_F8_LIKE) && bwd == 0) ? 1 : bwd][(bool)su],
+              multypes[bwd][su % 2],
+              multypes[bwd][su == 1 || su == 2],
               options.intlong_rent);
           dbuf_destroy (&dbuf);
         }
@@ -5050,7 +5041,7 @@ initCSupport (void)
               struct dbuf_s dbuf;
 
               dbuf_init (&dbuf, 128);
-              dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su * 3], sbwd[bwd]);
+              dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su], sbwd[bwd]);
               muldiv[muldivmod][bwd][su] =
                 funcOfType (_mangleFunctionName (dbuf_c_str (&dbuf)),
                   multypes[(TARGET_IS_PIC16 && muldivmod == 1 && bwd == 0 && su == 0 || (TARGET_IS_STM8 || TARGET_Z80_LIKE || TARGET_PDK_LIKE || TARGET_F8_LIKE) && bwd == 0) ? 1 : bwd][su],
@@ -5065,7 +5056,7 @@ initCSupport (void)
   /* mul only */
   muldivmod = 0;
   /* signed only */
-  su = 0;
+  su = 1;
   /* word, doubleword, and quadword */
   for (bwd = 1; bwd < 4; bwd++)
     {
@@ -5087,28 +5078,23 @@ initCSupport (void)
         {
           for (su = 0; su < 2; su++)
             {
-              struct dbuf_s dbuf;
-              symbol *sym;
-              const char *params[2];
-
-              params[0] = sbwdCodes[bwd + 4*su];
-              params[1] = sbwdCodes[0];
-
-              dbuf_init (&dbuf, 128);
-              dbuf_printf (&dbuf, "_%s%s%s", srlrr[slsr], ssu[su * 3], sbwd[bwd]);
-              rlrr[slsr][bwd][su] = sym =
-                funcOfTypeVarg (_mangleFunctionName (dbuf_c_str (&dbuf)), 
-                                sbwdCodes[bwd + 4*su], 2, &params[0]);
-              FUNC_ISREENT (sym->type) = options.intlong_rent ? 1 : 0;
-              FUNC_NONBANKED (sym->type) = 1;
-              dbuf_destroy (&dbuf);
+              if (port->support.shift < 0 && port->support.shift >= getSize (multypes[bwd][0]))
+                rlrr[slsr][bwd][su] = NULL; // Do not create support function declaration for shifts handled by codegen.
+              else
+                {
+                  struct dbuf_s dbuf;
+                  dbuf_init (&dbuf, 128);
+                  dbuf_printf (&dbuf, "_%s%s%s", srlrr[slsr], ssu[su], sbwd[bwd]);
+                  rlrr[slsr][bwd][su] = funcOfType2 (_mangleFunctionName (dbuf_c_str (&dbuf)), multypes[bwd][su], multypes[bwd][su], multypes[0][0], options.intlong_rent);
+                  dbuf_destroy (&dbuf);
+                }
             }
         }
     }
 
-  muls16tos32[0] = port->support.has_mulint2long ? funcOfTypeVarg ("__mulsint2slong", "l", 2, (const char * []){"i", "i"}) : 0;
-  muls16tos32[1] = port->support.has_mulint2long ? funcOfTypeVarg ("__muluint2ulong", "Ul", 2, (const char * []){"Ui", "Ui"}) : 0;
-  mulu32u8tou64 = port->support.has_mululonguchar2ulonglong ? funcOfTypeVarg ("__mululonguchar2ulonglong", "UL", 2, (const char * []){"Ul", "Uc"}) : 0;
+  muls16tos32[0] = port->support.has_mulint2long ? funcOfTypeVarg ("__mulsint2slong", "l", 2, (const char * []){"i", "i"}) : NULL;
+  muls16tos32[1] = port->support.has_mulint2long ? funcOfTypeVarg ("__muluint2ulong", "Ul", 2, (const char * []){"Ui", "Ui"}) : NULL;
+  mulu32u8tou64 = port->support.has_mululonguchar2ulonglong ? funcOfTypeVarg ("__mululonguchar2ulonglong", "UL", 2, (const char * []){"Ul", "Uc"}) : NULL;
 }
 
 /*-----------------------------------------------------------------*/

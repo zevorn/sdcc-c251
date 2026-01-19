@@ -4,14 +4,12 @@ struct-ret-1.c from the execute part of the gcc torture tests.
 
 #include <testfwk.h>
 
-#pragma disable_warning 93
-
 #include <stdio.h>
 #include <string.h>
 
 #if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
 char out[100];
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) // Todo: enable when struct parmeters are supported!
+#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(SDCC_MOS) // Todo: enable when struct parmeters are supported!
 
 typedef struct { double d; int i[3]; } B;
 typedef struct { char c[33],c1; } X;
@@ -57,7 +55,7 @@ void
 testTortureExecute (void)
 {
 #if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) // Todo: enable when struct parmeters are supported!
+#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(SDCC_MOS) // Todo: enable when struct parmeters are supported!
   X Xr;
   char tmp[100];
 

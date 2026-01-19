@@ -976,7 +976,7 @@ m6502_genLeftShift (iCode * ic)
       symbol *looplbl = safeNewiTempLabel (NULL);
 
       m6502_emitCmp(countreg, 8);
-      emitBranch ("bcc", skiplbl);
+      m6502_emitBranch ("bcc", skiplbl);
       safeEmitLabel (looplbl);
 
       if(size==8)
@@ -1010,14 +1010,14 @@ m6502_genLeftShift (iCode * ic)
       //if(size==8)
       {
 	m6502_emitCmp(countreg, 8);
-	emitBranch ("bcs", looplbl);
+	m6502_emitBranch ("bcs", looplbl);
       }
       loadRegFromAop (m6502_reg_a, AOP (result), a_loc);
       safeEmitLabel (skiplbl);
     }
 
   m6502_emitCmp(countreg, 0);
-  emitBranch ("beq", skip_label);
+  m6502_emitBranch ("beq", skip_label);
 
   // FIXME: find a good solution for this
   //  if(IS_AOP_WITH_A (AOP (right)) && sameRegs (AOP (left), AOP (result)) )
@@ -1046,7 +1046,7 @@ m6502_genLeftShift (iCode * ic)
     }
 
   rmwWithReg("dec", countreg);
-  emitBranch ("bne", loop_label);
+  m6502_emitBranch ("bne", loop_label);
 
   if (x_in_regtemp)
     loadRegTemp(m6502_reg_x);
