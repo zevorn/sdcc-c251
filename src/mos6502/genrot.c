@@ -208,14 +208,13 @@ genRotX(iCode *ic, int shCount)
 
   size = AOP_SIZE (result);
 
+ emitComment (TRACEGEN, "%s - size=%d shCount=%d",__func__, size, shCount);
+
   if(IS_AOP_XA(AOP(result)))
     resultInXA=true;
 
   if(!resultInXA)
     needpulla=pushRegIfSurv(m6502_reg_a);
-
-  emitComment (TRACEGEN, "%s - size=%d shCount=%d (res in XA:%c)",__func__, size, shCount,
-               resultInXA?'Y':'N');
 
   if(resultInXA)
     {

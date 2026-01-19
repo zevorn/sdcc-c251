@@ -4,8 +4,6 @@ va-arg-15.c from the execute part of the gcc torture tests.
 
 #include <testfwk.h>
 
-#pragma disable_warning 93
-
 #include <stdarg.h>
 
 #ifndef __SDCC_pdk14 // Lack of memory

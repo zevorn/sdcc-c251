@@ -6,10 +6,9 @@
 
 #ifdef __SDCC
 #pragma std_c99
-#pragma disable_warning 93
 #endif
 
-/* This generates too much code for a mcs51, hc08, pdk14 and pdk15 */
+/* This generates too much code for a mcs51, pic14, pdk14 and pdk15 */
 /* pic14: Not enough data memory */
 #if !defined(__SDCC_mcs51) && !defined(__SDCC_pic14) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
 
@@ -41,7 +40,7 @@ volatile float gf[32];
 
 void foo (int n)
 {
-#if defined(__SDCC_STACK_AUTO) && ( defined (__SDCC_mos6502) || defined (__SDCC_mos65c02) )
+#if defined(SDCC_SMALL_STACK)
   static double DECLARE(d);
   static float DECLARE(f);
 #else

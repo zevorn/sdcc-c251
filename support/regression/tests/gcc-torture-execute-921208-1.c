@@ -6,18 +6,17 @@
 
 #ifdef __SDCC
 #pragma std_c99
-#pragma disable_warning 93
 #endif
 
-#if !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
 double
-f(double x)
+f(double x) __reentrant
 {
   return x*x;
 }
 
 double
-Int(double (*f)(double), double a)
+Int(double (*f)(double) __reentrant, double a) __reentrant
 {
   return (*f)(a);
 }
@@ -26,7 +25,7 @@ Int(double (*f)(double), double a)
 void
 testTortureExecute (void)
 {
-#if !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
   if (Int(&f,2.0) != 4.0)
     ASSERT(0);
   return;

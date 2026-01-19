@@ -6,7 +6,6 @@ va-arg-18.c from the execute part of the gcc torture tests.
 
 #ifdef __SDCC
 #pragma disable_warning 85
-#pragma disable_warning 93
 #endif
 
 #include <stdarg.h>

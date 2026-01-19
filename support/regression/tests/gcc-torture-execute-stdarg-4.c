@@ -4,8 +4,6 @@
 
 #include <testfwk.h>
 
-#pragma disable_warning 93 // Using float for double.
-
 #include <stdarg.h>
 
 #if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory

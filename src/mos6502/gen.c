@@ -585,9 +585,9 @@ emit6502op (const char *inst, const char *fmt, ...)
               unsigned char b=strtol(&fmt[1],NULL,0);
               if(!strcmp(inst,"and"))
                 {
-		  dst_reg->litConst&=b;
-		  break;
-		}
+                  dst_reg->litConst&=b;
+                  break;
+                }
               if(!strcmp(inst,"ora"))
                 {
                   dst_reg->litConst|=b;
@@ -776,11 +776,11 @@ emitUnsignedBranch (bool gt, bool eq, symbol * tlbl)
 }
 
 /**************************************************************************
- * emitBranch
+ * m6502_emitBranch
  *
  *************************************************************************/
 void
-emitBranch (char *branchop, symbol * tlbl)
+m6502_emitBranch (char *branchop, symbol * tlbl)
 {
   if (!strcmp("bls", branchop))
     {
@@ -1364,9 +1364,13 @@ storeRegToAop (reg_info *reg, asmop * aop, int loffset)
   if (aop->type == AOP_CRY)     /* This can only happen if IFX was optimized */
     return;                     /* away, so just toss the result */
 
-  if (regidx==XA_IDX && aop->size == 1 )
+  if (aop->size == 1 && (regidx==XA_IDX || regidx==XY_IDX))
     {
-      storeRegToAop (m6502_reg_a, aop, loffset);
+      if(regidx==XA_IDX)
+        storeRegToAop (m6502_reg_a, aop, loffset);
+      else
+        storeRegToAop (m6502_reg_y, aop, loffset);
+
       return;
     }
 
@@ -1788,7 +1792,7 @@ m6502_signExtendReg(reg_info *reg)
     m6502_emitCmp (reg, 0x80);
 
   loadRegFromConst (reg, 0);
-  emitBranch ("bcc", tlbl);
+  m6502_emitBranch ("bcc", tlbl);
   loadRegFromConst (reg, 0xff);
   safeEmitLabel (tlbl);
   m6502_dirtyReg (reg);
@@ -1856,7 +1860,7 @@ storeRegToFullAop (reg_info *reg, asmop *aop, bool isSigned)
             {
               symbol *tlbl = safeNewiTempLabel (NULL);
               m6502_emitCmp(m6502_reg_a, 0x80);
-              emitBranch ("bcc", tlbl);
+              m6502_emitBranch ("bcc", tlbl);
               loadRegFromConst (m6502_reg_x, 0xff);
               safeEmitLabel (tlbl);
               m6502_dirtyReg (m6502_reg_x);
@@ -1920,9 +1924,9 @@ storeRegToFullAop (reg_info *reg, asmop *aop, bool isSigned)
 void
 transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
 {
-  bool needpula = false;
+  bool needpulla = false;
+  bool freereg = true;
   reg_info *reg = NULL;
-  bool keepreg = false;
 
   emitComment (TRACE_AOP, __func__ );
 
@@ -1983,19 +1987,18 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
       storeConstToAop (byteOfVal (srcaop->aopu.aop_lit, srcofs), dstaop, dstofs);
       return;
     }
+
   if (dstaop->type == AOP_REG)
     {
       reg = dstaop->aopu.aop_reg[dstofs];
-      keepreg = true;
+      freereg = false;
     } 
   else if ((srcaop->type == AOP_REG) && (srcaop->aopu.aop_reg[srcofs]))
     {
       reg = srcaop->aopu.aop_reg[srcofs];
-      keepreg = true;
+      freereg = false;
     }
-
-  // TODO: pick reg based on if can load op?
-  if (!reg)
+  else
     {
       if(srcaop->type != AOP_SOF && dstaop->type != AOP_SOF)
         reg = getFreeByteReg();
@@ -2004,8 +2007,7 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
         {
           // FIXME: used vs. surv triggers failure on bug 3556 in stack-auto
           // seems to not affect the bug anymore (?)
-	  //          needpula = pushRegIfUsed (m6502_reg_a);
-          needpula = storeRegTempIfUsed (m6502_reg_a);
+          needpulla = storeRegTempIfUsed (m6502_reg_a);
           reg = m6502_reg_a;
         }
     }
@@ -2015,8 +2017,8 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
   loadRegFromAop (reg, srcaop, srcofs);
   storeRegToAop (reg, dstaop, dstofs);
 
-  if (!keepreg)
-    loadOrFreeRegTemp (reg, needpula);
+  if (freereg)
+    loadOrFreeRegTemp (reg, needpulla);
 }
 
 #if 0
@@ -3676,7 +3678,7 @@ asmopToBool (asmop *aop, bool resultInA)
 	    if(_S.lastflag==X_IDX) 
 	      {
 		if (!(m6502_reg_x->isLitConst && m6502_reg_x->litConst==0 ) )
-		  emitBranch ("bne", tlbl);
+		  m6502_emitBranch ("bne", tlbl);
 		m6502_emitCmp(m6502_reg_a, 0);
 	      }
 	    else
@@ -3684,7 +3686,7 @@ asmopToBool (asmop *aop, bool resultInA)
 		m6502_emitCmp(m6502_reg_a, 0);
 		if( !(m6502_reg_x->isLitConst && m6502_reg_x->litConst==0))
 		  {
-                    emitBranch ("bne", tlbl);
+                    m6502_emitBranch ("bne", tlbl);
 		    // FIXME: this optimization makes the code smaller (expected) and slower (unexpected)
 		    //          if(m6502_reg_a->isDead) 
 		    //            transferRegReg(m6502_reg_x, m6502_reg_a, true);
@@ -3698,7 +3700,7 @@ asmopToBool (asmop *aop, bool resultInA)
           if(resultInA)
             loadRegFromConst (m6502_reg_a, 0);
 	  m6502_emitCmp(m6502_reg_x, 0);
-          emitBranch ("bne", tlbl);
+          m6502_emitBranch ("bne", tlbl);
 	  m6502_emitCmp(m6502_reg_y, 0);
         }
       else
@@ -3774,7 +3776,7 @@ asmopToBool (asmop *aop, bool resultInA)
     {
       symbol *endlbl = safeNewiTempLabel (NULL);
 
-      emitBranch ("beq", endlbl);
+      m6502_emitBranch ("beq", endlbl);
       safeEmitLabel (tlbl);
       loadRegFromConst (m6502_reg_a, 1);
       safeEmitLabel (endlbl);
@@ -3828,6 +3830,12 @@ genCopy (operand * result, operand * source)
   if (IS_AOP_XA (AOP (source)) && size <= 2  )
     {
       storeRegToAop (m6502_reg_xa, AOP (result), 0);
+      return;
+    }
+
+  if (IS_AOP_XY (AOP (source)) && size <= 2  )
+    {
+      storeRegToAop (m6502_reg_xy, AOP (result), 0);
       return;
     }
 
@@ -5251,8 +5259,8 @@ genIfxJump (iCode * ic, char *jval)
 	emitcode("ERROR", "; %s IC_FALSE: Unimplemented jval (%s)", __func__, jval );
       //      inst = "blt";
     }
-  emitBranch (inst, tlbl);
-  emitBranch ("jmp", jlbl);
+  m6502_emitBranch (inst, tlbl);
+  m6502_emitBranch ("jmp", jlbl);
   safeEmitLabel (tlbl);
 
   /* mark the icode as generated */
@@ -5516,7 +5524,7 @@ genCmp (iCode * ic, iCode * ifx)
         {
           symbol *tlbl3 = safeNewiTempLabel (NULL);
 	  m6502_emitCmp (m6502_reg_a, 0);
-          emitBranch ("beq", tlbl3);
+          m6502_emitBranch ("beq", tlbl3);
           loadRegFromConst (m6502_reg_a, 1);
           safeEmitLabel (tlbl3);
           goto release;
@@ -5631,9 +5639,9 @@ genCmp (iCode * ic, iCode * ifx)
 	    m6502_freeReg (m6502_reg_a);
 
           if(!sign && right_zero && AOP_SIZE (left)==1)
-            emitBranch ("beq", tlbl);
+            m6502_emitBranch ("beq", tlbl);
           else
-            emitBranch (inst, tlbl);
+            m6502_emitBranch (inst, tlbl);
         }
       else
         {
@@ -5642,11 +5650,11 @@ genCmp (iCode * ic, iCode * ifx)
 	  else
 	    m6502_freeReg (m6502_reg_a);
 
-          if(bmi) emitBranch ("bmi", tlbl);
-          else if(bpl) emitBranch ("bpl", tlbl);
-          else if(beq) emitBranch ("beq", tlbl);
+          if(bmi) m6502_emitBranch ("bmi", tlbl);
+          else if(bpl) m6502_emitBranch ("bpl", tlbl);
+          else if(beq) m6502_emitBranch ("beq", tlbl);
         }
-      emitBranch ("jmp", jlbl);
+      m6502_emitBranch ("jmp", jlbl);
       safeEmitLabel (tlbl);
 
       /* mark the icode as generated */
@@ -5655,7 +5663,7 @@ genCmp (iCode * ic, iCode * ifx)
   else if(result_in_a)
     {
       symbol *skiplbl = safeNewiTempLabel (NULL);
-      emitBranch (branchInstCmp (negatedCmp(opcode), sign), skiplbl);
+      m6502_emitBranch (branchInstCmp (negatedCmp(opcode), sign), skiplbl);
       loadRegFromConst (m6502_reg_a, 1);
       safeEmitLabel (skiplbl);
       m6502_dirtyReg (m6502_reg_a);
@@ -5670,18 +5678,18 @@ genCmp (iCode * ic, iCode * ifx)
 
       if(!bit)
         {
-          emitBranch (branchInstCmp (opcode, sign), true_lbl);
+          m6502_emitBranch (branchInstCmp (opcode, sign), true_lbl);
         }
       else
         {
           if(bmi)
-            emitBranch ("bmi", true_lbl);
+            m6502_emitBranch ("bmi", true_lbl);
           else
-            emitBranch ("bpl", true_lbl);
+            m6502_emitBranch ("bpl", true_lbl);
         }
       loadRegFromConst (m6502_reg_a, 0);
       // FIXME: for 6502 change this to beq when optimizing for size
-      emitBranch ("bra", tlbl2);
+      m6502_emitBranch ("bra", tlbl2);
       safeEmitLabel (true_lbl);
       loadRegFromConst (m6502_reg_a, 1);
       safeEmitLabel (tlbl2);
@@ -5819,9 +5827,9 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 	    }
 
 	  if(!early_result)
-	    emitBranch ("bne", NE_label);
+	    m6502_emitBranch ("bne", NE_label);
 	  else
-	    emitBranch ("bne", end_label);
+	    m6502_emitBranch ("bne", end_label);
 	}
 
       // set EQ
@@ -5830,7 +5838,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
       if(!early_result)
         {
           // jmp to end
-          emitBranch ("bra", end_label);
+          m6502_emitBranch ("bra", end_label);
 	  safeEmitLabel (NE_label);
           // set ne
           loadRegFromConst (m6502_reg_a, !result_equal);
@@ -5916,7 +5924,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 		  if (!tlbl_NE)
 		    tlbl_NE = safeNewiTempLabel (NULL);
 
-		  emitBranch ("bne", tlbl_NE);
+		  m6502_emitBranch ("bne", tlbl_NE);
 		}
 	    }
 	}
@@ -5925,18 +5933,18 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 	{
 	  if (!tlbl_EQ)
 	    tlbl_EQ = safeNewiTempLabel (NULL);
-	  emitBranch ("beq", tlbl_EQ);
+	  m6502_emitBranch ("beq", tlbl_EQ);
 	  if (tlbl_NE)
 	    safeEmitLabel (tlbl_NE);
-	  emitBranch ("jmp", jlbl);
+	  m6502_emitBranch ("jmp", jlbl);
 	  safeEmitLabel (tlbl_EQ);
 	}
       else
 	{
 	  if (!tlbl_NE)
 	    tlbl_NE = safeNewiTempLabel (NULL);
-	  emitBranch ("bne", tlbl_NE);
-	  emitBranch ("jmp", jlbl);
+	  m6502_emitBranch ("bne", tlbl_NE);
+	  m6502_emitBranch ("jmp", jlbl);
 	  safeEmitLabel (tlbl_NE);
 	}
 
@@ -5982,11 +5990,11 @@ static void genAndOp (iCode * ic)
 
   needpulla = pushRegIfSurv (m6502_reg_a);
   asmopToBool (AOP (left), false);
-  emitBranch ("beq", tlbl0);
+  m6502_emitBranch ("beq", tlbl0);
   asmopToBool (AOP (right), false);
-  emitBranch ("beq", tlbl0);
+  m6502_emitBranch ("beq", tlbl0);
   loadRegFromConst (m6502_reg_a, 1);
-  emitBranch ("bra", tlbl);
+  m6502_emitBranch ("bra", tlbl);
   safeEmitLabel (tlbl0);
   //  m6502_dirtyReg (m6502_reg_a);
   loadRegFromConst (m6502_reg_a, 0);
@@ -6031,11 +6039,11 @@ static void genOrOp (iCode * ic)
 
   needpulla = pushRegIfSurv (m6502_reg_a);
   asmopToBool (AOP (left), false);
-  emitBranch ("bne", tlbl0);
+  m6502_emitBranch ("bne", tlbl0);
   asmopToBool (AOP (right), false);
-  emitBranch ("bne", tlbl0);
+  m6502_emitBranch ("bne", tlbl0);
   loadRegFromConst (m6502_reg_a, 0);
-  emitBranch ("bra", tlbl);
+  m6502_emitBranch ("bra", tlbl);
   safeEmitLabel (tlbl0);
   //  m6502_dirtyReg (m6502_reg_a);
   loadRegFromConst (m6502_reg_a, 1);
@@ -6389,7 +6397,7 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
 	  symbol *tlbl = safeNewiTempLabel (NULL);
 
 	  bitAConst(1 << (blen - 1));
-          emitBranch ("beq", tlbl);
+          m6502_emitBranch ("beq", tlbl);
 	  emit6502op ("ora", IMMDFMT, (unsigned char) (0xff << blen));
 	  safeEmitLabel (tlbl);
 	}
@@ -6422,7 +6430,7 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
 	  symbol *tlbl = safeNewiTempLabel (NULL);
 	  // FIXME: works but very ugly
 	  bitAConst(1 << (rlen - 1));
-          emitBranch ("beq", tlbl);
+          m6502_emitBranch ("beq", tlbl);
 	  emit6502op ("ora", IMMDFMT, (unsigned char) (0xff << rlen));
 	  safeEmitLabel (tlbl);
 	}
@@ -6534,7 +6542,7 @@ static void genUnpackBitsImmed (operand * left, operand *right, operand * result
 	      inst = "brset";
 	    }
 	  emit6502op (inst, "#%d,%s,%05d$", bstr, aopAdrStr (derefaop, 0, false), safeLabelNum ((tlbl)));
-	  emitBranch ("jmp", jlbl);
+	  m6502_emitBranch ("jmp", jlbl);
 	  safeEmitLabel (tlbl);
 	  ifx->generated = 1;
 	  offset++;
@@ -6556,7 +6564,7 @@ static void genUnpackBitsImmed (operand * left, operand *right, operand * result
 	      /* signed bitfield */
 	      symbol *tlbl = safeNewiTempLabel (NULL);
 	      bitAConst(1 << (blen - 1));
-              emitBranch ("beq", tlbl);
+              m6502_emitBranch ("beq", tlbl);
 	      emit6502op ("ora", IMMDFMT, (unsigned char) (0xff << blen));
 	      safeEmitLabel (tlbl);
 	    }
@@ -6611,7 +6619,7 @@ static void genUnpackBitsImmed (operand * left, operand *right, operand * result
 	  symbol *tlbl = safeNewiTempLabel (NULL);
 
 	  bitAConst (1 << (rlen - 1));
-          emitBranch ("beq", tlbl);
+          m6502_emitBranch ("beq", tlbl);
 	  emit6502op ("ora", IMMDFMT, (unsigned char) (0xff << rlen));
 	  safeEmitLabel (tlbl);
 	}
@@ -6811,16 +6819,17 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 	}
 #endif
 
-      if (sameRegs(AOP(left), AOP(result)))
+      if ( sameRegs(AOP(left), AOP(result)) )
 	{
 	  // pointer and destination is the same - need avoid overwriting
-	  emitComment (TRACEGEN|VVDBG, "    %s - sameregs", __func__);
+	  emitComment (TRACEGEN|VVDBG, "    %s - sameregs off:%d",
+                       __func__, litOffset);
 
           if (m6502_reg_a->aop && m6502_reg_a->aop->type==AOP_DIR
 	      && sameRegs(m6502_reg_a->aop, AOP(result)) )
             {
 	      emitComment (TRACEGEN|VVDBG, "    %s - dirty A", __func__);
-	      m6502_dirtyReg(m6502_reg_a);
+	      m6502_dirtyReg (m6502_reg_a);
             }
 	  needpulla = storeRegTempIfSurv (m6502_reg_a);
 
@@ -6834,14 +6843,14 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 		}
 	      else if (i==1)
 		{
-		  m6502_pushReg(m6502_reg_a, false);
+		  fastSaveAi(m6502_reg_x);
 		}
 	      else if (i==0)
 		{
 		  storeRegToAop (m6502_reg_a, AOP (result), 0);
 		  if (size>1)
 		    {
-		      m6502_pullReg(m6502_reg_a);
+		      fastRestoreA();
 		      storeRegToAop (m6502_reg_a, AOP (result), 1);
 		    }
 		}
@@ -7300,9 +7309,9 @@ static void genPackBitsImmed (operand * result, operand * left, sym_link * etype
 	  needpulla = pushRegIfSurv (m6502_reg_a);
 	  loadRegFromAop (m6502_reg_a, AOP (right), 0);
 	  emit6502op ("lsr", "a");
-	  emitBranch ("bcs", tlbl1);
+	  m6502_emitBranch ("bcs", tlbl1);
 	  emit6502op ("bclr", "#%d,%s", bstr, aopAdrStr (derefaop, 0, false));
-	  emitBranch ("bra", tlbl2);
+	  m6502_emitBranch ("bra", tlbl2);
 	  safeEmitLabel (tlbl1);
 	  emit6502op ("bset", "#%d,%s", bstr, aopAdrStr (derefaop, 0, false));
 	  safeEmitLabel (tlbl2);
@@ -7813,12 +7822,12 @@ static void genIfx (iCode * ic, iCode * popIc)
       if (lit)
         {
           if (IC_TRUE (ic))
-            emitBranch ("jmp", IC_TRUE (ic));
+            m6502_emitBranch ("jmp", IC_TRUE (ic));
         }
       else
         {
           if (IC_FALSE (ic))
-            emitBranch ("jmp", IC_FALSE (ic));
+            m6502_emitBranch ("jmp", IC_FALSE (ic));
         }
       ic->generated = 1;
       return;
@@ -8139,7 +8148,7 @@ static void genCast (iCode * ic)
 	  symbol *tlbl = safeNewiTempLabel (NULL);
 	  m6502_pushReg (m6502_reg_a, true);
 	  emit6502op ("and", IMMDFMT, 1u << (SPEC_BITINTWIDTH (resulttype) % 8 - 1));
-	  emitBranch ("beq", tlbl);
+	  m6502_emitBranch ("beq", tlbl);
 	  m6502_pullReg (m6502_reg_a);
 	  emit6502op ("ora", IMMDFMT, ~topbytemask & 0xff);
 	  m6502_pushReg (m6502_reg_a, true);
@@ -8194,7 +8203,7 @@ static void genCast (iCode * ic)
         {
           symbol *tlbl = safeNewiTempLabel (NULL);
 	  m6502_emitCmp(result->aop->aopu.aop_reg[0], 0);
-          emitBranch ("bpl", tlbl);
+          m6502_emitBranch ("bpl", tlbl);
           storeConstToAop (0xff, AOP (result), 1);
           safeEmitLabel (tlbl);
           m6502_dirtyReg(m6502_reg_x);
