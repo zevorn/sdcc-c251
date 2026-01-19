@@ -10,7 +10,7 @@
 
 // Lack of memory
 #if defined(__SDCC_MODEL_SMALL) || defined(__SDCC_MODEL_MEDIUM) || \
-    (defined(__SDCC_mcs51) && defined(__SDCC_STACK_AUTO)) || defined (__SDCC_pdk14) || defined (__SDCC_pdk15) || defined (__SDCC_pic14) || ((defined(__SDCC_mos6502) || defined(_SDCC_mos65c02)) && defined(__SDCC_STACK_AUTO))
+    (defined(__SDCC_mcs51) && defined(__SDCC_STACK_AUTO)) || defined (__SDCC_pdk14) || defined (__SDCC_pdk15) || defined (__SDCC_pic14) || defined(SDCC_SMALL_STACK)
 #define SKIP
 #endif
 

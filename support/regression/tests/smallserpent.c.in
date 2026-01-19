@@ -19,7 +19,6 @@
 // This implementation needs quite some code memory.
 #if defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) \
   || defined(__SDCC_mcs51) \
-  || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02) \
   || defined(__SDCC_hc08) || defined(__SDCC_s08) // todo: enable for s08 when we support code space larger than 32K.
 #define LACK_OF_MEMORY
 #endif

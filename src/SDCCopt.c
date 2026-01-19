@@ -361,8 +361,8 @@ cnvToFloatCast (iCode *ic, eBBlock *ebp)
 
   if (IS_BOOLEAN (type))
     {
-      wassert(multypes[0][1] == UCHARTYPE);
-      func = conv[0][0][1];
+      wassert(multypes[0][0] == UCHARTYPE);
+      func = conv[0][0][0];
       goto found;
     }
 
@@ -935,7 +935,7 @@ convilong (iCode *ic, eBBlock *ebp)
       for (su = 0; su < 4 && muldivmod >= 0; su++)
         {
           if ((compareType (leftType, multypes[0][su%2], false) == 1) &&
-              (compareType (rightType, multypes[0][su/2], false) == 1))
+              (compareType (rightType, multypes[0][su == 1 || su == 2], false) == 1))
             {
               func = muldiv[muldivmod][0][su];
               goto found;

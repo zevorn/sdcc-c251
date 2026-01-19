@@ -1,6 +1,9 @@
 #ifndef __TESTFWK_H
 #define __TESTFWK_H   1
 
+// suppress warning about double and long double as no target supports them
+#pragma disable_warning 93
+
 // This is used to avoid repeating the same checks over and over again, also much easier to maintain.
 #if defined(__SDCC_pdk13)
   #define SDCC_PDK 13
@@ -10,6 +13,13 @@
   #define SDCC_PDK 15
 #elif defined(__SDCC_pdk16)
   #define SDCC_PDK 16
+#endif
+
+#if defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
+#define SDCC_MOS
+#if defined(__SDCC_STACK_AUTO)
+#define SDCC_SMALL_STACK 256
+#endif
 #endif
 
 // This macro allows easy check for multiple devices: SDCC_PDK_BITS(<=13), SDCC_PDK_BITS(>=14)

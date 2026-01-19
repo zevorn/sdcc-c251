@@ -6,7 +6,6 @@
 
 #ifdef __SDCC
 #pragma std_c99
-#pragma disable_warning 93
 #endif
 
 #if !defined(__SDCC_mcs51) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory

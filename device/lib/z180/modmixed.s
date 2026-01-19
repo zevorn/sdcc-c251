@@ -29,7 +29,7 @@
 .globl	__modsuchar
 .globl	__moduschar
 
-__modsuchar:
+__moduschar:
 	ld	e, l
 	ld	l, a
 	ld	h, #0
@@ -38,7 +38,7 @@ __modsuchar:
 
 	jp	__get_remainder
 
-__moduschar:
+__modsuchar:
 	ld	e, l
 	ld	d, #0
 	ld	l, a

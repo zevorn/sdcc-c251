@@ -30,31 +30,38 @@
 #include "gen.h"
 #include "dbuf_string.h"
 
-static bool fast_save = false;
+static reg_info *save_reg = NULL;
 
 bool
-fastSaveA()
+fastSaveAi(reg_info *reg)
 {
-  if(m6502_reg_y->isFree && m6502_reg_y->isDead)
+  if(reg->isFree && reg->isDead)
     {
-      transferRegReg(m6502_reg_a, m6502_reg_y, true);
-      fast_save = true;
+      transferRegReg(m6502_reg_a, reg, true);
+      save_reg = reg;
     }
   else
     {
       storeRegTemp(m6502_reg_a, true);
-      fast_save = false;
+      save_reg = NULL;
     }
   return true;
 }
 
 bool
+fastSaveA()
+{
+  return fastSaveAi(m6502_reg_y);
+}
+
+bool
 fastRestoreA()
 {
-  if(fast_save)
-    transferRegReg(m6502_reg_y, m6502_reg_a, true);
+  if(save_reg)
+    transferRegReg(save_reg, m6502_reg_a, true);
   else
     loadRegTemp(m6502_reg_a);
+
   return true;
 }
 
