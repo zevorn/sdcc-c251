@@ -317,14 +317,12 @@ usedBetweenPoints (operand * op, iCode * start, iCode * end)
 /* usedInRemaining - returns point of usage for an operand if found */
 /*------------------------------------------------------------------*/
 iCode *
-usedInRemaining (operand * op, iCode * ic)
+usedInRemaining (operand *op, iCode *ic)
 {
-  iCode *lic = ic;
-
   if (!IS_SYMOP (op))
     return 0;
 
-  for (; lic; lic = lic->next)
+  for (iCode *lic = ic; lic; lic = lic->next)
     {
       /* if the operand is a parameter */
       /* then check for calls and return */

@@ -1,3 +1,21 @@
+2026-01-21 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  src/SDCCcse.c,
+	  src/SDCCdflow.c,
+	  src/SDCCglobl.h,
+	  src/SDCCicode.c,
+	  src/SDCCicode.h,
+	  src/SDCClabel.c,
+	  src/SDCClrange.c,
+	  src/SDCCmain.c,
+	  src/SDCCopt.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsym.h,
+	  doc/sdccman.lyx,
+	  .version:
+	  Optimization for elimination of dead calls to pure functions, inspired by tinyaes regression test.
+
 2026-01-18 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/peeph.def:

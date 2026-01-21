@@ -26,6 +26,8 @@
 #include "newalloc.h"
 #include "dbuf_string.h"
 
+// #define RANGEHUNT
+
 /*-----------------------------------------------------------------*/
 /* newCseDef - new cseDef                                          */
 /*-----------------------------------------------------------------*/
@@ -935,7 +937,7 @@ iCode *findBackwardDef(operand *op,iCode *ic)
 static void
 fixPointerReads (iCode *ic)
 {
-  // TODO: Why is this not necessara for IPUSH_VALUE_AT_ADDRESS?
+  // TODO: Why is this not necessary for IPUSH_VALUE_AT_ADDRESS?
   // And why does this have to be done during CSE (it doesn't work
   // done earlier in eBBlockFromiCode)? Does CSE itslef create some
   // of the weird iCode that we fix here?
