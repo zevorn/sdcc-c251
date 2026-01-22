@@ -3661,7 +3661,7 @@ fixParamPassing (iCode *ic)
         pic->prev = pic->prev->prev;
         pic->prev->next = pic;
         pic->next->prev = pic;
-        change = true;fflush(stdout);
+        change = true;
       }
   while (change--);
 }
