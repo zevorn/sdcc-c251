@@ -1,5 +1,10 @@
 2026-01-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c:
+	  Improve shift code generation, inspired by sha3-256 regression test.
+
+2026-01-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/SDCCcse.c,
 	  src/SDCClospre.cc:
 	  Improve handling of pure functions in redundancy elimination, inspired by tinyaes regression test.

@@ -14615,12 +14615,13 @@ shiftL2Left2Result (operand *left, operand *result, int shCount, const iCode *ic
     }
   if ((result->aop->type == AOP_HL || result->aop->type == AOP_IY || IS_RAB && result->aop->type == AOP_STK) && // Being able to use cheap add hl, hl is worth it in most cases.
     (left->aop->type == AOP_HL || left->aop->type == AOP_IY || IS_RAB && left->aop->type == AOP_STK) &&
-    !IS_SM83 && isPairDead (PAIR_HL, ic) &&
+    !IS_SM83 && isRegDead (HL_IDX, ic) &&
     (shCount > 1 || !sameRegs (result->aop, left->aop)) ||
-    isPairDead (PAIR_HL, ic) && !IS_SM83 && getPairId (result->aop) == PAIR_DE && getPairId (left->aop) != PAIR_DE) // Shift in hl if we can cheaply move to de via ex later.
+    isPairDead (PAIR_HL, ic) && !IS_SM83 && getPairId (result->aop) == PAIR_DE && getPairId (left->aop) != PAIR_DE || // Shift in hl if we can cheaply move to de via ex later.
+    (IS_RAB || IS_EZ80 || IS_TLCS90 && isRegDead (HL_IDX, ic) && !aopSame (result->aop, 0, left->aop, 0, 2)) && result->aop->type == AOP_STK && left->aop->type == AOP_STK)
     {
       shiftaop = ASMOP_HL;
-      genMove (ASMOP_HL, left->aop, isRegDead (A_IDX, ic), true, isPairDead (PAIR_DE, ic), true);
+      genMove (ASMOP_HL, left->aop, isRegDead (A_IDX, ic), true, isRegDead (DE_IDX, ic), true);
     }
   else if (result->aop->type != AOP_REG && left->aop->type == AOP_REG && left->aop->size >= 2 && !bitVectBitValue (ic->rSurv, left->aop->aopu.aop_reg[0]->rIdx) && !bitVectBitValue (ic->rSurv, left->aop->aopu.aop_reg[1]->rIdx) ||
     getPairId (left->aop) == PAIR_HL && isPairDead (PAIR_HL, ic))
@@ -15442,6 +15443,17 @@ genLeftShift (const iCode *ic)
           started = true;
           size -= 2, offset += 2;
         }
+      else if (size >= 2 && offset + 1 >= byteshift &&
+        shiftop->type == AOP_STK &&
+        (IS_RAB || IS_EZ80) &&
+        isRegDead (HL_IDX, ic) && shiftop->regs[L_IDX] < 0 && shiftop->regs[H_IDX] < 0 && countreg != L_IDX && countreg != H_IDX)
+        {
+          genMove_o (ASMOP_HL, 0, shiftop, offset, 2, false, true, false, false, !started);
+          emit3w (started ? A_ADC : A_ADD, ASMOP_HL, ASMOP_HL);
+          genMove_o (shiftop, offset, ASMOP_HL, 0, 2, false, true, false, false, false);
+          started = true;
+          size -= 2, offset += 2;
+        }
       else
         {
           if (offset >= byteshift)
@@ -15926,7 +15938,7 @@ genRightShift (const iCode * ic)
               emit3 (A_CP, ASMOP_A, ASMOP_A);
               first = 0;
             }
-          emit2 ("rr %s", _pairs[getPairId_o (shiftop, offset - 1)].name);
+          emit3w_o (A_RR, shiftop, offset - 1, 0, 0);
           if (getPairId_o (shiftop, offset - 1) == PAIR_IY || getPairId_o (shiftop, offset - 1) == PAIR_BC)
             cost (2, 4);
           else
@@ -15935,6 +15947,14 @@ genRightShift (const iCode * ic)
           }
         else if (!is_signed && first && byteoffset--) // Skip known 0 bytes
           size--, offset--;
+        else if (size >= 2 && shiftop->type == AOP_STK && IS_RAB && !first &&
+          isRegDead (HL_IDX, ic) && shiftop->regs[L_IDX] < 0 && shiftop->regs[H_IDX] < 0 && countreg != L_IDX && countreg != HL_IDX)
+        {
+          genMove_o (ASMOP_HL, 0, shiftop, offset - 1, 2, false, true, false, false, false);
+          emit3w (A_RR, ASMOP_HL, 0);
+          genMove_o (shiftop, offset - 1, ASMOP_HL, 0, 2, false, true, false, false, false);
+          size -= 2, offset -= 2;
+        }
         else if (first)
           {
             emit3_o (is_signed ? A_SRA : A_SRL, shiftop, offset, 0, 0);
