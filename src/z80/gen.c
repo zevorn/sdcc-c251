@@ -11171,7 +11171,7 @@ genEor (const iCode *ic, iCode *ifx, asmop *result_aop, asmop *left_aop, asmop *
             i += 2;
             continue;
           }
-        /*else if (i + 1 < size && (IS_RAB || IS_TLCS90 || IS_EZ80) && hl_free &&
+        else if (i + 1 < size && (IS_RAB || IS_TLCS90 || IS_EZ80) && a_free && hl_free &&
           left_aop->type == AOP_STK && right_aop->type == AOP_STK && result_aop->type == AOP_STK)
           {
             genMove_o (ASMOP_HL, 0, left_aop, i, 2, a_free, true, de_free, false, true);
@@ -11185,7 +11185,7 @@ genEor (const iCode *ic, iCode *ifx, asmop *result_aop, asmop *left_aop, asmop *
             genMove_o (result_aop, i, ASMOP_HL, 0, 2, a_free, true, de_free, false, true);
             i += 2;
             continue;
-          }*/
+          }
 
         if (pushed_a && (aopInReg (left_aop, i, A_IDX) || aopInReg (right_aop, i, A_IDX)))
           {
@@ -13630,6 +13630,21 @@ genAnd (const iCode *ic, iCode *ifx)
           i += 2;
           continue;
         }
+      else if (i + 1 < size && (IS_RAB || IS_TLCS90 || IS_EZ80) && a_free && hl_free && !
+        left->aop->type == AOP_STK && right->aop->type == AOP_STK && result->aop->type == AOP_STK)
+        {
+          genMove_o (ASMOP_HL, 0, left->aop, i, 2, a_free, true, de_free, false, true);
+          emit3 (A_LD, ASMOP_A, ASMOP_L);
+          emit3_o (A_AND, ASMOP_A, 0, right->aop, i);
+          emit3 (A_LD, ASMOP_L, ASMOP_A);
+          emit3 (A_LD, ASMOP_A, ASMOP_H);
+          emit3_o (A_AND, ASMOP_A, 0, right->aop, i + 1);
+          emit3 (A_LD, ASMOP_H, ASMOP_A);
+          spillPair (PAIR_HL);
+          genMove_o (result->aop, i, ASMOP_HL, 0, 2, a_free, true, de_free, false, true);
+          i += 2;
+          continue;
+        }
 
       if (!a_free)
         {
@@ -14041,6 +14056,21 @@ genOr (const iCode * ic, iCode * ifx)
           genMove_o (ASMOP_HL, 0, right->aop, i, 2, a_free, true, false, false, true);
           emit3w (A_OR, ASMOP_HL, ASMOP_DE);
           genMove_o (result->aop, i, ASMOP_HL, 0, 2, a_free, true, true, false, true);
+          i += 2;
+          continue;
+        }
+      else if (i + 1 < size && (IS_RAB || IS_TLCS90 || IS_EZ80) && a_free && hl_free &&
+        left->aop->type == AOP_STK && right->aop->type == AOP_STK && result->aop->type == AOP_STK)
+        {
+          genMove_o (ASMOP_HL, 0, left->aop, i, 2, a_free, true, de_free, false, true);
+          emit3 (A_LD, ASMOP_A, ASMOP_L);
+          emit3_o (A_OR, ASMOP_A, 0, right->aop, i);
+          emit3 (A_LD, ASMOP_L, ASMOP_A);
+          emit3 (A_LD, ASMOP_A, ASMOP_H);
+          emit3_o (A_OR, ASMOP_A, 0, right->aop, i + 1);
+          emit3 (A_LD, ASMOP_H, ASMOP_A);
+          spillPair (PAIR_HL);
+          genMove_o (result->aop, i, ASMOP_HL, 0, 2, a_free, true, de_free, false, true);
           i += 2;
           continue;
         }
