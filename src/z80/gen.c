@@ -3242,7 +3242,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
           cost2 (2, 2, -1, 2, 15, 10, 4, 4, -1, 8, -1, 4, 3, 2, 2);
           return;
         }
-
+      //todo use pair info, if useful?
       if (pairId == PAIR_DE)
         emit3w (A_EX, ASMOP_DE, ASMOP_HL);
       emit2 ("ld hl, !immed%d", spOffset(aop->aopu.aop_stk));
@@ -3251,7 +3251,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
       cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
       if (pairId == PAIR_DE)
         emit3w (A_EX, ASMOP_DE, ASMOP_HL);
-      spillPair (pairId);
+      spillPair (pairId); // TODO: setup pair info instead?
       return;
     }
   else if (aop->type == AOP_STL && offset >= 2)
@@ -3626,55 +3626,18 @@ setupPair (PAIR_ID pairId, asmop *aop, int offset)
       break;
 
     case AOP_EXSTK:
-      wassert (!IS_SM83 && !IS_TLCS870 && !IY_RESERVED || pairId != PAIR_IY);
-      wassertl (pairId == PAIR_IY || pairId == PAIR_HL, "The Z80 extended stack must be in IY or HL");
-      {
-        int offset = aop->aopu.aop_stk + _G.stack.offset;
-
-        if (aop->aopu.aop_stk >= 0)
-          offset += _G.stack.param_offset;
-
-        if (_G.pairs[pairId].last_type == aop->type && abs(_G.pairs[pairId].offset - offset) <= 3)
-          adjustPair (_pairs[pairId].name, &_G.pairs[pairId].offset, offset);
-        else
-          {
-            struct dbuf_s dbuf;
-
-            /* PENDING: Do this better. */
-            if (_G.preserveCarry)
-              _push (PAIR_AF);
-            dbuf_init (&dbuf, 128);
-            dbuf_printf (&dbuf, "%d", offset + _G.stack.pushed);
-            emit2 ("ld %s, !hashedstr", _pairs[pairId].name, dbuf_c_str (&dbuf));
-            dbuf_destroy (&dbuf);
-            emit2 ("add %s, sp", _pairs[pairId].name);
-            _G.pairs[pairId].last_type = aop->type;
-            _G.pairs[pairId].offset = offset;
-            if (_G.preserveCarry)
-              _pop (PAIR_AF);
-          }
-      }
-      break;
-
     case AOP_STK:
-    {
-      /* Doesn't include _G.stack.pushed */
-      int abso = aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
-
-      assert (pairId == PAIR_HL);
-      /* In some cases we can still inc or dec hl */
-      if (_G.pairs[pairId].last_type == AOP_STK && abs (_G.pairs[pairId].offset - abso) < 3)
-        {
+      {
+        int abso = aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
+  
+        /* In some cases we can still inc or dec hl */
+        if ((_G.pairs[pairId].last_type == AOP_STK || _G.pairs[pairId].last_type == AOP_EXSTK) && abs (_G.pairs[pairId].offset - abso) <= 3)
           adjustPair (_pairs[pairId].name, &_G.pairs[pairId].offset, abso);
-        }
-      else
-        {
-          setupPairFromSP (PAIR_HL, abso + _G.stack.pushed);
-        }
-      _G.pairs[pairId].offset = abso;
-      break;
-    }
-
+        else
+          setupPairFromSP (pairId, abso + _G.stack.pushed);
+        _G.pairs[pairId].offset = abso;
+        break;
+      }
     case AOP_PAIRPTR:
       if (pairId != aop->aopu.aop_pairId)
         genMovePairPair (aop->aopu.aop_pairId, pairId);
@@ -3827,13 +3790,13 @@ aopGet (asmop *aop, int offset, bool bit16)
           break;
 
         case AOP_HL:
-          setupPair (PAIR_HL, aop, offset);
+          pointPairToAop (PAIR_HL, aop, offset);
           dbuf_tprintf (&dbuf, "!*hl");
           break;
 
         case AOP_IY:
           wassert (!IS_SM83);
-          setupPair (PAIR_IY, aop, offset);
+          pointPairToAop (PAIR_IY, aop, 0);
           dbuf_tprintf (&dbuf, "!*iyx", offset);
           break;
 
@@ -3856,7 +3819,7 @@ aopGet (asmop *aop, int offset, bool bit16)
                 }
               else
                 {
-                  setupPair (PAIR_IY, aop, offset);
+                  pointPairToAop (PAIR_IY, aop, 0);
                   dbuf_tprintf (&dbuf, "!*iyx", offset);
                 }
               break;
@@ -4059,12 +4022,12 @@ aopPut (asmop *aop, const char *s, int offset)
       if (!canAssignToPtr (s))
         {
           emit2 ("ld a, %s", s);
-          setupPair (PAIR_IY, aop, offset);
+          pointPairToAop (PAIR_IY, aop, 0);
           emit2 ("ld !*iyx, a", offset);
         }
       else
         {
-          setupPair (PAIR_IY, aop, offset);
+          pointPairToAop (PAIR_IY, aop, 0);
           emit2 ("ld !*iyx, %s", offset, s);
         }
       break;
@@ -4082,7 +4045,7 @@ aopPut (asmop *aop, const char *s, int offset)
           emit2 ("ld a, %s", s);
           s = "a";
         }
-      setupPair (PAIR_HL, aop, offset);
+      pointPairToAop (PAIR_HL, aop, offset);
 
       emit2 ("ld !*hl, %s", s);
       break;
@@ -4107,12 +4070,12 @@ aopPut (asmop *aop, const char *s, int offset)
           if (!canAssignToPtr (s))
             {
               emit2 ("ld a, %s", s);
-              setupPair (PAIR_IY, aop, offset);
+              pointPairToAop (PAIR_IY, aop, 0);
               emit2 ("ld !*iyx, a", offset);
             }
           else
             {
-              setupPair (PAIR_IY, aop, offset);
+              pointPairToAop (PAIR_IY, aop, 0);
               emit2 ("ld !*iyx, %s", offset, s);
             }
           break;
@@ -6048,24 +6011,34 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
         }
       else if (source->type == AOP_STL)
         {
+          int abso = source->aopu.aop_stk + _G.stack.offset + (source->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
           if (!hl_dead && (result->regs[L_IDX] > roffset || result->regs[H_IDX] > roffset))
             UNIMPLEMENTED;
           if (!hl_dead)
             _push (PAIR_HL);
           if (i + soffset > 1)
             UNIMPLEMENTED;
-          if (!f_dead)
-            _push (PAIR_AF);
-          emit2 ("ld hl, !immed%d", spOffset (source->aopu.aop_stk));
-          cost2 (3, 3, 3, 3, 10, 9, 6, 6, 12, 6, 3, 3, 3, 3, 3);
-          emit2 ("add hl, sp");
-          cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
-          if (!f_dead)
-            _pop (PAIR_AF);
-          spillPair (PAIR_HL);
+          if ((_G.pairs[PAIR_HL].last_type == AOP_STK || _G.pairs[PAIR_HL].last_type == AOP_EXSTK) && abs (_G.pairs[PAIR_HL].offset - abso) < (f_dead ? 3 : 5))
+            adjustPair (_pairs[PAIR_HL].name, &_G.pairs[PAIR_HL].offset, abso);
+          else
+            {
+              if (!f_dead)
+                _push (PAIR_AF);
+              emit2 ("ld hl, !immed%d", spOffset (source->aopu.aop_stk));
+              cost2 (3, 3, 3, 3, 10, 9, 6, 6, 12, 6, 3, 3, 3, 3, 3);
+              emit2 ("add hl, sp");
+              cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
+              if (!f_dead)
+                _pop (PAIR_AF);
+            }
+          _G.pairs[PAIR_HL].last_type = AOP_EXSTK;
+          _G.pairs[PAIR_HL].offset = abso;
           genMove_o (result, roffset + i, ASMOP_HL, soffset + i, size, a_dead, true, de_dead_global, iy_dead, f_dead);
           if (!hl_dead)
-            _pop (PAIR_HL);
+            {
+              _pop (PAIR_HL);
+              spillPair (PAIR_HL);
+            }
           i += 2;
           continue;
         }
@@ -9711,6 +9684,7 @@ genPlus (iCode * ic)
       genMove (extrapair == PAIR_DE ? ASMOP_DE : ASMOP_BC, ic->right->aop, isRegDead (A_IDX, ic), false, isRegDead (DE_IDX, ic), isRegDead (IY_IDX, ic));
       emit2 ("add hl, %s", _pairs[extrapair].name);
       cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
+      spillPair (PAIR_HL);
       goto release;
     }
 
@@ -9733,6 +9707,7 @@ genPlus (iCode * ic)
       PAIR_ID pair = (getPairId (IC_LEFT (ic)->aop) == PAIR_HL ? getPairId (IC_RIGHT (ic)->aop) : getPairId (IC_LEFT (ic)->aop));
       emit2 ("add hl, %s", _pairs[pair].name);
       cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
+      spillPair (PAIR_HL);
       _push (PAIR_HL);
       _pop (PAIR_IY);
       goto release;
@@ -9985,7 +9960,7 @@ genPlus (iCode * ic)
           genMove (pair == PAIR_BC ? ASMOP_BC : ASMOP_DE, rightop, true, true, de_dead, false);
           genMove (ASMOP_HL, leftop, true, true, de_dead && pair != PAIR_DE, false);
           emit2 ("add hl, %s", _pairs[pair].name);
-          spillPair (pair);
+          spillPair (PAIR_HL);
           cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
           started = true;
           if (pair == PAIR_DE && !de_dead)
@@ -10023,6 +9998,7 @@ genPlus (iCode * ic)
                   wassert (!iy);
                   emit2 ("adc hl, %s", _pairs[pair].name);
                   cost2 (2, 2, -1, 2, 15, 10, 4, 4, -1, 8, -1, 4, 3, 2, 2);
+                  spillPair (PAIR_HL);
                 }
               else
                 {
@@ -10032,6 +10008,7 @@ genPlus (iCode * ic)
                     cost2 (2, 2, -1, 2, 15, 10, 4, 4, -1, 8, -1, 4, 3, 2, 2);
                   else
                     cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
+                  spillPair (pair);
                 }
               i += 2;
               continue;
@@ -10045,6 +10022,7 @@ genPlus (iCode * ic)
           PAIR_ID pair = aopInReg(aopInReg (leftop, i, IY_IDX) ? rightop : leftop, i, BC_IDX) ? PAIR_BC : PAIR_DE;
           emit2 ("add iy, %s", _pairs[pair].name);
           cost2 (2, 2, -1, 2, 15, 10, 4, 4, -1, 8, -1, 4, 3, 2, 2);
+          spillPair (PAIR_IY);
           started = true;
           i += 2;
         }
@@ -10075,6 +10053,7 @@ genPlus (iCode * ic)
         isPairDead (PAIR_HL, ic))
         {
           emit3w (A_ADD, ASMOP_HL, ic->right->aop);
+          spillPair (PAIR_HL);
           started = true;
           genMove_o (IC_RESULT (ic)->aop, i, ASMOP_HL, 0, 2, true, true, de_dead, true, true);
           i += 2;
@@ -10084,6 +10063,7 @@ genPlus (iCode * ic)
         aopInReg (rightop, i, HL_IDX) && isPairDead (PAIR_HL, ic))
         {
           emit3w (A_ADD, ASMOP_HL, ic->left->aop);
+          spillPair (PAIR_HL);
           started = true;
           genMove_o (IC_RESULT (ic)->aop, i, ASMOP_HL, 0, 2, true, true, de_dead, true, true);
           i += 2;
@@ -10104,6 +10084,7 @@ genPlus (iCode * ic)
               cheapMove (ASMOP_B, 0, ic->right->aop, i + 1, true);
             }
           emit3w (A_ADD, ASMOP_HL, ASMOP_BC);
+          spillPair (PAIR_HL);
           started = true;
           i += 2;
         }
@@ -10123,6 +10104,7 @@ genPlus (iCode * ic)
               cheapMove (ASMOP_D, 0, ic->right->aop, i + 1, true);
             }
           emit3w (A_ADD, ASMOP_HL, ASMOP_DE);
+          spillPair (PAIR_HL);
           started = true;
           i += 2;
         }
@@ -10141,6 +10123,7 @@ genPlus (iCode * ic)
               cheapMove (ASMOP_D, 0, leftop, i + 1, true);
             }
           emit3w (A_ADD, ASMOP_HL, ASMOP_DE);
+          spillPair (PAIR_HL);
           started = true;
           i += 2;
         }
@@ -10150,6 +10133,7 @@ genPlus (iCode * ic)
           emit3w (A_INC, ASMOP_HL, 0);
           if (aopIsLitVal (rightop, i, 2, 2))
             emit3w (A_INC, ASMOP_HL, 0);
+          spillPair (PAIR_HL);
           genMove_o (ic->result->aop, i, ASMOP_HL, 0, 2, false, true, false, false, false);
           started = true;
           i += 2;
@@ -10178,6 +10162,7 @@ genPlus (iCode * ic)
               cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
               started = true;
             }
+          spillPair (PAIR_HL);
           if (pair_alive)
             _pop (pair);
           i += 2;
@@ -10200,6 +10185,7 @@ genPlus (iCode * ic)
               cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
               started = true;
             }
+          spillPair (PAIR_HL);
           i++;
         }
       // When adding a literal, the 16 bit addition results in smaller, slower code than an 8-bit addition.
@@ -10212,6 +10198,7 @@ genPlus (iCode * ic)
           cost2 (2, 2, 2, 2, 7, 6, 4, 4, 8, 4, 2, 2, 2, 2, 2);
           emit2 ("add hl, %s", _pairs[pair].name);
           cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
+          spillPair (PAIR_HL);
           started = true;
           i++;
         }
@@ -10282,6 +10269,7 @@ genPlus (iCode * ic)
           genMove_o (rightpairaop, 0, rightop, i, 2, false, true, false, false, !started);
           genMove_o (ASMOP_HL, 0, leftop, i, 2, false, true, false, false, !started);
           emit3w (started ? A_ADC : A_ADD, ASMOP_HL, rightpairaop);
+          spillPair (PAIR_HL);
           genMove_o (ic->result->aop, i, ASMOP_HL, 0, 2, false, true, false, false, i + 2 < size);
           started = true;
           i += 2;

@@ -1,3 +1,10 @@
+2026-01-24 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve stack address caching, inspired by sha3-256 regression test.
+	* src/z80/peeph.def:
+	  Peephole rule inspired by sha3-256 regression test.
+
 2026-01-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:

@@ -790,6 +790,17 @@ replace restart {
 	; common peephole 52c replaced push/pop pair by loads.
 } if canSplitReg(%1 %3 %4), canSplitReg(%2 %5 %6), notSame(%1 %2 'ix' 'iy'), operandsNotRelated(%7 %1)
 
+replace restart {
+	pop	bc
+	push	bc
+	ld	l, c
+	ld	h, b
+} by {
+	pop	hl
+	; common peephole 53d used hl instead of bc for pop/push.
+	push	hl
+} if notUsed('bc')
+
 // Do not replace use of iy for tlcs90, since iy-indirect/relative addressing is affected by by, but other modes are not.
 replace restart {
 	ld	%3, #%1
