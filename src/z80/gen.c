@@ -5970,14 +5970,28 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
       else if ((IS_TLCS90 || IS_EZ80) && source->type == AOP_STL && !(soffset + i) && getPairId_o(result, roffset + i) != PAIR_INVALID &&
         !_G.omitFramePtr && abs(fpOffset (source->aopu.aop_stk)) <= 127)
         {
-          emit2 (IS_TLCS90 ? "lda %s, ix, !immed%d" : "lea %s, ix, !immed%d", _pairs[getPairId_o(result, roffset + i)].name, fpOffset (source->aopu.aop_stk));
-          spillPair (getPairId_o (result, roffset + i));
-          cost (3, IS_TLCS90 ? 10 : 3);
+          int abso = source->aopu.aop_stk + _G.stack.offset + (source->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
+          int pair = getPairId_o(result, roffset + i);
+          if ((_G.pairs[pair].last_type == AOP_STK || _G.pairs[pair].last_type == AOP_EXSTK) && abs (_G.pairs[pair].offset - abso) < (f_dead ? 3 : 5))
+            adjustPair (_pairs[pair].name, &_G.pairs[PAIR_HL].offset, abso);
+          else
+            {
+              emit2 (IS_TLCS90 ? "lda %s, ix, !immed%d" : "lea %s, ix, !immed%d", _pairs[pair].name, fpOffset (source->aopu.aop_stk));
+              cost (3, IS_TLCS90 ? 10 : 3);
+            }
+          if (pair == PAIR_HL)
+            {
+              _G.pairs[pair].last_type = AOP_EXSTK;
+              _G.pairs[pair].offset = abso;
+            }
+          else // todo make caching work for other pairs, too.
+            spillPair (pair);
           i += 2;
           continue;
         }
       else if (source->type == AOP_STL && !(soffset + i) && getPairId_o(result, roffset) == PAIR_IY)
         {
+          int abso = source->aopu.aop_stk + _G.stack.offset + (source->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
           if (!f_dead)
             _push (PAIR_AF);
           emit2 ("ld iy, !immed%d", spOffset (source->aopu.aop_stk));
@@ -5986,7 +6000,8 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           cost2 (2, 2, -1, 2, 15, 10, 4, 4, -1, 8, -1, 4, 3, 2, 2);
           if (!f_dead)
             _pop (PAIR_AF);
-          spillPair (PAIR_IY);
+          _G.pairs[PAIR_IY].last_type = AOP_EXSTK;
+          _G.pairs[PAIR_IY].offset = abso;
           i += 2;
           continue;
         }
@@ -12432,7 +12447,7 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
             }
           else if (!IS_SM83 && size >= 2 && (!sign || size > 2) && !left_already_in_a &&
             isPairDead (PAIR_HL, ic) &&
-            (getPairId_o (left->aop, offset) == PAIR_HL || (left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD || left->aop->type == AOP_HL || left->aop->type == AOP_IY || IS_RAB && left->aop->type == AOP_STK) && right->aop->regs[L_IDX] < offset && right->aop->regs[H_IDX] < offset) &&
+            (getPairId_o (left->aop, offset) == PAIR_HL || (left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD || left->aop->type == AOP_HL || left->aop->type == AOP_IY || (IS_RAB || IS_TLCS90 || IS_EZ80) && left->aop->type == AOP_STK) && right->aop->regs[L_IDX] < offset && right->aop->regs[H_IDX] < offset) &&
             (getPairId_o (right->aop, offset) == PAIR_DE || getPairId_o (right->aop, offset) == PAIR_BC))
             {
               genMove_o (ASMOP_HL, 0, left->aop, offset, 2, isRegDead (A_IDX, ic), true, false, true, !offset);
@@ -12446,8 +12461,8 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
             }
           else if (!IS_SM83 && size >= 2 && (!sign || size > 2) && !left_already_in_a &&
             isPairDead (PAIR_HL, ic) && isPairDead (PAIR_DE, ic) && left->aop->regs[E_IDX] < offset + 1 && left->aop->regs[D_IDX] < offset + 1 &&
-            (getPairId_o (left->aop, offset) == PAIR_HL || left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD || left->aop->type == AOP_HL || left->aop->type == AOP_IY || IS_RAB && left->aop->type == AOP_STK) &&
-            (right->aop->type == AOP_LIT || right->aop->type == AOP_IMMD || right->aop->type == AOP_HL || right->aop->type == AOP_IY || IS_RAB && right->aop->type == AOP_STK))
+            (getPairId_o (left->aop, offset) == PAIR_HL || left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD || left->aop->type == AOP_HL || left->aop->type == AOP_IY || (IS_RAB || IS_TLCS90 || IS_EZ80) && left->aop->type == AOP_STK) &&
+            (right->aop->type == AOP_LIT || right->aop->type == AOP_IMMD || right->aop->type == AOP_HL || right->aop->type == AOP_IY || (IS_RAB || IS_TLCS90 || IS_EZ80) && right->aop->type == AOP_STK))
             {
               genMove_o (ASMOP_DE, 0, right->aop, offset, 2, isRegDead (A_IDX, ic), getPairId_o (left->aop, offset) != PAIR_HL, true, true, !offset);
               genMove_o (ASMOP_HL, 0, left->aop, offset, 2, isRegDead (A_IDX, ic), true, false, true, !offset);

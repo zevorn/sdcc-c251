@@ -1,6 +1,11 @@
 2026-01-24 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:
+	  Improve stack address caching, inspired by sha3-256 regression test.
+
+2026-01-24 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
 	  Code generation improvements for bitwise operations inspired by sha3-256 regression test.
 
 2026-01-24 Philipp Klaus Krause <philipp@colecovision.eu>
