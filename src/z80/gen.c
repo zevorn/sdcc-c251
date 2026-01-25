@@ -1517,6 +1517,13 @@ emit3wCost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, 
       else
         cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3, 1, 1);
       return;
+    case A_SUB:
+      wassert (IS_R4K || IS_R5K || IS_R6K || IS_TLCS90);
+      if (IS_RAB)
+        cost (2, 4);
+      else // TLCS-90
+        cost (2, 8);
+      return;
     case A_ADC:
     case A_SBC:
       cost2 (2, 2, -1, 2, 15, 10, 4, 4, 0, 8, -1, 4, 3, 2, 2);
@@ -4805,7 +4812,6 @@ genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, boo
                 emit2 ("ld %s, hl", aopGet (result, roffset + i, false));
             }
           cost2 (2 + IS_EZ80, 3, -1, 3, -1, -1, 11, 12, -1, 12, -1, 6, 5, 5, -1);
-
           spillPair (PAIR_HL);
 
           assigned[i] = true;
@@ -4823,6 +4829,7 @@ genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, boo
           if (!regalloc_dry_run)
             emit2 ("ld l, %s", aopGet (source, soffset + i, false));
           cost2 (3, 3, -1, 3, 19, 14, 9, 10, -1, 10, -1, 5, 5, 4, 5);
+          spillPair (PAIR_HL);
           if (!regalloc_dry_run)
             emit2 ("ld %s, l", aopGet (result, roffset + i, false));
           cost2 (3, 3, -1, 3, 19, 15, 10, 11, -1, 10, -1, 5, 4, 4, 5);
@@ -10603,6 +10610,7 @@ genSub (const iCode *ic, asmop *result, asmop *left, asmop *right)
               genMove_o (ASMOP_HL, 0, left, offset, 2, a_dead, true, false, false, !offset);
               emit2 (offset ? "sbc hl, %d (sp)" : "sub hl, %d (sp)", sp_offset);
               cost2 (3, 3, -1, 3, -1, -1, -1, 12, -1, 12, -1, 7, 6, -1, -1);
+              spillPair (PAIR_HL);
               offset += 2;
               size -= 2;
               _G.preserveCarry = !!size;
@@ -10613,11 +10621,31 @@ genSub (const iCode *ic, asmop *result, asmop *left, asmop *right)
               genMove_o (ASMOP_HL, 0, left, offset, 2, a_dead, true, false, false, !offset);
               emit2 (offset ? "sbc hl, %d (ix)" : "sub hl, %d (ix)", fp_offset);
               cost2 (3, 3, -1, 3, -1, -1, -1, 12, -1, 12, -1, 7, 6, -1, -1);
+              spillPair (PAIR_HL);
               offset += 2;
               size -= 2;
               _G.preserveCarry = !!size;
               continue;
             }
+        }
+      else if (!IS_SM83 && size >= 2 && aopInReg (result, offset, HL_IDX) && (left->type == AOP_STK || left->type == AOP_DIR) &&
+        (aopInReg (right, offset, BC_IDX) || aopInReg (right, offset, DE_IDX) || (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && aopInReg (right, offset, JK_IDX) || IS_TLCS90 && aopInReg (right, offset, IY_IDX)))
+        {
+          genMove_o (ASMOP_HL, 0, left, offset, 2, a_dead, true, false, false, !offset);
+          if ((IS_TLCS90 || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && !offset &&
+            (aopInReg (right, offset, DE_IDX) || aopInReg (right, offset, JK_IDX) || IS_TLCS90 && (aopInReg (right, offset, BC_IDX) || aopInReg (right, offset, IY_IDX))))
+            emit3w_o (A_SUB, ASMOP_HL, 0, right, offset);
+          else
+            {
+              if (!offset)
+                emit3 (A_CP, ASMOP_A, ASMOP_A);
+              emit3w_o (A_SBC, ASMOP_HL, 0, right, offset);
+            }
+          spillPair (PAIR_HL);
+          offset += 2;
+          size -= 2;
+          _G.preserveCarry = !!size;
+          continue;
         }
       else if (!IS_SM83 && !maskedword && size >= 2 &&
         isPairDead (PAIR_HL, ic) &&

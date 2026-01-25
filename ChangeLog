@@ -2,6 +2,8 @@
 
 	* src/f8/peeph.def:
 	  Peephole optimizer rules for pointer operations inspired by asconhash256 regression test.
+	* src/z80/gen.c:
+	  Subtraction codegen improvement inspired by kyber-ntt regression test.
 
 2026-01-24 Philipp Klaus Krause <philipp@colecovision.eu>
 
