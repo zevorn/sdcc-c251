@@ -378,6 +378,34 @@ replace restart {
 } if same(%5 'xl' 'xh' 'yl' 'yh' 'zl' 'zl'), notUsed(%5), notUsed('y'), immdInRange(1 1 '-' %1 %2 %9), immdInRange(-1 -1 '-' %1 %3 %9)
 
 replace restart {
+	ldw	y, (%1, sp)
+	ld	xl, (y)
+	%5	xl, (%2, sp)
+	ldw	y, (%1, sp)
+	ld	(y), xl
+} by {
+	ldw	y, (%1, sp)
+	ld	xl, (y)
+	%5	xl, (%2, sp)
+	; common peephole 23a reused value still in y instead of reloading from (%1, sp)
+	ld	(y), xl
+} if same(%5 'adc' 'add' 'and' 'cp' 'or' 'sbc' 'sub' 'xor')
+
+replace restart {
+	ldw	y, (%1, sp)
+	ld	xl, (y)
+	%5	xl, %2
+	ldw	y, (%1, sp)
+	ld	(y), xl
+} by {
+	ldw	y, (%1, sp)
+	ld	xl, (y)
+	%5	xl, %2
+	; common peephole 23b reused value still in y instead of reloading from (%1, sp)
+	ld	(y), xl
+} if same(%5 'adc' 'add' 'and' 'cp' 'or' 'sbc' 'sub' 'xor'), same(%2 'xh' 'yl' 'yh' 'zl' 'zl')
+
+replace restart {
 	jp	#%5
 } by {
 	jp	#%6
