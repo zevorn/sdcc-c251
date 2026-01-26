@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
-  gen.c - code generator for F8.
+  gen.c - code generator for f8 and f8l.
 
-  Copyright (C) 2021-2025, Philipp Klaus Krause philipp@colecovision.eu
+  Copyright (C) 2021-2026, Philipp Klaus Krause philipp@colecovision.eu
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -343,7 +343,7 @@ aopOnStack (const asmop *aop, int offset, int size)
 
   // Consecutive?
   stk_base = aop->aopu.bytes[offset].byteu.stk;
-  for (i = 1; i < size && i < 8; i++)
+  for (i = 1; i < size && offset + i < 8; i++)
     if (!regalloc_dry_run && aop->aopu.bytes[offset + i].byteu.stk != stk_base + i) // Todo: Stack offsets might be unavailable during dry run (messes with addition costs, so we should have a mechanism to do it better).
       return (false);
 
@@ -1839,7 +1839,7 @@ pointToSym (asmop *raop, const symbol *sym, long int offset, bool xl_dead, bool 
         }
       else
         {
-          long soffset = (long)(sym->stack) + G.stack.pushed + offset;
+          long soffset = (long)(sym->stack) + (sym->stack > 0 ? G.stack.param_offset : 0) + G.stack.pushed + offset;
           
           emit2 ("ldw", "%s, sp", aopGet2 (aop, 0));
           cost (1 + !aopInReg (aop, 0, Y_IDX), 1 + !aopInReg (aop, 0, Y_IDX));
@@ -4176,8 +4176,6 @@ genReturn (const iCode *ic)
     default:
 bigreturn:
 
-      wassertl (size < 256, "Return not implemented for return value of this size.");
-
       for(int i = 0; i < size; i++)
         if (aopInReg (left->aop, i, YL_IDX) || aopInReg (left->aop, i, YH_IDX))
           UNIMPLEMENTED;
@@ -4191,6 +4189,35 @@ bigreturn:
         }
       else
         UNIMPLEMENTED;
+
+      if (!IS_F8L && (left->aop->type == AOP_STK || left->aop->type == AOP_DIR) && regDead (Z_IDX, ic) && size >= 6 && size <= 256)
+        {
+          int i2;
+          pointToSym (ASMOP_Z, OP_SYMBOL_CONST (left), 0,  regDead (XL_IDX, ic), regDead (XH_IDX, ic), false, true);
+          for(int i = 0; i < size;)
+            {
+              if (i + 1 < size)
+                {
+                  emit2 ("ldwi", "(%d, y), (z)", i % 256);
+                  cost (2, 1);
+                  i += 2;
+                }
+              else
+                {
+                  emit2 ("ldi", "(%d, y), (z)", i % 256);
+                  cost (2, 1);
+                  i++;
+                }
+              if (i % 256 == 0 && i < size)
+                {
+                  emit2 ("addw", "y, #256");
+                  cost (3, 2);
+                }
+            }
+          break;
+        }
+
+      wassertl (size < 256, "Return not implemented for return value of this size.");
 
       // Clear xl first.
       int last_i = 0;

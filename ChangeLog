@@ -1,3 +1,8 @@
+2026-01-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/gen.c:
+	  Code generation improvements for large return values, inspired by sha3-256 regression test.
+
 2026-01-25 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/f8/peeph.def:
