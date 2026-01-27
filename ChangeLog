@@ -1,5 +1,14 @@
 2026-01-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* device/lib/f8/Makefile.in,
+	  src/f8/gen.c,
+	  src/f8/main.c,
+	  device/lib/f8/__mulsint2slong.s,
+	  device/lib/f8/__muluint2ulong.s:
+	  Multiplication support function improvements inspired by kyber-ntt regression test.
+
+2026-01-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/SDCCopt.c,
 	  src/z80/main.c:
 	  Multiplication codegen improvement inspired by kyber-ntt regression test.

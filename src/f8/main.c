@@ -496,8 +496,8 @@ PORT f8_port =
      0,                         /* sp points to next free stack location */
   },     
   { 
-    -1,                         /* shifts never use support routines */
-    false,                      /* don't use support routine for int x int -> long multiplication */
+    -1,                         // shifts never use support routines
+    true,                       // has support routine for int x int -> long multiplication
   },
   { f8_emitDebuggerSymbol,
     {

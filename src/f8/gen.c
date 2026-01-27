@@ -1845,7 +1845,7 @@ pointToSym (asmop *raop, const symbol *sym, long int offset, bool xl_dead, bool 
           cost (1 + !aopInReg (aop, 0, Y_IDX), 1 + !aopInReg (aop, 0, Y_IDX));
           if (soffset == 1)
             {
-              emit3 (A_INCW, ASMOP_Y, 0);
+              emit3 (A_INCW, aop, 0);
               spillReg (C_IDX);
             }
           else if (soffset)
