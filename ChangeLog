@@ -1,5 +1,11 @@
 2026-01-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCCopt.c,
+	  src/z80/main.c:
+	  Multiplication codegen improvement inspired by kyber-ntt regression test.
+
+2026-01-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/gen.c:
 	  Addition codegen improvements inspired by sha3-256 and kyber-ntt regression tests.
 

@@ -1180,7 +1180,7 @@ _hasNativeMulFor (iCode *ic, sym_link *left, sym_link *right)
   else
     return(false);
 
-  if (getSize (test) <= 2)
+  if (getSize (test) <= 2 && result_size <= 2)
     return(true);
 
   return(false);

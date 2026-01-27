@@ -852,7 +852,7 @@ convilong (iCode *ic, eBBlock *ebp)
         {
           func = muls16tos32[SPEC_USIGN (operandType (left))];
 
-          if (func || port->hasNativeMulFor && lic && ric && port->hasNativeMulFor (ic, operandType (lic->right), operandType (ric->right)))
+          if (func || port->hasNativeMulFor && port->hasNativeMulFor (ic, lic ? operandType (lic->right) : INTTYPE, ric ? operandType (ric->right) : INTTYPE))
             {
               if (lic)
                 {
