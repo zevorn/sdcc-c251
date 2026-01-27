@@ -9946,17 +9946,23 @@ genPlus (iCode * ic)
       bool maskedbyte = maskedtopbyte && (i + 1 == size);
       bool maskedword = maskedtopbyte && (i + 2 == size);
 
-      const bool bc_dead = isPairDead (PAIR_BC, ic) &&
-        leftop->regs[C_IDX] <= i && leftop->regs[B_IDX] <= i &&
-        rightop->regs[C_IDX] <= i && rightop->regs[B_IDX] <= i &&
-        (ic->result->aop->regs[C_IDX] < 0 || ic->result->aop->regs[C_IDX] >= i) && (ic->result->aop->regs[B_IDX] < 0 || ic->result->aop->regs[B_IDX] >= i);
-      const bool de_dead = isPairDead (PAIR_DE, ic) &&
-        leftop->regs[E_IDX] <= i && leftop->regs[D_IDX] <= i &&
-        rightop->regs[E_IDX] <= i && rightop->regs[D_IDX] <= i &&
-        (ic->result->aop->regs[E_IDX] < 0 || ic->result->aop->regs[E_IDX] >= i) && (ic->result->aop->regs[D_IDX] < 0 || ic->result->aop->regs[D_IDX] >= i);
+      const bool b_dead = isRegDead (B_IDX, ic) && leftop->regs[B_IDX] <= i && rightop->regs[B_IDX] <= i &&
+        (ic->result->aop->regs[B_IDX] < 0 || ic->result->aop->regs[B_IDX] >= i);
+      const bool c_dead = isRegDead (C_IDX, ic) && leftop->regs[C_IDX] <= i && rightop->regs[C_IDX] <= i &&
+        (ic->result->aop->regs[C_IDX] < 0 || ic->result->aop->regs[C_IDX] >= i);
+      const bool bc_dead = b_dead && c_dead;
+      const bool d_dead = isRegDead (D_IDX, ic) && leftop->regs[D_IDX] <= i && rightop->regs[D_IDX] <= i &&
+        (ic->result->aop->regs[D_IDX] < 0 || ic->result->aop->regs[D_IDX] >= i);
+      const bool e_dead = isRegDead (E_IDX, ic) && leftop->regs[E_IDX] <= i && rightop->regs[E_IDX] <= i &&
+        (ic->result->aop->regs[E_IDX] < 0 || ic->result->aop->regs[E_IDX] >= i);
+      const bool de_dead = d_dead && e_dead;
       const bool hl_dead = isPairDead (PAIR_HL, ic) &&
         leftop->regs[L_IDX] <= i && leftop->regs[H_IDX] <= i &&
         rightop->regs[L_IDX] <= i && rightop->regs[H_IDX] <= i &&
+        (ic->result->aop->regs[L_IDX] < 0 || ic->result->aop->regs[L_IDX] >= i) && (ic->result->aop->regs[H_IDX] < 0 || ic->result->aop->regs[H_IDX] >= i);
+      const bool hl_dead2 = isPairDead (PAIR_HL, ic) &&
+        leftop->regs[L_IDX] <= i + 1 && leftop->regs[H_IDX] <= i + 1 &&
+        rightop->regs[L_IDX] <= i  + 1 && rightop->regs[H_IDX] <= i + 1 &&
         (ic->result->aop->regs[L_IDX] < 0 || ic->result->aop->regs[L_IDX] >= i) && (ic->result->aop->regs[H_IDX] < 0 || ic->result->aop->regs[H_IDX] >= i);
 
       // Rematerialization of addresses on the stack.
@@ -10274,7 +10280,7 @@ genPlus (iCode * ic)
           cheapMove (ic->result->aop, i, rightop, i, true);
           i++;
         }
-      else if ((IS_RAB || IS_TLCS90 || IS_TLCS870 || IS_TLCS870C || IS_EZ80) && i + 1 < size && aopInReg (ic->result->aop, i, DE_IDX) &&
+      else if (!maskedbyte && !premoved && (IS_RAB || IS_TLCS90 || IS_TLCS870 || IS_TLCS870C || IS_EZ80) && i + 1 < size && aopInReg (ic->result->aop, i, DE_IDX) &&
         isRegDead (HL_IDX, ic) && aopInReg (leftop, i, HL_IDX) && (aopOnStack (rightop, i, 2) || rightop->type == AOP_IMMD))
         {
           emit3w (A_EX, ASMOP_DE, ASMOP_HL);
@@ -10284,13 +10290,54 @@ genPlus (iCode * ic)
           started = true;
           i += 2;
         }
-      else if ((IS_RAB || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1 || IS_EZ80 || !IS_SM83 && !started) && i + 1 < size &&
-        hl_dead && (bc_dead || de_dead) && ic->result->aop->type == AOP_STK && leftop->type == AOP_STK && (rightop->type == AOP_STK || rightop->type == AOP_LIT && ic->result->aop->type == AOP_STK))
+      else if (!maskedbyte && !premoved && (IS_RAB || IS_TLCS90 || IS_EZ80) && hl_dead2 && de_dead &&
+        (aopInReg (leftop, i, HL_IDX) && aopOnStack (rightop, i, 2) || aopOnStack (leftop, i, 2) &&
+        aopInReg (rightop, i, HL_IDX)) && aopOnStack (ic->result->aop, i, 2))
+        {
+          if (IS_RAB)
+            {
+              emit3w (A_EX, ASMOP_DE, ASMOP_HL);
+              genMove_o (ASMOP_HL, 0, aopInReg (leftop, i, HL_IDX) ? rightop : leftop, i, 2, false, true, false, false, !started);
+            }
+          else
+            genMove_o (ASMOP_DE, 0, aopInReg (leftop, i, HL_IDX) ? rightop : leftop, i, 2, false, false, true, false, !started);
+          emit3w (started ? A_ADC : A_ADD, ASMOP_HL, ASMOP_DE);
+          genMove_o (ic->result->aop, i, ASMOP_HL, 0, 2, false, true, true, false, i + 2 < size);
+          started = true;
+          i += 2;
+        }
+      else if (!maskedbyte && !premoved && (IS_RAB || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1 || IS_EZ80 || !IS_SM83 && !started) && i + 1 < size &&
+        hl_dead && (bc_dead || de_dead) && ic->result->aop->type == AOP_STK && leftop->type == AOP_STK &&
+        (rightop->type == AOP_STK || (rightop->type == AOP_LIT || rightop->type == AOP_IMMD) && (aopOnStack (ic->result->aop, i, 2) || aopInReg (ic->result->aop, i, HL_IDX) || aopInReg (ic->result->aop, i, DE_IDX))))
         {
           asmop *rightpairaop = de_dead ? ASMOP_DE : ASMOP_BC; // Prefer de due to efficient load from hl via ex de, hl.
           genMove_o (rightpairaop, 0, rightop, i, 2, false, true, false, false, !started);
           genMove_o (ASMOP_HL, 0, leftop, i, 2, false, true, false, false, !started);
           emit3w (started ? A_ADC : A_ADD, ASMOP_HL, rightpairaop);
+          spillPair (PAIR_HL);
+          genMove_o (ic->result->aop, i, ASMOP_HL, 0, 2, false, true, false, false, i + 2 < size);
+          started = true;
+          i += 2;
+        }
+      else if (!maskedbyte && !premoved && (IS_RAB || IS_EZ80 || IS_TLCS90) && hl_dead2 && aopIsLitVal (rightop, i + 1, 2, 0x00) &&
+        aopOnStack (leftop, i, 2) && (aopInReg (rightop, i, C_IDX) && b_dead || aopInReg (rightop, i, E_IDX) && d_dead) && aopOnStack (ic->result->aop, i, 2))
+        {
+          const asmop *raop = aopInReg (rightop, i, C_IDX) ? ASMOP_BC : ASMOP_DE;
+          genMove_o (ASMOP_HL, 0, leftop, i, 2, false, true, false, false, !started);
+          emit3_o (A_LD, raop, 1, ASMOP_ZERO, 0);
+          emit3w (started ? A_ADC : A_ADD, ASMOP_HL, raop);
+          spillPair (PAIR_HL);
+          genMove_o (ic->result->aop, i, ASMOP_HL, 0, 2, false, true, false, false, i + 2 < size);
+          started = true;
+          i += 2;
+        }
+      else if (!maskedbyte && !premoved && !IS_SM83 && hl_dead2 &&
+        (!started || IS_RAB || IS_EZ80 || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1 || IS_R800) && // adc hl, rr is quite slow on Z80, Z80N, and Z180.
+        aopOnStack (leftop, i, 2) && aopInReg (rightop, i, DE_IDX) && aopOnStack (ic->result->aop, i, 2))
+        {
+          const asmop *raop = ASMOP_DE;
+          genMove_o (ASMOP_HL, 0, leftop, i, 2, false, true, false, false, !started);
+          emit3w (started ? A_ADC : A_ADD, ASMOP_HL, raop);
           spillPair (PAIR_HL);
           genMove_o (ic->result->aop, i, ASMOP_HL, 0, 2, false, true, false, false, i + 2 < size);
           started = true;
