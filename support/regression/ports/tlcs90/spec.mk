@@ -7,7 +7,7 @@ ifdef SDCC_BIN_PATH
   AS_TLCS90C = $(SDCC_BIN_PATH)/sdastlcs90$(EXEEXT)
 else
   ifdef UCSIM_DIR
-    UCTLCS90A = $(UCSIM_DIR)/tlcs.src/ucsim_tlcs$(EXEEXT)
+    UCTLCS90A = $(UCSIM_DIR)/src/sims/tlcs.src/ucsim_tlcs$(EXEEXT)
   else
     UCTLCS90A = $(top_builddir)/sim/ucsim/src/sims/tlcs.src/ucsim_tlcs$(EXEEXT)
     UCTLCS90B = $(top_builddir)/bin/ucsim_tlcs$(EXEEXT)
