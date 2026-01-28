@@ -29,7 +29,9 @@
 
 #include <string.h>
 #include <stdint.h>
+#if defined (__SDCC) || __STDC_VERSION__ >= 202311L
 #include <stdbit.h>
+#endif
 
 #if __STDC_VERSION__ <= 202311L
 #if __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_LITTLE__

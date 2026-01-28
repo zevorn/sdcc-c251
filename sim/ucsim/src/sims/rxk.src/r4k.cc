@@ -92,6 +92,7 @@ cl_r4k::cl_r4k(class cl_sim *asim):
 int
 cl_r4k::init(void)
 {
+  kmode= 0;
   cl_r3ka::init();
 #define RCV(R) reg_cell_var(&c ## R , &r ## R , "" #R "" , "CPU register " #R "")
   RCV(BCDE);
@@ -116,6 +117,7 @@ cl_r4k::init(void)
 #undef RCV
   //mode2k();
   fill_7f_wrappers(itab_7f);
+  fill_7f10_wrappers(itab_7f10);
 
   LXPC= new cl_cell16(12);
   reg_cell_var(LXPC, mem->aof_lxpc(),
@@ -226,7 +228,7 @@ cl_r4k::dis_entry(t_addr addr)
       return dis_6d_entry(addr);
     }
 
-  if ((code == 0x7f) && (edmr & 0xc0))
+  if ((code == 0x7f) && (mode == 3))
     {
       // 7f page is special in 4k mode
       code= rom->get(addr+1);
@@ -258,6 +260,22 @@ cl_r4k::dis_entry(t_addr addr)
 	}
       return NULL;
     }
+
+  if ((code == 0x7f) && (mode == 2))
+    {
+      // 7f page in mode 10 is same as 4k insts on main page
+      code= rom->get(addr+1);
+      dt= disass_p0m4;
+      i= 0;
+      while (((code & dt[i].mask) != dt[i].code) &&
+	     dt[i].mnemonic)
+	i++;
+      if (dt[i].mnemonic == NULL)
+	return NULL;
+      memcpy(&de7f, &dt[i], sizeof(struct dis_entry));
+      de7f.length++;
+      return &de7f;
+    }
   
   dt= disass_rxk;
   i= 0;
@@ -267,7 +285,7 @@ cl_r4k::dis_entry(t_addr addr)
   if (dt[i].mnemonic != NULL)
     return &dt[i];
 
-  if (edmr & 0xc0)
+  if (mode == 3)
     {
       // mode: 4k
       dt= disass_p0m4;
@@ -483,6 +501,7 @@ cl_r4k::print_regs(class cl_console_base *con)
 void
 cl_r4k::mode3k(void)
 {
+  kmode= 0;
   itab[0x40]= instruction_wrapper_40;
   itab[0x41]= instruction_wrapper_41;
   itab[0x43]= instruction_wrapper_43;
@@ -593,18 +612,22 @@ cl_r4k::mode3k(void)
 void
 cl_r4k::mode01(void)
 {
+  kmode= 1;
   itab[0x6d]= instruction_wrapper_4k6d;
 }
 
 void
 cl_r4k::mode10(void)
 {
+  kmode= 2;
   itab[0x6d]= instruction_wrapper_4k6d;
+  itab[0x7f]= instruction_wrapper_4k7f;
 }
 
 void
 cl_r4k::mode4k(void)
 {
+  kmode= 3;
   itab[0x40]= instruction_wrapper_4knone;
   itab[0x41]= instruction_wrapper_4knone;
   itab[0x43]= instruction_wrapper_4knone;
@@ -730,8 +753,14 @@ cl_r4k::EXX(t_mem code)
 int
 cl_r4k::PAGE_4K7F(t_mem code)
 {
+  t_mem code_org= code;
   code= fetch();
-  return itab_7f[code](this, code);
+  if (kmode == 3)
+    return itab_7f[code](this, code);
+  else if (kmode == 2)
+    return itab_7f10[code](this, code);
+  else
+    return instruction_7f(code_org);
 }
 
 int

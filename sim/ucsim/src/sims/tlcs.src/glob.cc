@@ -503,41 +503,230 @@ struct dis_entry disass_tlcs[]= {
 struct dis_entry disass_t870c[]=
   {
     // code mask branch length mn iscall ticks info
-    { 0x00004fe8, 0x0000fff8, ' ', 2, "INVALID" },
-    { 0x00007fe8, 0x0000fff8, ' ', 2, "INVALID" },
-    { 0x0000dfe8, 0x0000fff8, ' ', 2, "INVALID" },
-    { 0x0000f8e8, 0x0000fff8, ' ', 2, "INVALID" },
-    { 0x0000f9e8, 0x0000fff8, ' ', 2, "INVALID" },
-    { 0x0000fce8, 0x0000fff8, ' ', 2, "INVALID" },
+    // reg prefixes
+    { 0x00004fe8, 0x0000fff8, ' ', 2, "INVALID g/gg" },
+    { 0x00007fe8, 0x0000fff8, ' ', 2, "INVALID g/gg" },
+    { 0x0000dfe8, 0x0000fff8, ' ', 2, "INVALID g/gg" },
+    { 0x0000f8e8, 0x0000fff8, ' ', 2, "INVALID g/gg" },
+    { 0x0000f9e8, 0x0000fff8, ' ', 2, "INVALID g/gg" },
+    { 0x0000fce8, 0x0000fff8, ' ', 2, "INVALID g/gg" },
 
+    // dst prefixes
+    { 0x004f00f0, 0x00ff00ff, ' ', 3, "INVALID dst(x)" },
+    { 0x4f0000f1, 0xff0000ff, ' ', 4, "INVALID dst(vw)" },
+    { 0x00004ff0, 0x0000fff8, ' ', 2, "INVALID dst(rp)" },
+    { 0x004f0054, 0x00ff00fc, ' ', 3, "INVALID dst(rp+d)" },
+    { 0x005f00f0, 0x00ff00ff, ' ', 3, "INVALID dst(x)" },
+    { 0x5f0000f1, 0xff0000ff, ' ', 4, "INVALID dst(vw)" },
+    { 0x00005ff0, 0x0000fff8, ' ', 2, "INVALID dst(rp)" },
+    { 0x005f0054, 0x00ff00fc, ' ', 3, "INVALID dst(rp+d)" },
+    { 0x00d000f0, 0x00f800ff, ' ', 3, "INVALID dst(x)" },
+    { 0xd00000f1, 0xf80000ff, ' ', 4, "INVALID dst(vw)" },
+    { 0x0000d0f0, 0x0000f8f8, ' ', 2, "INVALID dst(rp)" },
+    { 0x00d00054, 0x00f800fc, ' ', 3, "INVALID dst(rp+d)" },
+    { 0x00f100f0, 0x00ff00ff, ' ', 3, "INVALID dst(x)" },
+    { 0xf10000f1, 0xff0000ff, ' ', 4, "INVALID dst(vw)" },
+    { 0x0000f1f0, 0x0000fff8, ' ', 2, "INVALID dst(rp)" },
+    { 0x00f10054, 0x00ff00fc, ' ', 3, "INVALID dst(rp+d)" },
+    { 0x00f400f0, 0x00ff00ff, ' ', 3, "INVALID dst(x)" },
+    { 0xf40000f1, 0xff0000ff, ' ', 4, "INVALID dst(vw)" },
+    { 0x0000f4f0, 0x0000fff8, ' ', 2, "INVALID dst(rp)" },
+    { 0x00f40054, 0x00ff00fc, ' ', 3, "INVALID dst(rp+d)" },
+    { 0x00f500f0, 0x00ff00ff, ' ', 3, "INVALID dst(x)" },
+    { 0xf50000f1, 0xff0000ff, ' ', 4, "INVALID dst(vw)" },
+    { 0x0000f5f0, 0x0000fff8, ' ', 2, "INVALID dst(rp)" },
+    { 0x00f50054, 0x00ff00fc, ' ', 3, "INVALID dst(rp+d)" },
+    { 0x00ff00f0, 0x00ff00ff, ' ', 3, "INVALID dst(x)" },
+    { 0xff0000f1, 0xff0000ff, ' ', 4, "INVALID dst(vw)" },
+    { 0x0000fff0, 0x0000fff8, ' ', 2, "INVALID dst(rp)" },
+    { 0x00ff0054, 0x00ff00fc, ' ', 3, "INVALID dst(rp+d)" },
+
+    // src prefixes
+    { 0x004f00e0, 0x00ff00ff, ' ', 3, "INVALID src(x)" },
+    { 0x4f0000e1, 0xff0000ff, ' ', 4, "INVALID src(vw)" },
+    { 0x00004fe0, 0x0000fff8, ' ', 2, "INVALID src(rp)" },
+    { 0x004f00d4, 0x00ff00fc, ' ', 3, "INVALID src(rp+d)" },
+    { 0x00004f4f, 0x0000ffff, ' ', 2, "INVALID src(pc+a)" },
+    { 0x006f00e0, 0x00ff00ff, ' ', 3, "INVALID src(x)" },
+    { 0x6f0000e1, 0xff0000ff, ' ', 4, "INVALID src(vw)" },
+    { 0x00006fe0, 0x0000fff8, ' ', 2, "INVALID src(rp)" },
+    { 0x006f00d4, 0x00ff00fc, ' ', 3, "INVALID src(rp+d)" },
+    { 0x00006f4f, 0x0000ffff, ' ', 2, "INVALID src(pc+a)" },
+    { 0x00d000e0, 0x00f800ff, ' ', 3, "INVALID src(x)" },
+    { 0xd00000e1, 0xf80000ff, ' ', 4, "INVALID src(vw)" },
+    { 0x0000d0e0, 0x0000f8f8, ' ', 2, "INVALID src(rp)" },
+    { 0x00d000d4, 0x00f800fc, ' ', 3, "INVALID src(rp+d)" },
+    { 0x0000d04f, 0x0000f8ff, ' ', 2, "INVALID src(pc+a)" },
+    { 0x00f100e0, 0x00ff00ff, ' ', 3, "INVALID src(x)" },
+    { 0xf10000e1, 0xff0000ff, ' ', 4, "INVALID src(vw)" },
+    { 0x0000f1e0, 0x0000fff8, ' ', 2, "INVALID src(rp)" },
+    { 0x00f100d4, 0x00ff00fc, ' ', 3, "INVALID src(rp+d)" },
+    { 0x0000f14f, 0x0000ffff, ' ', 2, "INVALID src(pc+a)" },
+    { 0x00f400e0, 0x00ff00ff, ' ', 3, "INVALID src(x)" },
+    { 0xf40000e1, 0xff0000ff, ' ', 4, "INVALID src(vw)" },
+    { 0x0000f4e0, 0x0000fff8, ' ', 2, "INVALID src(rp)" },
+    { 0x00f400d4, 0x00ff00fc, ' ', 3, "INVALID src(rp+d)" },
+    { 0x0000f44f, 0x0000ffff, ' ', 2, "INVALID src(pc+a)" },
+    { 0x00f500e0, 0x00ff00ff, ' ', 3, "INVALID src(x)" },
+    { 0xf50000e1, 0xff0000ff, ' ', 4, "INVALID src(vw)" },
+    { 0x0000f5e0, 0x0000fff8, ' ', 2, "INVALID src(rp)" },
+    { 0x00f500d4, 0x00ff00fc, ' ', 3, "INVALID src(rp+d)" },
+    { 0x0000f54f, 0x0000ffff, ' ', 2, "INVALID src(pc+a)" },
+    { 0x00ff00e0, 0x00ff00ff, ' ', 3, "INVALID src(x)" },
+    { 0xff0000e1, 0xff0000ff, ' ', 4, "INVALID src(vw)" },
+    { 0x0000ffe0, 0x0000fff8, ' ', 2, "INVALID src(rp)" },
+    { 0x00ff00d4, 0x00ff00fc, ' ', 3, "INVALID src(rp+d)" },
+    { 0x0000ff4f, 0x0000ffff, ' ', 2, "INVALID src(pc+a)" },
+
+    // src prefix, dst code
+    { 0x006800e0, 0x00f800ff, ' ', 3, "INVALID src(x)-dst" },
+    { 0x680000e1, 0xf80000ff, ' ', 4, "INVALID src(vw)-dst" },
+    { 0x000068e0, 0x0000f8f8, ' ', 2, "INVALID src(rp)-dst" },
+    { 0x006800d4, 0x00f800fc, ' ', 3, "INVALID src(rp+d)-dst" },
+    { 0x0000684f, 0x0000f8ff, ' ', 2, "INVALID src(pc+a)-dst" },
+    { 0x007800e0, 0x00f800ff, ' ', 3, "INVALID src(x)-dst" },
+    { 0x780000e1, 0xf80000ff, ' ', 4, "INVALID src(vw)-dst" },
+    { 0x000078e0, 0x0000f8f8, ' ', 2, "INVALID src(rp)-dst" },
+    { 0x007800d4, 0x00f800fc, ' ', 3, "INVALID src(rp+d)-dst" },
+    { 0x0000784f, 0x0000f8ff, ' ', 2, "INVALID src(pc+a)-dst" },
+    { 0x00f900e0, 0x00ff00ff, ' ', 3, "INVALID src(x)-dst" },
+    { 0xf90000e1, 0xff0000ff, ' ', 4, "INVALID src(vw)-dst" },
+    { 0x0000f9e0, 0x0000fff8, ' ', 2, "INVALID src(rp)-dst" },
+    { 0x00f900d4, 0x00ff00fc, ' ', 3, "INVALID src(rp+d)-dst" },
+    { 0x0000f94f, 0x0000ffff, ' ', 2, "INVALID src(pc+a)-dst" },
+    
     { 0x000000f9, 0x0000ffff, ' ', 2, "LD RBS,0" },
     { 0x000002f9, 0x0000ffff, ' ', 2, "LD RBS,1" },
 
+    // reg prefixes, code page 0x100
     { 0x000040e8, 0x0000f8f8, ' ', 2, "LD 'r_1.0','r_0.0'" },
     { 0x000048e8, 0x0000f8f8, ' ', 2, "LD 'rr_1.0','rr_0.0'" },
 
+    { 0x000050e8, 0x0000f8f8, ' ', 2, "XOR CF,'r_0.0'.'b_1.0'" },
+    { 0x000058e8, 0x0000f8f8, ' ', 2, "LD CF,'r_0.0'.'b_1.0'" },
+    
     { 0x000070e8, 0x0000f8f8, ' ', 2, "XCH 'r_1.0','r_0.0'" },
     { 0x000078e8, 0x0000f8f8, ' ', 2, "XCH 'rr_1.0','rr_0.0'" },
-    
+
+    { 0x0000c0e8, 0x0000f8f8, ' ', 2, "SET 'r_0.0'.'b_1.0'" },
+    { 0x0000c8e8, 0x0000f8f8, ' ', 2, "CLR 'r_0.0'.'b_1.0'" },
+      
     { 0x0000dee8, 0x0000fff8, ' ', 3, "LD PSW,'n_2'" },
+
+    { 0x0000e0e8, 0x0000f8f8, ' ', 2, "CPL 'r_0.0'.'b_1.0'" },
+    { 0x0000e8e8, 0x0000f8f8, ' ', 2, "LD 'r_0.0'.'b_1.0',CF" },
 
     { 0x0000ffe8, 0x0000fff8, ' ', 2, "SWAP 'r_0.0'" },
 
+    // src prefixes, code page 0x200
     { 0x004000e0, 0x00f800ff, ' ', 3, "LD 'r_2.0',(%x)" },
     { 0x400000e1, 0xf80000ff, ' ', 4, "LD 'r_3.0',('vw')" },
     { 0x000040e0, 0x0000f8f8, ' ', 2, "LD 'r_1.0',('srcE')" },
     { 0x004000d4, 0x00f800fc, ' ', 3, "LD 'r_2.0',('srcD')" },
     { 0x0000404f, 0x0000f8ff, ' ', 2, "LD 'r_1.0',('src4')" },
+    
     { 0x004800e0, 0x00f800ff, ' ', 3, "LD 'rr_2.0',(%x)" },
     { 0x480000e1, 0xf80000ff, ' ', 4, "LD 'rr_3.0',('vw')" },
     { 0x000048e0, 0x0000f8f8, ' ', 2, "LD 'rr_1.0',('srcE')" },
     { 0x004800d4, 0x00f800fc, ' ', 3, "LD 'rr_2.0',('srcD')" },
     { 0x0000484f, 0x0000f8ff, ' ', 2, "LD 'rr_1.0',('src4')" },
 
+    { 0x005000e0, 0x00f800ff, ' ', 3, "XOR CF,(%x).'b_2.0'" },
+    { 0x500000e1, 0xf80000ff, ' ', 4, "XOR CF,('vw').'b_3.0'" },
+    { 0x000050e0, 0x0000f8f8, ' ', 2, "XOR CF,('srcE').'b_1.0'" },
+    { 0x005000d4, 0x00f800fc, ' ', 3, "XOR CF,('srcD').'b_2.0'" },
+    { 0x0000504f, 0x0000f8ff, ' ', 2, "XOR CF,('src4').'b_1.0'" },
+
+    { 0x005800e0, 0x00f800ff, ' ', 3, "LD CF,(%x).'b_2.0'" },
+    { 0x580000e1, 0xf80000ff, ' ', 4, "LD CF,('vw').'b_3.0'" },
+    { 0x000058e0, 0x0000f8f8, ' ', 2, "LD CF,('srcE').'b_1.0'" },
+    { 0x005800d4, 0x00f800fc, ' ', 3, "LD CF,('srcD').'b_2.0'" },
+    { 0x0000584f, 0x0000f8ff, ' ', 2, "LD CF,('src4').'b_1.0'" },
+
+    { 0x007000e0, 0x00f800ff, ' ', 3, "XCH 'r_2.0',(%x)" },
+    { 0x700000e1, 0xf80000ff, ' ', 4, "XCH 'r_3.0',('vw')" },
+    { 0x000070e0, 0x0000f8f8, ' ', 2, "XCH 'r_1.0',('srcE')" },
+    { 0x007000d4, 0x00f800fc, ' ', 3, "XCH 'r_2.0',('srcD')" },
+    { 0x0000704f, 0x0000f8ff, ' ', 2, "XCH 'r_1.0',('src4')" },
+
+    { 0x00c000e0, 0x00f800ff, ' ', 3, "SET (%x).'b_2.0'" },
+    { 0xc00000e1, 0xf80000ff, ' ', 4, "SET ('vw').'b_3.0'" },
+    { 0x0000c0e0, 0x0000f8f8, ' ', 2, "SET ('srcE').'b_1.0'" },
+    { 0x00c000d4, 0x00f800fc, ' ', 3, "SET ('srcD').'b_2.0'" },
+    { 0x0000c04f, 0x0000f8ff, ' ', 2, "SET ('src4').'b_1.0'" },
+
+    { 0x00c800e0, 0x00f800ff, ' ', 3, "CLR (%x).'b_2.0'" },
+    { 0xc80000e1, 0xf80000ff, ' ', 4, "CLR ('vw').'b_3.0'" },
+    { 0x0000c8e0, 0x0000f8f8, ' ', 2, "CLR ('srcE').'b_1.0'" },
+    { 0x00c800d4, 0x00f800fc, ' ', 3, "CLR ('srcD').'b_2.0'" },
+    { 0x0000c84f, 0x0000f8ff, ' ', 2, "CLR ('src4').'b_1.0'" },
+
+    { 0x00d800e0, 0x00f800ff, ' ', 3, "XCH 'rr_2.0',(%x)" },
+    { 0xd80000e1, 0xf80000ff, ' ', 4, "XCH 'rr_3.0',('vw')" },
+    { 0x0000d8e0, 0x0000f8f8, ' ', 2, "XCH 'rr_1.0',('srcE')" },
+    { 0x00d800d4, 0x00f800fc, ' ', 3, "XCH 'rr_2.0',('srcD')" },
+    { 0x0000d84f, 0x0000f8ff, ' ', 2, "XCH 'rr_1.0',('src4')" },
+
+    { 0x00e000e0, 0x00f800ff, ' ', 3, "CPL (%x).'b_2.0'" },
+    { 0xe00000e1, 0xf80000ff, ' ', 4, "CPL ('vw').'b_3.0'" },
+    { 0x0000e0e0, 0x0000f8f8, ' ', 2, "CPL ('srcE').'b_1.0'" },
+    { 0x00e000d4, 0x00f800fc, ' ', 3, "CPL ('srcD').'b_2.0'" },
+    { 0x0000e04f, 0x0000f8ff, ' ', 2, "CPL ('src4').'b_1.0'" },
+
+    { 0x00e800e0, 0x00f800ff, ' ', 3, "LD (%x).'b_2.0',CF" },
+    { 0xe80000e1, 0xf80000ff, ' ', 4, "LD ('vw').'b_3.0',CF" },
+    { 0x0000e8e0, 0x0000f8f8, ' ', 2, "LD ('srcE').'b_1.0',CF" },
+    { 0x00e800d4, 0x00f800fc, ' ', 3, "LD ('srcD').'b_2.0',CF" },
+    { 0x0000e84f, 0x0000f8ff, ' ', 2, "LD ('src4').'b_1.0',CF" },
+
+    { 0x00f000e0, 0x00ff00ff, ' ', 3, "INC (%x)" },
+    { 0xf00000e1, 0xff0000ff, ' ', 4, "INC ('vw')" },
+    { 0x0000f0e0, 0x0000fff8, ' ', 2, "INC ('srcE')" },
+    { 0x00f000d4, 0x00ff00fc, ' ', 3, "INC ('srcD')" },
+    { 0x0000f04f, 0x0000ffff, ' ', 2, "INC ('src4')" },
+
+    { 0x00f200e0, 0x00ff00ff, ' ', 3, "SET (%x).A" },
+    { 0xf20000e1, 0xff0000ff, ' ', 4, "SET ('vw').A" },
+    { 0x0000f2e0, 0x0000fff8, ' ', 2, "SET ('srcE').A" },
+    { 0x00f200d4, 0x00ff00fc, ' ', 3, "SET ('srcD').A" },
+    { 0x0000f24f, 0x0000ffff, ' ', 2, "SET ('src4').A" },
+
+    { 0x00f300e0, 0x00ff00ff, ' ', 3, "LD (%x).A,CF" },
+    { 0xf30000e1, 0xff0000ff, ' ', 4, "LD ('vw').A,CF" },
+    { 0x0000f3e0, 0x0000fff8, ' ', 2, "LD ('srcE').A,CF" },
+    { 0x00f300d4, 0x00ff00fc, ' ', 3, "LD ('srcD').A,CF" },
+    { 0x0000f34f, 0x0000ffff, ' ', 2, "LD ('src4').A,CF" },
+
+    { 0x00f800e0, 0x00ff00ff, ' ', 3, "DEC (%x)" },
+    { 0xf80000e1, 0xff0000ff, ' ', 4, "DEC ('vw')" },
+    { 0x0000f8e0, 0x0000fff8, ' ', 2, "DEC ('srcE')" },
+    { 0x00f800d4, 0x00ff00fc, ' ', 3, "DEC ('srcD')" },
+    { 0x0000f84f, 0x0000ffff, ' ', 2, "DEC ('src4')" },
+
+    { 0x00fa00e0, 0x00ff00ff, ' ', 3, "CLR (%x).A" },
+    { 0xfa0000e1, 0xff0000ff, ' ', 4, "CLR ('vw').A" },
+    { 0x0000fae0, 0x0000fff8, ' ', 2, "CLR ('srcE').A" },
+    { 0x00fa00d4, 0x00ff00fc, ' ', 3, "CLR ('srcD').A" },
+    { 0x0000fa4f, 0x0000ffff, ' ', 2, "CLR ('src4').A" },
+
+    { 0x00fb00e0, 0x00ff00ff, ' ', 3, "CPL (%x).A" },
+    { 0xfb0000e1, 0xff0000ff, ' ', 4, "CPL ('vw').A" },
+    { 0x0000fbe0, 0x0000fff8, ' ', 2, "CPL ('srcE').A" },
+    { 0x00fb00d4, 0x00ff00fc, ' ', 3, "CPL ('srcD').A" },
+    { 0x0000fb4f, 0x0000ffff, ' ', 2, "CPL ('src4').A" },
+
+    { 0x00fc00e0, 0x00ff00ff, ' ', 3, "LD CF,(%x).A" },
+    { 0xfc0000e1, 0xff0000ff, ' ', 4, "LD CF,('vw').A" },
+    { 0x0000fce0, 0x0000fff8, ' ', 2, "LD CF,('srcE').A" },
+    { 0x00fc00d4, 0x00ff00fc, ' ', 3, "LD CF,('srcD').A" },
+    { 0x0000fc4f, 0x0000ffff, ' ', 2, "LD CF,('src4').A" },
+
+    // dst prefixes, code page 0x200
     { 0x006800f0, 0x00f800ff, ' ', 3, "LD (%x),'rr_2.0'" },
     { 0x680000f1, 0xf80000ff, ' ', 4, "LD ('vw'),'rr_3.0'" },
     { 0x000068f0, 0x0000f8f8, ' ', 2, "LD ('dstF'),'rr_1.0'" },
     { 0x00680054, 0x00f800fc, ' ', 3, "LD ('dst5'),'rr_2.0'" },
+
     { 0x007800f0, 0x00f800ff, ' ', 3, "LD (%x),'r_2.0'" },
     { 0x780000f1, 0xf80000ff, ' ', 4, "LD ('vw'),'r_3.0'" },
     { 0x000078f0, 0x0000f8f8, ' ', 2, "LD ('dstF'),'r_1.0'" },
@@ -547,7 +736,8 @@ struct dis_entry disass_t870c[]=
     { 0xf90000f1, 0xff0000ff, ' ', 5, "LD ('vw'),'n_4'" },
     { 0x0000f9f0, 0x0000fff8, ' ', 3, "LD ('dstF'),'n_2'" },
     { 0x00f90054, 0x00ff00fc, ' ', 4, "LD ('dst5'),'n_3'" },
-    
+
+    // one byte opcodes
     { 0x00000000, 0x000000ff, ' ', 1, "NOP" },
     { 0x00000004, 0x000000ff, ' ', 1, "CLR CF" },
     { 0x00000005, 0x000000ff, ' ', 1, "SET CF" },
@@ -564,8 +754,13 @@ struct dis_entry disass_t870c[]=
     { 0x00000010, 0x000000f8, ' ', 1, "LD A,'r_0.0'" },
     { 0x00000018, 0x000000f8, ' ', 2, "LD 'r_0.0','n_1'" },
 
+    { 0x00000020, 0x000000f8, ' ', 1, "INC 'r_0.0'" },
+    { 0x00000028, 0x000000f8, ' ', 2, "DEC 'r_0.0'" },
+
     { 0x00000037, 0x000000ff, ' ', 2, "LD SP,SP+'n_1'" },
+    { 0x00000030, 0x000000f8, ' ', 1, "INC 'rr_0.0'" },    
     { 0x0000003f, 0x000000ff, ' ', 2, "LD SP,SP-'n_1'" },
+    { 0x00000038, 0x000000f8, ' ', 1, "DEC 'rr_0.0'" },    
     
     { 0x00000040, 0x000000f8, ' ', 1, "LD 'r_0.0',A" },
     { 0x00000048, 0x000000ff, ' ', 3, "LD WA,'mn_1'" },
@@ -576,11 +771,17 @@ struct dis_entry disass_t870c[]=
     { 0x0000004d, 0x000000ff, ' ', 3, "LD IY,'mn_1'" },
     { 0x0000004e, 0x000000ff, ' ', 3, "LD SP,'mn_1'" },
 
-    { 0x00000001, 0x000000ff, ' ', 1, "-- INVALID" },
-    { 0x00000002, 0x000000ff, ' ', 1, "-- INVALID" },
-    { 0x00000003, 0x000000ff, ' ', 1, "-- INVALID" },
-    { 0x000000f8, 0x000000ff, ' ', 1, "-- INVALID" },
-    { 0x00000068, 0x000000f8, ' ', 1, "-- INVALID" },
+    { 0x00000058, 0x000000f8, ' ', 2, "LD CF,(%x).%b" },
+
+    { 0x000000c0, 0x000000f8, ' ', 2, "SET (%x).%b" },
+    { 0x000000c8, 0x000000f8, ' ', 2, "CLR (%x).%b" },
+    
+    // one byte invalids
+    { 0x00000001, 0x000000ff, ' ', 1, "INVALID" },
+    { 0x00000002, 0x000000ff, ' ', 1, "INVALID" },
+    { 0x00000003, 0x000000ff, ' ', 1, "INVALID" },
+    { 0x000000f8, 0x000000ff, ' ', 1, "INVALID" },
+    { 0x00000068, 0x000000f8, ' ', 1, "INVALID" },
     
     { 0, 0, ' ', 0, NULL }
   };

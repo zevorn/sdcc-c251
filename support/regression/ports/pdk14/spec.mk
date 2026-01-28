@@ -7,7 +7,7 @@ ifdef SDCC_BIN_PATH
   AS_PDK14C = $(SDCC_BIN_PATH)/sdaspdk$(EXEEXT)
 else
   ifdef UCSIM_DIR
-    UCPDK14A = $(UCSIM_DIR)/pdk.src/ucsim_pdk$(EXEEXT)
+    UCPDK14A = $(UCSIM_DIR)/src/sims/pdk.src/ucsim_pdk$(EXEEXT)
   else
     UCPDK14A = $(top_builddir)/sim/ucsim/src/sims/pdk.src/ucsim_pdk$(EXEEXT)
     UCPDK14B = $(top_builddir)/bin/ucsim_pdk$(EXEEXT)
