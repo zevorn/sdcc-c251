@@ -3225,7 +3225,9 @@ void ascon_update(ascon_state_t* s, uint8_t* c, const uint8_t* m, uint64_t mlen,
 #ifdef IMPL_opt8_mylowsize
 
 #include <stddef.h>
+#if defined (__SDCC) || __STDC_VERSION__ >= 202311L
 #include <stdbit.h>
+#endif
 
 #if __STDC_VERSION__ <= 202311L && !defined(__SDCC)
 #define stdc_rotate_right(x, n) (((x) >> (n)) | ((x) << (64-(n))))

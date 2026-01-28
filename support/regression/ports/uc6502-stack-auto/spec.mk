@@ -8,7 +8,7 @@ ifdef SDCC_BIN_PATH
   UC65 = $(SDCC_BIN_PATH)/ucsim_mos6502$(EXEEXT)
 else
   ifdef UCSIM_DIR
-    UC65 = $(UCSIM_DIR)/mos6502.src/ucsim_mos6502$(EXEEXT)
+    UC65 = $(UCSIM_DIR)/src/sims/mos6502.src/ucsim_mos6502$(EXEEXT)
   else
     UC65 = $(top_builddir)/sim/ucsim/src/sims/mos6502.src/ucsim_mos6502$(EXEEXT)
   endif
