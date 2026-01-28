@@ -34,7 +34,9 @@
 
 #include <string.h>
 #include <stdint.h>
+#if defined (__SDCC) || __STDC_VERSION__ >= 202311L
 #include <stdbit.h>
+#endif
 
 #if __STDC_VERSION__ <= 202311L
 #define stdc_load8_leu32(p) ( \
