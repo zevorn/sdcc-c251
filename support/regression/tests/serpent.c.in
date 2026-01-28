@@ -25,7 +25,9 @@
 
 #include <string.h>
 #include <stdint.h>
+#if defined (__SDCC) || __STDC_VERSION__ >= 202311L
 #include <stdbit.h>
+#endif
 
 #if __STDC_VERSION__ <= 202311L
 //Load unaligned 32-bit integer (little-endian encoding)

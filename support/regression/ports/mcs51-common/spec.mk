@@ -9,7 +9,7 @@ ifdef SDCC_BIN_PATH
   S51 = $(SDCC_BIN_PATH)/ucsim_51$(EXEEXT)
 else
   ifdef UCSIM_DIR
-    S51A = $(UCSIM_DIR)/s51.src/ucsim_51$(EXEEXT)
+    S51A = $(UCSIM_DIR)/src/sims/s51.src/ucsim_51$(EXEEXT)
   else
     S51A = $(top_builddir)/sim/ucsim/src/sims/s51.src/ucsim_51$(EXEEXT)
     S51B = $(top_builddir)/bin/ucsim_51$(EXEEXT)

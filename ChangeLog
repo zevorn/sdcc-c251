@@ -1,3 +1,12 @@
+2026-01-23 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/asconaead128.c.in,
+	  support/regression/tests/asconhash256.c.in,
+	  support/regression/tests/gcrypt-serpent.c.in,
+	  support/regression/tests/serpent.c.in,
+	  support/regression/tests/smallserpent.c.in:
+	  Fix stdbit-h test-host issue for Ascon and Serpent tests.
+
 2026-01-18 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/peeph.def:
