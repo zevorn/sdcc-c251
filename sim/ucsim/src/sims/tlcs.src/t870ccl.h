@@ -84,7 +84,8 @@ enum flag_mask_t {
   MHF= (0x10),
   MSF= (0x08),
   MVF= (0x04),
-  MRBS= (0x02)
+  MRBS= (0x02),
+  MALL= MJF|MZF|MCF|MHF|MSF|MVF
 };
 
 // bit nr to bit mask converter
@@ -119,7 +120,7 @@ public:
   // (src) or (dst) memory cell for 8/16 bit ops
   class cl_cell8 *sdc;
   t_addr sda;
-  bool is_dst, is_e8;
+  bool is_dst;
   int page;
 public:
   cl_t870c(class cl_sim *asim);
@@ -146,7 +147,6 @@ public:
   virtual int exec_inst(void);
   virtual int exec1(void);
   virtual int execS(void);
-  virtual int execE8(void);
   virtual int execD(void);
 
   // 16 bit helpers for data sp
@@ -219,6 +219,9 @@ public:
   virtual int dec8m(C8 *src);
   virtual int dec16m(C16 *src);
 
+  // additions
+  virtual int addi8(C8 *reg, u8_t n, bool c);
+  
   // jump
   virtual int jr(u8_t a);
   virtual int jrs(u8_t code, bool cond);
@@ -318,6 +321,8 @@ public:
   virtual int LD_CF_mx_5(MP) { sd_x(); return ld1m(sdc, 5); }
   virtual int LD_CF_mx_6(MP) { sd_x(); return ld1m(sdc, 6); }
   virtual int LD_CF_mx_7(MP) { sd_x(); return ld1m(sdc, 7); }
+  // 0 60 - 0 6f
+  virtual int ADD_A_n(MP) { return addi8(&cA, fetch(), false); }
   // 0 80 - 0 8f
   virtual int JRS_T_a10(MP) { return jrs(code, rF&MJF); }
   virtual int JRS_T_a11(MP) { return jrs(code, rF&MJF); }
@@ -417,7 +422,7 @@ public:
   virtual int instruction_e5(MP) { sd_iy(); return execS(); }
   virtual int instruction_e6(MP) { sd_Psp(); return execS(); }
   virtual int instruction_e7(MP) { sd_hlc(); return execS(); }
-  virtual int instruction_e8(MP) { sda=0; return execE8(); }
+  virtual int instruction_e8(MP) { sda=0; return exec1(); }
   virtual int instruction_e9(MP) { sda=1; return exec1(); }
   virtual int instruction_ea(MP) { sda=2; return exec1(); }
   virtual int instruction_eb(MP) { sda=3; return exec1(); }
@@ -470,6 +475,8 @@ public:
   virtual int LD_CF_g_5(MP) { return ld1r(regs8[sda], 5); }
   virtual int LD_CF_g_6(MP) { return ld1r(regs8[sda], 6); }
   virtual int LD_CF_g_7(MP) { return ld1r(regs8[sda], 7); }
+  // 1 60 - 1 6f
+  virtual int ADD_g_n(MP) { return addi8(regs8[sda], fetch(), false); }
   // 1 70 - 1 7f
   virtual int XCH_rA_g(MP) { return xch8_rr(&cA, regs8[sda]); }
   virtual int XCH_rW_g(MP) { return xch8_rr(&cW, regs8[sda]); }

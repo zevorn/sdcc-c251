@@ -590,13 +590,37 @@ cl_t870c::exec_inst(void)
  * Two byte opcode dispachers for reg/memory prefixes
  */
 
+static const u8_t R_valids[256]=
+  {
+    /*0*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*1*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*2*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*3*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*4*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 0,
+    /*5*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*6*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*7*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 0,
+    /*8*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*9*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*a*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*b*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*c*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*d*/ 8, 8, 8, 8,   8, 8, 8, 8,   1, 1, 1, 1,   8, 8, 8, 0,
+    /*e*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
+    /*f*/ 1, 1, 1, 1,   1, 1, 1, 1,   0, 0, 1, 8,   0, 1, 1, 1
+  };
+
 int
 cl_t870c::exec1(void)
 {
   int res= resGO;
+  int valid;
   // prefix info fetched already
   t_mem code2= fetch();
   int page_code= code2|(page=0x100);
+  valid= R_valids[code2];
+  if (!valid || ((code2 != 0xe8) && (valid == 8)))
+    return resINV;
   if (uc_itab[page_code] == NULL)
     {
       PC= instPC;
@@ -639,7 +663,6 @@ cl_t870c::execS(void)
     return resINV;
   int page_code= code2|(page=0x200);
   is_dst= false;
-  is_e8= false;
   if (uc_itab[page_code] == NULL)
     {
       PC= instPC;
@@ -652,48 +675,6 @@ cl_t870c::execS(void)
   return res;
 }
 
-static const u8_t e8_valids[256]=
-  {
-    /*0*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*1*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*2*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*3*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*4*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 0,
-    /*5*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*6*/ 1, 1, 1, 1,   1, 1, 1, 1,   0, 0, 0, 0,   0, 0, 0, 0,
-    /*7*/ 1, 1, 1, 1,   1, 1, 1, 1,   0, 0, 0, 0,   0, 0, 0, 0,
-    /*8*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*9*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*a*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*b*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*c*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*d*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*e*/ 1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,   1, 1, 1, 1,
-    /*f*/ 1, 0, 1, 1,   0, 0, 1, 1,   1, 1, 1, 1,   1, 1, 1, 0
-  };
-
-int
-cl_t870c::execE8(void)
-{
-  int res= resGO;
-  // prefix info fetched already
-  t_mem code2= fetch();
-  if (!e8_valids[code2])
-    return resINV;
-  int page_code= code2|(page=0x200);
-  is_dst= false;
-  is_e8= true;
-  if (uc_itab[page_code] == NULL)
-    {
-      PC= instPC;
-      return resNOT_DONE;
-    }
-  tickt(page_code);
-  res= (this->*uc_itab[page_code])(code2);
-  if (res == resNOT_DONE)
-    PC= instPC;
-  return res;
-}
 
 static const u8_t dst_valids[256]=
   {
@@ -725,7 +706,6 @@ cl_t870c::execD(void)
     return resINV;
   int page_code= code2|(page=0x200);
   is_dst= true;
-  is_e8= false;
   if (uc_itab[page_code] == NULL)
     {
       PC= instPC;
@@ -1220,6 +1200,35 @@ cl_t870c::dec16m(C16 *src)
     rF|= MJF|MZF;
   src->W(v);
   WR;
+  cF.W(rF);
+  return resGO;
+}
+
+int
+cl_t870c::addi8(C8 *reg, u8_t n, bool c)
+{
+  u16_t op1, op1_7, op2, op2_7, res, res_7, c7, c8= 0;
+  op1= reg->get();
+  op2= n;
+  res= op1 + op2 + (c?((rF&MCF)?1:0):0);
+  op1_7= op1 & 0x7f;
+  op2_7= op2 & 0x7f;
+  res_7= op1_7 + op2_7;
+
+  rF&= ~MALL;
+  if (res > 0xff)
+    (rF|= MCF|MJF), c8=1;
+  if (res & 0x80)
+    rF|= MSF;
+  c7= (res_7>0x7f)?1:0;
+  if (c7^c8)
+    rF|= MVF;
+  if ((res & 0xff) == 0)
+    rF|= MZF;
+  if (((op1&0xf) + (op2&0xf)) > 0xf)
+    rF|= MHF;
+
+  reg->W(res);
   cF.W(rF);
   return resGO;
 }
