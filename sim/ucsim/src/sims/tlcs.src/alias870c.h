@@ -96,6 +96,8 @@
 // 0 60 - 0 6f
 #define ADC_A_n                 instruction_60
 #define ADD_A_n                 instruction_61
+#define SUBB_A_n		instruction_62
+#define SUB_A_n			instruction_63
 
 // 0 80 - 0 8f
 #define JRS_T_a00               instruction_80
@@ -213,6 +215,24 @@
 #define ADD_rL_g	        instruction_131
 #define ADD_rH_g	        instruction_139
 
+#define SUBB_rA_g		instruction_102
+#define SUBB_rW_g		instruction_10a
+#define SUBB_rC_g		instruction_112
+#define SUBB_rB_g		instruction_11a
+#define SUBB_rE_g		instruction_122
+#define SUBB_rD_g		instruction_12a
+#define SUBB_rL_g		instruction_132
+#define SUBB_rH_g		instruction_13a
+
+#define SUB_rA_g		instruction_103
+#define SUB_rW_g		instruction_10b
+#define SUB_rC_g		instruction_113
+#define SUB_rB_g		instruction_11b
+#define SUB_rE_g		instruction_123
+#define SUB_rD_g		instruction_12b
+#define SUB_rL_g		instruction_133
+#define SUB_rH_g		instruction_13b
+
 // 1 40 - 1 4f
 #define LD_rA_g                 instruction_140
 #define LD_rW_g                 instruction_141
@@ -251,6 +271,8 @@
 // 1 60 - 1 6f
 #define ADDC_g_n                instruction_160
 #define ADD_g_n                 instruction_161
+#define SUBB_g_n                instruction_162
+#define SUB_g_n                 instruction_163
 
 // 1 70 - 1 7f
 #define XCH_rA_g                instruction_170
@@ -331,6 +353,24 @@
 #define ADD_rL_src		instruction_231
 #define ADD_rH_src		instruction_239
 
+#define SUBB_rA_src		instruction_202
+#define SUBB_rW_src		instruction_20a
+#define SUBB_rC_src		instruction_212
+#define SUBB_rB_src		instruction_21a
+#define SUBB_rE_src		instruction_222
+#define SUBB_rD_src		instruction_22a
+#define SUBB_rL_src		instruction_232
+#define SUBB_rH_src		instruction_23a
+
+#define SUB_rA_src		instruction_203
+#define SUB_rW_src		instruction_20b
+#define SUB_rC_src		instruction_213
+#define SUB_rB_src		instruction_21b
+#define SUB_rE_src		instruction_223
+#define SUB_rD_src		instruction_22b
+#define SUB_rL_src		instruction_233
+#define SUB_rH_src		instruction_23b
+
 // 2 40 - 2 4f
 #define LD_rA_src               instruction_240
 #define LD_rW_src               instruction_241
@@ -367,7 +407,10 @@
 #define LD_CF_src_7             instruction_25f
 
 // 2 60 - 2 6f
+#define ADDC_src_n              instruction_260
 #define ADD_src_n               instruction_261
+#define SUBB_src_n              instruction_262
+#define SUB_src_n               instruction_263
 #define LD_dst_rrWA             instruction_268
 #define LD_dst_rrBC             instruction_269
 #define LD_dst_rrDE             instruction_26a
