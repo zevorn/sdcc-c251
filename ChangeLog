@@ -1,7 +1,8 @@
 2026-02-02 Philipp Klaus Krause <philipp@colecovision.eu>
 
-	* support/regression/tests/bug-3920.c:
-	  Fix missing non-inline definition in a regression test.
+	* support/regression/tests/bug-3920.c,
+	  support/regression/tests/gcrypt-serpent.c.in:
+	  Fix missing non-inline definition in regression tests.
 
 2026-01-23 Philipp Klaus Krause <philipp@colecovision.eu>
 
