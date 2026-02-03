@@ -316,6 +316,7 @@ cl_mos6502::analyze(t_addr addr)
 	      target= rom->read(addr+1) + (rom->read(addr+2) << 8);
 	      break;
 	      
+	    case 'S': // Call by relative addr
 	    case 'b': // Conditional branches
 	      target= addr + 2 + (i8_t)rom->read(addr+1);
 	      break;
@@ -396,6 +397,14 @@ cl_mos6502::disassc(t_addr addr, chars *comment)
 	      addr_name(a, rom, &work);
 	      temp.appendf("; [$%04x]=$%02x", a, rom->read(a));
 	      break;
+	    case 'A': // abs -- addr[2]
+	      l= rom->read(addr+1+1);
+	      h= rom->read(addr+2+1);
+	      a= h*256+l;
+	      work.appendf("$%04x", a);
+	      addr_name(a, rom, &work);
+	      temp.appendf("; [$%04x]=$%02x", a, rom->read(a));
+	      break;
 	    case 'j': // JMP abs
 	      l= rom->read(addr+1);
 	      h= rom->read(addr+2);
@@ -418,8 +427,23 @@ cl_mos6502::disassc(t_addr addr, chars *comment)
 	      addr_name(a, rom, &work);
 	      temp.appendf("; [$%04x]=$%02x", a, rom->read(a));
 	      break;
+	    case 'Z': // zpg -- addr[2]
+	      l= rom->read(addr+1+1);
+	      work.appendf("$%04x", a= l);
+	      addr_name(a, rom, &work);
+	      temp.appendf("; [$%04x]=$%02x", a, rom->read(a));
+	      break;
 	    case 'X': // zpg.X
 	      l= rom->read(addr+1);
+	      work.appendf("$%04x", l);
+	      addr_name(l, rom, &work);
+	      work.append(",X");
+	      l+= rX;
+	      a= l;
+	      temp.appendf("; [$%04x]=$%02x", a, rom->read(a));
+	      break;
+	    case '%': // zpg.X -- addr[2]
+	      l= rom->read(addr+1+1);
 	      work.appendf("$%04x", l);
 	      addr_name(l, rom, &work);
 	      work.append(",X");
@@ -447,6 +471,16 @@ cl_mos6502::disassc(t_addr addr, chars *comment)
 	    case 'i': // abs,X
 	      l= rom->read(addr+1);
 	      h= rom->read(addr+2);
+	      a= h*256+l;
+	      work.appendf("$%04x", a);
+	      addr_name(a, rom, &work);
+	      work.append(",X");
+	      a+= rX;
+	      temp.appendf("; [$%04x]=$%02x", a, rom->read(a));
+	      break;
+	    case '6': // abs,X -- addr[2]
+	      l= rom->read(addr+1+1);
+	      h= rom->read(addr+2+1);
 	      a= h*256+l;
 	      work.appendf("$%04x", a);
 	      addr_name(a, rom, &work);
@@ -492,7 +526,20 @@ cl_mos6502::disassc(t_addr addr, chars *comment)
 	      a= read_addr(rom, a);
 	      addr_name(a, rom, &work);
 	      temp.appendf("; [$%04x]=$%02x", a, rom->read(a));
-	      break;	      
+	      break;
+	    case 'L': // log2(imm8)
+	      a= rom->read(addr+1);
+	      a= L2i(a);
+	      work.appendf("%d", a);
+	      break;
+	    case 'T': // block transfer params: SL,SH,DL,DH,LL,LH
+	      {
+		u16_t s= rom->read(addr+1) + 256*rom->read(addr+2);
+		u16_t d= rom->read(addr+3) + 256*rom->read(addr+4);
+		u16_t l= rom->read(addr+5) + 256*rom->read(addr+6);
+		work.appendf("$%04x,$%04x,$%04x", s, d, l);
+		break;
+	      }
 	    }
 	  if (comment && temp.nempty())
 	    comment->append(temp);
@@ -634,6 +681,18 @@ cl_mos6502::indY(void)
   return *c;
 }
 
+u8_t
+cl_mos6502::L2i(u8_t L)
+{
+  u8_t m, i;
+  for (m= 0x80, i=7; m; m>>=1, i--)
+    {
+      if (L & m)
+	return i;
+    }
+  return 0;
+}
+
 void
 cl_mos6502::print_regs(class cl_console_base *con)
 {
@@ -695,7 +754,7 @@ cl_mos6502::is_call(t_addr addr)
   struct dis_entry *de= get_dis_entry(addr);
   if (!de)
     return false;
-  return de->branch == 's';
+  return (de->branch == 's') || (de->branch == 'S');
 }
 
 int
@@ -746,12 +805,50 @@ cl_mos6502::it_enabled(void)
 void
 cl_mos6502::push_addr(t_addr a)
 {
-  rom->write(SPh + rSP, (a>>8));
+  t_addr bef=rSP;
+  u8_t d;
+  class cl_stack_push *o;
+  rom->write(SPh + rSP, d= (a>>8));
   cSP.W(rSP-1);
-  rom->write(SPh + rSP, (a));
+  o= new cl_stack_push(instPC, d, bef, rSP);
+  o->init();
+  stack_write(o);
+  bef= rSP;
+  rom->write(SPh + rSP, d= (a));
   cSP.W(rSP-1);
+  o= new cl_stack_push(instPC, d, bef, rSP);
+  o->init();
+  stack_write(o);
   tick(2);
   vc.wr+= 2;
+}
+
+void
+cl_mos6502::push_reg(C8 *r)
+{
+  t_addr bef=rSP;
+  t_mem d;
+  class cl_stack_push *o;
+  rom->write(SPh + rSP, d= r->read());
+  cSP.W(rSP-1);
+  o= new cl_stack_push(instPC, d, bef, rSP);
+  o->init();
+  stack_write(o);
+  WR;
+}
+
+void
+cl_mos6502::push(u8_t v)
+{
+  t_addr bef=rSP;
+  t_mem d;
+  class cl_stack_push *o;
+  rom->write(SPh + rSP, d= v);
+  cSP.W(rSP-1);
+  o= new cl_stack_push(instPC, d, bef, rSP);
+  o->init();
+  stack_write(o);
+  WR;
 }
 
 t_addr
@@ -765,6 +862,26 @@ cl_mos6502::pop_addr(void)
   tick(2);
   vc.rd+= 2;
   return h*256+l;
+}
+
+void
+cl_mos6502::pop_reg(C8 *r)
+{
+  u8_t l;
+  cSP.W(rSP+1);
+  l= rom->read(SPh + rSP);
+  RD;
+  r->write(l);
+}
+
+u8_t
+cl_mos6502::pop(void)
+{
+  u8_t l;
+  cSP.W(rSP+1);
+  l= rom->read(SPh + rSP);
+  RD;
+  return l;
 }
 
 void
