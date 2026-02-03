@@ -93,6 +93,84 @@
 #define LD_CF_mx_6              instruction_5e
 #define LD_CF_mx_7              instruction_5f
 
+// 0 60 - 0 6f
+#define ADC_A_n                 instruction_60
+#define ADD_A_n                 instruction_61
+#define SUBB_A_n		instruction_62
+#define SUB_A_n			instruction_63
+
+// 0 80 - 0 8f
+#define JRS_T_a00               instruction_80
+#define JRS_T_a01               instruction_81
+#define JRS_T_a02               instruction_82
+#define JRS_T_a03               instruction_83
+#define JRS_T_a04               instruction_84
+#define JRS_T_a05               instruction_85
+#define JRS_T_a06               instruction_86
+#define JRS_T_a07               instruction_87
+#define JRS_T_a08               instruction_88
+#define JRS_T_a09               instruction_89
+#define JRS_T_a0a               instruction_8a
+#define JRS_T_a0b               instruction_8b
+#define JRS_T_a0c               instruction_8c
+#define JRS_T_a0d               instruction_8d
+#define JRS_T_a0e               instruction_8e
+#define JRS_T_a0f               instruction_8f
+
+// 0 90 - 0 9f
+#define JRS_T_a10               instruction_90
+#define JRS_T_a11               instruction_91
+#define JRS_T_a12               instruction_92
+#define JRS_T_a13               instruction_93
+#define JRS_T_a14               instruction_94
+#define JRS_T_a15               instruction_95
+#define JRS_T_a16               instruction_96
+#define JRS_T_a17               instruction_97
+#define JRS_T_a18               instruction_98
+#define JRS_T_a19               instruction_99
+#define JRS_T_a1a               instruction_9a
+#define JRS_T_a1b               instruction_9b
+#define JRS_T_a1c               instruction_9c
+#define JRS_T_a1d               instruction_9d
+#define JRS_T_a1e               instruction_9e
+#define JRS_T_a1f               instruction_9f
+
+// 0 a0 - 0 af
+#define JRS_F_a00               instruction_a0
+#define JRS_F_a01               instruction_a1
+#define JRS_F_a02               instruction_a2
+#define JRS_F_a03               instruction_a3
+#define JRS_F_a04               instruction_a4
+#define JRS_F_a05               instruction_a5
+#define JRS_F_a06               instruction_a6
+#define JRS_F_a07               instruction_a7
+#define JRS_F_a08               instruction_a8
+#define JRS_F_a09               instruction_a9
+#define JRS_F_a0a               instruction_aa
+#define JRS_F_a0b               instruction_ab
+#define JRS_F_a0c               instruction_ac
+#define JRS_F_a0d               instruction_ad
+#define JRS_F_a0e               instruction_ae
+#define JRS_F_a0f               instruction_af
+
+// 0 b0 - 0 bf
+#define JRS_F_a10               instruction_b0
+#define JRS_F_a11               instruction_b1
+#define JRS_F_a12               instruction_b2
+#define JRS_F_a13               instruction_b3
+#define JRS_F_a14               instruction_b4
+#define JRS_F_a15               instruction_b5
+#define JRS_F_a16               instruction_b6
+#define JRS_F_a17               instruction_b7
+#define JRS_F_a18               instruction_b8
+#define JRS_F_a19               instruction_b9
+#define JRS_F_a1a               instruction_ba
+#define JRS_F_a1b               instruction_bb
+#define JRS_F_a1c               instruction_bc
+#define JRS_F_a1d               instruction_bd
+#define JRS_F_a1e               instruction_be
+#define JRS_F_a1f               instruction_bf
+
 // 0 c0 - 0 cf
 #define SET_mx_0                instruction_c0
 #define SET_mx_1                instruction_c1
@@ -115,6 +193,45 @@
 
 // 0 f0 - 0 ff
 #define LD_RBS                  instruction_f9
+#define JR_a                    instruction_fc
+#define JP_mn                   instruction_fe
+
+// 1 00 - 1 3f ALU r,g
+#define ADDC_rA_g	        instruction_100
+#define ADDC_rW_g	        instruction_108
+#define ADDC_rC_g	        instruction_110
+#define ADDC_rB_g	        instruction_118
+#define ADDC_rE_g	        instruction_120
+#define ADDC_rD_g	        instruction_128
+#define ADDC_rL_g	        instruction_130
+#define ADDC_rH_g	        instruction_138
+
+#define ADD_rA_g	        instruction_101
+#define ADD_rW_g	        instruction_109
+#define ADD_rC_g	        instruction_111
+#define ADD_rB_g	        instruction_119
+#define ADD_rE_g	        instruction_121
+#define ADD_rD_g	        instruction_129
+#define ADD_rL_g	        instruction_131
+#define ADD_rH_g	        instruction_139
+
+#define SUBB_rA_g		instruction_102
+#define SUBB_rW_g		instruction_10a
+#define SUBB_rC_g		instruction_112
+#define SUBB_rB_g		instruction_11a
+#define SUBB_rE_g		instruction_122
+#define SUBB_rD_g		instruction_12a
+#define SUBB_rL_g		instruction_132
+#define SUBB_rH_g		instruction_13a
+
+#define SUB_rA_g		instruction_103
+#define SUB_rW_g		instruction_10b
+#define SUB_rC_g		instruction_113
+#define SUB_rB_g		instruction_11b
+#define SUB_rE_g		instruction_123
+#define SUB_rD_g		instruction_12b
+#define SUB_rL_g		instruction_133
+#define SUB_rH_g		instruction_13b
 
 // 1 40 - 1 4f
 #define LD_rA_g                 instruction_140
@@ -150,6 +267,12 @@
 #define LD_CF_g_5               instruction_15d
 #define LD_CF_g_6               instruction_15e
 #define LD_CF_g_7               instruction_15f
+
+// 1 60 - 1 6f
+#define ADDC_g_n                instruction_160
+#define ADD_g_n                 instruction_161
+#define SUBB_g_n                instruction_162
+#define SUB_g_n                 instruction_163
 
 // 1 70 - 1 7f
 #define XCH_rA_g                instruction_170
@@ -208,7 +331,45 @@
 #define LD_g_7_CF               instruction_1ef
 
 // 1 f0 - 1 ff
+#define JP_gg                   instruction_1fe
 #define SWAP_g                  instruction_1ff
+
+// 2 00 - 2 3f ALU r,(src)
+#define ADDC_rA_src		instruction_200
+#define ADDC_rW_src		instruction_208
+#define ADDC_rC_src		instruction_210
+#define ADDC_rB_src		instruction_218
+#define ADDC_rE_src		instruction_220
+#define ADDC_rD_src		instruction_228
+#define ADDC_rL_src		instruction_230
+#define ADDC_rH_src		instruction_238
+
+#define ADD_rA_src		instruction_201
+#define ADD_rW_src		instruction_209
+#define ADD_rC_src		instruction_211
+#define ADD_rB_src		instruction_219
+#define ADD_rE_src		instruction_221
+#define ADD_rD_src		instruction_229
+#define ADD_rL_src		instruction_231
+#define ADD_rH_src		instruction_239
+
+#define SUBB_rA_src		instruction_202
+#define SUBB_rW_src		instruction_20a
+#define SUBB_rC_src		instruction_212
+#define SUBB_rB_src		instruction_21a
+#define SUBB_rE_src		instruction_222
+#define SUBB_rD_src		instruction_22a
+#define SUBB_rL_src		instruction_232
+#define SUBB_rH_src		instruction_23a
+
+#define SUB_rA_src		instruction_203
+#define SUB_rW_src		instruction_20b
+#define SUB_rC_src		instruction_213
+#define SUB_rB_src		instruction_21b
+#define SUB_rE_src		instruction_223
+#define SUB_rD_src		instruction_22b
+#define SUB_rL_src		instruction_233
+#define SUB_rH_src		instruction_23b
 
 // 2 40 - 2 4f
 #define LD_rA_src               instruction_240
@@ -246,6 +407,10 @@
 #define LD_CF_src_7             instruction_25f
 
 // 2 60 - 2 6f
+#define ADDC_src_n              instruction_260
+#define ADD_src_n               instruction_261
+#define SUBB_src_n              instruction_262
+#define SUB_src_n               instruction_263
 #define LD_dst_rrWA             instruction_268
 #define LD_dst_rrBC             instruction_269
 #define LD_dst_rrDE             instruction_26a
@@ -327,4 +492,4 @@
 #define CLR_src_A               instruction_2fa
 #define CPL_src_A               instruction_2fb
 #define LD_CF_src_A             instruction_2fc
-
+#define JP_src                  instruction_2fe

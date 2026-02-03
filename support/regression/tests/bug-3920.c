@@ -8,6 +8,8 @@
 
 char *p;
 
+extern void ABSORB(unsigned char* s, const unsigned char* d);
+
 inline void ABSORB(unsigned char* s, const unsigned char* d) {
   *s++ ^= *d;
 }
@@ -30,6 +32,8 @@ typedef union {
 } ascon_state_t;
 
 void P(ascon_state_t* s, int nr);
+
+extern void ascon_inithash(ascon_state_t* s);
 
 inline void ascon_inithash(ascon_state_t* s) {
   *s = (ascon_state_t){{0x9b}};
