@@ -35,9 +35,9 @@
 
 #if __STDC_VERSION__ <= 202311L
 #if __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_LITTLE__
-inline uint_least32_t stdc_load8_leu32(const unsigned char ptr[static (32 / 8)]) {uint32_t value; memcpy (&value, ptr, 32 / 8); return(value);}
+static inline uint_least32_t stdc_load8_leu32(const unsigned char ptr[static (32 / 8)]) {uint32_t value; memcpy (&value, ptr, 32 / 8); return(value);}
 #else
-inline uint_least32_t stdc_load8_leu32(const unsigned char ptr[static (32 / 8)]) {uint32_t value; value = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | (ptr[3] << 0); return(value);}
+static inline uint_least32_t stdc_load8_leu32(const unsigned char ptr[static (32 / 8)]) {uint32_t value; value = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | (ptr[3] << 0); return(value);}
 #endif
 #define stdc_rotate_left(x, n) (((x) << (n)) | ((x) >> (32-(n))))
 #define stdc_rotate_right(x, n) (((x) >> (n)) | ((x) << (32-(n))))
