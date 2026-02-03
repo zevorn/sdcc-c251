@@ -1,3 +1,9 @@
+2026-02-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/bug-3920.c,
+	  support/regression/tests/gcrypt-serpent.c.in:
+	  Fix missing non-inline definition in regression tests.
+
 2026-01-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* device/lib/f8/Makefile.in,
@@ -54,7 +60,7 @@
 	  support/regression/tests/gcrypt-serpent.c.in,
 	  support/regression/tests/serpent.c.in,
 	  support/regression/tests/smallserpent.c.in:
-	  Fix stdbit-h test-host issue for Ascon and Serpent tests.
+	  Fix stdbit.h test-host issue for Ascon and Serpent tests.
 
 2026-01-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
