@@ -335,6 +335,43 @@
 #define XCH_rrIY_gg             instruction_17d
 #define XCH_rrSP_gg             instruction_17e
 
+// 1 80 - 1 bf ALU rr,gg
+#define ADDC_rrWA_gg		instruction_180
+#define ADDC_rrBC_gg		instruction_188
+#define ADDC_rrDE_gg		instruction_190
+#define ADDC_rrHL9_gg		instruction_198
+#define ADDC_rrIX_gg		instruction_1a0
+#define ADDC_rrIY_gg		instruction_1a8
+#define ADDC_rrSP_gg		instruction_1b0
+#define ADDC_rrHLb_gg		instruction_1b8
+
+#define ADD_rrWA_gg		instruction_181
+#define ADD_rrBC_gg		instruction_189
+#define ADD_rrDE_gg		instruction_191
+#define ADD_rrHL9_gg		instruction_199
+#define ADD_rrIX_gg		instruction_1a1
+#define ADD_rrIY_gg		instruction_1a9
+#define ADD_rrSP_gg		instruction_1b1
+#define ADD_rrHLb_gg		instruction_1b9
+
+#define SUBB_rrWA_gg		instruction_182
+#define SUBB_rrBC_gg		instruction_18a
+#define SUBB_rrDE_gg		instruction_192
+#define SUBB_rrHL9_gg		instruction_19a
+#define SUBB_rrIX_gg		instruction_1a2
+#define SUBB_rrIY_gg		instruction_1aa
+#define SUBB_rrSP_gg		instruction_1b2
+#define SUBB_rrHLb_gg		instruction_1ba
+
+#define SUB_rrWA_gg		instruction_183
+#define SUB_rrBC_gg		instruction_18b
+#define SUB_rrDE_gg		instruction_193
+#define SUB_rrHL9_gg		instruction_19b
+#define SUB_rrIX_gg		instruction_1a3
+#define SUB_rrIY_gg		instruction_1ab
+#define SUB_rrSP_gg		instruction_1b3
+#define SUB_rrHLb_gg		instruction_1bb
+
 // 1 c0 - 1 cf
 #define SET_g_0                 instruction_1c0
 #define SET_g_1                 instruction_1c1
