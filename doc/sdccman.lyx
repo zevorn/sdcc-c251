@@ -3198,6 +3198,11 @@ In 4.5.17,
  the names of mixed-sign support functions for multiplicative operators have been fixed.
 \end_layout
 
+\begin_layout Itemize
+In 4.5.18,
+ plain int bit-fields are signed.
+\end_layout
+
 \begin_layout Section
 System Requirements
 \end_layout
@@ -11297,7 +11302,7 @@ Structures,
 \end_layout
 
 \begin_layout Itemize
-A plain int bit-field is treated as an unsigned int bit-field.
+A plain int bit-field is treated as a signed int bit-field.
 \end_layout
 
 \begin_layout Itemize
