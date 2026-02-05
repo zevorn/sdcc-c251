@@ -1,3 +1,13 @@
+2026-02-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCsalloc.hpp,
+	  src/stm8/gen.c,
+	  src/stm8/main.c,
+	  support/regression/tests/rotate.c.in,
+	  support/regression/tests/rotate_left.c.in,
+	  support/regression/tests/rotate_right.c.in:
+	  Rotation codegen improvements inspired by asconaead128 and asconhash256 regression tests.
+
 2026-02-02 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/bug-3920.c,

@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
   gen.c - code generator for STM8.
 
-  Copyright (C) 2012 - 2024, Philipp Klaus Krause pkk@spth.de, philipp@informatik.uni-frankfurt.de, krauseph@informatik.uni-freiburg.de)
+  Copyright (C) 2012 - 2026, Philipp Klaus Krause pkk@spth.de, philipp@informatik.uni-frankfurt.de, krauseph@informatik.uni-freiburg.de)
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -1536,7 +1536,7 @@ void swap_to_a(int idx)
 {
   switch (idx)
     {
-	case A_IDX:
+    case A_IDX:
       break;
     case XL_IDX:
       emit3 (A_EXG, ASMOP_A, ASMOP_X);
@@ -1753,14 +1753,16 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 static void
 genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, bool *assigned, int *size, bool a_free, bool x_free, bool y_free, bool really_do_it_now)
 {
-  int i;
   bool pushed_x = FALSE;
 
 #if 0
   D (emit2("; genCopyStack", "%d %d %d", a_free, x_free, y_free));
 #endif
 
-  for (i = 0; i < n;)
+  // Avoid overwriting source. Do not assume stack locations during dry run - they can change later.
+  int dir = (!regalloc_dry_run && result->aopu.stk_off + roffset > source->aopu.stk_off + soffset && result->aopu.stk_off + roffset < source->aopu.stk_off + soffset + n) ? -1 : 1;
+
+  for (int i = 0; i < n && dir >= 0;)
     {
       if (assigned[i] || !aopOnStack (result, roffset + i, 1) || !aopOnStack (source, soffset + i, 1))
         {
@@ -1819,8 +1821,10 @@ genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, boo
         i++;
     }
 
-  for (i = 0; i < n; i++)
+  for (int j = 0; j < n; j++)
     {
+      int i = (dir >= 0) ? j : (n - j - 1);
+
       if (!aopOnStack (result, roffset + i, 1) || !aopOnStack (source, soffset + i, 1))
         continue;
 
@@ -6943,210 +6947,6 @@ release:
 }
 
 /*------------------------------------------------------------------*/
-/* genRoate - rotate                                                */
-/*------------------------------------------------------------------*/
-static void
-genRotate (const iCode *ic)
-{
-  operand *left, *result;
-
-  D (emit2 ("; genRotate", ""));
-
-  aopOp (left = IC_LEFT (ic), ic, false);
-  aopOp (result = IC_RESULT (ic), ic, true);
-
-  unsigned int lbits = bitsForType (operandType (IC_LEFT (ic)));
-  const bool rlc = (operandLitValueUll (IC_RIGHT (ic)) % lbits == 1);
-
-  wassert (left->aop->size == result->aop->size && bitsForType (operandType (left)) == bitsForType (operandType (result)) && !(bitsForType (operandType (left)) % 8));
-  wassert (IS_OP_LITERAL (IC_RIGHT (ic)) && (operandLitValueUll (IC_RIGHT (ic)) % lbits == 1 || operandLitValueUll (IC_RIGHT (ic)) % lbits == lbits - 1));
-  
-  switch (left->aop->size)
-    {
-    case 2:
-      if (rlc && aopSame (result->aop, 0, left->aop, 0, 2) && left->aop->type == AOP_DIR)  // Use bccm
-        {
-          emit3_o (A_SLL, left->aop, 0, 0, 0);
-          emit3_o (A_RLC, left->aop, 1, 0, 0);
-          emit2 ("bccm", "%s, #0", aopGet (left->aop, 0));
-          cost (4, 1);
-        }
-      else if (!rlc && aopSame (result->aop, 0, left->aop, 0, 2) && left->aop->type == AOP_DIR)  // Use bccm
-        {
-          emit3_o (A_SLL, left->aop, 1, 0, 0);
-          emit3_o (A_RLC, left->aop, 0, 0, 0);
-          emit2 ("bccm", "%s, #7", aopGet (left->aop, 1));
-          cost (4, 1);
-        }
-      else
-        {
-          bool use_y = (aopSame (result->aop, 0, left->aop, 0, 2) && aopInReg (left->aop, Y_IDX, 0) ||
-            aopInReg (result->aop, Y_IDX, 0) && !regDead (X_IDX, ic) ||
-            aopInReg (result->aop, Y_IDX, 0) && aopInReg (left->aop, X_IDX, 0));
-          if (!use_y && !regDead (X_IDX, ic))
-            push (ASMOP_X, 0, 2);
-          asmop *rotaop = use_y ? ASMOP_Y : ASMOP_X;
-          genMove (rotaop, left->aop, regDead (A_IDX, ic), !use_y || regDead (X_IDX, ic), use_y || regDead (Y_IDX, ic));
-          if (regDead (A_IDX, ic))
-            {
-              if (!(aopInReg (left->aop, rlc, A_IDX) && aopInReg (left->aop, !rlc, rlc ? (use_y ? YL_IDX : XL_IDX) : (use_y ? YH_IDX : XH_IDX))))
-                cheapMove (ASMOP_A, 0, rotaop, rlc, false);
-              emit3 (rlc ? A_SLL : A_SRL, ASMOP_A, 0);
-              emit3w (rlc ? A_RLCW : A_RRCW, rotaop, 0);
-            }
-          else if (regDead (use_y ? X_IDX : Y_IDX, ic))
-            {
-              if (!aopInReg (left->aop, 0, use_y ? X_IDX : Y_IDX))
-                {
-                  emit2 ("ldw", use_y ? "x, y" : "y, x");
-                  cost (1 + !use_y, 1);
-                }
-              emit3w (rlc ? A_SLLW : A_SRLW, use_y ? ASMOP_X : ASMOP_Y, 0);
-              emit3w (rlc ? A_RLCW : A_RRCW, rotaop, 0);
-            }
-          else
-            {
-              emit3w (rlc ? A_SLLW : A_SRLW, rotaop, 0);
-              symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (0));
-              if (!regalloc_dry_run)
-                emit2 ("jrnc", "!tlabel", labelKey2num (tlbl->key));
-              if (rlc)
-                emit2 ("incw", aopGet2 (rotaop, 0));
-              else
-                emit2 ("addw", "%s, #0x8000", aopGet2 (rotaop, 0));
-              cost (3 + !rlc * 2 + use_y * 2, 2 + !rlc);
-              emitLabel (tlbl);
-            }
-          if ((result->aop->regs[use_y ? YL_IDX : XL_IDX] >= 0 || result->aop->regs[use_y ? YH_IDX : XH_IDX] >= 0) && !regDead (use_y ? Y_IDX : X_IDX, ic))
-            {
-              cost (300, 300);
-              wassertl (regalloc_dry_run, "Unimplemented roatate with result partially in non-dead x.");
-            }
-          genMove (result->aop, rotaop, regDead (A_IDX, ic), !use_y || regDead (X_IDX, ic), use_y || regDead (Y_IDX, ic));
-          if (!use_y && !regDead (X_IDX, ic))
-            pop (ASMOP_X, 0, 2);
-        }
-      break;
-    default:
-      wassertl (0, "Unsupported rotate size.");
-    }
-
-  freeAsmop (left);
-  freeAsmop (result);
-}
- 
-/*------------------------------------------------------------------*/
-/* genSwap - swap nibbles or bytes                                  */
-/*------------------------------------------------------------------*/
-static void
-genSwap (const iCode *ic)
-{
-  operand *left, *result;
-
-  aopOp (left = IC_LEFT (ic), ic, false);
-  aopOp (result = IC_RESULT (ic), ic, true);
-
-  asmop swapped_aop;
-
-  wassert (left->aop->size == result->aop->size &&
-    bitsForType (operandType (left)) == bitsForType (operandType (result)) &&
-    !(bitsForType (operandType (left)) % 8));
-
-  switch (left->aop->size)
-    {
-    case 2:
-      if (result->aop->type == AOP_REG) // Let genMove handle all the coalescing, swapw, exg, rlwa, etc).
-        {
-          signed char idxarray[3];
-          idxarray[0] = result->aop->aopu.bytes[1].byteu.reg->rIdx;
-          idxarray[1] = result->aop->aopu.bytes[0].byteu.reg->rIdx;
-          idxarray[2] = -1;
-          stm8_init_reg_asmop (&swapped_aop, idxarray);
-          genMove (&swapped_aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
-        }
-      else if (left->aop->type == AOP_REG)
-        {
-          signed char idxarray[3];
-          idxarray[0] = left->aop->aopu.bytes[1].byteu.reg->rIdx;
-          idxarray[1] = left->aop->aopu.bytes[0].byteu.reg->rIdx;
-          idxarray[2] = -1;
-          stm8_init_reg_asmop (&swapped_aop, idxarray);
-          genMove (result->aop, &swapped_aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
-        }
-      else
-        {
-          if (!regDead (X_IDX, ic))
-            push (ASMOP_X, 0, 2);
-
-          genMove (ASMOP_X, left->aop, regDead (A_IDX, ic), true, regDead (Y_IDX, ic));
-          emit3w (A_SWAPW, ASMOP_X, 0);
-          genMove (result->aop, ASMOP_X, regDead (A_IDX, ic), true, regDead (Y_IDX, ic));
-
-          if (!regDead (X_IDX, ic) && (result->aop->regs[XL_IDX] >= 0 || result->aop->regs[XH_IDX] >= 0))
-            {
-              cost (300, 300);
-              wassertl (regalloc_dry_run, "Swap result partially in non-dead x not implemented.");
-            }
-
-          if (!regDead (X_IDX, ic))
-            pop (ASMOP_X, 0, 2);
-        }
-      break;
-    case 4:
-      if (result->aop->type == AOP_REG) // Let genMove handle all the coalescing, swapw, exg, rlwa, etc).
-        {
-          signed char idxarray[5];
-          idxarray[0] = result->aop->aopu.bytes[2].byteu.reg->rIdx;
-          idxarray[1] = result->aop->aopu.bytes[3].byteu.reg->rIdx;
-          idxarray[2] = result->aop->aopu.bytes[0].byteu.reg->rIdx;
-          idxarray[3] = result->aop->aopu.bytes[1].byteu.reg->rIdx;
-          idxarray[4] = -1;
-          stm8_init_reg_asmop (&swapped_aop, idxarray);
-          genMove (&swapped_aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
-        }
-      else if (left->aop->type == AOP_REG)
-        {
-          signed char idxarray[5];
-          idxarray[0] = left->aop->aopu.bytes[2].byteu.reg->rIdx;
-          idxarray[1] = left->aop->aopu.bytes[3].byteu.reg->rIdx;
-          idxarray[2] = left->aop->aopu.bytes[0].byteu.reg->rIdx;
-          idxarray[3] = left->aop->aopu.bytes[1].byteu.reg->rIdx;
-          idxarray[4] = -1;
-          stm8_init_reg_asmop (&swapped_aop, idxarray);
-          genMove (result->aop, &swapped_aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
-        }
-      else
-        {
-          if (!regDead (X_IDX, ic))
-            push (ASMOP_X, 0, 2);
-          if (!regDead (Y_IDX, ic))
-            push (ASMOP_Y, 0, 2);
-
-          genMove (ASMOP_XY, left->aop, regDead (A_IDX, ic), true, true);
-          genMove (result->aop, ASMOP_YX, regDead (A_IDX, ic), true, true);
- 
-          if (!regDead (X_IDX, ic) && (result->aop->regs[XL_IDX] >= 0 || result->aop->regs[XH_IDX] >= 0) ||
-            !regDead (Y_IDX, ic) && (result->aop->regs[YL_IDX] >= 0 || result->aop->regs[YH_IDX] >= 0))
-            {
-              cost (300, 300);
-              wassertl (regalloc_dry_run, "Swap result partially in non-dead x/y not implemented.");
-            }
-
-          if (!regDead (Y_IDX, ic))
-            pop (ASMOP_Y, 0, 2);
-          if (!regDead (X_IDX, ic))
-            pop (ASMOP_X, 0, 2);
-        }
-      break;
-    default:
-      wassertl (0, "Unsupported swap size.");
-    }
-
-  freeAsmop (left);
-  freeAsmop (result);
-}
-
-/*------------------------------------------------------------------*/
 /* init_shiftop - find a good place to shift in                     */
 /*------------------------------------------------------------------*/
 static void 
@@ -7362,24 +7162,443 @@ genRot1 (iCode *ic)
   freeAsmop (result);
 }
 
+/*------------------------------------------------------------------*/
+/* genRot2 - rotate                                                 */
+/*------------------------------------------------------------------*/
+static void
+genRot2 (const iCode *ic)
+{
+  operand *left, *result;
+
+  D (emit2 ("; genRotate", ""));
+
+  aopOp (left = ic->left, ic, false);
+  aopOp (result = ic->result, ic, true);
+
+  wassert (IS_OP_LITERAL (ic->right));
+  unsigned int lbits = bitsForType (operandType (ic->left));
+  const bool rlc = (operandLitValueUll (ic->right) % lbits == 1);
+  
+  wassert (left->aop->size == result->aop->size && bitsForType (operandType (left)) == bitsForType (operandType (result)) && !(bitsForType (operandType (left)) % 8));
+  wassert (lbits == 16);
+  wassert ((operandLitValueUll (ic->right) % lbits == 1 || operandLitValueUll (ic->right) % lbits == lbits - 1));
+  
+  if (rlc && aopSame (result->aop, 0, left->aop, 0, 2) && left->aop->type == AOP_DIR)  // Use bccm
+    {
+      emit3_o (A_SLL, left->aop, 0, 0, 0);
+      emit3_o (A_RLC, left->aop, 1, 0, 0);
+      emit2 ("bccm", "%s, #0", aopGet (left->aop, 0));
+      cost (4, 1);
+    }
+  else if (!rlc && aopSame (result->aop, 0, left->aop, 0, 2) && left->aop->type == AOP_DIR)  // Use bccm
+    {
+      emit3_o (A_SLL, left->aop, 1, 0, 0);
+      emit3_o (A_RLC, left->aop, 0, 0, 0);
+      emit2 ("bccm", "%s, #7", aopGet (left->aop, 1));
+      cost (4, 1);
+    }
+  else
+    {
+      bool use_y = (aopSame (result->aop, 0, left->aop, 0, 2) && aopInReg (left->aop, Y_IDX, 0) ||
+        aopInReg (result->aop, Y_IDX, 0) && !regDead (X_IDX, ic) ||
+        aopInReg (result->aop, Y_IDX, 0) && aopInReg (left->aop, X_IDX, 0));
+      if (!use_y && !regDead (X_IDX, ic))
+        push (ASMOP_X, 0, 2);
+      asmop *rotaop = use_y ? ASMOP_Y : ASMOP_X;
+      genMove (rotaop, left->aop, regDead (A_IDX, ic), !use_y || regDead (X_IDX, ic), use_y || regDead (Y_IDX, ic));
+      if (regDead (A_IDX, ic))
+        {
+          if (!(aopInReg (left->aop, rlc, A_IDX) && aopInReg (left->aop, !rlc, rlc ? (use_y ? YL_IDX : XL_IDX) : (use_y ? YH_IDX : XH_IDX))))
+            cheapMove (ASMOP_A, 0, rotaop, rlc, false);
+          emit3 (rlc ? A_SLL : A_SRL, ASMOP_A, 0);
+          emit3w (rlc ? A_RLCW : A_RRCW, rotaop, 0);
+        }
+      else if (regDead (use_y ? X_IDX : Y_IDX, ic))
+        {
+          if (!aopInReg (left->aop, 0, use_y ? X_IDX : Y_IDX))
+            {
+              emit2 ("ldw", use_y ? "x, y" : "y, x");
+              cost (1 + !use_y, 1);
+            }
+          emit3w (rlc ? A_SLLW : A_SRLW, use_y ? ASMOP_X : ASMOP_Y, 0);
+          emit3w (rlc ? A_RLCW : A_RRCW, rotaop, 0);
+        }
+      else
+        {
+          emit3w (rlc ? A_SLLW : A_SRLW, rotaop, 0);
+          symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (0));
+          if (!regalloc_dry_run)
+            emit2 ("jrnc", "!tlabel", labelKey2num (tlbl->key));
+          if (rlc)
+            emit2 ("incw", aopGet2 (rotaop, 0));
+          else
+            emit2 ("addw", "%s, #0x8000", aopGet2 (rotaop, 0));
+          cost (3 + !rlc * 2 + use_y * 2, 2 + !rlc);
+          emitLabel (tlbl);
+        }
+      if ((result->aop->regs[use_y ? YL_IDX : XL_IDX] >= 0 || result->aop->regs[use_y ? YH_IDX : XH_IDX] >= 0) && !regDead (use_y ? Y_IDX : X_IDX, ic))
+        {
+          cost (300, 300);
+          wassertl (regalloc_dry_run, "Unimplemented roatate with result partially in non-dead x.");
+        }
+      genMove (result->aop, rotaop, regDead (A_IDX, ic), !use_y || regDead (X_IDX, ic), use_y || regDead (Y_IDX, ic));
+      if (!use_y && !regDead (X_IDX, ic))
+        pop (ASMOP_X, 0, 2);
+    }
+
+  freeAsmop (left);
+  freeAsmop (result);
+}
+ 
+/*------------------------------------------------------------------*/
+/* genSwap - swap nibbles or bytes                                  */
+/*------------------------------------------------------------------*/
+static void
+genSwap (const iCode *ic)
+{
+  operand *left, *result;
+
+  aopOp (left = IC_LEFT (ic), ic, false);
+  aopOp (result = IC_RESULT (ic), ic, true);
+
+  wassert (IS_OP_LITERAL (ic->right));
+
+  asmop swapped_aop;
+  
+  wassert (left->aop->size == result->aop->size &&
+    bitsForType (operandType (left)) == bitsForType (operandType (result)) &&
+    !(bitsForType (operandType (left)) % 8));
+
+  switch (left->aop->size)
+    {
+    case 2:
+      if (result->aop->type == AOP_REG) // Let genMove handle all the coalescing, swapw, exg, rlwa, etc).
+        {
+          signed char idxarray[3];
+          idxarray[0] = result->aop->aopu.bytes[1].byteu.reg->rIdx;
+          idxarray[1] = result->aop->aopu.bytes[0].byteu.reg->rIdx;
+          idxarray[2] = -1;
+          stm8_init_reg_asmop (&swapped_aop, idxarray);
+          genMove (&swapped_aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+        }
+      else if (left->aop->type == AOP_REG)
+        {
+          signed char idxarray[3];
+          idxarray[0] = left->aop->aopu.bytes[1].byteu.reg->rIdx;
+          idxarray[1] = left->aop->aopu.bytes[0].byteu.reg->rIdx;
+          idxarray[2] = -1;
+          stm8_init_reg_asmop (&swapped_aop, idxarray);
+          genMove (result->aop, &swapped_aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+        }
+      else
+        {
+          if (!regDead (X_IDX, ic))
+            push (ASMOP_X, 0, 2);
+
+          genMove (ASMOP_X, left->aop, regDead (A_IDX, ic), true, regDead (Y_IDX, ic));
+          emit3w (A_SWAPW, ASMOP_X, 0);
+          genMove (result->aop, ASMOP_X, regDead (A_IDX, ic), true, regDead (Y_IDX, ic));
+
+          if (!regDead (X_IDX, ic) && (result->aop->regs[XL_IDX] >= 0 || result->aop->regs[XH_IDX] >= 0))
+            {
+              cost (300, 300);
+              wassertl (regalloc_dry_run, "Swap result partially in non-dead x not implemented.");
+            }
+
+          if (!regDead (X_IDX, ic))
+            pop (ASMOP_X, 0, 2);
+        }
+      break;
+    case 4:
+      if (result->aop->type == AOP_REG) // Let genMove handle all the coalescing, swapw, exg, rlwa, etc).
+        {
+          signed char idxarray[5];
+          idxarray[0] = result->aop->aopu.bytes[2].byteu.reg->rIdx;
+          idxarray[1] = result->aop->aopu.bytes[3].byteu.reg->rIdx;
+          idxarray[2] = result->aop->aopu.bytes[0].byteu.reg->rIdx;
+          idxarray[3] = result->aop->aopu.bytes[1].byteu.reg->rIdx;
+          idxarray[4] = -1;
+          stm8_init_reg_asmop (&swapped_aop, idxarray);
+          genMove (&swapped_aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+        }
+      else if (left->aop->type == AOP_REG)
+        {
+          signed char idxarray[5];
+          idxarray[0] = left->aop->aopu.bytes[2].byteu.reg->rIdx;
+          idxarray[1] = left->aop->aopu.bytes[3].byteu.reg->rIdx;
+          idxarray[2] = left->aop->aopu.bytes[0].byteu.reg->rIdx;
+          idxarray[3] = left->aop->aopu.bytes[1].byteu.reg->rIdx;
+          idxarray[4] = -1;
+          stm8_init_reg_asmop (&swapped_aop, idxarray);
+          genMove (result->aop, &swapped_aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+        }
+      else
+        {
+          if (!regDead (X_IDX, ic))
+            push (ASMOP_X, 0, 2);
+          if (!regDead (Y_IDX, ic))
+            push (ASMOP_Y, 0, 2);
+
+          genMove (ASMOP_XY, left->aop, regDead (A_IDX, ic), true, true);
+          genMove (result->aop, ASMOP_YX, regDead (A_IDX, ic), true, true);
+ 
+          if (!regDead (X_IDX, ic) && (result->aop->regs[XL_IDX] >= 0 || result->aop->regs[XH_IDX] >= 0) ||
+            !regDead (Y_IDX, ic) && (result->aop->regs[YL_IDX] >= 0 || result->aop->regs[YH_IDX] >= 0))
+            {
+              cost (300, 300);
+              wassertl (regalloc_dry_run, "Swap result partially in non-dead x/y not implemented.");
+            }
+
+          if (!regDead (Y_IDX, ic))
+            pop (ASMOP_Y, 0, 2);
+          if (!regDead (X_IDX, ic))
+            pop (ASMOP_X, 0, 2);
+        }
+      break;
+    default:
+      wassertl (0, "Unsupported swap size.");
+    }
+
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*------------------------------------------------------------------*/
+/* genRotW - rotate a wide value by a few bits                      */
+/* While this could do rotations by arbitrary literals, it is       */
+/* usually only worth it when the literal is 0 or 8 +/- x, abs(x)<4 */
+/*------------------------------------------------------------------*/
+static void
+genRotW (const iCode *ic)
+{
+  operand *left, *right, *result;
+
+  aopOp (left = ic->left, ic, false);
+  aopOp (right = ic->right, ic, false);
+  aopOp (result = ic->result, ic, true);
+
+  wassert (IS_OP_LITERAL (ic->right));
+  const int lbits = bitsForType (operandType (ic->left));
+  unsigned int rot = operandLitValueUll (ic->right) % lbits;
+
+  wassert (lbits >= 16);
+
+  struct asmop shiftop_impl;
+  struct asmop *shiftop;
+
+  int size = result->aop->size;
+
+  rot %= lbits;
+  if (aopRS (result->aop) && rot > 5 && rot < lbits / 2 && regDead (A_IDX, ic) && (left->aop->regs[A_IDX] < 0 || left->aop->regs[A_IDX] == size - 1) && result->aop->regs[A_IDX] < 0) // Shift left by 8
+    {
+      cheapMove (ASMOP_A, 0, left->aop, size - 1, true);
+      genMove_o (result->aop, 1, left->aop, 0, size - 1, false, regDead (X_IDX, ic), regDead (Y_IDX, ic));
+      cheapMove (result->aop, 0, ASMOP_A, 0, true);
+      shiftop = result->aop;
+      rot += lbits - 8;
+    }
+  else if (aopRS (result->aop) && rot < lbits - 5 && rot > lbits / 2 && regDead (A_IDX, ic) && left->aop->regs[A_IDX] <= 0 && result->aop->regs[A_IDX] < 0) // Shift right by 8
+    {
+      cheapMove (ASMOP_A, 0, left->aop, 0, true);
+      genMove_o (result->aop, 0, left->aop, 1, size - 1, false, regDead (X_IDX, ic), regDead (Y_IDX, ic));
+      cheapMove (result->aop, size - 1, ASMOP_A, 0, true);
+      shiftop = result->aop;
+      rot += 8;
+    }
+  else
+    {
+      shiftop = &shiftop_impl;
+      init_shiftop (shiftop, result->aop, left->aop, right->aop, ic, rot != 1 && rot != lbits - 1 && !optimize.codeSpeed);
+      genMove (shiftop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+    }
+  rot %= lbits;
+
+  wassert (shiftop->type == AOP_STK || shiftop->type == AOP_REGSTK || shiftop->type == AOP_REG || shiftop->type == AOP_DIR);
+
+  bool loop = (rot > 1 && rot < lbits - 1 && !optimize.codeSpeed);
+  bool a_dead = regDead (A_IDX, ic) && shiftop->regs[A_IDX] < 0;
+
+  symbol *llbl = NULL;
+  if (loop)
+    {
+      if (shiftop->regs[A_IDX] >= 0)
+        UNIMPLEMENTED;
+      if (!regalloc_dry_run)
+        llbl = newiTempLabel (0);
+      if (!regDead (A_IDX, ic))
+        push (ASMOP_A, 0, 1);
+      if (rot <= lbits / 2)
+        {
+          emit2 ("ld", "a, #0x%02x", rot);
+          cost (2, 1);
+          regalloc_dry_run_cycle_scale = rot;
+          rot = 1;
+        }
+      else
+        {
+          emit2 ("ld", "a, #0x%02x", lbits - rot);
+          cost (2, 1);
+          regalloc_dry_run_cycle_scale = lbits - rot;
+          rot = lbits - 1;
+        }
+      a_dead = false;
+      emitLabel (llbl);
+    }
+
+  if (rot <= lbits / 2) // Rotate left
+    for (;rot; rot--)
+      for(int i = 0; i < size;)
+        {
+          if (aopInReg (shiftop, i, X_IDX) || aopInReg (shiftop, i, Y_IDX))
+            {
+              emit3w_o (i ? A_RLCW : A_SLLW, shiftop, i, 0, 0);
+              i += 2;
+            }
+          else
+            {
+              int swapidx = -1;
+              if (aopRS (shiftop) && !aopInReg (shiftop, i, A_IDX) && shiftop->aopu.bytes[i].in_reg)
+                swapidx = shiftop->aopu.bytes[i].byteu.reg->rIdx;
+
+              if (swapidx == -1)
+                emit3_o (i ? A_RLC : A_SLL, shiftop, i, 0, 0);
+              else
+                {
+                  swap_to_a (swapidx);
+                  emit3 (i ? A_RLC : A_SLL, ASMOP_A, 0);
+                  swap_from_a (swapidx);
+                }
+
+              i++;
+            }
+          if (i == size) // Fix least-significant bit.
+            {
+              if (aopRS (shiftop) && shiftop->aopu.bytes[0].in_reg)
+                {
+                  int swapidx = shiftop->aopu.bytes[0].byteu.reg->rIdx;
+                  swap_to_a (swapidx);
+                  emit3 (A_ADC, ASMOP_A, ASMOP_ZERO);
+                  swap_from_a (swapidx);
+                }
+              else
+                {
+                  if (!a_dead)
+                    push (ASMOP_A, 0, 1);
+                  cheapMove (ASMOP_A, 0, shiftop, 0, false);
+                  emit3 (A_ADC, ASMOP_A, ASMOP_ZERO);
+                  cheapMove (shiftop, 0, ASMOP_A, 0, false);
+                  if (!a_dead)
+                    pop (ASMOP_A, 0, 1);
+                }
+            }
+        }
+  else // rotate right
+    for (;rot < lbits; rot++)
+      for(int i = size - 1; i >= 0;)
+        {
+          if (i == size - 1) // Get least-significant bit into carry
+            {
+              if (aopInReg (shiftop, 0, XL_IDX) || aopInReg (shiftop, 0, YL_IDX))
+                {
+                  emit3w (A_RRCW, aopInReg (shiftop, 0, XL_IDX) ? ASMOP_X : ASMOP_Y, 0);
+                  emit2 ("push", "cc");
+                  cost (1, 1);
+                  G.stack.pushed++;
+                  emit3w (A_RLCW, aopInReg (shiftop, 0, XL_IDX) ? ASMOP_X : ASMOP_Y, 0);
+                  
+                }
+              else
+                {
+                  int swapidx = -1;
+                  if (aopRS (shiftop) && !aopInReg (shiftop, 0, A_IDX) && shiftop->aopu.bytes[0].in_reg)
+                    swapidx = shiftop->aopu.bytes[0].byteu.reg->rIdx;
+  
+                  if (swapidx == -1)
+                    {
+                      emit3 (A_RRC, shiftop, 0);
+                      emit2 ("push", "cc");
+                      cost (1, 1);
+                      G.stack.pushed++;
+                      emit3 (A_RLC, shiftop, 0);
+                    }
+                  else
+                    {
+                      swap_to_a (swapidx);
+                      emit3 (A_RRC, ASMOP_A, 0);
+                      emit2 ("push", "cc");
+                      cost (1, 1);
+                      G.stack.pushed++;
+                      emit3 (A_RLC, ASMOP_A, 0);
+                      swap_from_a (swapidx);
+                    }
+                }
+              emit2 ("pop", "cc");
+              cost (1, 1);
+              G.stack.pushed--;
+            }
+
+          if (i > 0 && (aopInReg (shiftop, i - 1, X_IDX) || aopInReg (shiftop, i - 1, Y_IDX)))
+            {
+              emit3w_o (A_RRCW, shiftop, i - 1, 0, 0);
+              i -= 2;
+            }
+          else
+            {
+              int swapidx = -1;
+              if (aopRS (shiftop) && !aopInReg (shiftop, i, A_IDX) && shiftop->aopu.bytes[i].in_reg)
+                swapidx = shiftop->aopu.bytes[i].byteu.reg->rIdx;
+  
+              if (swapidx == -1)
+                emit3_o (A_RRC, shiftop, i, 0, 0);
+              else
+                {
+                  swap_to_a (swapidx);
+                  emit3 (A_RRC, ASMOP_A, 0);
+                  swap_from_a (swapidx);
+                }
+  
+              i--;
+            }
+        }
+
+  if (loop)
+    {
+      emit3 (A_DEC, ASMOP_A, 0);
+      if (!regalloc_dry_run)
+        emit2 ("jrne", "!tlabel", labelKey2num (llbl->key));
+      cost (2, 2);
+      regalloc_dry_run_cycle_scale = 1;
+      if (!regDead (A_IDX, ic))
+        pop (ASMOP_A, 0, 1);
+    }
+
+  genMove (result->aop, shiftop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+  freeAsmop (left);
+  freeAsmop (right);
+  freeAsmop (result);
+}
+
 /*-----------------------------------------------------------------*/
 /* genRot - generates code for rotation                            */
 /*-----------------------------------------------------------------*/
 static void
 genRot (iCode *ic)
 {
-  operand *left = IC_LEFT (ic);
-  operand *right = IC_RIGHT (ic);
+  operand *left = ic->left;
+  operand *right = ic->right;
 
   D (emit2 ("; genRot", ""));
 
   unsigned int lbits = bitsForType (operandType (left));
   if (lbits == 8)
     genRot1 (ic);
-  else if (IS_OP_LITERAL (right) && (operandLitValueUll (right) % lbits == 1 || operandLitValueUll (right) % lbits == lbits - 1))
-    genRotate (ic);
-  else if (IS_OP_LITERAL (right) && operandLitValueUll (right) %lbits == lbits / 2)
+  else if (lbits == 16 && IS_OP_LITERAL (right) && (operandLitValueUll (right) % lbits == 1 || operandLitValueUll (right) % lbits == lbits - 1))
+    genRot2 (ic);
+  else if ((lbits == 16 || lbits == 32) && IS_OP_LITERAL (right) && operandLitValueUll (right) %lbits == lbits / 2)
     genSwap (ic);
+  else if (lbits >= 16 && IS_OP_LITERAL (right))
+    genRotW (ic);
   else
     wassertl (0, "Unsupported rotation.");
 }
