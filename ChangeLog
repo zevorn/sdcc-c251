@@ -1,5 +1,12 @@
 2026-02-05 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* .version,
+	  doc/sdccman.lyx,
+	  src/SDCCsymt.c:
+	  Make plain int bit-fields signed.
+
+2026-02-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/SDCCsalloc.hpp,
 	  src/stm8/gen.c,
 	  src/stm8/main.c,

@@ -673,14 +673,6 @@ checkTypeSanity (sym_link *etype, const char *name)
         werror (options.std_c99 ? E_NO_TYPE_SPECIFIER : W_NO_TYPE_SPECIFIER, name);
     }
 
-  /* ISO/IEC 9899 J.3.9 implementation defined behaviour: */
-  /* a "plain" int bitfield is unsigned */
-  if (SPEC_NOUN (etype) == V_BIT || SPEC_NOUN (etype) == V_SBIT)
-    {
-      if (!etype->select.s.b_signed)
-        SPEC_USIGN (etype) = 1;
-    }
-
   if (etype->select.s.b_signed && SPEC_USIGN (etype))
     {                           // signed AND unsigned
       werror (E_SIGNED_AND_UNSIGNED_INVALID, noun, name);
