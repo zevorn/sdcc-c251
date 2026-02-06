@@ -7388,8 +7388,7 @@ genRotW (const iCode *ic)
 
   int size = result->aop->size;
 
-  rot %= lbits;
-  if (aopRS (result->aop) && rot > 5 && rot < lbits / 2 && regDead (A_IDX, ic) && (left->aop->regs[A_IDX] < 0 || left->aop->regs[A_IDX] == size - 1) && result->aop->regs[A_IDX] < 0) // Shift left by 8
+  if (aopRS (result->aop) && rot > 5 && rot < lbits / 2 && regDead (A_IDX, ic) && (left->aop->regs[A_IDX] < 0 || left->aop->regs[A_IDX] == size - 1) && result->aop->regs[A_IDX] < 1) // Shift left by 8
     {
       cheapMove (ASMOP_A, 0, left->aop, size - 1, true);
       genMove_o (result->aop, 1, left->aop, 0, size - 1, false, regDead (X_IDX, ic), regDead (Y_IDX, ic));
@@ -7397,7 +7396,7 @@ genRotW (const iCode *ic)
       shiftop = result->aop;
       rot += lbits - 8;
     }
-  else if (aopRS (result->aop) && rot < lbits - 5 && rot > lbits / 2 && regDead (A_IDX, ic) && left->aop->regs[A_IDX] <= 0 && result->aop->regs[A_IDX] < 0) // Shift right by 8
+  else if (aopRS (result->aop) && rot < lbits - 5 && rot > lbits / 2 && regDead (A_IDX, ic) && left->aop->regs[A_IDX] <= 0 && (result->aop->regs[A_IDX] < 0 || result->aop->regs[A_IDX] == size - 1)) // Shift right by 8
     {
       cheapMove (ASMOP_A, 0, left->aop, 0, true);
       genMove_o (result->aop, 0, left->aop, 1, size - 1, false, regDead (X_IDX, ic), regDead (Y_IDX, ic));
@@ -7446,7 +7445,7 @@ genRotW (const iCode *ic)
     }
 
   if (rot <= lbits / 2) // Rotate left
-    for (;rot; rot--)
+    for (; rot; rot--)
       for(int i = 0; i < size;)
         {
           if (aopInReg (shiftop, i, X_IDX) || aopInReg (shiftop, i, Y_IDX))
@@ -7493,7 +7492,7 @@ genRotW (const iCode *ic)
             }
         }
   else // rotate right
-    for (;rot < lbits; rot++)
+    for (; rot < lbits; rot++)
       for(int i = size - 1; i >= 0;)
         {
           if (i == size - 1) // Get least-significant bit into carry

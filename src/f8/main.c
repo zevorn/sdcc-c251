@@ -362,11 +362,13 @@ hasExtBitOp (int op, sym_link *left, int right)
         unsigned int lbits = bitsForType (left);
         if (lbits % 8)
           return (false);
-        if (!TARGET_IS_F8L && size == 1)
+        if ((!TARGET_IS_F8L || right <= 4) && size == 1)
           return (true);
         if (!TARGET_IS_F8L && size == 2 && right % 8 <= 3)
           return (true);
         if ((!TARGET_IS_F8L && size <= 2 || size == 4) && lbits == right * 2)
+          return (true);
+        if (size > 2 && (right < 12 || lbits - right < 12))
           return (true);
       }
       return (false);

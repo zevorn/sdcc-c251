@@ -342,10 +342,13 @@ aopOnStack (const asmop *aop, int offset, int size)
       return (false);
 
   // Consecutive?
-  stk_base = aop->aopu.bytes[offset].byteu.stk;
-  for (i = 1; i < size && offset + i < 8; i++)
-    if (!regalloc_dry_run && aop->aopu.bytes[offset + i].byteu.stk != stk_base + i) // Todo: Stack offsets might be unavailable during dry run (messes with addition costs, so we should have a mechanism to do it better).
-      return (false);
+  if (offset < 8)
+    {
+      stk_base = aop->aopu.bytes[offset].byteu.stk;
+      for (i = 1; i < size && offset + i < 8; i++)
+        if (!regalloc_dry_run && aop->aopu.bytes[offset + i].byteu.stk != stk_base + i) // Todo: Stack offsets might be unavailable during dry run (messes with addition costs, so we should have a mechanism to do it better).
+          return (false);
+    }
 
   return (true);
 }
@@ -4192,7 +4195,6 @@ bigreturn:
 
       if (!IS_F8L && (left->aop->type == AOP_STK || left->aop->type == AOP_DIR) && regDead (Z_IDX, ic) && size >= 6 && size <= 256)
         {
-          int i2;
           pointToSym (ASMOP_Z, OP_SYMBOL_CONST (left), 0,  regDead (XL_IDX, ic), regDead (XH_IDX, ic), false, true);
           for(int i = 0; i < size;)
             {
@@ -5953,9 +5955,10 @@ genRot (const iCode *ic)
   aopOp (result, ic, true);
 
   int size = result->aop->size;
+  const int lbits = bitsForType (operandType (ic->left));
   int s = operandLitValueUll (right) % bitsForType (operandType (left));
 
-  if (!IS_F8L && size == 1)
+  if (lbits == 8)
     {
       bool pushed_xl = false;
       asmop *rotaop = ASMOP_XL;
@@ -5964,19 +5967,30 @@ genRot (const iCode *ic)
         rotaop = left->aop;
       else if (aopIsAcc8 (result->aop, 0))
         rotaop = result->aop;
+      if (IS_F8L && !aopAre8_2 (rotaop, 0, ASMOP_ZERO, 0))
+        rotaop = ASMOP_XL;
       if (!regDead (XL_IDX, ic) && aopInReg (rotaop, 0, XL_IDX))
         {
           push (ASMOP_XL, 0, 1);
           pushed_xl = true;
         }
       genMove (rotaop, left->aop, regDead (XL_IDX, ic) || pushed_xl, regDead (XH_IDX, ic), regDead (Y_IDX, ic), regDead (Z_IDX, ic));
-      emit2 ("rot", "%s, #%d", aopGet(rotaop, 0), s);
-      cost (2, 1);
+      if (IS_F8L)
+        while(s--)
+          {
+            emit3 (A_SLL, rotaop, 0);
+            emit3 (A_ADC, rotaop, ASMOP_ZERO);
+          }
+      else
+        {
+          emit2 ("rot", "%s, #%d", aopGet (rotaop, 0), s);
+          cost (2, 1);
+        }
       genMove (result->aop, rotaop, regDead (XL_IDX, ic) || pushed_xl, regDead (XH_IDX, ic), regDead (Y_IDX, ic), regDead (Z_IDX, ic));
       if (pushed_xl)
         pop (ASMOP_XL, 0, 1);
     }
-  else if (!IS_F8L && size == 2)
+  else if (!IS_F8L && lbits == 16)
     {
       asmop *rotaop = ASMOP_Y;
       if (aopSame (result->aop, 0, left->aop, 0, 2) && aopIsAcc16 (left->aop, 0))
@@ -6000,10 +6014,8 @@ genRot (const iCode *ic)
           }
       genMove (result->aop, rotaop, regDead (XL_IDX, ic), regDead (XH_IDX, ic), regDead (Y_IDX, ic), regDead (Z_IDX, ic));
     }
-  else if (size == 4)
+  else if (lbits == 32 && s == 16)
     {
-      if (s != 16)
-        UNIMPLEMENTED;
       asmop rotaop;
       signed char idxarray[5];
       if (result->aop->type == AOP_REGSTK &&
@@ -6050,6 +6062,142 @@ genRot (const iCode *ic)
           if (!regDead (X_IDX, ic))
             pop (ASMOP_X, 0, 2);
         }
+    }
+  else if (lbits >= 16) // Quite flexible, but usually only worth it when the eifgr operand is 0 or 8 +/- x, abs(x) < 4
+    {
+      struct asmop shiftop_impl;
+      struct asmop *shiftop;
+
+      if (aopRS (result->aop) && s > 5 && s < lbits / 2 && regDead (XL_IDX, ic) && (left->aop->regs[XL_IDX] < 0 || left->aop->regs[XL_IDX] == size - 1) && result->aop->regs[XL_IDX] < 1) // Shift left by 8
+        {
+          genMove_o (ASMOP_XL, 0, left->aop, size - 1, 1, true, false, false, false, true);
+          genMove_o (result->aop, 1, left->aop, 0, size - 1, false, regDead (XH_IDX, ic), regDead (Y_IDX, ic), regDead (Z_IDX, ic), true);
+          genMove_o (result->aop, 0, ASMOP_XL, 0, 1, true, false, false, false, true);
+          shiftop = result->aop;
+          s += lbits - 8;
+        }
+      else if (aopRS (result->aop) && s < lbits - 5 && s > lbits / 2 && regDead (XL_IDX, ic) && left->aop->regs[XL_IDX] <= 0 && (result->aop->regs[XL_IDX] < 0 || result->aop->regs[XL_IDX] == size - 1)) // Shift right by 8
+        {
+          genMove_o (ASMOP_XL, 0, left->aop, 0, 1, true, false, false, false, true);
+          genMove_o (result->aop, 0, left->aop, 1, size - 1, false, regDead (XH_IDX, ic), regDead (Y_IDX, ic), regDead (Z_IDX, ic), true);
+          genMove_o (result->aop, size - 1, ASMOP_XL, 0, 1, true, false, false, false, true);
+          shiftop = result->aop;
+          s += 8;
+        }
+      else
+        {
+          shiftop = &shiftop_impl;
+          init_shiftop (shiftop, result->aop, left->aop, right->aop, ic);
+          genMove (shiftop, left->aop, regDead (XL_IDX, ic), regDead (XH_IDX, ic), regDead (Y_IDX, ic), regDead (Z_IDX, ic));
+        }
+      s %= lbits;
+
+      wassert (shiftop->type == AOP_STK || shiftop->type == AOP_REGSTK || shiftop->type == AOP_DIR);
+      bool xl_dead = regDead (XL_IDX, ic) && shiftop->regs[XL_IDX] < 0;
+
+      if (s <= lbits / 2) // Rotate left
+        for (; s; s--)
+          for(int i = 0; i < size;)
+            {
+              if (!IS_F8L && i + 1 < size && (aopIsAcc16 (shiftop, i) || aopOnStackNotExt (shiftop, i, 2)))
+                {
+                  if (!i && aopOnStackNotExt (shiftop, i, 2)) // There is no on-stack sllw. Emulate it.
+                    {
+                      clrc ();
+                      emit3_o (A_RLCW, shiftop, i, 0, 0);
+                    }
+                 else
+                    emit3_o (i ? A_RLCW : A_SLLW, shiftop, i, 0, 0);
+                  i += 2;
+                }
+              else if (aopIsAcc8 (shiftop, i))
+                {
+                  emit3_o (i ? A_RLC : A_SLL, shiftop, i, 0, 0);
+                  i++;
+                }
+              else
+                {
+                  if (!xl_dead)
+                    push (ASMOP_XL, 0, 1);
+                  genMove_o (ASMOP_XL, 0, shiftop, i, 1, true, false, false, false, !i);
+                  emit3 (i ? A_RLC : A_SLL, ASMOP_XL, 0);
+                  genMove_o (shiftop, i, ASMOP_XL, 0, 1, true, false, false, false, false);
+                  if (!xl_dead)
+                    pop (ASMOP_XL, 0, 1);
+                  i++;
+                }
+              if (i == size) // Fix least-significant bit.
+                {
+                  if (!IS_F8L && (aopInReg (shiftop, 0, YL_IDX) || aopInReg (shiftop, 0, ZL_IDX)))
+                    emit3 (A_ADCW, aopInReg (shiftop, 0, YL_IDX) ? ASMOP_Y : ASMOP_Z, 0);
+                  else if (aopAre8_2 (shiftop, 0, ASMOP_ZERO, 0))
+                    emit3 (A_ADC, shiftop, ASMOP_ZERO);
+                  else
+                    {
+                      if (!xl_dead)
+                        push (ASMOP_XL, 0, 1);
+                      genMove_o (ASMOP_XL, 0, shiftop, 0, 1, true, false, false, false, false);
+                      emit3 (A_ADC, ASMOP_XL, ASMOP_ZERO);
+                      genMove_o (shiftop, 0, ASMOP_XL, 0, 1, true, false, false, false, true);
+                      if (!xl_dead)
+                        pop (ASMOP_XL, 0, 1);
+                    }
+                }
+            }
+      else // rotate right
+        for (; s < lbits; s++)
+          for(int i = size - 1; i >= 0;)
+            {
+              if (!IS_F8L && i > 0 && (aopIsAcc16 (shiftop, i - 1) || aopOnStackNotExt (shiftop, i - 1, 2)))
+                {
+                  if (i == size - 1 && aopOnStackNotExt (shiftop, i - 1, 2)) // There is no on-stack srlw. Emulate it.
+                    {
+                      clrc ();
+                      emit3_o (A_RRCW, shiftop, i - 1, 0, 0);
+                    }
+                 else
+                    emit3_o ((i != size - 1) ? A_RRCW : A_SRLW, shiftop, i - 1, 0, 0);
+                  i -= 2;
+                }
+              else if (aopIsAcc8 (shiftop, i))
+                {
+                  emit3_o ((i != size - 1) ? A_RRC : A_SRL, shiftop, i, 0, 0);
+                  i--;
+                }
+              else
+                {
+                  if (!xl_dead)
+                    push (ASMOP_XL, 0, 1);
+                  genMove_o (ASMOP_XL, 0, shiftop, i, 1, true, false, false, false, i == size - 1);
+                  emit3 ((i != size - 1) ? A_RRC : A_SRL, ASMOP_XL, 0);
+                  genMove_o (shiftop, i, ASMOP_XL, 0, 1, true, false, false, false, false);
+                  if (!xl_dead)
+                    pop (ASMOP_XL, 0, 1);
+                  i--;
+                }
+              if (i < 0) // Fix most-significant bit.
+                {
+                  if (!xl_dead)
+                    push (ASMOP_XL, 0, 1);
+                  emit3 (A_CLR, ASMOP_XL, 0);
+                  emit3 (A_RRC, ASMOP_XL, 0);
+                  if (aopInReg (shiftop, size - 1, XL_IDX))
+                    {
+                      emit2 ("or", "xl, (0, sp)");
+                      cost (2, 1);
+                      adjustStack (1, false, false);
+                    }
+                  else if (aopAre8_2 (shiftop, size - 1, ASMOP_XL, 0))
+                    {
+                      emit3_o (A_OR, shiftop, size - 1, ASMOP_XL, 0);
+                      if (!xl_dead)
+                        pop (ASMOP_XL, 0, 1);
+                    }
+                  else
+                    UNIMPLEMENTED;
+                }
+            }
+      genMove (result->aop, shiftop, regDead (XL_IDX, ic), regDead (XH_IDX, ic), regDead (Y_IDX, ic), regDead (Z_IDX, ic));
     }
   else
     UNIMPLEMENTED;
