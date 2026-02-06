@@ -14316,7 +14316,14 @@ genRRC (const iCode *ic)
       cheapMove (ASMOP_A, 0, left->aop, offset, true);
       emit3_o (A_RRA, 0, 0, 0, 0);
       while (--offset >= 0)
-        emit3_o (A_RR, left->aop, offset, 0, 0);
+        {
+          if (offset > 0 &&
+            IS_RAB && (aopInReg (left->aop, offset - 1, DE_IDX) || aopInReg (left->aop, offset - 1, HL_IDX) || aopInReg (left->aop, offset - 1, IY_IDX) ||
+            (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && aopInReg (left->aop, offset - 1, BC_IDX)))
+            emit3w_o (A_RR, left->aop, --offset, 0, 0);
+          else
+            emit3_o (A_RR, left->aop, offset, 0, 0);
+        }
       if (IS_SM83 && requiresHL (left->aop))
         { /* ldhl sp,N changes CARRY */
           emit3_o (A_RRA, 0, 0, 0, 0);
@@ -14429,7 +14436,7 @@ genRLC (const iCode *ic)
               i++;
             }
         }
-     genMove (result->aop, rotaop, true, isRegDead (HL_IDX, ic), isRegDead (DE_IDX, ic), isRegDead (IY_IDX, ic));
+      genMove (result->aop, rotaop, true, isRegDead (HL_IDX, ic), isRegDead (DE_IDX, ic), isRegDead (IY_IDX, ic));
     }
   else
     {
