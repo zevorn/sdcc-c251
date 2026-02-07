@@ -11766,7 +11766,7 @@ genMult (iCode *ic)
       IC_LEFT (ic) = t;
     }
 
-  if ((IS_RAB && !IS_R2K || IS_R800) && IC_RIGHT (ic)->aop->type != AOP_LIT && !byteResult && IC_LEFT (ic)->aop->size == 2 && IC_RIGHT (ic)->aop->size == 2)
+  if ((IS_RAB && !IS_R2K || IS_R800) && (ic->right->aop->type != AOP_LIT || ic->result->aop->size > 2) && !byteResult && ic->left->aop->size == 2 && ic->right->aop->size == 2)
     {
       genMultTwoChar (ic);
       goto release;
