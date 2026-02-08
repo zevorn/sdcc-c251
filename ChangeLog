@@ -1,3 +1,19 @@
+2026-02-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/ez80/__mulsint2slong.s,
+	  device/lib/ez80/__muluint2ulong.s,
+	  device/lib/z180/__mulsint2slong.s,
+	  device/lib/z180/__muluint2ulong.s,
+	  device/lib/z80/__muluint2ulong.s,
+	  device/lib/ez80/Makefile.in,
+	  device/lib/r800/__mulsint2slong.s,
+	  device/lib/z180/Makefile.in,
+	  device/lib/z80/Makefile.in,
+	  src/SDCCopt.c,
+	  src/z80/gen.c,
+	  src/z80/main.c:
+	  Multiplication improvements inspired by kyber-ntt regression test.
+
 2026-02-07 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:

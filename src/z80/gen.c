@@ -11680,19 +11680,20 @@ genMultTwoChar (const iCode *ic)
     {
       emit2 ("multuw hl, bc");
       cost (2, 36);
-      spillPair (PAIR_BC);
+      spillPair (PAIR_DE);
     }
   else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && ic->result->aop->size > 2 &&
     SPEC_USIGN (getSpec (operandType (ic->left))) && SPEC_USIGN (getSpec (operandType (ic->right))))
     {
       emit2 ("mulu");
       cost (2, 14);
+      spillPair (PAIR_BC);
     }
   else
     {
       emit2 ("mul");
       cost (1, 12);
-      spillPair (PAIR_DE);
+      spillPair (PAIR_BC);
     }
   spillPair (PAIR_HL);
 

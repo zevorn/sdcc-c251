@@ -851,28 +851,30 @@ convilong (iCode *ic, eBBlock *ebp)
         (!ric || ric->op == CAST && IS_INTEGRAL (operandType (ric->right)) && getSize (operandType (ric->right)) == 2 && SPEC_USIGN (operandType (ric->right)) == SPEC_USIGN (operandType (right))))
         {
           func = muls16tos32[SPEC_USIGN (operandType (left))];
+          sym_link *optype =  lic ? operandType (lic->right) : operandType (ric->right);
+          bool native = port->hasNativeMulFor && port->hasNativeMulFor (ic, optype, optype);
 
-          if (func || port->hasNativeMulFor && port->hasNativeMulFor (ic, lic ? operandType (lic->right) : INTTYPE, ric ? operandType (ric->right) : INTTYPE))
+          if (func || native)
             {
               if (lic)
                 {
                   lic->op = '=';
-                  OP_SYMBOL (left)->type = newIntLink ();
+                  setOperandType (left, optype);
                 }
               else
-                ic->left = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (left), operandLitValueUll (left)), false);
+                ic->left = operandFromValue (valCastLiteral (optype, operandLitValue (left), operandLitValueUll (left)), false);
 
               if (ric)
                 {
                   ric->op = '=';
-                  OP_SYMBOL (right)->type = newIntLink ();
+                  setOperandType (right, optype);
                 }
               else
-                ic->right = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (right), operandLitValueUll (right)), false);
+                ic->right = operandFromValue (valCastLiteral (optype, operandLitValue (right), operandLitValueUll (right)), false);
 
-              if (func) // Use 16x16->32 support function
+              if (!native) // Use 16x16->32 support function
                 goto found;
-              else // Native
+              else
                 return;
             }
         }
@@ -989,6 +991,8 @@ convilong (iCode *ic, eBBlock *ebp)
   fprintf (stderr, "ic %d op %d leftType: ", ic->key, op); printTypeChain (leftType, stderr); fprintf (stderr, "\n");
   return;
 found:
+  wassert (func);
+
   // Update left and right - they might have changed due to inserted casts.
   left = IC_LEFT (ic);
   right = IC_RIGHT (ic);

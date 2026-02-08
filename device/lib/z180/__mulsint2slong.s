@@ -13,7 +13,7 @@
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ;  GNU General Public License for more details.
 ;
-;  You should have received a copy of the GNU General Public License 
+;  You should have received a copy of the GNU General Public License
 ;  along with this library; see the file COPYING. If not, write to the
 ;  Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
 ;   MA 02110-1301, USA.
@@ -28,14 +28,13 @@
 
 .module __mulsint2slong
 
-.r800
-.optsdcc -mr800 sdcccall(1)
+.hd64
+.optsdcc -mz180 sdcccall(1)
 
+.globl ___muluint2ulong
 .globl ___mulsint2slong
 
 .area _CODE
-
-; uint32_t __mulsint2slong (uint16_t l, uint16_t r);
 
 ___mulsint2slong:
 	; Use lowest bit of c to remember if result needs to be negated. Use b to cache #0.
@@ -63,18 +62,15 @@ hl_nonneg:
 	inc	c
 de_nonneg:
 
-	ld	a, c
-	ld	c, e
-	ld	b, d
-	multuw	hl, bc
-	ex	de, hl
+	push	bc
+	call	___muluint2ulong
+	pop	bc
 
-	rra
-	ret	nc
+	bit	#0, c
+	ret	z
 
 	; Negate result.
-	xor	a, a
-	ld	b, a
+	ld	a, b
 	sub	a, e
 	ld	e, a
 	ld	a, b
