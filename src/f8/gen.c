@@ -5563,6 +5563,17 @@ genAnd (const iCode *ic, iCode *ifx)
            continue;
          }
 
+       if (i + 1 < size && y_free && (aopOnStack (left->aop, i, 2) || left->aop->type == AOP_DIR) && (aopOnStack (right->aop, i, 2) || right->aop->type == AOP_DIR) && (aopOnStack (result->aop, i, 2) || result->aop->type == AOP_DIR) &&
+         !aopIsLitVal (left->aop, i + 1, 1, 0x00) && !aopIsLitVal (left->aop, i + 1, 1, 0xff) && !aopIsLitVal (right->aop, i + 1, 1, 0x00) && !aopIsLitVal (right->aop, i + 1, 1, 0xff))
+         {
+           genMove_o (ASMOP_Y, 0, left->aop, i, 2, xl_free && right->aop->regs[XL_IDX] < i, xh_free && right->aop->regs[XH_IDX] < i, true, false, true);
+           emit3_o (A_AND, ASMOP_Y, 0, right->aop, i);
+           emit3_o (A_AND, ASMOP_Y, 1, right->aop, i + 1);
+           genMove_o (result->aop, i, ASMOP_Y, 0, 2, xl_free, xh_free, true, false, true);
+           i += 2;
+           continue;
+         }
+
        if (!xl_free)
          UNIMPLEMENTED;
 
