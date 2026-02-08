@@ -444,6 +444,8 @@
 #define CLR_g_7                 instruction_1cf
 
 // 1 d0 - 1 df
+#define DAA_g			instruction_1da
+#define DAS_g			instruction_1db
 #define LD_PSW_n		instruction_1de
 
 // 1 e0 - 1 ef
@@ -465,6 +467,9 @@
 #define LD_g_7_CF               instruction_1ef
 
 // 1 f0 - 1 ff
+#define MUL_gg			instruction_1f2
+#define DIV_gg			instruction_1f3
+#define NEG_gg			instruction_1fa
 #define JP_gg                   instruction_1fe
 #define SWAP_g                  instruction_1ff
 
