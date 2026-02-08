@@ -14,6 +14,14 @@
 	  src/z80/main.c:
 	  Multiplication improvements inspired by kyber-ntt regression test.
 
+2026-01-18 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c,
+   	  device/mos6502/lib/__sdcc_indirect_jsr.s,
+   	  device/mos6502-stack-auto/lib/__sdcc_indirect_jsr.s,
+   	  device/mos65c02/lib/__sdcc_indirect_jsr.s:
+   	  Make sdcc_indirect_jsr use DPTR.
+
 2026-02-07 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:

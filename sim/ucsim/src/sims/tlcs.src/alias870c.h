@@ -317,6 +317,14 @@
 #define XOR_g_n                 instruction_165
 #define OR_g_n                  instruction_166
 #define CMP_g_n                 instruction_167
+#define ADDC_gg_mn              instruction_168
+#define ADD_gg_mn               instruction_169
+#define SUBB_gg_mn              instruction_16a
+#define SUB_gg_mn               instruction_16b
+#define AND_gg_mn               instruction_16c
+#define XOR_gg_mn               instruction_16d
+#define OR_gg_mn                instruction_16e
+#define CMP_gg_mn               instruction_16f
 
 // 1 70 - 1 7f
 #define XCH_rA_g                instruction_170
@@ -344,6 +352,15 @@
 #define ADDC_rrIY_gg		instruction_1a8
 #define ADDC_rrSP_gg		instruction_1b0
 #define ADDC_rrHLb_gg		instruction_1b8
+
+#define ADD_rrWA_gg		instruction_181
+#define ADD_rrBC_gg		instruction_189
+#define ADD_rrDE_gg		instruction_191
+#define ADD_rrHL9_gg		instruction_199
+#define ADD_rrIX_gg		instruction_1a1
+#define ADD_rrIY_gg		instruction_1a9
+#define ADD_rrSP_gg		instruction_1b1
+#define ADD_rrHLb_gg		instruction_1b9
 
 #define ADD_rrWA_gg		instruction_181
 #define ADD_rrBC_gg		instruction_189
@@ -593,6 +610,79 @@
 #define LD_dst_rD               instruction_27d
 #define LD_dst_rL               instruction_27e
 #define LD_dst_rH               instruction_27f
+
+// 2 80 - 2 bf ALU16 rr,(src)
+#define ADDC_rrWA_src		instruction_280
+#define ADDC_rrBC_src		instruction_288
+#define ADDC_rrDE_src		instruction_290
+#define ADDC_rrHL9_src		instruction_298
+#define ADDC_rrIX_src		instruction_2a0
+#define ADDC_rrIY_src		instruction_2a8
+#define ADDC_rrSP_src		instruction_2b0
+#define ADDC_rrHLb_src		instruction_2b8
+
+#define ADD_rrWA_src		instruction_281
+#define ADD_rrBC_src		instruction_289
+#define ADD_rrDE_src		instruction_291
+#define ADD_rrHL9_src		instruction_299
+#define ADD_rrIX_src		instruction_2a1
+#define ADD_rrIY_src		instruction_2a9
+#define ADD_rrSP_src		instruction_2b1
+#define ADD_rrHLb_src		instruction_2b9
+
+#define SUBB_rrWA_src		instruction_282
+#define SUBB_rrBC_src		instruction_28a
+#define SUBB_rrDE_src		instruction_292
+#define SUBB_rrHL9_src		instruction_29a
+#define SUBB_rrIX_src		instruction_2a2
+#define SUBB_rrIY_src		instruction_2aa
+#define SUBB_rrSP_src		instruction_2b2
+#define SUBB_rrHLb_src		instruction_2ba
+
+#define SUB_rrWA_src		instruction_283
+#define SUB_rrBC_src		instruction_28b
+#define SUB_rrDE_src		instruction_293
+#define SUB_rrHL9_src		instruction_29b
+#define SUB_rrIX_src		instruction_2a3
+#define SUB_rrIY_src		instruction_2ab
+#define SUB_rrSP_src		instruction_2b3
+#define SUB_rrHLb_src		instruction_2bb
+
+#define AND_rrWA_src		instruction_284
+#define AND_rrBC_src		instruction_28c
+#define AND_rrDE_src		instruction_294
+#define AND_rrHL9_src		instruction_29c
+#define AND_rrIX_src		instruction_2a4
+#define AND_rrIY_src		instruction_2ac
+#define AND_rrSP_src		instruction_2b4
+#define AND_rrHLb_src		instruction_2bc
+
+#define XOR_rrWA_src		instruction_285
+#define XOR_rrBC_src		instruction_28d
+#define XOR_rrDE_src		instruction_295
+#define XOR_rrHL9_src		instruction_29d
+#define XOR_rrIX_src		instruction_2a5
+#define XOR_rrIY_src		instruction_2ad
+#define XOR_rrSP_src		instruction_2b5
+#define XOR_rrHLb_src		instruction_2bd
+
+#define OR_rrWA_src		instruction_286
+#define OR_rrBC_src		instruction_28e
+#define OR_rrDE_src		instruction_296
+#define OR_rrHL9_src		instruction_29e
+#define OR_rrIX_src		instruction_2a6
+#define OR_rrIY_src		instruction_2ae
+#define OR_rrSP_src		instruction_2b6
+#define OR_rrHLb_src		instruction_2be
+
+#define CMP_rrWA_src		instruction_287
+#define CMP_rrBC_src		instruction_28f
+#define CMP_rrDE_src		instruction_297
+#define CMP_rrHL9_src		instruction_29f
+#define CMP_rrIX_src		instruction_2a7
+#define CMP_rrIY_src		instruction_2af
+#define CMP_rrSP_src		instruction_2b7
+#define CMP_rrHLb_src		instruction_2bf
 
 // 2 c0 - 2 cf
 #define SET_src_0               instruction_2c0
