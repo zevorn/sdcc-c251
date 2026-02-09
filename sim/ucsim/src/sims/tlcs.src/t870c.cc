@@ -1502,6 +1502,74 @@ cl_t870c::div(C16 *rr)
 }
 
 int
+cl_t870c::SHLC_g(MP)
+{
+  C8 *g= regs8[sda];
+  rF&= ~(MJF|MCF|MZF);
+  u16_t r= g->R();
+  r<<= 1;
+  if (r & 0x100)
+    rF|= (MJF|MCF);
+  if ((r & 0xff) == 0)
+    rF|= MZF;
+  g->W(r);
+  cF.W(rF);
+  return resGO;
+}
+
+int
+cl_t870c::SHRC_g(MP)
+{
+  C8 *g= regs8[sda];
+  rF&= ~(MJF|MCF|MZF);
+  u8_t r= g->R();
+  if (r & 1)
+    rF|= (MJF|MCF);
+  r>>= 1;
+  if (!r)
+    rF|= MZF;
+  g->W(r);
+  cF.W(rF);
+  return resGO;
+}
+
+int
+cl_t870c::ROLC_g(MP)
+{
+  C8 *g= regs8[sda];
+  u8_t oldc= (rF&MCF)?1:0;
+  rF&= ~(MJF|MCF|MZF);
+  u8_t r= g->R();
+  if (r & 0x80)
+    rF|= (MJF|MCF);
+  r<<= 1;
+  r|= oldc;
+  if (!r)
+    rF|= MZF;
+  g->W(r);
+  cF.W(rF);
+  return resGO;
+}
+
+int
+cl_t870c::RORC_g(MP)
+{
+  C8 *g= regs8[sda];
+  u8_t oldc= (rF&MCF)?0x80:0;
+  rF&= ~(MJF|MCF|MZF);
+  u8_t r= g->R();
+  if (r & 0x01)
+    rF|= (MJF|MCF);
+  r>>= 1;
+  r|= oldc;
+  if (!r)
+    rF|= MZF;
+  g->W(r);
+  cF.W(rF);
+  return resGO;
+}
+
+int
 cl_t870c::NEG_gg(MP)
 {
   rF|= MJF;
