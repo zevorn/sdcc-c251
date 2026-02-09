@@ -25,7 +25,17 @@
 	  src/z80/main.c:
 	  Multiplication improvements inspired by kyber-ntt regression test.
 
-2026-01-18 Gabriele Gorla <gorlik@yahoo.com>
+2026-02-08 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+      Refactor genCmp().
+   	* src/mos6502/gen.c,
+   	  src/mos6502/peeph.def:
+      Improve genCpl().
+   	* src/mos6502/gen.c:
+      Improve genCmp().
+
+2026-02-07 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c,
    	  device/mos6502/lib/__sdcc_indirect_jsr.s,
