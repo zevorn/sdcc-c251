@@ -863,6 +863,16 @@ replace restart {
 	tsx
 }
 
+replace restart {
+	ldx %1
+	%2 %3
+	tsx
+} by {
+	; Peephole regop 14 - removed useless ldx %1
+	%2 %3
+	tsx
+} if notSame(%2 'stx' 'cpx' 'bne' 'beq' 'bpl' 'bmi' 'jsr' 'jmp')
+
 ////////////////////////////////////////////////////////
 // Remove redundant/unnecessary stack operations
 ////////////////////////////////////////////////////////
@@ -1033,7 +1043,6 @@ replace restart {
 	%1
 	; Peephole store 2 - removed redundant sta %2
 } if notSame(%1 'pla' 'txa' 'tya'), notVolatile(%2)
-
 
 replace restart {
 	ldx	%2
