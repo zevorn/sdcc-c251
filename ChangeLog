@@ -1,3 +1,8 @@
+2026-02-09 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Prepare for future rotation codegen improvement for r4k/r5k/r6k port.
+
 2026-02-08 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/f8/gen.c,

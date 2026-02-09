@@ -15203,13 +15203,18 @@ genRotW (const iCode *ic)
 
   wassert (s == 1 || s == lbits - 1);
 
-  if (IS_Z80N && size == 2 &&
+  if ((IS_Z80N || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && size == 2 &&
     (aopInReg (result->aop, 0, DE_IDX) || aopInReg (left->aop, 0, DE_IDX) && isRegDead (DE_IDX, ic)) && isRegDead (B_IDX, ic))
     {
       genMove (ASMOP_DE, left->aop, isRegDead (A_IDX, ic), isRegDead (HL_IDX, ic), true, isRegDead (IY_IDX, ic));
-      emit2 ("ld b, !immedbyte", s);
-      emit2 ("brlc de, b");
-      cost (4, 15);
+      if (IS_Z80N)
+        {
+          emit2 ("ld b, !immedbyte", s);
+          emit2 ("brlc de, b");
+          cost (4, 15);
+        }
+      else
+        emit3w (s == 1 ? A_RLC : A_RRC, ASMOP_BC, 0);
       genMove (result->aop, ASMOP_DE, isRegDead (A_IDX, ic), isRegDead (HL_IDX, ic), true, isRegDead (IY_IDX, ic));
       goto release;
     }
