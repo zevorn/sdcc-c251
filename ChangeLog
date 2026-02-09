@@ -5,7 +5,9 @@
    	* src/mos6502/gen.c,
    	  src/mos6502/peeph.def:
       Improve genCpl().
-            
+   	* src/mos6502/gen.c:
+      Improve genCmp().
+
 2026-02-07 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c,

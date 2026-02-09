@@ -3979,6 +3979,11 @@ genCpl (iCode * ic)
           m6502_freeReg(m6502_reg_x);
 
 	  bool pa = pushRegIfSurv (m6502_reg_a);
+          if(AOP_TYPE(result)==AOP_REG)
+            {
+              loadRegFromConst(m6502_reg_x, ~val);
+              storeRegToAop (m6502_reg_x, AOP (result), 1);
+            }
           loadRegFromAop (m6502_reg_a, AOP (left), 0);
 	  rmwWithReg ("com", m6502_reg_a);
           storeRegToAop (m6502_reg_a, AOP (result), 0);
@@ -3986,11 +3991,6 @@ genCpl (iCode * ic)
             {
               loadRegFromConst(m6502_reg_a, ~val);
               storeRegToAop (m6502_reg_a, AOP (result), 1);
-            }
-          else
-            {
-              loadRegFromConst(m6502_reg_x, ~val);
-              storeRegToAop (m6502_reg_x, AOP (result), 1);
             }
 	  pullOrFreeReg (m6502_reg_a, pa);
         }
@@ -5416,6 +5416,8 @@ genCmp (iCode * ic, iCode * ifx)
   char *cmp_inst = NULL;
   char *br_inst = NULL;
   symbol *ifx_jmp_lbl = NULL;
+  symbol *true_lbl = NULL;
+  symbol *false_lbl = NULL;
   bool needloada = false;
 
   opcode = ic->op;
@@ -5462,6 +5464,10 @@ genCmp (iCode * ic, iCode * ifx)
   bool right_zero = (AOP_TYPE (right) == AOP_LIT) && (ullFromVal(AOP (right)->aopu.aop_lit) == 0 );
   bool result_in_a = false;
 
+  if(right_zero)
+    emitComment (TRACEGEN|VVDBG, "%s - right is zero", 
+               __func__);
+
   if (ifx)
     {
       if (IC_TRUE (ifx))
@@ -5474,6 +5480,10 @@ genCmp (iCode * ic, iCode * ifx)
           /* false label is present */
           ifx_jmp_lbl = IC_FALSE (ifx);
         }
+    }
+  else
+    {
+      true_lbl = safeNewiTempLabel (NULL);
     }
 
   if (sign && right_zero && opcode=='<')
@@ -5490,6 +5500,35 @@ genCmp (iCode * ic, iCode * ifx)
            && (opcode=='<' || opcode==GE_OP) ) 
     {
       m6502_emitCmp(AOP (left)->aopu.aop_reg[size-1], 0);
+    }
+  else if (sign && right_zero && opcode=='>' && AOP_TYPE(left)==AOP_REG) 
+    {
+      m6502_emitCmp(AOP (left)->aopu.aop_reg[size-1], 0);
+
+      if(ifx)
+        {
+          symbol *skiplbl = safeNewiTempLabel (NULL);
+
+          m6502_emitBranch ("bpl", skiplbl);
+          m6502_emitBranch ("jmp", ifx_jmp_lbl);
+          safeEmitLabel (skiplbl);
+        }
+      else
+        {
+          false_lbl = safeNewiTempLabel (NULL);
+          m6502_emitBranch ("bmi", false_lbl); 
+        }
+
+      if(size==2)
+        {
+          if(ifx)
+            m6502_emitBranch ("bne", ifx_jmp_lbl);
+          else
+            m6502_emitBranch ("bne", true_lbl);
+
+          m6502_emitCmp(AOP (left)->aopu.aop_reg[0], 0);
+        }
+      br_inst = "bne";
     }
   else if (!sign && size == 1 && IS_AOP_X (AOP (left)) && isAddrSafe(right, m6502_reg_x) )
     {
@@ -5632,7 +5671,8 @@ genCmp (iCode * ic, iCode * ifx)
     }
   else if(result_in_a)
     {
-      symbol *skiplbl = safeNewiTempLabel (NULL);
+      // reuse allocated label
+      symbol *skiplbl = true_lbl;
 
       m6502_emitBranch (br_inst, skiplbl);
       loadRegFromConst (m6502_reg_a, 1);
@@ -5641,19 +5681,21 @@ genCmp (iCode * ic, iCode * ifx)
     }
   else
     {
-      symbol *true_lbl = safeNewiTempLabel (NULL);
-      symbol *tlbl2 = safeNewiTempLabel (NULL);
+      symbol *skiplbl = safeNewiTempLabel (NULL);
 
       if (!needloada)
         needloada = storeRegTempIfSurv (m6502_reg_a);
 
       m6502_emitBranch (br_inst, true_lbl);
+      if (false_lbl)
+        safeEmitLabel (false_lbl);
+
       loadRegFromConst (m6502_reg_a, 0);
       // FIXME: for 6502 change this to beq when optimizing for size
-      m6502_emitBranch ("bra", tlbl2);
+      m6502_emitBranch ("bra", skiplbl);
       safeEmitLabel (true_lbl);
       loadRegFromConst (m6502_reg_a, 1);
-      safeEmitLabel (tlbl2);
+      safeEmitLabel (skiplbl);
       m6502_dirtyReg (m6502_reg_a);
       storeRegToFullAop (m6502_reg_a, AOP (result), false);
       loadOrFreeRegTemp (m6502_reg_a, needloada);
@@ -5769,6 +5811,9 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
           loadRegFromConst (m6502_reg_a, !result_equal);
           early_result=true;
         }
+
+      if(AOP_TYPE(right)==AOP_LIT && (ullFromVal (AOP(right)->aopu.aop_lit))==0)
+        emitComment (TRACEGEN|VVDBG, "    %s - cmp with zero", __func__);
    
       for(offset=0; offset<size; offset++)
         {
