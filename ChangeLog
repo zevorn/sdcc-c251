@@ -1,8 +1,11 @@
 2026-02-08 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c:
-      refactor genCmp().
-      
+      Refactor genCmp().
+   	* src/mos6502/gen.c,
+   	  src/mos6502/peeph.def:
+      Improve genCpl().
+            
 2026-02-07 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c,

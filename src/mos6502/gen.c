@@ -3970,9 +3970,31 @@ genCpl (iCode * ic)
   emitComment (TRACEGEN|VVDBG, "      %s - regmask %02x -> %02x",
                __func__, AOP(left)->regmask, AOP(result)->regmask );
 
-  if (size==2 && AOP_TYPE (result) == AOP_REG && AOP_TYPE (left) == AOP_REG)
+  if (size==2 && AOP_TYPE (left) == AOP_REG)
     {
-      if(IS_AOP_XA(AOP(left)) && IS_AOP_XA(AOP(result)))
+      if(m6502_reg_x->isLitConst)
+        {
+          unsigned char val = m6502_reg_x->litConst;
+          m6502_dirtyReg(m6502_reg_x);
+          m6502_freeReg(m6502_reg_x);
+
+	  bool pa = pushRegIfSurv (m6502_reg_a);
+          loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	  rmwWithReg ("com", m6502_reg_a);
+          storeRegToAop (m6502_reg_a, AOP (result), 0);
+          if(AOP_TYPE(result)!=AOP_REG)
+            {
+              loadRegFromConst(m6502_reg_a, ~val);
+              storeRegToAop (m6502_reg_a, AOP (result), 1);
+            }
+          else
+            {
+              loadRegFromConst(m6502_reg_x, ~val);
+              storeRegToAop (m6502_reg_x, AOP (result), 1);
+            }
+	  pullOrFreeReg (m6502_reg_a, pa);
+        }
+      else if(IS_AOP_XA(AOP(left)) && IS_AOP_XA(AOP(result)))
 	{
 	  m6502_pushReg (m6502_reg_a, true);
 	  transferRegReg (m6502_reg_x, m6502_reg_a, true);
@@ -4013,22 +4035,15 @@ genCpl (iCode * ic)
 	  transferRegReg (m6502_reg_a, m6502_reg_x, true);
 	}
       else
-	{
-	  m6502_unimplemented("unknown register pair in genCpl");
-	}
-
-      goto release;
-    }
-
-  if (AOP_TYPE (left) == AOP_REG && size==2)
-    {
-      transferRegReg (left->aop->aopu.aop_reg[0], m6502_reg_a, true);
-      rmwWithReg ("com", m6502_reg_a);
-      storeRegToAop (m6502_reg_a, AOP (result), 0);
-      loadRegFromAop (m6502_reg_a, AOP (left), 1);
-      rmwWithReg ("com", m6502_reg_a);
-      storeRegToAop (m6502_reg_a, AOP (result), 1);
-      goto release;
+        {
+          loadRegFromAop (m6502_reg_a, AOP (left), 0);
+          rmwWithReg ("com", m6502_reg_a);
+          storeRegToAop (m6502_reg_a, AOP (result), 0);
+          loadRegFromAop (m6502_reg_a, AOP (left), 1);
+          rmwWithReg ("com", m6502_reg_a);
+          storeRegToAop (m6502_reg_a, AOP (result), 1);
+        }
+     goto release;
     }
 
   needpullreg = pushRegIfSurv (m6502_reg_a);
