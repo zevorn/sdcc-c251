@@ -5398,13 +5398,10 @@ genCmp (iCode * ic, iCode * ifx)
   int size, opcode;
   int sign = 0, offset = 0;
   unsigned long long lit = 0ull;
-  char *sub;
-  symbol *jlbl = NULL;
+  char *cmp_inst = NULL;
+  char *br_inst = NULL;
+  symbol *ifx_jmp_lbl = NULL;
   bool needloada = false;
-  bool bmi = false;
-  bool bpl = false;
-  bool beq = false;
-  bool bit = false;
 
   opcode = ic->op;
 
@@ -5425,8 +5422,8 @@ genCmp (iCode * ic, iCode * ifx)
 
   size = max (AOP_SIZE (left), AOP_SIZE (right));
 
-  emitComment (TRACEGEN, "%s (%s, size %d, sign %d, ifx %d)", __func__,
-               nameCmp (opcode), size, sign, ifx?1:0 );
+  emitComment (TRACEGEN, "%s (%s, size:%d, sign:%d, ifx:%d)",
+               __func__, nameCmp (opcode), size, sign, ifx?1:0 );
 
   /* need register operand on left, prefer literal operand on right */
   if ((AOP_TYPE (right) == AOP_REG) || AOP_TYPE (left) == AOP_LIT)
@@ -5454,39 +5451,30 @@ genCmp (iCode * ic, iCode * ifx)
     {
       if (IC_TRUE (ifx))
         {
-          jlbl = IC_TRUE (ifx);
+          ifx_jmp_lbl = IC_TRUE (ifx);
           opcode = negatedCmp (opcode);
         }
       else
         {
           /* false label is present */
-          jlbl = IC_FALSE (ifx);
+          ifx_jmp_lbl = IC_FALSE (ifx);
         }
     }
 
-  if (sign && right_zero && opcode=='<' && aopCanBit(AOP(left)) )
+  if (sign && right_zero && opcode=='<')
+      br_inst = "bmi";
+  else if(sign && right_zero && opcode==GE_OP)
+      br_inst = "bpl";
+
+  if (sign && right_zero && aopCanBit(AOP(left))
+      && (opcode=='<' || opcode ==GE_OP) )
     {
       accopWithAop ("bit", AOP (left), size-1);
-      bit=true;
-      bmi=true;
     }
-  else if (sign && right_zero && opcode==GE_OP && aopCanBit(AOP(left)) )
-    {
-      accopWithAop ("bit", AOP (left), size-1);
-      bit=true;
-      bpl=true;
-    }
-  else if (sign && right_zero && opcode=='<' && AOP_TYPE(left)==AOP_REG) 
+  else if (sign && right_zero && AOP_TYPE(left)==AOP_REG
+           && (opcode=='<' || opcode==GE_OP) ) 
     {
       m6502_emitCmp(AOP (left)->aopu.aop_reg[size-1], 0);
-      bit=true;
-      bmi=true;
-    }
-  else if (sign && right_zero && opcode==GE_OP && AOP_TYPE(left)==AOP_REG) 
-    {
-      m6502_emitCmp(AOP (left)->aopu.aop_reg[size-1], 0);
-      bit=true;
-      bpl=true;
     }
   else if (!sign && size == 1 && IS_AOP_X (AOP (left)) && isAddrSafe(right, m6502_reg_x) )
     {
@@ -5496,11 +5484,6 @@ genCmp (iCode * ic, iCode * ifx)
           result_in_a=true;
 	}
       accopWithAop ("cpx", AOP (right), 0);
-      if(right_zero)
-        {
-          bit=true;
-          beq=true;
-        }
     }
   else if (!sign && size == 1 && IS_AOP_Y (AOP (left)) && isAddrSafe(right, m6502_reg_y) )
     {
@@ -5510,45 +5493,26 @@ genCmp (iCode * ic, iCode * ifx)
           result_in_a=true;
 	}
       accopWithAop ("cpy", AOP (right), 0);
-      if(right_zero)
-        {
-          bit=true;
-          beq=true;
-        }
     }
   else if (!sign && size == 1 && IS_AOP_A (AOP (left)) )
     {
+      accopWithAop ("cmp", AOP (right), 0);
       if (right_zero && opcode=='>' && IS_AOP_A(AOP(result)) )
         {
-          symbol *tlbl3 = safeNewiTempLabel (NULL);
-	  m6502_emitCmp (m6502_reg_a, 0);
-          m6502_emitBranch ("beq", tlbl3);
-          loadRegFromConst (m6502_reg_a, 1);
-          safeEmitLabel (tlbl3);
-          goto release;
-        }
-      else
-        {
-          accopWithAop ("cmp", AOP (right), 0);
-          if(right_zero)
-            {
-              bit=true;
-              beq=true;
-            }
-        }
+          result_in_a=true;
+	}
     }
   else
     {
-      offset = 0;
       // need V flag for signed compare
       // FIXME: is this covered above?
-      if (size == 1 && sign == 0)
+      if (!sign && size == 1)
         {
-          sub = "cmp";
+          cmp_inst = "cmp";
         }
       else
         {
-          sub = "sub";
+          cmp_inst = "sub";
 
           /* These conditions depend on the Z flag bit, but Z is */
           /* only valid for the last byte of the comparison, not */
@@ -5567,18 +5531,23 @@ genCmp (iCode * ic, iCode * ifx)
           if ((AOP_TYPE (right) == AOP_LIT) && !isOperandVolatile (left, false))
             {
               lit = ullFromVal (AOP (right)->aopu.aop_lit);
-              while ((size > 1) && (((lit >> (8 * offset)) & 0xff) == 0))
+              while ((offset<(size-1)) && (((lit >> (8 * offset)) & 0xff) == 0))
                 {
                   offset++;
-                  size--;
+                }
+
+              if(offset==(size-1) && (lit==0 || sign == 0))
+                {
+                  cmp_inst = "cmp";
                 }
             }
         }
 
       needloada = storeRegTempIfSurv (m6502_reg_a);
-      while (size--)
+      for( ; offset<size; offset++)
         {
-          emitComment (TRACEGEN|VVDBG, "   GenCmp - size counter = %d", size);
+          emitComment (TRACEGEN|VVDBG, "   %s - size counter = %d",
+                       __func__, size);
 
           if (AOP_TYPE (right) == AOP_REG && AOP(right)->aopu.aop_reg[offset]->rIdx == A_IDX)
             {
@@ -5586,74 +5555,62 @@ genCmp (iCode * ic, iCode * ifx)
 	      if(!needloada)
 		storeRegTemp (m6502_reg_a, true);
               loadRegFromAop (m6502_reg_a, AOP (left), offset);
-	      if (!strcmp (sub, "sub"))
+	      if (!strcmp (cmp_inst, "sub"))
 		{
 		  m6502_emitSetCarry (1);
 		  emitRegTempOp("sbc", getLastTempOfs() );
 		}
 	      else
 		{
-		  emitRegTempOp(sub, getLastTempOfs() );
+		  emitRegTempOp(cmp_inst, getLastTempOfs() );
 		}
 	      if(!needloada) 
 		loadRegTemp(NULL);
             }
           else
             {
-              emitComment (TRACEGEN|VVDBG, "   GenCmp - generic");
+              emitComment (TRACEGEN|VVDBG, "   %s - generic off:%d sub:%s",
+                           __func__, offset, cmp_inst);
+
               loadRegFromAop (m6502_reg_a, AOP (left), offset);
-              if (!strcmp(sub, "sub"))
+              if (!strcmp(cmp_inst, "sub"))
 		{
 		  m6502_emitSetCarry (1);
 		  accopWithAop ("sbc", AOP (right), offset);
 		}
 	      else
 		{
-		  accopWithAop (sub, AOP (right), offset);
+		  accopWithAop (cmp_inst, AOP (right), offset);
 		}
             }
           m6502_freeReg (m6502_reg_a);
-          offset++;
-          sub = "sbc";
+          cmp_inst = "sbc";
         }
     }
 
+  if(!sign && size == 1 && right_zero)
+    br_inst = "beq";
+
+  if(br_inst==NULL)
+    br_inst = !result_in_a ? branchInstCmp (opcode, sign) : branchInstCmp (negatedCmp(opcode), sign);
+
   if (ifx)
     {
-      symbol *tlbl = safeNewiTempLabel (NULL);
-      char *inst;
+      symbol *skiplbl = safeNewiTempLabel (NULL);
 
-      if (!bit)
-	{
-	  inst = branchInstCmp (opcode, sign);
-	  if(needloada)
-            {
-	      if (!strcmp(inst,"bcc") || !strcmp(inst,"bcs"))
-		loadRegTemp(m6502_reg_a);
-	      else
-		loadRegTempNoFlags (m6502_reg_a, needloada);
-            }
+      if(needloada)
+        {
+	  if (!strcmp(br_inst, "bcc") || !strcmp(br_inst, "bcs"))
+	    loadRegTemp(m6502_reg_a);
 	  else
-	    m6502_freeReg (m6502_reg_a);
-
-          if(!sign && right_zero && AOP_SIZE (left)==1)
-            m6502_emitBranch ("beq", tlbl);
-          else
-            m6502_emitBranch (inst, tlbl);
+            loadRegTempNoFlags (m6502_reg_a, needloada);
         }
       else
-        {
-	  if (needloada)
-	    loadRegTempNoFlags (m6502_reg_a, needloada);
-	  else
-	    m6502_freeReg (m6502_reg_a);
+	m6502_freeReg (m6502_reg_a);
 
-          if(bmi) m6502_emitBranch ("bmi", tlbl);
-          else if(bpl) m6502_emitBranch ("bpl", tlbl);
-          else if(beq) m6502_emitBranch ("beq", tlbl);
-        }
-      m6502_emitBranch ("jmp", jlbl);
-      safeEmitLabel (tlbl);
+      m6502_emitBranch (br_inst, skiplbl);
+      m6502_emitBranch ("jmp", ifx_jmp_lbl);
+      safeEmitLabel (skiplbl);
 
       /* mark the icode as generated */
       ifx->generated = 1;
@@ -5661,7 +5618,8 @@ genCmp (iCode * ic, iCode * ifx)
   else if(result_in_a)
     {
       symbol *skiplbl = safeNewiTempLabel (NULL);
-      m6502_emitBranch (branchInstCmp (negatedCmp(opcode), sign), skiplbl);
+
+      m6502_emitBranch (br_inst, skiplbl);
       loadRegFromConst (m6502_reg_a, 1);
       safeEmitLabel (skiplbl);
       m6502_dirtyReg (m6502_reg_a);
@@ -5674,17 +5632,7 @@ genCmp (iCode * ic, iCode * ifx)
       if (!needloada)
         needloada = storeRegTempIfSurv (m6502_reg_a);
 
-      if(!bit)
-        {
-          m6502_emitBranch (branchInstCmp (opcode, sign), true_lbl);
-        }
-      else
-        {
-          if(bmi)
-            m6502_emitBranch ("bmi", true_lbl);
-          else
-            m6502_emitBranch ("bpl", true_lbl);
-        }
+      m6502_emitBranch (br_inst, true_lbl);
       loadRegFromConst (m6502_reg_a, 0);
       // FIXME: for 6502 change this to beq when optimizing for size
       m6502_emitBranch ("bra", tlbl2);
@@ -5696,7 +5644,6 @@ genCmp (iCode * ic, iCode * ifx)
       loadOrFreeRegTemp (m6502_reg_a, needloada);
     }
 
- release:
   freeAsmop (right, NULL);
   freeAsmop (left, NULL);
   freeAsmop (result, NULL);

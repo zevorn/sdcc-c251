@@ -1,4 +1,9 @@
-2026-01-18 Gabriele Gorla <gorlik@yahoo.com>
+2026-02-08 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+      refactor genCmp().
+      
+2026-02-07 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c,
    	  device/mos6502/lib/__sdcc_indirect_jsr.s,
