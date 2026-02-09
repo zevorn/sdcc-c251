@@ -1,12 +1,43 @@
+2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge pqc branch.
+
+2026-02-09 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Prepare for future rotation codegen improvement for r4k/r5k/r6k port.
+
+2026-02-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/gen.c,
+	  support/regression/tests/sha3-256.c:
+	  Bitwise and code generation improvement, inspired by sha3-256 regression test.
+
+2026-02-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/ez80/__mulsint2slong.s,
+	  device/lib/ez80/__muluint2ulong.s,
+	  device/lib/z180/__mulsint2slong.s,
+	  device/lib/z180/__muluint2ulong.s,
+	  device/lib/z80/__muluint2ulong.s,
+	  device/lib/ez80/Makefile.in,
+	  device/lib/r800/__mulsint2slong.s,
+	  device/lib/z180/Makefile.in,
+	  device/lib/z80/Makefile.in,
+	  src/SDCCopt.c,
+	  src/z80/gen.c,
+	  src/z80/main.c:
+	  Multiplication improvements inspired by kyber-ntt regression test.
+
 2026-02-08 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c:
-      Refactor genCmp().
+	  Refactor genCmp().
    	* src/mos6502/gen.c,
    	  src/mos6502/peeph.def:
-      Improve genCpl().
+	  Improve genCpl().
    	* src/mos6502/gen.c:
-      Improve genCmp().
+	  Improve genCmp().
 
 2026-02-07 Gabriele Gorla <gorlik@yahoo.com>
 
@@ -16,6 +47,22 @@
    	  device/mos65c02/lib/__sdcc_indirect_jsr.s:
    	  Make sdcc_indirect_jsr use DPTR.
 
+2026-02-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Fix an issue in multiplication codegen affecting kyber-ntt regression test.
+
+2026-02-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Rotation / shift codegen improvement inspired by asconaead128 and asconhash256 regression tests.
+
+2026-02-06 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/gen.c,
+	  src/f8/main.c:
+	  Rotation codegen improvements inspired by asconaead128 and asconhash256 regression tests.
+
 2026-02-05 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* .version,
@@ -23,11 +70,70 @@
 	  src/SDCCsymt.c:
 	  Make plain int bit-fields signed.
 
+2026-02-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCsalloc.hpp,
+	  src/stm8/gen.c,
+	  src/stm8/main.c,
+	  support/regression/tests/rotate.c.in,
+	  support/regression/tests/rotate_left.c.in,
+	  support/regression/tests/rotate_right.c.in:
+	  Rotation codegen improvements inspired by asconaead128 and asconhash256 regression tests.
+
 2026-02-02 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/bug-3920.c,
 	  support/regression/tests/gcrypt-serpent.c.in:
 	  Fix missing non-inline definition in regression tests.
+
+2026-01-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/f8/Makefile.in,
+	  src/f8/gen.c,
+	  src/f8/main.c,
+	  device/lib/f8/__mulsint2slong.s,
+	  device/lib/f8/__muluint2ulong.s:
+	  Multiplication support function improvements inspired by kyber-ntt regression test.
+
+2026-01-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCopt.c,
+	  src/z80/main.c:
+	  Multiplication codegen improvement inspired by kyber-ntt regression test.
+
+2026-01-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Addition codegen improvements inspired by sha3-256 and kyber-ntt regression tests.
+
+2026-01-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/gen.c:
+	  Code generation improvements for large return values, inspired by sha3-256 regression test.
+
+2026-01-25 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/peeph.def:
+	  Peephole optimizer rules for pointer operations inspired by asconhash256 regression test.
+	* src/z80/gen.c:
+	  Subtraction codegen improvement inspired by kyber-ntt regression test.
+
+2026-01-24 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve stack address caching, inspired by sha3-256 regression test.
+
+2026-01-24 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Code generation improvements for bitwise operations inspired by sha3-256 regression test.
+
+2026-01-24 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve stack address caching, inspired by sha3-256 regression test.
+	* src/z80/peeph.def:
+	  Peephole rule inspired by sha3-256 regression test.
 
 2026-01-23 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -37,6 +143,35 @@
 	  support/regression/tests/serpent.c.in,
 	  support/regression/tests/smallserpent.c.in:
 	  Fix stdbit.h test-host issue for Ascon and Serpent tests.
+
+2026-01-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve shift code generation, inspired by sha3-256 regression test.
+
+2026-01-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCcse.c,
+	  src/SDCClospre.cc:
+	  Improve handling of pure functions in redundancy elimination, inspired by tinyaes regression test.
+
+2026-01-21 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  src/SDCCcse.c,
+	  src/SDCCdflow.c,
+	  src/SDCCglobl.h,
+	  src/SDCCicode.c,
+	  src/SDCCicode.h,
+	  src/SDCClabel.c,
+	  src/SDCClrange.c,
+	  src/SDCCmain.c,
+	  src/SDCCopt.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsym.h,
+	  doc/sdccman.lyx,
+	  .version:
+	  Optimization for elimination of dead calls to pure functions, inspired by tinyaes regression test.
 
 2026-01-18 Gabriele Gorla <gorlik@yahoo.com>
 
@@ -55,6 +190,22 @@
     * support/regression/test/asconhash256.c.in:
       Disabling failing big endian targets.
    	  
+2026-01-19 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/f8/gen.c:
+	  Codegen improvements inspired by tinyaes regression test.
+
+2026-01-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/peeph.def,
+	  src/stm8/peeph.def,
+	  src/z80/peeph.def:
+	  Peephole optimizer rules inspired by tinyaes regression test.
+	* src/f8/peep.c,
+	  src/stm8/peep.c:
+	  Peephole optimizer condition check improvements inspired by tinyaes regression test.
+
 2026-01-18 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* .version,

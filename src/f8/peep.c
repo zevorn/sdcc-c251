@@ -483,7 +483,21 @@ static bool argCont(const char *arg, char what)
         return false;
     }
 
-  return (strchr(arg, what));
+  while (arg[0])
+    {
+      if (arg[0] == ';') // Start of end-of-line comment
+        return false;
+      if (arg[0] == what)
+        return true;
+      if (arg[0] == '#') // Skip lit prefix
+        do
+          arg++;
+        while (isalnum (arg[0]));
+      else
+        arg++;
+    }
+
+  return false;
 }
 
 static bool

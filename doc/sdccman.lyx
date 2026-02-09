@@ -13945,6 +13945,51 @@ Optimization options
 
 \begin_layout Labeling
 \labelwidthstring 00.00.0000
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-
+\series bold
+no
+\series default
+purity
+\begin_inset Index idx
+range none
+pageformat default
+status open
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-purity
+\end_layout
+
+\end_inset
+
+ Disable optimization based on functions being pure.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
 
 \series bold
 -
@@ -14050,6 +14095,53 @@ Subexpression elimination
 \end_inset
 
  for a given function only.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-
+\series bold
+nolospre
+\series default
+
+\begin_inset Index idx
+range none
+pageformat default
+status open
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-nolospre
+\end_layout
+
+\end_inset
+
+ Disable lospre.
+ lospre is an advanced redundancy elimination technique,
+ essentially an improved variant of global subexpression elimination.
 \end_layout
 
 \begin_layout Labeling
@@ -14953,53 +15045,6 @@ status collapsed
  This option currently does not affect the mcs51,
  ds390,
  pic14 and pic16 ports.
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--
-\series bold
-nolospre
-\series default
-
-\begin_inset Index idx
-range none
-pageformat default
-status open
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--nolospre
-\end_layout
-
-\end_inset
-
- Disable lospre.
- lospre is an advanced redundancy elimination technique,
- essentially an improved variant of global subexpression elimination.
 \end_layout
 
 \begin_layout Labeling

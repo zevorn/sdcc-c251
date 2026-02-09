@@ -574,8 +574,7 @@ rliveClear (eBBlock **ebbs, int count)
 /*-----------------------------------------------------------------*/
 /* rlivePoint - for each point compute the ranges that are alive   */
 /* The live range is only stored for ITEMPs; the same code is used */
-/* to find use of uninitialized AUTOSYMs (an ITEMP is an AUTOSYM).   */
-/* also, update funcUsesVolatile flag for current function         */
+/* to find use of uninitialized AUTOSYMs (an ITEMP is an AUTOSYM). */
 /*-----------------------------------------------------------------*/
 static int
 rlivePoint (eBBlock **ebbs, int count, bool emitWarnings)
@@ -585,8 +584,6 @@ rlivePoint (eBBlock **ebbs, int count, bool emitWarnings)
   bitVect *alive;
   int change = 0;
 
-  bool uses_volatile = false;
-
   /* for all blocks do */
   for (i = 0; i < count; i++)
     {
@@ -595,15 +592,13 @@ rlivePoint (eBBlock **ebbs, int count, bool emitWarnings)
       /* for all instructions in this block do */
       for (ic = ebbs[i]->sch; ic; ic = ic->next)
         {
-          uses_volatile |= POINTER_GET (ic) && IS_VOLATILE (operandType (IC_LEFT(ic))->next) || IS_OP_VOLATILE (IC_LEFT(ic)) || IS_OP_VOLATILE (IC_RIGHT(ic));
-          uses_volatile |= POINTER_SET (ic) && IS_VOLATILE (operandType (IC_RESULT(ic))->next) || IS_OP_VOLATILE (IC_RESULT(ic));
-
 	  if (!ic->rlive)
 	    ic->rlive = newBitVect (operandKey);
 
 	  if (SKIP_IC2(ic))
 	    continue;
-      if (ebbs[i]->noPath) continue;
+          if (ebbs[i]->noPath)
+            continue;
 
 	  if (IS_SYMOP(IC_LEFT(ic)))
 	    {
@@ -711,8 +706,6 @@ rlivePoint (eBBlock **ebbs, int count, bool emitWarnings)
 
     }
 
-  if(currFunc)
-    currFunc->funcUsesVolatile = uses_volatile;
   return change;
 }
 

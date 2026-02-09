@@ -208,6 +208,7 @@ struct optimize
     int noLoopReverse;
     int codeSpeed;
     int codeSize;
+    bool purity;
     int lospre;
     int genconstprop;
     int allow_unsafe_read;

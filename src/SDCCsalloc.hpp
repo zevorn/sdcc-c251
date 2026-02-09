@@ -261,9 +261,15 @@ static void set_spilt(G_t &G, const I_t &I, SI_t &scon)
       if(left >= 0 && !boost::edge (result, left, scon).second)
         {
           scon[(boost::add_edge(result, left, scon)).first].alignment_conflict_only = true;
-          if (TARGET_PDK_LIKE && G[i].ic->op == GET_VALUE_AT_ADDRESS && getSize(scon[result].sym->type) > 2) // Padauk still needs pointer read operand, since pointer read of more than 2 bytes is broken into multiple support routine calls.
+
+          // Padauk still needs pointer read operand, since pointer read of more than 2 bytes is broken into multiple support routine calls.
+          if (TARGET_PDK_LIKE && G[i].ic->op == GET_VALUE_AT_ADDRESS && getSize(scon[result].sym->type) > 2)
             scon[(boost::add_edge(result, left, scon)).first].alignment_conflict_only = false;
-          if ((TARGET_IS_STM8 || TARGET_IS_F8) && (G[i].ic->op == RIGHT_OP || G[i].ic->op == LEFT_OP) && IS_OP_LITERAL(IC_RIGHT(G[i].ic)) && ulFromVal (OP_VALUE_CONST (IC_RIGHT(G[i].ic))) >= 6) // Byte shifting in shift by constant might fail for partially spilt variables. Currently only the stm8 and f8 register allocators might partially spill variables.
+
+          // Byte shifting in shift by constant might fail for partially spilt variables. Currently only the stm8 and f8 register allocators might partially spill variables.
+          if ((TARGET_IS_STM8 || TARGET_IS_F8) &&
+            (G[i].ic->op == RIGHT_OP || G[i].ic->op == LEFT_OP || G[i].ic->op == ROT) &&
+            IS_OP_LITERAL(IC_RIGHT(G[i].ic)) && ulFromVal (OP_VALUE_CONST (IC_RIGHT(G[i].ic))) > 4)
             scon[(boost::add_edge(result, left, scon)).first].alignment_conflict_only = false;
         }
       if(right >= 0 && !boost::edge (result, right, scon).second)
