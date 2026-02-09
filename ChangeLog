@@ -1,3 +1,7 @@
+2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge pqc branch.
+
 2026-02-09 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:
@@ -28,12 +32,12 @@
 2026-02-08 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c:
-      Refactor genCmp().
+	  Refactor genCmp().
    	* src/mos6502/gen.c,
    	  src/mos6502/peeph.def:
-      Improve genCpl().
+	  Improve genCpl().
    	* src/mos6502/gen.c:
-      Improve genCmp().
+	  Improve genCmp().
 
 2026-02-07 Gabriele Gorla <gorlik@yahoo.com>
 
