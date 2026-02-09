@@ -1,5 +1,5 @@
 /** Tests covering rotate operations
-    size: 8,16,32
+    size: 8,16,32,64
     msb: 0,1
 */
 #include <testfwk.h>

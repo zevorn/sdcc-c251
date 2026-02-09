@@ -863,6 +863,7 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
             (bitVectnBitsOn (OP_DEFS (ic->left)) == 1 && !OP_SYMBOL (ic->left)->ismyparm || ic->prev && !POINTER_SET (ic->prev) && isOperandEqual (ic->left, ic->prev->result)))
             {
               iCode *cic = (iCode *)hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (ic->left)));
+              wassert (cic);
               struct valinfo v = getOperandValinfo (ic, cic->left);
               if (cic->op == '>' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
                 IS_OP_LITERAL (cic->right) && !v.anything && !v.nothing && operandLitValueUll(cic->right) < +1000)

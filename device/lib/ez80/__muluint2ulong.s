@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
-;  __mulsint2slong.s
+;  __muluint2ulong.s
 ;
-;  Copyright (c) 2021, Philipp Klaus Krause
+;  Copyright (c) 2026, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -13,7 +13,7 @@
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ;  GNU General Public License for more details.
 ;
-;  You should have received a copy of the GNU General Public License 
+;  You should have received a copy of the GNU General Public License
 ;  along with this library; see the file COPYING. If not, write to the
 ;  Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
 ;   MA 02110-1301, USA.
@@ -26,65 +26,52 @@
 ;   might be covered by the GNU General Public License.
 ;--------------------------------------------------------------------------
 
-.module __mulsint2slong
+.module __muluint2ulong
 
-.r800
-.optsdcc -mr800 sdcccall(1)
+.ez80
+.optsdcc -mez80 sdcccall(1)
+  
+.globl ___muluint2ulong
 
-.globl ___mulsint2slong
+; uint32_t __muluint2ulong (uint16_t l, uint16_t r);
 
 .area _CODE
 
-; uint32_t __mulsint2slong (uint16_t l, uint16_t r);
+___muluint2ulong:
 
-___mulsint2slong:
-	; Use lowest bit of c to remember if result needs to be negated. Use b to cache #0.
-	ld	bc, #0
+ld	iy, #0
+add	iy, sp
 
-	bit	#7, h
-	jr	z, hl_nonneg
-	ld	a, b
-	sub	a, l
-	ld	l, a
-	ld	a, b
-	sbc	a, h
-	ld	h, a
-	inc	c
-hl_nonneg:
+ld	a, l
 
-	bit	#7, d
-	jr	z, de_nonneg
-	ld	a, b
-	sub	a, e
-	ld	e, a
-	ld	a, b
-	sbc	a, d
-	ld	d, a
-	inc	c
-de_nonneg:
+ld	d, l
+ld	e, 2(iy)
+ld	l, e
+mlt	de
+ld	c, d
+ld	b, #0
 
-	ld	a, c
-	ld	c, e
-	ld	b, d
-	multuw	hl, bc
-	ex	de, hl
+ld	d, h
 
-	rra
-	ret	nc
+mlt	hl
+add	hl, bc
 
-	; Negate result.
-	xor	a, a
-	ld	b, a
-	sub	a, e
-	ld	e, a
-	ld	a, b
-	sbc	a, d
-	ld	d, a
-	ld	a, b
-	sbc	a, l
-	ld	l, a
-	ld	a, b
-	sbc	a, h
-	ld	h, a
-	ret
+ld	c, a
+ld	b, 3(iy)
+ld	a, b
+mlt	bc
+add	hl, bc
+
+ld	c, d
+
+ld	d, l
+ld	l, h
+ld	h, #0
+rlc	h
+
+ld	b, a
+mlt	bc
+add	hl, bc
+
+ret
 

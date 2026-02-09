@@ -1183,7 +1183,7 @@ _hasNativeMulFor (iCode *ic, sym_link *left, sym_link *right)
   else
     return(false);
 
-  if (getSize (test) <= 2)
+  if (getSize (test) <= 2 && result_size <= 2)
     return(true);
 
   return(false);
@@ -1369,7 +1369,7 @@ PORT z80_port =
   { -1, 0, 0, 4, 0, 3, 0 },
   { 
     -1,                         /* shifts never use support routines */
-    true,                       /* use support routine for int x int -> long multiplication */
+    true,                       // Use support routine for int x int -> long multiplication.
     false,                      /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
   },
   { z80_emitDebuggerSymbol },
@@ -1643,7 +1643,7 @@ PORT z180_port =
   { -1, 0, 0, 4, 0, 3, 0 },
   { 
     -1,                         /* shifts never use support routines */
-    false,                      /* do not use support routine for int x int -> long multiplication */
+    true,                       // Use support routine for int x int -> long multiplication.
     false,                      /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
   },
   { z80_emitDebuggerSymbol },
@@ -2877,7 +2877,7 @@ PORT ez80_port =
   { -1, 0, 0, 4, 0, 3, 0 },
   { 
     -1,                         /* shifts never use support routines */
-    false,                      /* do not use support routine for int x int -> long multiplication */
+    true,                       // Use support routine for int x int -> long multiplication.
     false,                      /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
   },
   { z80_emitDebuggerSymbol },
@@ -3014,7 +3014,7 @@ PORT r800_port =
   { -1, 0, 0, 4, 0, 3, 0 },
   { 
     -1,                         /* shifts never use support routines */
-    false,                      /* do not use support routine for int x int -> long multiplication */
+    true,                       // Use support routine for int x int -> long multiplication.
     false,                      /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
   },
   { z80_emitDebuggerSymbol },

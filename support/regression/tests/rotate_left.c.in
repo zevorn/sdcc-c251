@@ -1,6 +1,6 @@
 /* Test rotate left functions from stdbit.h  - unsigned long long would work, too, except for running out of code memory on pdk15.
 
-   type: unsigned char, unsigned short, unsigned int, unsigned long
+   type: unsigned char, unsigned short, unsigned int, unsigned long, unsigned long long
  */
 
 #include <testfwk.h>
@@ -25,9 +25,9 @@ testRotateLeft(void)
 #if __STDC_VERSION__ > 202311L || defined(__SDCC)
   i = 0xa5;
   ASSERT(stdc_rotate_left(i, 1) == rol(i, 1));
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !(defined(__SDCC_mcs51) && defined(__SDCC_MODEL_SMALL)) // Lack of memory
   ASSERT(stdc_rotate_left(i, 4) == rol(i, 4));
   ASSERT(stdc_rotate_left(i, 7) == rol(i, 7));
-#ifndef __SDCC_pdk14 // Lack of memory
   ASSERT(stdc_rotate_left(i, 8) == rol(i, 8));
   ASSERT(stdc_rotate_left(i, 9) == rol(i, 9));
   ASSERT(stdc_rotate_left(i, 12) == rol(i, 12));

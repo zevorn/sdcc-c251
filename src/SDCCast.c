@@ -7735,7 +7735,7 @@ createFunction (symbol * name, ast * body)
     {
       GcurMemmap = statsg;
       codeOutBuf = &statsg->oBuf;
-      eBBlockFromiCode (iCodeFromAst (decorateType (resolveSymbols (staticAutos), RESULT_TYPE_NONE, true)));
+      eBBlockFromiCode (iCodeFromAst (decorateType (resolveSymbols (staticAutos), RESULT_TYPE_NONE, true))); // todo: currFunc non-NULL here! problem for funcUsesVolatile, etc?
       staticAutos = NULL;
     }
 
@@ -7755,7 +7755,7 @@ skipall:
   if (port->reset_labelKey)
     labelKey = 1;
   name->key = 0;
-  FUNC_HASBODY (name->type) = 1;
+  FUNC_HASBODY (name->type) = true;
   addSet (&operKeyReset, name);
   applyToSet (operKeyReset, resetParmKey);
 
