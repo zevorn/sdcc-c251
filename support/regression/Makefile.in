@@ -248,7 +248,7 @@ SDCC_EXTRA_DIR = $(top_builddir)/../sdcc-extra
 
 # Defaults.  Override in spec.mk if required.
 # Simulation timeout in seconds.
-SIM_TIMEOUT = 120
+SIM_TIMEOUT = 180
 PORT_BASE = $(PORT)
 # Path to SDCC
 ifdef SDCC_BIN_PATH

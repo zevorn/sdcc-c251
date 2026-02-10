@@ -7,6 +7,9 @@
 	  src/SDCCsymt.c,
 	  src/SDCCsymt.h:
 	  Multiplication improvements inspired by kyber-ntt regression test.
+	* support/regression/Makefile.in,
+	  support/regression/ports/ds390/spec.mk:
+	  Increase timeouts to accomodate dilithium-ntt regression test.
 
 2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
 
