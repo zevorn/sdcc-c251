@@ -839,9 +839,9 @@ convilong (iCode *ic, eBBlock *ebp)
   right = ic->right;
 
   // Special case: 16x16->32 multiplication.
-  if (op == '*' && (muls16tos32[0] || muls16tos32[1] || port->hasNativeMulFor) &&
-    (IS_SYMOP (left) && bitVectnBitsOn (OP_DEFS (left)) == 1 && bitVectnBitsOn (OP_USES (left)) == 1 || IS_OP_LITERAL (left) && operandLitValue (left) < 32768 && operandLitValue (left) >= -32768) &&
-    (IS_SYMOP (right) && bitVectnBitsOn (OP_DEFS (right)) == 1 && bitVectnBitsOn (OP_USES (right)) == 1 || IS_OP_LITERAL (right) && operandLitValue (right) < 32768 && operandLitValue (right) >= -32768) &&
+  if (op == '*' && (mul_16_16_32[0] || mul_16_16_32[1] || port->hasNativeMulFor) &&
+    (IS_SYMOP (left) && bitVectnBitsOn (OP_DEFS (left)) == 1 || IS_OP_LITERAL (left) && operandLitValue (left) < (1ll << 15) && operandLitValue (left) >= -(1ll << 15)) &&
+    (IS_SYMOP (right) && bitVectnBitsOn (OP_DEFS (right)) == 1 || IS_OP_LITERAL (right) && operandLitValue (right) < (1ll << 15) && operandLitValue (right) >= -(1ll << 15)) &&
     getSize (leftType) == 4 && getSize (rightType) == 4)
     {
       iCode *lic = IS_SYMOP (left) ? hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (left))) : 0;
@@ -850,38 +850,42 @@ convilong (iCode *ic, eBBlock *ebp)
       if ((!lic || lic->op == CAST && IS_INTEGRAL (operandType (lic->right)) && getSize (operandType (lic->right)) == 2 && SPEC_USIGN (operandType (lic->right)) == SPEC_USIGN (operandType (left))) &&
         (!ric || ric->op == CAST && IS_INTEGRAL (operandType (ric->right)) && getSize (operandType (ric->right)) == 2 && SPEC_USIGN (operandType (ric->right)) == SPEC_USIGN (operandType (right))))
         {
-          func = muls16tos32[SPEC_USIGN (operandType (left))];
+          func = mul_16_16_32[SPEC_USIGN (operandType (left))];
           sym_link *optype =  lic ? operandType (lic->right) : operandType (ric->right);
           bool native = port->hasNativeMulFor && port->hasNativeMulFor (ic, optype, optype);
 
           if (func || native)
             {
-              if (lic)
+              if (!lic)
+                ic->left = operandFromValue (valCastLiteral (optype, operandLitValue (left), operandLitValueUll (left)), false);
+              else if (bitVectnBitsOn (OP_USES (left)) > 1)
+                prependCast (ic, ic->left, operandType (lic->right), ebp);
+              else
                 {
                   lic->op = '=';
                   setOperandType (left, optype);
                 }
-              else
-                ic->left = operandFromValue (valCastLiteral (optype, operandLitValue (left), operandLitValueUll (left)), false);
 
-              if (ric)
+              if (!ric)
+                ic->right = operandFromValue (valCastLiteral (optype, operandLitValue (right), operandLitValueUll (right)), false);
+              else if (bitVectnBitsOn (OP_USES (right)) > 1)
+                prependCast (ic, ic->right, operandType (ric->right), ebp);
+              else
                 {
                   ric->op = '=';
                   setOperandType (right, optype);
                 }
-              else
-                ic->right = operandFromValue (valCastLiteral (optype, operandLitValue (right), operandLitValueUll (right)), false);
 
-              if (!native) // Use 16x16->32 support function
+              if (!native) // Use support function
                 goto found;
               else
                 return;
             }
         }
     }
-  if (op == '*' && (mulu32u8tou64 || port->hasNativeMulFor) &&
-    (IS_SYMOP (left) && bitVectnBitsOn (OP_DEFS (left)) == 1 && bitVectnBitsOn (OP_USES (left)) == 1 /*|| IS_OP_LITERAL (left) && operandLitValue (left) < 256 && operandLitValue (left) >= 0*/) &&
-    (IS_SYMOP (right) && bitVectnBitsOn (OP_DEFS (right)) == 1 && bitVectnBitsOn (OP_USES (right)) == 1 /*|| IS_OP_LITERAL (right) && operandLitValue (right) < 256 && operandLitValue (right) >= 0*/) &&
+  if (op == '*' && (mul_u32_u8_64 || port->hasNativeMulFor) &&
+    (IS_SYMOP (left) && bitVectnBitsOn (OP_DEFS (left)) == 1 /*|| IS_OP_LITERAL (left) && operandLitValue (left) < 256 && operandLitValue (left) >= 0*/) &&
+    (IS_SYMOP (right) && bitVectnBitsOn (OP_DEFS (right)) == 1 /*|| IS_OP_LITERAL (right) && operandLitValue (right) < 256 && operandLitValue (right) >= 0*/) &&
     getSize (leftType) == 8 && getSize (rightType) == 8)
     {
       iCode *lic = IS_SYMOP (left) ? hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (left))) : 0;
@@ -890,32 +894,76 @@ convilong (iCode *ic, eBBlock *ebp)
       if ((lic && lic->op == CAST && IS_INTEGRAL (operandType (lic->right)) && getSize (operandType (lic->right)) <= 4 && SPEC_USIGN (operandType (lic->right))) && // Todo: Allow !lic / !ric for literal operands?
         (ric && ric->op == CAST && IS_INTEGRAL (operandType (ric->right)) && getSize (operandType (ric->right)) <= 1 && SPEC_USIGN (operandType (ric->right))))
         {
-          func = mulu32u8tou64;
+          func = mul_u32_u8_64;
 
           if (func || port->hasNativeMulFor && lic && ric && port->hasNativeMulFor (ic, operandType (lic->right), operandType (ric->right)))
             {
-              if (lic)
+              if (!lic)
+                ic->left = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (left), operandLitValueUll (left)), false);
+              else
                 {
                   if (getSize (operandType (IC_RIGHT (lic))) == 4)
                     lic->op = '=';
                   OP_SYMBOL (left)->type = newLongLink ();
                   SPEC_USIGN (OP_SYMBOL (left)->type) = 1;
-                }
-              else
-                ic->left = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (left), operandLitValueUll (left)), false);
+                }   
 
-              if (ric)
+              if (!ric)
+                ic->right = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (right), operandLitValueUll (right)), false);
+              else
                 {
                   ric->op = '=';
                   OP_SYMBOL (right)->type = newCharLink ();
                   SPEC_USIGN (OP_SYMBOL (left)->type) = 1;
-                }
-              else
-                ic->right = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (right), operandLitValueUll (right)), false);
+                }    
 
-              if (func) // Use 32x8->64 support function
+              if (func) // Use support function
                 goto found;
               else // Native
+                return;
+            }
+        }
+    }
+  if (op == '*' && (mul_32_32_64[0] || mul_16_16_32[1] || port->hasNativeMulFor) &&
+    (IS_SYMOP (left) && bitVectnBitsOn (OP_DEFS (left)) == 1 || IS_OP_LITERAL (left) && operandLitValue (left) < (1ll << 31) && operandLitValue (left) >= -(1ll << 31)) &&
+    (IS_SYMOP (right) && bitVectnBitsOn (OP_DEFS (right)) == 1 || IS_OP_LITERAL (right) && operandLitValue (right) < (1ll << 31) && operandLitValue (right) >= -(1ll << 31)) &&
+    getSize (leftType) == 8 && getSize (rightType) == 8)
+    {
+      iCode *lic = IS_SYMOP (left) ? hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (left))) : 0;
+      iCode *ric = IS_SYMOP (right) ? hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (right))) : 0;
+
+      if ((!lic || lic->op == CAST && IS_INTEGRAL (operandType (lic->right)) && getSize (operandType (lic->right)) == 4 && SPEC_USIGN (operandType (lic->right)) == SPEC_USIGN (operandType (left))) &&
+        (!ric || ric->op == CAST && IS_INTEGRAL (operandType (ric->right)) && getSize (operandType (ric->right)) == 4 && SPEC_USIGN (operandType (ric->right)) == SPEC_USIGN (operandType (right))))
+        {
+          func = mul_32_32_64[SPEC_USIGN (operandType (left))];
+          sym_link *optype =  lic ? operandType (lic->right) : operandType (ric->right);
+          bool native = port->hasNativeMulFor && port->hasNativeMulFor (ic, optype, optype);
+
+          if (func || native)
+            {
+              if (!lic)
+                ic->left = operandFromValue (valCastLiteral (optype, operandLitValue (left), operandLitValueUll (left)), false);
+              else if (bitVectnBitsOn (OP_USES (left)) > 1)
+                prependCast (ic, ic->left, operandType (lic->right), ebp);
+              else
+                {
+                  lic->op = '=';
+                  setOperandType (left, optype);
+                }          
+
+              if (!ric)
+                ic->right = operandFromValue (valCastLiteral (optype, operandLitValue (right), operandLitValueUll (right)), false);
+              else if (bitVectnBitsOn (OP_USES (right)) > 1)
+                prependCast (ic, ic->right, operandType (ric->right), ebp);
+              else
+                {
+                  ric->op = '=';
+                  setOperandType (right, optype);
+                }
+
+              if (!native) // Use support function
+                goto found;
+              else
                 return;
             }
         }

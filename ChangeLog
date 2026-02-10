@@ -1,5 +1,15 @@
 2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* device/lib/__mulslong2slonglong.c,
+	  device/lib/__mululong2ulonglong.c,
+	  device/lib/incl.mk,
+	  src/SDCCopt.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h:
+	  Multiplication improvements inspired by kyber-ntt regression test.
+
+2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Merge pqc branch.
 
 2026-02-09 Philipp Klaus Krause <philipp@colecovision.eu>
