@@ -9,7 +9,9 @@
 
 #include <stdint.h>
 #include <string.h>
+#if __STDC_VERSION__ >= 201112L || defined(__SDCC)
 #include <stdbit.h>
+#endif
 
 #if !defined(SDCC_MOS) // mos6052/mos65c02 can't return struct this large yet.
 #if !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_ds390) // hc08/s08/ds390 can't return struct yet.
