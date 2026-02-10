@@ -1,5 +1,10 @@
 2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* support/regression/tests/rotate.c.in:
+	  Disable test case that fails due to known bug #3928.
+
+2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Merge pqc branch.
 
 2026-02-09 Philipp Klaus Krause <philipp@colecovision.eu>
