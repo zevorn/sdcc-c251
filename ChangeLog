@@ -1,5 +1,10 @@
 2026-02-11 Janko Stamenović
 
+	* sdas/asxxsrc/asxxxx.h
+	  sdasxxxx: updated sdas reported version
+
+2026-02-11 Janko Stamenović
+
 	* sdas/asrab/rab.h
 	  sdas/asrab/rabmch.c
 	  sdas/asrab/rabpst.c
