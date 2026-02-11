@@ -63,7 +63,7 @@
  * Local Definitions
  */
 
-#define	VERSION	"V05.50.4+NoICE+SDCCmods-WIP11"
+#define	VERSION	"V05.50.4+NoICE+SDCCmods-WIP-R2"
 #define	COPYRIGHT "2025"
 
 /*
@@ -1254,7 +1254,7 @@ extern	char *		strrchr();
 /* Machine independent functions */
 
 /* C Library functions */
-extern	void		exit(int n);
+/* extern	void		exit(int n); */
 
 /* asmain.c */
 extern	FILE *		afile(char *fn, char *ft, int wf);

@@ -184,7 +184,11 @@
 #define	X_R2K		0
 #define	X_HD64		1
 #define	X_Z80		2
-#define X_R4K           3
+#define	X_R3KA		3
+#define X_R4K00         4
+#define X_R4K01         5
+#define X_R4K10         6
+#define X_R4K11         7
 
 /*
  * HD64180 Instructions
@@ -207,7 +211,7 @@
 #define R3K_INH1            102
 #define R3K_INH2            103
 
-#define X_R4K_MODE          105
+#define X_R4K_XSTART        105
 /* the remaining instructions are only on Rabbit 4000: */
 #define X_R4K_MULU          106
 #define X_JRE               107
@@ -216,6 +220,19 @@
 
 #define BCDE_PG           0xDD
 #define JKHL_PG           0xFD
+
+#define R_2K 0
+#define R_3KA 1
+#define R_4K_00 2
+#define R_4K_01 3
+#define R_4K_10 4
+#define R_4K_11 5
+#define IS_R_4K_10_OR_R_4K_11(x) ((x)==R_4K_10 || (x)==R_4K_11)
+#define IS_R_4K_10(x) ((x)==R_4K_10)
+#define IS_R_4K_11(x) ((x)==R_4K_11)
+
+#define IS_ANY_R_4K(x) ((x)>=R_4K_00)
+
 
 struct adsym
 {
