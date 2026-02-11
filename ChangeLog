@@ -1,5 +1,13 @@
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* device/lib/r4k/crt0.s,
+	  device/lib/r5k/crt0.s,
+	  device/lib/r6k/crt0.s,
+	  src/z80/peep.c:
+	  Preparations for use of Rabbit instruction mode 10 in r4k/r5k/r6k codegen.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/SDCCglue.c:
 	  Remove redundant emission of assembler directives.
 

@@ -299,6 +299,7 @@ z80MightReadFlag(const lineNode *pl, const char *what)
   if((IS_R4K || IS_R5K || IS_R6K) &&
     (lineIsInst (pl, "cbm") ||
     lineIsInst (pl, "clr") ||
+    lineIsInst (pl, "mulu") ||
     lineIsInst (pl, "test")))
     return false;
 
@@ -664,6 +665,9 @@ z80MightRead(const lineNode *pl, const char *what)
     return(!strcmp(what, "h") || !strcmp(what, "l") || !strcmp(what, "b") || !strcmp(what, "c"));
   if((IS_R4K || IS_R5K || IS_R6K) && (!strcmp(pl->line, "ex\tjk, hl") || !strcmp(pl->line, "ex\tjk,hl")))
     return(!strcmp(what, "h") || !strcmp(what, "l") || !strcmp(what, "j") || !strcmp(what, "k"));
+
+  if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "mulu"))
+    return (!strcmp(what, "b") || !strcmp(what, "c") || !strcmp(what, "d") || !strcmp(what, "e"));
 
   if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "test"))
     return (argCont (larg, what));

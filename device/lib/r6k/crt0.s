@@ -47,7 +47,7 @@ EDMR		.equ	0x420 ; Enable Dual-Mode Register
 
 	; Switch to instruction set mode 10
 .r4k_00
-	ld	a, #0xf0
+	ld	a, #0x80
 	ioi
 	ld	(EDMR), a
 .r4k_10
