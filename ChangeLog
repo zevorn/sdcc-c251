@@ -1,3 +1,8 @@
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/main.c:
+	  Emit .r3ka instead of .r3k directive in Rabbit 3000A and later asm.
+
 2026-02-11 Janko Stamenović
 
 	* sdas/asxxsrc/asxxxx.h
