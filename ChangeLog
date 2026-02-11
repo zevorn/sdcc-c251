@@ -1,5 +1,10 @@
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCCglue.c:
+	  Remove redundant emission of assembler directives.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* device/lib/r4k/crt0.s,
 	  device/lib/r5k/crt0.s,
 	  device/lib/r6k/crt0.s,
