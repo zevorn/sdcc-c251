@@ -406,6 +406,8 @@ hasExtBitOp (int op, sym_link *left, int right)
           return (true);
         if ((size <= 2 || size == 4) && lbits == right * 2)
           return (true);
+        if (size > 2 && (right < 12 || lbits - right < 12))
+          return (true);
       }
       return (false);
     }

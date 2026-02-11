@@ -26,6 +26,8 @@
 #include "newalloc.h"
 #include "dbuf_string.h"
 
+// #define RANGEHUNT
+
 /*-----------------------------------------------------------------*/
 /* newCseDef - new cseDef                                          */
 /*-----------------------------------------------------------------*/
@@ -935,7 +937,7 @@ iCode *findBackwardDef(operand *op,iCode *ic)
 static void
 fixPointerReads (iCode *ic)
 {
-  // TODO: Why is this not necessara for IPUSH_VALUE_AT_ADDRESS?
+  // TODO: Why is this not necessary for IPUSH_VALUE_AT_ADDRESS?
   // And why does this have to be done during CSE (it doesn't work
   // done earlier in eBBlockFromiCode)? Does CSE itslef create some
   // of the weird iCode that we fix here?
@@ -2279,6 +2281,8 @@ cseBBlock (eBBlock * ebb, int computeOnly, ebbIndex * ebbi)
 
       if (ic->op == PCALL || ic->op == CALL || ic->op == RECEIVE)
         {
+          bool purecall = ic->op == CALL && IS_SYMOP (ic->left) && OP_SYMBOL (ic->left)->funcPure && optimize.purity;
+
           /* add to defSet of the symbol */
           OP_DEFS (IC_RESULT (ic)) = bitVectSetBit (OP_DEFS (IC_RESULT (ic)), ic->key);
           /* add to the definition set of this block */
@@ -2286,24 +2290,28 @@ cseBBlock (eBBlock * ebb, int computeOnly, ebbIndex * ebbi)
           ebb->ldefs = bitVectSetBit (ebb->ldefs, ic->key);
           ebb->outDefs = bitVectCplAnd (ebb->outDefs, OP_DEFS (IC_RESULT (ic)));
           setUsesDefs (IC_RESULT (ic), ebb->defSet, ebb->outDefs, &ebb->usesDefs);
-          /* delete global variables from the cseSet
-             since they can be modified by the function call */
-          destructItemIf (&cseSet, freeLocalCseDef, ifDefGlobal);
 
-          /* and also iTemps derived from globals */
-          destructItemIf (&cseSet, freeLocalCseDef, ifFromGlobal);
-
-          /* Delete iTemps derived from symbols whose address */
-          /* has been taken */
-          destructItemIf (&cseSet, freeLocalCseDef, ifFromAddrTaken);
-
-          /* delete all getpointer iCodes from cseSet, this should
-             be done only for global arrays & pointers but at this
-             point we don't know if globals, so to be safe do all */
-          destructItemIf (&cseSet, freeLocalCseDef, ifAnyGetPointer);
-
-          /* can't cache pointer set/get operations across a call */
-          deleteSet (&ptrSetSet);
+          if (!purecall)
+            {
+              /* delete global variables from the cseSet
+                 since they can be modified by the function call */
+              destructItemIf (&cseSet, freeLocalCseDef, ifDefGlobal);
+    
+              /* and also iTemps derived from globals */
+              destructItemIf (&cseSet, freeLocalCseDef, ifFromGlobal);
+    
+              /* Delete iTemps derived from symbols whose address */
+              /* has been taken */
+              destructItemIf (&cseSet, freeLocalCseDef, ifFromAddrTaken);
+    
+              /* delete all getpointer iCodes from cseSet, this should
+                 be done only for global arrays & pointers but at this
+                 point we don't know if globals, so to be safe do all */
+              destructItemIf (&cseSet, freeLocalCseDef, ifAnyGetPointer);
+    
+              /* can't cache pointer set/get operations across a call */
+              deleteSet (&ptrSetSet);
+            }
         }
 
       /* for pcall & ipush we need to add to the useSet */

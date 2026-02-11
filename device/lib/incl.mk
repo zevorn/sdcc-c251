@@ -60,6 +60,10 @@ COMMON_LONG = \
   _modslong.c \
   _modulong.c
 
+COMMON_LONGLONG = \
+  __mululong2ulonglong.c \
+  __mulslong2slonglong.c
+
 COMMON_SDCC = \
   call_once.c \
   isalnum.c \

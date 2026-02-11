@@ -156,6 +156,7 @@ char buffer[PATH_MAX * 2];
 #define OPTION_DUMP_GRAPHS          "--dump-graphs"
 #define OPTION_INCLUDE              "--include"
 #define OPTION_NO_GENCONSTPROP      "--nogenconstprop"
+#define OPTION_NO_PURITY            "--nopurity"
 
 #define OPTION_SMALL_MODEL          "--model-small"
 #define OPTION_MEDIUM_MODEL         "--model-medium"
@@ -224,6 +225,7 @@ static const OPTION optionsTable[] = {
   {0,   "--no-reg-params", &options.noRegParams, "On some ports, disable passing some parameters in registers"},
   {0,   "--nostdlibcall", &optimize.noStdLibCall, "Disable optimization of calls to standard library"},
   {0,   "--nooverlay", &options.noOverlay, "Disable overlaying leaf function auto variables"},
+  {0,   OPTION_NO_PURITY, NULL, "Disable optimizations of pure functions"},
   {0,   OPTION_NO_GCSE, NULL, "Disable the GCSE optimisation"},
   {0,   OPTION_NO_LOSPRE, NULL, "Disable lospre"},
   {0,   OPTION_NO_GENCONSTPROP, NULL, "Disable generalized constant propagation"},
@@ -683,6 +685,7 @@ setDefaultOptions (void)
   optimize.loopInvariant = 1;
   optimize.loopInduction = 1;
   options.max_allocs_per_node = 3000;
+  optimize.purity = true;
   optimize.lospre = 1;
   optimize.allow_unsafe_read = 0;
   optimize.genconstprop = 1;
@@ -1232,6 +1235,12 @@ parseCmdLine (int argc, char **argv)
             {
               optimize.codeSpeed = 0;
               optimize.codeSize = 1;
+              continue;
+            }
+
+          if (strcmp (argv[i], OPTION_NO_PURITY) == 0)
+            {
+              optimize.purity = 0;
               continue;
             }
 

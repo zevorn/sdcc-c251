@@ -615,7 +615,7 @@ findLabel (const lineNode *pl)
 static bool argCont(const char *arg, char what)
 {
   if (arg == NULL || strlen (arg) == 0 || !(what == 'a' || what == 'x' || what == 'y'))
-    return FALSE;
+    return false;
 
   while (isblank ((unsigned char)(arg[0])))
     arg++;
@@ -627,7 +627,7 @@ static bool argCont(const char *arg, char what)
     arg++;
 
   if (arg[0] == '#')
-    return FALSE;
+    return false;
 
   if (arg[0] == '(') 
     arg++;
@@ -646,7 +646,21 @@ static bool argCont(const char *arg, char what)
         return false;
     }
 
-  return (strchr(arg, what) != NULL);
+  while (arg[0])
+    {
+      if (arg[0] == ';') // Start of end-of-line comment
+        return false;
+      if (arg[0] == what)
+        return true;
+      if (arg[0] == '#') // Skip lit prefix
+        do
+          arg++;
+        while (isalnum (arg[0]));
+      else
+        arg++;
+    }
+
+  return false;
 }
 
 static bool

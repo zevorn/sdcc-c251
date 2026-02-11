@@ -365,7 +365,7 @@ enum {
   E_VLA_UNSPECIFIED_SCOPE       = 335, //  "[*] variable length array declarators of unspecified length must have function prototype scope
   W_INCOMPLETE_ARRAY_IMPLICIT_1 = 336, // incomplete array type has length 1 due to implicit initializer
   E_QUALIFIED_FUNCTION          = 337, // qualified function
-  W_NONASCII_ID_NOUNILIB        = 338, // non-ascii characters in identifier, but SDCC built without libu8ident library; diagnostics on and semantics of identifier names limited to be minimum required by ISO C11
+  W_NONASCII_ID_NOUNILIB        = 338, // non-ascii characters in identifier, but SDCC built without libu8ident library; diagnostics on and semantics of identifier names limited to the minimum required by ISO C11
   E_INVALID_ID                  = 339, // invalid identifier
   W_ID_NOT_NORMALIZED_NFC       = 340, // identifier not normalized to unicode normalization form C
   W_INSECURE_ID                 = 341, // insecure identifier not compliant with UTS #39
