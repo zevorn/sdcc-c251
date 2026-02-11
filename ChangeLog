@@ -1,5 +1,14 @@
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* device/lib/r4k/crt0.s,
+	  device/lib/r5k/crt0.s,
+	  device/lib/r6k/crt0.s,
+	  sdas/asrab/rabpst.c,
+	  src/z80/main.c:
+	  Setup for use of Rabbit instruction mode 10.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/SDCCast.c:
 	  Revert a change that broke ds390.
 

@@ -41,8 +41,16 @@ MB0CR		.equ	0x14 ; Memory Bank 0 Control Register
 MB1CR		.equ	0x15 ; Memory Bank 1 Control Register
 MB2CR		.equ	0x16 ; Memory Bank 2 Control Register
 MB3CR		.equ	0x17 ; Memory Bank 3 Control Register
+EDMR		.equ	0x420 ; Enable Dual-Mode Register
 
 	.area	_HEADER (ABS)
+
+	; Switch to instruction set mode 10
+.r4k_00
+	ld	a, #0xf0
+	ioi
+	ld	(EDMR), a
+.r4k_10
 
 	; Reset vector - assuming smode0 and smode1 input pins are grounded
 	.org 	0

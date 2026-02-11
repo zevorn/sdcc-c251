@@ -163,10 +163,10 @@ struct	mne	mne[] = {
 	/* Machines */
 
     {   NULL,   ".r4k",         S_CPU,          0,      X_R4K11 },
-    {   NULL,   ".r4k00",      S_CPU,          0,      X_R4K00 },
-    {   NULL,   ".r4k01",      S_CPU,          0,      X_R4K01 },
-    {   NULL,   ".r4k10",      S_CPU,          0,      X_R4K10 },
-    {   NULL,   ".r4k11",      S_CPU,          0,      X_R4K11 },
+    {   NULL,   ".r4k_00",      S_CPU,          0,      X_R4K00 },
+    {   NULL,   ".r4k_01",      S_CPU,          0,      X_R4K01 },
+    {   NULL,   ".r4k_10",      S_CPU,          0,      X_R4K10 },
+    {   NULL,   ".r4k_11",      S_CPU,          0,      X_R4K11 },
     {	NULL,	".r3k",		S_CPU,		0,	X_R3KA	}, // .r3k means for ___current___ SDCC code r3ka !!!!
     {	NULL,	".r3ka",	S_CPU,		0,	X_R3KA	},
     {	NULL,	".r2k",		S_CPU,		0,	X_R2K	},
