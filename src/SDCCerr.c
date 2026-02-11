@@ -740,7 +740,7 @@ struct
   { E_QUALIFIED_FUNCTION, ERROR_LEVEL_ERROR,
      "qualified function", 0 },
   { W_NONASCII_ID_NOUNILIB, ERROR_LEVEL_WARNING,
-     "non-ascii characters in identifier, but SDCC built without libu8ident library; diagnostics on and semantics of identifier names limited to be minimum required by ISO C11", 0 },
+     "non-ascii characters in identifier, but SDCC built without libu8ident library; diagnostics on and semantics of identifier names limited to the minimum required by ISO C11", 0 },
   { E_INVALID_ID, ERROR_LEVEL_ERROR,
      "invalid identifier '%s'", 0 },
   { W_ID_NOT_NORMALIZED_NFC, ERROR_LEVEL_WARNING,
