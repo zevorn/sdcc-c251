@@ -1,3 +1,37 @@
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge pqc branch.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/ez80/__muluint2ulong.s,
+	  device/lib/z180/__muluint2ulong.s:
+	  Fix an issue in 16x16->32 multiplication support function.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCerr.h,
+	  src/SDCCerr.c:
+	  Fix a typo in an error message.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Fix an issue in code generation for shift / rotation.
+
+2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/__mulslong2slonglong.c,
+	  device/lib/__mululong2ulonglong.c,
+	  device/lib/incl.mk,
+	  src/SDCCopt.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h:
+	  Multiplication improvements inspired by kyber-ntt regression test.
+	* support/regression/Makefile.in,
+	  support/regression/ports/ds390/spec.mk:
+	  Increase timeouts to accomodate dilithium-ntt regression test.
+
 2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/rotate.c.in:
