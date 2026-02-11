@@ -5,6 +5,23 @@
 
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/main.c:
+	  Emit .r3ka instead of .r3k directive in Rabbit 3000A and later asm.
+
+2026-02-11 Janko Stamenović
+
+	* sdas/asxxsrc/asxxxx.h
+	  sdasxxxx: updated sdas reported version
+
+2026-02-11 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdasrab: New r4k modes and r3ka mode, started adding r4k instructions
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Merge pqc branch.
 
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>

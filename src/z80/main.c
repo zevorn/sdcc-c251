@@ -1080,20 +1080,26 @@ _z80_genAssemblerStart (FILE * of)
       fprintf (of, "\n");
     }
 
-  if (TARGET_IS_Z180)
-    fprintf (of, "\t.hd64\n");
-  else if (TARGET_IS_R3KA || TARGET_IS_R4K || TARGET_IS_R5K || TARGET_IS_R6K) // Todo: adjust when planned changes in assembler are implemented!
-    fprintf (of, "\t.r3k\n");
-  else if (TARGET_IS_EZ80)
-    fprintf (of, "\t.ez80\n");
+  if (TARGET_IS_Z80 && options.allow_undoc_inst)
+    fprintf (of, "\t.allow_undocumented\n");
   else if (TARGET_IS_Z80N)
     fprintf (of, "\t.zxn\n");
-  else if (TARGET_IS_R800)
-    fprintf (of, "\t.r800\n");
-  else if (TARGET_IS_Z80 && options.allow_undoc_inst)
-    fprintf (of, "\t.allow_undocumented\n");
+  else if (TARGET_IS_Z180)
+    fprintf (of, "\t.hd64\n");
+  else if (TARGET_IS_R2K || TARGET_IS_R2KA)
+    fprintf (of, "\t.r2k\n");
+  else if (TARGET_IS_R3KA)
+    fprintf (of, "\t.r3ka\n");
+  else if (TARGET_IS_R4K || TARGET_IS_R5K)
+    fprintf (of, "\t.r3ka\n"); // Todo: adjust when we actually emit R4K instructions!
+  else if (TARGET_IS_R6K)
+    fprintf (of, "\t.r3ka\n"); // Todo: adjust when we actually emit R4K/R6K instructions!
   else if (TARGET_IS_TLCS90)
     fprintf (of, "\tby = 0xffed\n");
+  else if (TARGET_IS_EZ80)
+    fprintf (of, "\t.ez80\n");
+  else if (TARGET_IS_R800)
+    fprintf (of, "\t.r800\n");
 }
 
 #define RAB_INTERRUPTS_COUNT (IS_R2K ? 16 : 32) // The Rabbit 2000A to Rabbit 2000C also have just 16 internal interrupts, but the r2ka port is also used for the Rabbit 3000.
