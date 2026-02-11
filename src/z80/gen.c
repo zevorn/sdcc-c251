@@ -1595,10 +1595,16 @@ emit3wCost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, 
     case A_RL:
       wassert (IS_RAB);
       cost (1 + !aopInReg (op1, offset1, DE_IDX), 2 + 2 * !aopInReg (op1, offset1, DE_IDX));
+    case A_RLC:
+      wassert (IS_R4K || IS_R5K || IS_R6K);
+      cost (2, 4);
     case A_RR:
       wassert (IS_RAB);
       cost (1 + (aopInReg (op1, offset1, BC_IDX) || aopInReg (op1, offset1, IY_IDX)), 2 + 2 * (aopInReg (op1, offset1, BC_IDX) || aopInReg (op1, offset1, IY_IDX)));
       return;
+    case A_RRC:
+      wassert (IS_R4K || IS_R5K || IS_R6K);
+      cost (2, 4);
     case A_SWAP:
       wassert (IS_R6K);
       cost (2, 4);
@@ -14618,7 +14624,7 @@ shiftL2Left2Result (operand *left, operand *result, int shCount, const iCode *ic
     !IS_SM83 && isRegDead (HL_IDX, ic) &&
     (shCount > 1 || !sameRegs (result->aop, left->aop)) ||
     isPairDead (PAIR_HL, ic) && !IS_SM83 && getPairId (result->aop) == PAIR_DE && getPairId (left->aop) != PAIR_DE || // Shift in hl if we can cheaply move to de via ex later.
-    (IS_RAB || IS_EZ80 || IS_TLCS90 && isRegDead (HL_IDX, ic) && !aopSame (result->aop, 0, left->aop, 0, 2)) && result->aop->type == AOP_STK && left->aop->type == AOP_STK)
+    ((IS_RAB || IS_EZ80 || IS_TLCS90) && isRegDead (HL_IDX, ic) && !aopSame (result->aop, 0, left->aop, 0, 2)) && result->aop->type == AOP_STK && left->aop->type == AOP_STK)
     {
       shiftaop = ASMOP_HL;
       genMove (ASMOP_HL, left->aop, isRegDead (A_IDX, ic), true, isRegDead (DE_IDX, ic), true);

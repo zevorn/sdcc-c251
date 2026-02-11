@@ -907,7 +907,8 @@ z80SurelyWritesFlag(const lineNode *pl, const char *what)
 
   if((IS_R4K || IS_R5K || IS_R6K) &&
     (lineIsInst (pl, "cbm") ||
-    lineIsInst (pl, "clr")))
+    lineIsInst (pl, "clr") ||
+    lineIsInst (pl, "mulu")))
     return false;
 
   if(lineIsInst (pl, "mlt"))
@@ -1087,14 +1088,6 @@ z80SurelyWrites (const lineNode *pl, const char *what)
     if (lineIsInst (pl, "mlt"))
       return (strchr (larg, *what));
 
-  if (IS_R800)
-    if (lineIsInst (pl, "multu"))
-      return (strchr("hl", *what));
-
-  if (IS_R800)
-    if (lineIsInst (pl, "multuw"))
-      return (strchr("dehl", *what));
-
   if (IS_Z180 || IS_EZ80)
     {
       if (lineIsInst (pl, "otim") ||
@@ -1115,6 +1108,18 @@ z80SurelyWrites (const lineNode *pl, const char *what)
 
   if (IS_SM83 && lineIsInst (pl, "ldhl") && (what[0] == 'h' || what[0] == 'l'))
     return(true);
+
+  if (IS_RAB && lineIsInst (pl, "mul"))
+    return (strchr("hlbc", *what));
+
+  if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "mulu"))
+    return (strchr("hlbc", *what));
+
+  if (IS_R800 && lineIsInst (pl, "multu"))
+    return (strchr("hl", *what));
+
+  if (IS_R800 && lineIsInst (pl, "multuw"))
+    return (strchr("dehl", *what));
 
   //printf("z80SurelyWrites unknown asm inst line: %s\n", pl->line);
 
