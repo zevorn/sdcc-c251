@@ -1,5 +1,10 @@
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCCglue.c:
+	  Remove redundant emission of assembler directives.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/main.c:
 	  Emit .r3ka instead of .r3k directive in Rabbit 3000A and later asm.
 
