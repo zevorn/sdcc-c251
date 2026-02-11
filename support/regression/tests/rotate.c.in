@@ -1,5 +1,5 @@
 /** Tests covering rotate operations
-    size: 8,16,32
+    size: 8,16,32,64
     msb: 0,1
 */
 #include <testfwk.h>
@@ -87,6 +87,7 @@ TYPE rol31(TYPE s){ return (s<<31) | (s>>(SIZE-31)); }
 void
 testRol(void)
 {
+#if !defined(__SDCC_ds390) || SIZE < 32 // Bug #3928
 #if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
     volatile TYPE t = TEST_VECT;
     TYPE u;
@@ -122,6 +123,7 @@ testRol(void)
 
     ASSERT( rol30(u) == (TYPE)((TEST_VECT<<30) | (TEST_VECT>>(SIZE-30))) );
     ASSERT( rol31(u) == (TYPE)((TEST_VECT<<31) | (TEST_VECT>>(SIZE-31))) );
+#endif
 #endif
 #endif
 }

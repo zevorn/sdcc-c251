@@ -345,7 +345,8 @@ newSymbol (const char *name, long scope)
   // Err on the safe side, when in doubt disabling optimizations.
   sym->funcDivFlagSafe = false;
   sym->funcUsesVolatile = true;
-  sym->funcRestartAtomicSupport = true; //options.std_c11;
+  sym->funcRestartAtomicSupport = true;
+  sym->funcPure = false;
 
   return sym;
 }
@@ -4631,8 +4632,9 @@ symbol *fps16x16_gteq;
 
 /* Dims: mul/div/mod, BYTE/WORD/DWORD/QWORD, SIGNED/UNSIGNED/BOTH */
 symbol *muldiv[3][4][4];
-symbol *muls16tos32[2];
-symbol *mulu32u8tou64;
+symbol *mul_16_16_32[2];
+symbol *mul_32_32_64[2];
+symbol *mul_u32_u8_64;
 /* Dims: BYTE/WORD/DWORD/QWORD SIGNED/UNSIGNED */
 sym_link *multypes[4][2];
 /* Dims: to/from float, BYTE/WORD/DWORD/QWORD, SIGNED/UNSIGNED */
@@ -5084,9 +5086,11 @@ initCSupport (void)
         }
     }
 
-  muls16tos32[0] = port->support.has_mulint2long ? funcOfTypeVarg ("__mulsint2slong", "l", 2, (const char * []){"i", "i"}) : NULL;
-  muls16tos32[1] = port->support.has_mulint2long ? funcOfTypeVarg ("__muluint2ulong", "Ul", 2, (const char * []){"Ui", "Ui"}) : NULL;
-  mulu32u8tou64 = port->support.has_mululonguchar2ulonglong ? funcOfTypeVarg ("__mululonguchar2ulonglong", "UL", 2, (const char * []){"Ul", "Uc"}) : NULL;
+  mul_16_16_32[0] = port->support.has_mulint2long ? funcOfTypeVarg ("__mulsint2slong", "l", 2, (const char * []){"i", "i"}) : NULL;
+  mul_16_16_32[1] = port->support.has_mulint2long ? funcOfTypeVarg ("__muluint2ulong", "Ul", 2, (const char * []){"Ui", "Ui"}) : NULL;
+  mul_32_32_64[0] = funcOfType ("__mulslong2slonglong", multypes[3][1], multypes[2][1], 2, options.intlong_rent);
+  mul_32_32_64[1] = funcOfType ("__mululong2ulonglong", multypes[3][0], multypes[2][0], 2, options.intlong_rent);
+  mul_u32_u8_64 = port->support.has_mululonguchar2ulonglong ? funcOfTypeVarg ("__mululonguchar2ulonglong", "UL", 2, (const char * []){"Ul", "Uc"}) : NULL;
 }
 
 /*-----------------------------------------------------------------*/

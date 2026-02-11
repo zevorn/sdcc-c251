@@ -9,6 +9,9 @@
 
 #include <stdint.h>
 #include <string.h>
+#if __STDC_VERSION__ >= 201112L || defined(__SDCC)
+#include <stdbit.h>
+#endif
 
 #if !defined(SDCC_MOS) // mos6052/mos65c02 can't return struct this large yet.
 #if !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_ds390) // hc08/s08/ds390 can't return struct yet.
@@ -210,7 +213,7 @@ const struct pair pairs[] = {
 void
 testSha (void)
 {
-#if __STDC_ENDIAN_NATIVE__ // The implementation assumes little-endian
+#if __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_LITTLE__ // The implementation assumes little-endian
 #if !defined(SDCC_MOS) // mos6502/mos65c02 can't return struct this large yet
 #if !defined(__SDCC_ds390) // ds390 can't return struct yet.
 #if !defined(__SDCC_mcs51) // Lack of memory

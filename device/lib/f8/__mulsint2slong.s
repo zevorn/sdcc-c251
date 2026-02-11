@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
 ;  __mulsint2slong.s
 ;
-;  Copyright (c) 2021, Philipp Klaus Krause
+;  Copyright (C) 2026, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -26,65 +26,35 @@
 ;   might be covered by the GNU General Public License.
 ;--------------------------------------------------------------------------
 
-.module __mulsint2slong
 
-.r800
-.optsdcc -mr800 sdcccall(1)
 
+.globl ___muluint2ulong
 .globl ___mulsint2slong
 
-.area _CODE
-
-; uint32_t __mulsint2slong (uint16_t l, uint16_t r);
+.area CODE
 
 ___mulsint2slong:
-	; Use lowest bit of c to remember if result needs to be negated. Use b to cache #0.
-	ld	bc, #0
-
-	bit	#7, h
-	jr	z, hl_nonneg
-	ld	a, b
-	sub	a, l
-	ld	l, a
-	ld	a, b
-	sbc	a, h
-	ld	h, a
-	inc	c
-hl_nonneg:
-
-	bit	#7, d
-	jr	z, de_nonneg
-	ld	a, b
-	sub	a, e
-	ld	e, a
-	ld	a, b
-	sbc	a, d
-	ld	d, a
-	inc	c
-de_nonneg:
-
-	ld	a, c
-	ld	c, e
-	ld	b, d
-	multuw	hl, bc
-	ex	de, hl
-
-	rra
-	ret	nc
-
-	; Negate result.
-	xor	a, a
-	ld	b, a
-	sub	a, e
-	ld	e, a
-	ld	a, b
-	sbc	a, d
-	ld	d, a
-	ld	a, b
-	sbc	a, l
-	ld	l, a
-	ld	a, b
-	sbc	a, h
-	ld	h, a
+	ld	xl, yh
+	tst	xl
+	jrnn	lnn
+	negw	y
+lnn:
+	ldw	z, (2, sp)
+	tstw	z
+	jrnn	rnn
+	negw	z
+	xor	xl, #0x80
+rnn:
+	push	xl
+	pushw	z
+	call #___muluint2ulong
+	tst	(2, sp)
+	jrnn	nn
+	negw	y
+	ldw	z, x
+	clrw	x
+	sbcw	x, z
+nn:
+	addw	sp, #3
 	ret
 

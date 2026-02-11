@@ -259,7 +259,7 @@ typedef struct sym_link
     struct value *args;             /* the defined arguments                */
     unsigned hasVargs:1;            /* functions has varargs                */
     unsigned calleeSaves:1;         /* functions uses callee save           */
-    unsigned hasbody:1;             /* function body defined                */
+    bool hasbody:1;                     // function body defined
     unsigned hasFcall:1;            /* does it call other functions         */
     unsigned reent:1;               /* function is reentrant                */
     unsigned naked:1;               /* naked function                       */
@@ -353,9 +353,10 @@ typedef struct symbol
   unsigned spildir:1;               /* spilt in direct space */
   unsigned ptrreg:1;                /* this symbol assigned to a ptr reg */
   unsigned noSpilLoc:1;             /* cannot be assigned a spil location */
-  bool funcDivFlagSafe:1;           /* we know this function is safe to call with undocumented stm8 flag bit 6 set*/
-  bool funcUsesVolatile:1;          /* The function accesses a volatile variable */
+  bool funcDivFlagSafe:1;           // We know this function is safe to call with undocumented stm8 flag bit 6 set
+  bool funcUsesVolatile:1;          // The function potentially accesses a volatile variable
   bool funcRestartAtomicSupport:1;  /* The function uses (directly or indirectly) restartable atomic support routines. */
+  bool funcPure:1;                  // The function is pure (i.e. it has no side-effects, and the return value only depends on the parameters) - roughly equivalent to GCC __attribute__((const)) and Keil __pure.
   unsigned isstrlit;                /* is a string literal and it's usage count  */
   unsigned accuse;                  /* can be left in the accumulator
                                        On the Z80 accuse is divided into
@@ -660,9 +661,11 @@ extern symbol *fps16x16_gteq;
 /* Dims: mul/div/mod, BYTE/WORD/DWORD/QWORD, SIGNED/UNSIGNED/BOTH */
 extern symbol *muldiv[3][4][4];
 /* 16 x 16 -> 32 multiplication SIGNED/UNSIGNED */
-extern symbol *muls16tos32[2];
+extern symbol *mul_16_16_32[2];
+/* 32 x 32 -> 64 multiplication SIGNED/UNSIGNED */
+extern symbol *mul_32_32_64[2];
 /* 32 x 8 -> 64 multiplication UNSIGNED */
-extern symbol *mulu32u8tou64;
+extern symbol *mul_u32_u8_64;
 /* Dims: BYTE/WORD/DWORD/QWORD SIGNED/UNSIGNED */
 extern sym_link *multypes[4][2];
 /* Dims: to/from float, BYTE/WORD/DWORD/QWORD, SIGNED/UNSIGNED */

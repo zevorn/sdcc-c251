@@ -1267,9 +1267,9 @@ isOclsExpensive (struct memmap * oclass)
 /*   CALL/PCALL and the first IPUSH/SEND associated with the call  */
 /*-----------------------------------------------------------------*/
 int
-isiCodeInFunctionCall (iCode * ic)
+isiCodeInFunctionCall (const iCode *ic)
 {
-  iCode *lic = ic;
+  const iCode *lic = ic;
 
   /* Find the next CALL/PCALL */
   while (lic)
@@ -1288,7 +1288,7 @@ isiCodeInFunctionCall (iCode * ic)
     {
       if (lic != ic && (ic->op == CALL || ic->op == PCALL))
         return FALSE;
-      if (ic->op == SEND || (ic->op == IPUSH && ic->parmPush))
+      if (ic->op == SEND || (ic->op == IPUSH && ic->parmPush) || ic->op == IPUSH_VALUE_AT_ADDRESS)
         return TRUE;
       ic = ic->prev;
     }

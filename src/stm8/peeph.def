@@ -918,6 +918,14 @@ replace restart {
 } if immdInRange(1 1 '+' 0 %1 %2)
 
 replace restart {
+	push	a
+	ld	(0x01, sp), a
+} by {
+	push	a
+	; peephole 22f eliminate redundant load after push
+}
+
+replace restart {
 	%3	a, %1
 	tnz	a
 } by {
@@ -1422,6 +1430,39 @@ replace restart {
 	addw	sp, #%5
 	re%3
 } if same(%1 'd' 'dw'), operandsLiteral(%5), immdInRange(-100000 0 '-' %4 %5 %6)
+
+replace restart {
+	ld	a, #%1
+	ld	(%3, sp), a
+	ld	a, #%2
+	ld	(%4, sp), a
+} by {
+	ldw	x, #%6
+	; peephole 681 combined two 8-bit stores into a 16-bit store.
+	ldw	(%3, sp), x
+} if notUsed('a'), notUsed('x'), immdInRange(1 1 '-' %4 %3 %9), operandsLiteral(%1 %2), immdInRange(0x00 0xffff '*' %1 0x100 %5), immdInRange(0x00 0xffff '|' %2 %5 %x6)
+
+replace restart {
+	ld	a, (%1, sp)
+	ld	(%2, sp), a
+	ld	a, (%3, sp)
+	ld	(%1, sp), a
+} by {
+	ldw	x, (%1, sp)
+	; peephole 682x combined two 8-bit stores into a 16-bit store.
+	ldw	(%2, sp), x
+} if notUsed('a'), notUsed('x'), immdInRange(1 1 '-' %1 %2 %9), immdInRange(-1 -1 '-' %1 %3 %9)
+
+replace restart {
+	ld	a, (%1, sp)
+	ld	(%2, sp), a
+	ld	a, (%3, sp)
+	ld	(%1, sp), a
+} by {
+	ldw	y, (%1, sp)
+	; peephole 682y combined two 8-bit stores into a 16-bit store.
+	ldw	(%2, sp), y
+} if notUsed('a'), notUsed('y'), immdInRange(1 1 '-' %1 %2 %9), immdInRange(-1 -1 '-' %1 %3 %9)
 
 // struct.bit == 1 AND-DEC-JRNE to BCP-JREQ
 replace restart {

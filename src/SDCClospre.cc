@@ -182,7 +182,7 @@ invalidates_expression(const iCode *const eic, const iCode *const iic)
   if (IC_RESULT (iic) && !IS_OP_LITERAL (result) && !POINTER_SET(iic) &&
     (eleft && isOperandEqual (eleft, result) || eright && isOperandEqual (eright, result)))
     return(true);
-  if ((uses_global || uses_volatile) && (iic->op == CALL || iic->op == PCALL))
+  if ((uses_global || uses_volatile) && (iic->op == CALL && !(IS_SYMOP (iic->left) && OP_SYMBOL (iic->left)->funcPure && optimize.purity) || iic->op == PCALL))
     return(true);
   if (uses_volatile && (POINTER_GET (iic) && IS_VOLATILE (operandType (left)->next)) || IS_OP_VOLATILE (left) || IS_OP_VOLATILE (right))
     return(true);
@@ -213,8 +213,9 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
   // TODO: Replace the current one  by a more exact mechanism, that takes into account information from
   // (not yet implemented) generalized constant propagation, pointer analysis, etc.
 
-  // Function calls can have any side effects.
-  if (eic->op == CALL || eic->op == PCALL)
+  // Function calls can have any side effects, unless we know otherwise.
+  if (eic->op == CALL && !(IS_SYMOP (eic->left) && OP_SYMBOL (eic->left)->funcPure && optimize.purity) ||
+    eic->op == PCALL)
     safety_required = true;
 
   // volatile requires safety.

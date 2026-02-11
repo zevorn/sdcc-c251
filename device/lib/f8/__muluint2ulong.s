@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
-;  __mulsint2slong.s
+;  __muluint2slong.s
 ;
-;  Copyright (c) 2021, Philipp Klaus Krause
+;  Copyright (C) 2026, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -26,65 +26,26 @@
 ;   might be covered by the GNU General Public License.
 ;--------------------------------------------------------------------------
 
-.module __mulsint2slong
+.globl ___muluint2ulong
 
-.r800
-.optsdcc -mr800 sdcccall(1)
+.area CODE
 
-.globl ___mulsint2slong
-
-.area _CODE
-
-; uint32_t __mulsint2slong (uint16_t l, uint16_t r);
-
-___mulsint2slong:
-	; Use lowest bit of c to remember if result needs to be negated. Use b to cache #0.
-	ld	bc, #0
-
-	bit	#7, h
-	jr	z, hl_nonneg
-	ld	a, b
-	sub	a, l
-	ld	l, a
-	ld	a, b
-	sbc	a, h
-	ld	h, a
-	inc	c
-hl_nonneg:
-
-	bit	#7, d
-	jr	z, de_nonneg
-	ld	a, b
-	sub	a, e
-	ld	e, a
-	ld	a, b
-	sbc	a, d
-	ld	d, a
-	inc	c
-de_nonneg:
-
-	ld	a, c
-	ld	c, e
-	ld	b, d
-	multuw	hl, bc
-	ex	de, hl
-
-	rra
-	ret	nc
-
-	; Negate result.
-	xor	a, a
-	ld	b, a
-	sub	a, e
-	ld	e, a
-	ld	a, b
-	sbc	a, d
-	ld	d, a
-	ld	a, b
-	sbc	a, l
-	ld	l, a
-	ld	a, b
-	sbc	a, h
-	ld	h, a
+___muluint2ulong:
+	tst	xl
+	clr	xh
+	mad	x, (2, sp), yl
+	ld	zh, xl
+	mad	x, (3, sp), yl
+	ld	zl, xl
+	ld	yl, xh
+	xch	yl, yh
+	clr	xh
+	mad	x, (2, sp), yl
+	adc	zl, xl
+	xch	zl, zh
+	mad	x, (3, sp), yl
+	adc	xl, yh
+	adc	xh, #0
+	ldw	y, z
 	ret
 
