@@ -2,6 +2,9 @@
 
 	* src/z80/gen.c:
 	  Fix an issue in code generation for shift / rotation.
+	* device/lib/ez80/__muluint2ulong.s,
+	  device/lib/z180/__muluint2ulong.s:
+	  Fix an issue in 16x16->32 multiplication support function.
 
 2026-02-10 Philipp Klaus Krause <philipp@colecovision.eu>
 
