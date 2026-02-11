@@ -1,5 +1,10 @@
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCCast.c:
+	  Revert a change that broke ds390.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Merge pqc branch.
 
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
