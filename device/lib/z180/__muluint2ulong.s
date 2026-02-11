@@ -68,7 +68,7 @@ ld	c, d
 ld	d, l
 ld	l, h
 ld	h, #0
-rlc	h
+rl	h
 
 ld	b, a
 mlt	bc

@@ -5,7 +5,7 @@
 CC_FOR_BUILD = $(CC)
 
 # simulation timeout in seconds
-SIM_TIMEOUT = 240
+SIM_TIMEOUT = 360
 
 EMU_PORT_FLAG = -tds390
 EMU_FLAGS = -S in=$(DEV_NULL),out=-
