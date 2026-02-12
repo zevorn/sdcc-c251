@@ -5337,7 +5337,7 @@ skip_byte_push_iy:
     }
 
   // Try to use Rabbit 4000 rlc bcde, 8.
-  if ((IS_R4K || IS_R5K_NOTYET || IS_R6K_NOTYET) && regsize >= 3)
+  if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && regsize >= 3)
     {
       int ex[4] = {-1, -1, -1, -1};
       bool no = !bc_dead || !de_dead;

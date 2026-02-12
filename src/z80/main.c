@@ -1921,8 +1921,8 @@ PORT r2ka_port =
   1,                            /* ABI revision */
   { -1, 0, 0, 4, 0, 2, 0 },
   { 
-    -1,                         /* shifts never use support routines */
-    false,                      /* do not use support routine for int x int -> long multiplication */
+    -1,                         // shifts never use support routines
+    true,                       // use support routine for unsigned int x unsigned int -> unsigned long multiplication
     true,                       // Use support routine for unsigned long x unsigned char -> unsigned long long multiplication.
   },
   { z80_emitDebuggerSymbol },
@@ -2058,8 +2058,8 @@ PORT r3ka_port =
   1,                            /* ABI revision */
   { -1, 0, 0, 4, 0, 2, 0 },
   { 
-    -1,                         /* shifts never use support routines */
-    false,                      /* do not use support routine for int x int -> long multiplication */
+    -1,                         // shifts never use support routines
+    true,                       // use support routine for unsigned int x unsigned int -> unsigned long multiplication
     true,                       // Use support routine for unsigned long x unsigned char -> unsigned long long multiplication.
   },
   { z80_emitDebuggerSymbol },
