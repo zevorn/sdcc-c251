@@ -3035,16 +3035,16 @@ fetchLitPair (PAIR_ID pairId, asmop *left, int offset, bool f_dead, bool dry)
 
   // Both a lit on the right and a true symbol on the left
   // Weirdly, offset has a different meaning here for AOP_IMMD, than for AOP_LIT.
-  if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && pairId == PAIR_HL && left->type == AOP_LIT && aopIsLitVal (left, offset, 2, 0x0000))
-    {
-      emit2 ("clr hl");
-      cost (2, 4);
-    }
-  else if (IS_RAB && pairId == PAIR_HL && left->type == AOP_LIT && aopIsLitVal (left, offset, 2, 0x0000) && f_dead)
+  if (IS_RAB && pairId == PAIR_HL && left->type == AOP_LIT && aopIsLitVal (left, offset, 2, 0x0000) && f_dead)
     {
       emit2 ("bool hl");
       emit2 ("ld l, h");
       cost (1 + 1, 2 + 2);
+    }
+  else if ((IS_R4K || IS_R5K || IS_R6K) && pairId == PAIR_HL && left->type == AOP_LIT && aopIsLitVal (left, offset, 2, 0x0000))
+    {
+      emit2 ("clr hl");
+      cost (2, 4);
     }
   else
     {
@@ -5337,7 +5337,7 @@ skip_byte_push_iy:
     }
 
   // Try to use Rabbit 4000 rlc bcde, 8.
-  if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && regsize >= 3)
+  if ((IS_R4K || IS_R5K_NOTYET || IS_R6K_NOTYET) && regsize >= 3)
     {
       int ex[4] = {-1, -1, -1, -1};
       bool no = !bc_dead || !de_dead;
@@ -6159,7 +6159,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           i += 4;
           continue;
         }
-      else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && i + 3 < size &&
+      else if ((IS_R4K || IS_R5K || IS_R6K) && i + 3 < size &&
         (source->type == AOP_LIT && aopIsLitVal (source, i + 1, 3, (byteOfVal (source->aopu.aop_lit, i) & 0x80) ? 0xffffff : 0x000000)) &&
         (getPairId_o (result, roffset + i + 2) == PAIR_BC && getPairId_o (result, roffset + i) == PAIR_DE || getPairId_o (result, roffset + i + 2) == PAIR_JK && getPairId_o (result, roffset + i) == PAIR_HL))
         {
@@ -12256,8 +12256,8 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
 
       // TLCS-90 and some Rabbits have some wide non-destructive compare
       if (ifx && size == 2 && !sign && aopInReg (left->aop, 0, HL_IDX) &&
-        ((IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && (getPairId (right->aop) != PAIR_INVALID || right->aop->type == AOP_LIT)) ||
-          ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && (getPairId (right->aop) == PAIR_DE || right->aop->type == AOP_LIT && ullFromVal (right->aop->aopu.aop_lit) < 128)))
+        ((IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && (getPairId (right->aop) != PAIR_INVALID || right->aop->type == AOP_LIT) ||
+          ((IS_R4K || IS_R5K || IS_R6K) && (getPairId (right->aop) == PAIR_DE || right->aop->type == AOP_LIT && ullFromVal (right->aop->aopu.aop_lit) < 128))))
         {
           emit3w (A_CP, ASMOP_HL, right->aop);
           result_in_carry = true;
