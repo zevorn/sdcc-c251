@@ -4921,7 +4921,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
 
       if (assigned[i])
         i++;
-      else if ((IS_R4K_NOTYET || IS_R4K_NOTYET || IS_R6K_NOTYET) && // The 32 bit loads of the Rabbit 4000 are the fastest way to move data to the stack.
+      else if ((IS_R4K || IS_R4K || IS_R6K) && // The 32 bit loads of the Rabbit 4000 are the fastest way to move data to the stack.
         i + 3 < n && aopOnStack (result, roffset + i, 4) && (abs(fp_offset) <= 127 || sp_offset <= 255) &&
         (aopInReg (source, soffset + i + 2, BC_IDX) && aopInReg (source, soffset + i, DE_IDX) || aopInReg (source, soffset + i + 2, JK_IDX) && aopInReg (source, soffset + i, HL_IDX)))
         {
@@ -5229,7 +5229,7 @@ skip_byte_push_iy:
     }
 
   // Try to use Rabbit 4000 ex bc, hl
-  if (IS_R4K_NOTYET || IS_R4K_NOTYET || IS_R6K_NOTYET)
+  if (IS_R4K || IS_R4K || IS_R6K)
     {
       int ex[4] = {-2, -2, -2, -2}; // Swapped bytes
       bool no = false; // Still needed byte would be overwritten
@@ -5283,7 +5283,7 @@ skip_byte_push_iy:
     }
 
   // Try to use Rabbit 4000 ex jk, hl
-  if (IS_R4K_NOTYET || IS_R4K_NOTYET || IS_R6K_NOTYET)
+  if (IS_R4K || IS_R4K || IS_R6K)
     {
       int ex[4] = {-2, -2, -2, -2}; // Swapped bytes
       bool no = false; // Still needed byte would be overwritten
