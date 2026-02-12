@@ -8503,7 +8503,7 @@ genFunction (const iCode * ic)
           emit2 ("push.l de");
           emit2 ("push.l iy");
         }
-      else if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET)
+      else if (IS_R4K || IS_R5K || IS_R6K)
         {
           emit2 ("push jkhl");
           emit2 ("push bcde");
@@ -8785,7 +8785,7 @@ genEndFunction (iCode *ic)
           emit2 ("pop.l bc");
           emit2 ("pop.l hl");
         }
-      else if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET)
+      else if (IS_R4K || IS_R5K || IS_R6K)
         {
           emit2 ("pop iy");
           emit2 ("pop bcde");

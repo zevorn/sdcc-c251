@@ -1,6 +1,13 @@
 2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c,
+	  support/regression/tests/memory.c.in,
+	  .version:
+	  Save register pair jk in r4k/r5k/r6k interrupt handlers.
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
 	  src/z80/peeph.def:
 	  Use R4K 32-bit push/pop.
 
