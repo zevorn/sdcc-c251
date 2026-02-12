@@ -70,6 +70,7 @@ TYPE rol14(TYPE s){ return (s<<14) | (s>>(SIZE-14)); }
 TYPE rol15(TYPE s){ return (s<<15) | (s>>(SIZE-15)); }
 #endif
 
+#if (!defined(__SDCC_hc08) && !defined(__SDCC_s08)) || SIZE < 32 // RFE #1013
 #if SIZE >=32
 TYPE rol16(TYPE s){ return (s<<16) | (s>>(SIZE-16)); }
 TYPE rol17(TYPE s){ return (s<<17) | (s>>(SIZE-17)); }
@@ -83,11 +84,12 @@ TYPE rol31(TYPE s){ return (s<<31) | (s>>(SIZE-31)); }
 #endif
 #endif
 #endif
+#endif
 
 void
 testRol(void)
 {
-#if !defined(__SDCC_ds390) || SIZE < 32 // Bug #3928
+#if (!defined(__SDCC_ds390) && !defined(__SDCC_hc08) && !defined(__SDCC_s08)) || SIZE < 32 // Bug #3928, RFE #1013
 #if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
     volatile TYPE t = TEST_VECT;
     TYPE u;
