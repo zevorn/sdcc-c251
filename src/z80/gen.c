@@ -17944,7 +17944,7 @@ genPointerSet (iCode *ic)
     {
       last_offset = offset;
 
-      if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && (!bit_field ? offset + 3 < size : blen >= 32) && pairId == PAIR_HL &&
+      if ((IS_R4K || IS_R5K || IS_R6K) && (!bit_field ? offset + 3 < size : blen >= 32) && pairId == PAIR_HL &&
         getPairId_o (right->aop, offset) == PAIR_DE && getPairId_o (right->aop, offset + 2) == PAIR_BC)
         {
           emit2 ("ld (hl), bcde");
