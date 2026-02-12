@@ -7957,7 +7957,7 @@ genCall (const iCode *ic)
           spillPair (PAIR_HL);
           genMove (ASMOP_HL, ic->left->aop, a_free, hl_free, de_free, true);
           adjustStack (prestackadjust, a_not_parm, bc_not_parm, de_not_parm, false, false);
-          if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET || IS_TLCS) && !jump)
+          if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS) && !jump)
             {
               emit2 ("call (hl)");
               cost2 (2, 2, 2, 2, -1, -1, 12, 13, -1, 14, 6, 6, 6, -1, -1);
@@ -7988,7 +7988,7 @@ genCall (const iCode *ic)
           else
             genMove (ASMOP_IY, IC_LEFT (ic)->aop, a_not_parm, hl_not_parm, de_not_parm, true);
           adjustStack (prestackadjust, a_not_parm, bc_not_parm, de_not_parm, hl_not_parm, false);
-          if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && !jump)
+          if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && !jump)
             {
               emit2 ("call (iy)");
               cost2 (2, 2, -1, 2, -1, -1, 12, 13, -1, 14, -1, 6, 6, -1, -1);
@@ -8114,7 +8114,7 @@ genCall (const iCode *ic)
         {
           genMove (ASMOP_JKHL, ic->left->aop, a_not_parm, true, de_not_parm, false);
           emit2 ("llcall (jkhl)");
-          cost (2, IS_R4K_NOTYET ? 29 : 20);
+          cost (2, IS_R4K ? 19 : 20);
         }
       else if (rab_llcall && bc_not_parm && ic->left->aop->regs[B_IDX] < 0 && ic->left->aop->regs[C_IDX] < 0)
         {
@@ -8878,7 +8878,7 @@ genEndFunction (iCode *ic)
           adjustStack (poststackadjust, !aopRet (sym->type) || aopRet (sym->type)->regs[A_IDX] < 0, false, bc_free && de_free, hl_free, iy_free);
           _push (bc_free ? PAIR_BC : PAIR_DE);
         }
-      else if (rab_llret && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && (bc_free && de_free || jk_free && hl_free))
+      else if (rab_llret && (IS_R4K || IS_R5K || IS_R6K) && (bc_free && de_free || jk_free && hl_free))
        {
          bool use_bcde = bc_free && de_free; // Prefer to use bcde, to prefer hl free for use in adjustStack (where it is more useful than bc and de).
          pop (use_bcde ? ASMOP_BCDE: ASMOP_JKHL, 0, 4);

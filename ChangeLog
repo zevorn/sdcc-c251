@@ -1,5 +1,10 @@
 2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c:
+	  Enable use of further R4K instructions in r4k/r5k/r6k codegen.
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/gen.c,
 	  support/regression/tests/memory.c.in,
 	  .version:
