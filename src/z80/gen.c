@@ -6130,7 +6130,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           i += 2;
           continue;
         }
-      else if((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && i + 3 < size &&
+      else if((IS_R4K || IS_R5K || IS_R6K) && i + 3 < size &&
         (result->type == AOP_IY || result->type == AOP_DIR || result->type == AOP_HL) &&
         (getPairId_o (source, soffset + i + 2) == PAIR_BC && getPairId_o (source, soffset + i) == PAIR_DE || getPairId_o (source, soffset + i + 2) == PAIR_JK && getPairId_o (source, soffset + i) == PAIR_HL))
         {
@@ -6150,7 +6150,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           i += 2;
           continue;
         }
-      else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && i + 3 < size &&
+      else if ((IS_R4K || IS_R5K || IS_R6K) && i + 3 < size &&
         (source->type == AOP_IY || source->type == AOP_DIR || source->type == AOP_HL) &&
         (getPairId_o (result, roffset + i + 2) == PAIR_BC && getPairId_o (result, roffset + i) == PAIR_DE || getPairId_o (result, roffset + i + 2) == PAIR_JK && getPairId_o (result, roffset + i) == PAIR_HL))
         {
@@ -12958,7 +12958,7 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
               offset++;
               a_result = aopInReg (left->aop, 0, A_IDX);
             }
-          else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET || IS_TLCS90) && size >= 2 && skipbyte != offset + 1 &&
+          else if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90) && size >= 2 && skipbyte != offset + 1 &&
             aopInReg (left->aop, offset, HL_IDX) && // tlcs870c(1) has cp rr, nn, but it is expensive (4 bytes).
             byteOfVal (right->aop->aopu.aop_lit, offset) <= 127 && !byteOfVal (right->aop->aopu.aop_lit, offset + 1))
             {
