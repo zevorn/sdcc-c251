@@ -1693,11 +1693,12 @@ int z80instructionSize(lineNode *pl)
     }
 
   /* Push / pop */
-  if(lineIsInst (pl, "push")  && IS_Z80N && op0start[0] == '#')
+  if(lineIsInst (pl, "push") && (IS_Z80N || IS_R4K || IS_R5K || IS_R6K) && op0start[0] == '#')
     return(4);
   if(lineIsInst (pl, "push") || lineIsInst (pl, "pop"))
     {
-      if(!STRNCASECMP(op0start, "ix", 2) || !STRNCASECMP(op0start, "iy", 2))
+      if(!STRNCASECMP(op0start, "ix", 2) || !STRNCASECMP(op0start, "iy", 2) ||
+        (IS_R4K || IS_R5K || IS_R6K) && (STRNCASECMP(op0start, "bcde", 4) || STRNCASECMP(op0start, "jkhl", 4)))
         return(2);
       return(1);
     }
