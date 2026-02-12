@@ -1,3 +1,12 @@
+2026-02-12 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabadr.c
+	  sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: more r4k instructions and .r4k10 modes of them
+
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCglue.c:
