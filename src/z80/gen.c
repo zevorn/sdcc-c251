@@ -12092,7 +12092,7 @@ genIfxJump (iCode *ic, const char *jval)
       else if (!strcmp (jval, "z") || !strcmp (jval, "nz") || !strcmp (jval, "c") || !strcmp (jval, "nc") ||
         !strcmp (jval, "m") || !strcmp (jval, "p") || !strcmp (jval, "po") || !strcmp (jval, "pe"))
         inst = jval;
-      else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) &&
+      else if ((IS_R4K || IS_R5K || IS_R6K) &&
         (!strcmp (jval, "gt") || !strcmp (jval, "lt") || !strcmp (jval, "gtu")))
         inst = jval;
       else if (IS_R6K_NOTYET &&
@@ -12156,11 +12156,11 @@ genIfxJump (iCode *ic, const char *jval)
         inst = "ge";
       else if (IS_R6K_NOTYET && !strcmp (jval, "gtu"))
         inst = "leu";
-       else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET || IS_TLCS90) && !strcmp (jval, "le"))
+       else if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90) && !strcmp (jval, "le"))
         inst = "gt";
-      else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET || IS_TLCS90) && !strcmp (jval, "ge"))
+      else if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90) && !strcmp (jval, "ge"))
         inst = "lt";
-      else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && !strcmp (jval, "leu"))
+      else if ((IS_R4K || IS_R5K || IS_R6K) && !strcmp (jval, "leu"))
         inst = "gtu";
       else
         {
@@ -15307,7 +15307,7 @@ genRotW (const iCode *ic)
             {
               if (offset > 0 &&
                 IS_RAB && (aopInReg (left->aop, offset - 1, DE_IDX) || aopInReg (left->aop, offset - 1, HL_IDX) || aopInReg (left->aop, offset - 1, IY_IDX) ||
-                (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && aopInReg (left->aop, offset - 1, BC_IDX)))
+                (IS_R4K || IS_R5K || IS_R6K) && aopInReg (left->aop, offset - 1, BC_IDX)))
                 emit3w_o (A_RR, left->aop, --offset, 0, 0);
               else
                 emit3_o (A_RR, left->aop, offset, 0, 0);
@@ -15592,12 +15592,12 @@ genLeftShift (const iCode *ic)
         (aopInReg (shiftop, offset, HL_IDX) ||
         !started && aopInReg (shiftop, offset, IY_IDX) ||
         (IS_RAB || optimize.codeSize && !started && !IS_SM83) && aopInReg (shiftop, offset, DE_IDX)) ||
-        (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && aopInReg (shiftop, offset, BC_IDX))
+        (IS_R4K || IS_R5K || IS_R6K) && aopInReg (shiftop, offset, BC_IDX))
         {
           if (aopInReg (shiftop, offset, HL_IDX) || aopInReg (shiftop, offset, IY_IDX) || IS_TLCS870C || IS_TLCS870C1)
             emit3w_o (started ? A_ADC : A_ADD, shiftop, offset, shiftop, offset);
           else if (IS_RAB && aopInReg (shiftop, offset, DE_IDX) ||
-            (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && aopInReg (shiftop, offset, BC_IDX))
+            (IS_R4K || IS_R5K || IS_R6K) && aopInReg (shiftop, offset, BC_IDX))
             {
               if (!started)
                 emit3 (A_CP, ASMOP_A, ASMOP_A);
@@ -16102,7 +16102,7 @@ genRightShift (const iCode * ic)
       {
         if (IS_RAB && !(is_signed && first) && size >= 2 && byteoffset < 2 && shiftop->type == AOP_REG &&
         (getPairId_o (shiftop, offset - 1) == PAIR_HL || getPairId_o (shiftop, offset - 1) == PAIR_DE || getPairId_o (shiftop, offset - 1) == PAIR_IY ||
-          ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && getPairId_o (shiftop, offset - 1) == PAIR_BC)))
+          ((IS_R4K || IS_R5K || IS_R6K) && getPairId_o (shiftop, offset - 1) == PAIR_BC)))
         {
           if (first)
             {
@@ -18101,7 +18101,7 @@ genIfx (iCode *ic, iCode *popIc)
       genIfxJump (ic, "nz");
       goto release;
     }
-  else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && (getPairId (cond->aop) != PAIR_INVALID && getPairId (cond->aop) != PAIR_JK))
+  else if (cond->aop->size == 2 && (IS_R4K || IS_R5K || IS_R6K) && (aopInReg (cond->aop, 0, BC_IDX) || aopInReg (cond->aop, 0, HL_IDX) || aopInReg (cond->aop, 0, IY_IDX)))
     {
       emit2 ("test %s", _pairs[getPairId (cond->aop)].name);
       cost (2, 4);
