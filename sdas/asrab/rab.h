@@ -134,11 +134,11 @@
 #define S_R16AF         41
 #define S_R16AF_ALT     42
 
+#define S_R8IP	        43
+
 /*
  * Indexing modes
  */
-#define	S_INDB		40
-#define	S_IDC		41
 #define	S_INDR		50
 #define	S_IDBC		50
 #define	S_IDDE		51
@@ -217,6 +217,9 @@
 #define X_JRE               107
 #define X_CLR               108
 #define R4K_INH2            109
+#define X_TEST              110
+#define X_CBM               111
+#define X_LDF               112
 
 #define BCDE_PG           0xDD
 #define JKHL_PG           0xFD

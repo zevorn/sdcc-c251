@@ -259,6 +259,7 @@ struct	mne	mne[] = {
     {   NULL,   "rdmode",       R3K_INH2,       0,      0x7F    },
     {   NULL,   "setusr",       R3K_INH2,       0,      0x6F    },
     {   NULL,   "sures",        R3K_INH2,       0,      0x7D    },
+    {   NULL,   "syscall",      R3K_INH2,       0,      0x75    },
     {   NULL,   "uma",          R3K_INH2,       0,      0xC0    },
     {   NULL,   "ums",          R3K_INH2,       0,      0xC8    },
 
@@ -269,7 +270,9 @@ struct	mne	mne[] = {
     {   NULL,   "lret",         S_INH2,         0,      0x45    },
     {   NULL,   "bool",         X_BOOL,         0,      0xCC    },
     {   NULL,   "ldp",          X_LDP,          0,      0x64    },
-    {   NULL,   "syscall",      R4K_INH2,       0,      0x75    },
     {   NULL,   "sysret",       R4K_INH2,       0,      0x83    },
+    {   NULL,   "test",         X_TEST,         0,      0x4C    },
+    {   NULL,   "cbm",          X_CBM,          0,      0x82    },
+    {   NULL,   "ldf",          X_LDF,          0,      0x82    },
     {   NULL,   "mulu",         X_R4K_MULU,     S_EOL,  0xA7    }
 };
