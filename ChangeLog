@@ -1,5 +1,11 @@
 2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c,
+	  src/z80/peeph.def:
+	  Use R4K 32-bit push/pop.
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* device/lib/r6k/crt0.s,
 	  src/z80/gen.c,
 	  src/z80/main.c,

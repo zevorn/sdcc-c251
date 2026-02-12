@@ -874,7 +874,7 @@ emitJP (const symbol *target, const char *condition, float probability, bool tar
         IS_R6K_NOTYET && (!strcmp (condition, "ge") || !strcmp (condition, "le") || !strcmp (condition, "leu")))
         {
           if (target_in_jr_range)
-            cost (3, 5 + IS_R6K_NOTYET);
+            cost (3, 5 + IS_R6K);
           else
             cost (4, 9);
         }
@@ -3109,26 +3109,8 @@ push (asmop *aop, int offset, int size)
            _G.stack.pushed += 2;
            size -= 2;
          }
-      else if (size >= 3 && aopInReg (aop, offset + size - 3, D_IDX) && aopInReg (aop, offset + size - 2, BC_IDX) &&
-        (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET))
-        {
-          emit2 ("push bcde");
-          cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
-          if (size >= 4 &&  aopInReg (aop, offset + size - 4, E_IDX))
-            {
-              _G.stack.pushed += 4;
-              size -= 4;
-            }
-          else
-            {
-              emit2 ("inc sp");
-              cost2 (1, 1, 1, 1, 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
-              _G.stack.pushed += 3;
-              size -= 3;
-            }
-        }
-      else if (size >= 3 && aopInReg (aop, offset + size - 3, DE_IDX) && aopInReg (aop, offset + size - 2, BC_IDX) &&
-        (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET))
+      else if (size >= 4 && aopInReg (aop, offset + size - 4, DE_IDX) && aopInReg (aop, offset + size - 2, BC_IDX) &&
+        (IS_R4K || IS_R5K || IS_R6K))
         {
           emit2 ("push bcde");
           cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
@@ -3141,6 +3123,16 @@ push (asmop *aop, int offset, int size)
           cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
           _G.stack.pushed += 4;
           size -= 4;
+        }
+      else if (size >= 3 && aopInReg (aop, offset + size - 3, D_IDX) && aopInReg (aop, offset + size - 2, BC_IDX) &&
+        (IS_R4K || IS_R5K || IS_R6K))
+        {
+          emit2 ("push bcde");
+          cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
+          emit2 ("inc sp");
+          cost2 (1, 1, 1, 1, 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
+          _G.stack.pushed += 3;
+          size -= 3;
         }
       else if (size >= 2 && getPairId_o (aop, offset + size - 2) != PAIR_INVALID && getPairId_o (aop, offset + size - 2) != PAIR_JK)
         {
@@ -3206,7 +3198,7 @@ pop (const asmop *aop, int offset, int size)
     _pop (getPairId_o (aop, offset));
   else if (size == 4 && getPairId_o (aop, offset) == PAIR_DE && getPairId_o (aop, offset + 2) == PAIR_BC)
     {
-      if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET)
+      if (IS_R4K || IS_R5K || IS_R6K)
         {
           emit2 ("pop bcde");
           cost (2, 13);
@@ -3220,7 +3212,7 @@ pop (const asmop *aop, int offset, int size)
           _pop (PAIR_BC);
         }
     }
-  else if (size == 4 && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && getPairId_o (aop, offset + 2) == PAIR_JK && getPairId_o (aop, offset) == PAIR_HL)
+  else if (size == 4 && (IS_R4K || IS_R5K || IS_R6K) && getPairId_o (aop, offset + 2) == PAIR_JK && getPairId_o (aop, offset) == PAIR_HL)
     {
       emit2 ("pop jkhl");
       cost (2, 13);
@@ -3362,7 +3354,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
               if (IS_RAB)
                 {
                   emit2 ("ld hl, 0 (hl)");
-                  cost (3, 11 + (IS_R5K_NOTYET || IS_R6K_NOTYET));
+                  cost (3, 11 + (IS_R5K || IS_R6K));
                 }
               else if (IS_EZ80 || IS_TLCS)
                 {
@@ -7286,7 +7278,7 @@ genIpush (const iCode *ic)
         {
           genMove_o (ASMOP_BCDE, 0, ic->left->aop, 0, 3, isRegDead (A_IDX, ic), isRegDead (HL_IDX, ic), true, isRegDead (IY_IDX, ic), true);
           emit3 (A_LD, ASMOP_B, ASMOP_ZERO);
-          if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET)
+          if (IS_R4K || IS_R5K || IS_R6K)
             {
               emit2 ("push bcde");
               cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
@@ -7326,7 +7318,7 @@ genIpush (const iCode *ic)
       bool iy_free = isPairDead (PAIR_IY, ic) && (iyh_free || ic->left->aop->regs[H_IDX] >= size - 2) && (iyl_free || ic->left->aop->regs[IYL_IDX] >= size - 2);
       bool jk_free = isPairDead (PAIR_JK, ic) && (j_free || ic->left->aop->regs[J_IDX] >= size - 2) && (k_free || ic->left->aop->regs[K_IDX] >= size - 2);
 
-      if (size >= 4 && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) &&
+      if (size >= 4 && (IS_R4K || IS_R5K || IS_R6K) &&
         (aopInReg (ic->left->aop, size - 2, BC_IDX) && aopInReg (ic->left->aop, size - 4, DE_IDX) || aopInReg (ic->left->aop, size - 2, JK_IDX) && aopInReg (ic->left->aop, size - 4, HL_IDX)))
         {
           emit2 (aopInReg (ic->left->aop, size - 1, B_IDX) ? "push bcde" : "push jkhl");
