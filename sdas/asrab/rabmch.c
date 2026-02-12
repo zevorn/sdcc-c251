@@ -941,28 +941,29 @@ machine(struct mne *mp)
 		}
 		t1 = addr(&e1);
 		v1 = (int) e1.e_addr;
-                if ((t1 == S_R8) && (v1 == A)) { /* "neg a" */
+                if (t1 == S_R8 && v1 == A) { /* "neg a" */
 			outab(0xED);
 			outab(op);
 			break;
 		}
-      
-                if ((t1 == S_R16) && (v1 == HL) && IS_R_4K_10_OR_R_4K_11(rxk_mode)) { /* "neg hl" */
-			if (IS_R_4K_10(rxk_mode))
-				outab( 0x7F );
-                        outab(0x4D);
-                        break;
-		} else {
-			xerr('a', "Invalid Addressing Mode."); // fixes #3842
-		}
-      
-                if (IS_ANY_R_4K(rxk_mode) &&
-                    ((t1 == S_R32_JKHL) || (t1 == S_R32_BCDE))) {
+
+                if ((t1 == S_R32_JKHL || t1 == S_R32_BCDE) && 
+			IS_ANY_R_4K(rxk_mode)) {
                         /* neg jkhl|bcde */
                         outab( ( (t1 == S_R32_BCDE) ? 0xDD : 0xFD ) );
                         outab(0x4D);
                         break;
                 }
+      
+                if (t1 == S_R16 && v1 == HL
+			&& IS_R_4K_10_OR_R_4K_11(rxk_mode)) {
+			/* "neg hl" */
+			if (IS_R_4K_10(rxk_mode))
+				outab( 0x7F );
+                        outab(0x4D);
+                        break;
+		}
+		xerr('a', "Invalid Addressing Mode.");
 		break;
       
 	case S_DJNZ:
