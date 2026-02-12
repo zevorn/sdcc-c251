@@ -1,3 +1,11 @@
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/r6k/crt0.s,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  support/regression/tests/far_rabbits.c.in:
+	  Enable use of a first Rabbit 4000 instruction (mulu) in r4k/r5k/r6k port.
+
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* device/lib/r4k/crt0.s,

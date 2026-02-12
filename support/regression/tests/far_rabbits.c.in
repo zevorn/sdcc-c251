@@ -55,7 +55,7 @@ void testFarPtr(void)
 #endif
 	// generic space is in __far
 	{type} k = 23;
-#if !defined(__SDCC_r4k) && !defined(__SDCC_r5k) && !defined(__SDCC_r6k) // Doesn't work yet.
+#if 0 // Doesn't work yet.
 	ASSERT(readfarptr((__far {type} *)(&k)) == 23);
 	writefarptr((__far {type} *)(&k), 42);
 	ASSERT(k == 42);

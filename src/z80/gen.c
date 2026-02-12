@@ -1595,9 +1595,11 @@ emit3wCost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, 
     case A_RL:
       wassert (IS_RAB);
       cost (1 + !aopInReg (op1, offset1, DE_IDX), 2 + 2 * !aopInReg (op1, offset1, DE_IDX));
+      return;
     case A_RLC:
       wassert (IS_R4K || IS_R5K || IS_R6K);
       cost (2, 4);
+      return;
     case A_RR:
       wassert (IS_RAB);
       cost (1 + (aopInReg (op1, offset1, BC_IDX) || aopInReg (op1, offset1, IY_IDX)), 2 + 2 * (aopInReg (op1, offset1, BC_IDX) || aopInReg (op1, offset1, IY_IDX)));
@@ -1605,6 +1607,7 @@ emit3wCost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, 
     case A_RRC:
       wassert (IS_R4K || IS_R5K || IS_R6K);
       cost (2, 4);
+      return;
     case A_SWAP:
       wassert (IS_R6K);
       cost (2, 4);
@@ -11710,7 +11713,7 @@ genMultTwoChar (const iCode *ic)
       cost (2, 36);
       spillPair (PAIR_DE);
     }
-  else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && ic->result->aop->size > 2 &&
+  else if ((IS_R4K || IS_R5K || IS_R6K) && ic->result->aop->size > 2 &&
     SPEC_USIGN (getSpec (operandType (ic->left))) && SPEC_USIGN (getSpec (operandType (ic->right))))
     {
       emit2 ("mulu");

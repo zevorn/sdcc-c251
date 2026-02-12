@@ -45,15 +45,15 @@ EDMR		.equ	0x420 ; Enable Dual-Mode Register
 
 	.area	_HEADER (ABS)
 
+	; Reset vector - assuming smode0 and smode1 input pins are grounded
+	.org 	0
+
 	; Switch to instruction set mode 10
 .r4k_00
 	ld	a, #0x80
 	ioi
 	ld	(EDMR), a
 .r4k_10
-
-	; Reset vector - assuming smode0 and smode1 input pins are grounded
-	.org 	0
 
 	; Setup internal interrupts. Upper byte of interrupt vector table address. Needs to be even.
 	ld	a, #2
