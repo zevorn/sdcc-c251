@@ -673,7 +673,7 @@ z80MightRead(const lineNode *pl, const char *what)
     return (argCont (larg, what));
 
   if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "cbm"))
-    return (!strcmp(what, "a"));
+    return (strchr("ahlde", *what));
 
   if(IS_EZ80 && lineIsInst (pl, "lea") ||
     IS_TLCS90 && lineIsInst (pl, "lda"))

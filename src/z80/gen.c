@@ -17300,7 +17300,7 @@ genPackBits (PAIR_ID pair, operand *right, int roffset, int blen, int bstr, PAIR
     {
       cheapMove (ASMOP_A, 0, right->aop, roffset, true);
 
-      if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && (pair == PAIR_HL && extrapair == PAIR_DE || pair == PAIR_DE && extrapair == PAIR_HL))
+      if ((IS_R4K || IS_R5K || IS_R6K) && (pair == PAIR_HL && extrapair == PAIR_DE || pair == PAIR_DE && extrapair == PAIR_HL))
         {
           AccRol (bstr);
           if (extrapair == PAIR_HL)
@@ -18137,7 +18137,7 @@ genIfx (iCode *ic, iCode *popIc)
       genIfxJump (ic, "nz");
       goto release;
     }
-  else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && !IS_FLOAT(type) && cond->aop->size == 4 &&
+  else if ((IS_R4K || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 &&
     (getPairId_o (cond->aop, 0) == PAIR_DE && getPairId_o (cond->aop, 2) == PAIR_BC || getPairId_o (cond->aop, 0) == PAIR_BC && getPairId_o (cond->aop, 2) == PAIR_DE))
     {
       emit2 ("test bcde");
@@ -18145,7 +18145,7 @@ genIfx (iCode *ic, iCode *popIc)
       genIfxJump (ic, "nz");
       goto release;
     }
-  else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && !IS_FLOAT(type) && cond->aop->size == 4 &&
+  else if ((IS_R4K || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 &&
     (getPairId_o (cond->aop, 0) == PAIR_HL && getPairId_o (cond->aop, 2) == PAIR_JK || getPairId_o (cond->aop, 0) == PAIR_JK && getPairId_o (cond->aop, 2) == PAIR_HL))
     {
       emit2 ("test jkhl");
