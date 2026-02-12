@@ -160,21 +160,17 @@ struct	mne	mne[] = {
 
     {	NULL,	".mdelete",	S_MACRO,	0,	O_MDEL	},
 
-	/* Machines */
+	/* Machines: only Rabbit CPUs */
 
+    {   NULL,   ".r2k",         S_CPU,          0,      X_R2K   },
+    {   NULL,   ".r3ka",        S_CPU,          0,      X_R3KA  },
+    {   NULL,   ".r4k00",       S_CPU,          0,      X_R4K00 },
+    {   NULL,   ".r4k01",       S_CPU,          0,      X_R4K01 },
+    {   NULL,   ".r4k10",       S_CPU,          0,      X_R4K10 },
+    {   NULL,   ".r4k11",       S_CPU,          0,      X_R4K11 },
     {   NULL,   ".r4k",         S_CPU,          0,      X_R4K11 },
-    {   NULL,   ".r4k00",      S_CPU,          0,      X_R4K00 },
-    {   NULL,   ".r4k01",      S_CPU,          0,      X_R4K01 },
-    {   NULL,   ".r4k10",      S_CPU,          0,      X_R4K10 },
-    {   NULL,   ".r4k11",      S_CPU,          0,      X_R4K11 },
-    {	NULL,	".r3k",		S_CPU,		0,	X_R3KA	}, // .r3k means for ___current___ SDCC code r3ka !!!!
-    {	NULL,	".r3ka",	S_CPU,		0,	X_R3KA	},
-    {	NULL,	".r2k",		S_CPU,		0,	X_R2K	},
-    {	NULL,	".hd64",	S_CPU,		0,	X_HD64	},
-    {	NULL,	".z180",	S_CPU,		0,	X_HD64	},
-    {	NULL,	".z80",		S_CPU,		0,	X_Z80	},
 
-        /* rabbit (warning: derived from "z80 / hd64180") */
+        /* Rabbit instructions */
 
     {   NULL,   "ld",           S_LD,           0,      0x40    },
 
@@ -259,6 +255,7 @@ struct	mne	mne[] = {
     {   NULL,   "rdmode",       R3K_INH2,       0,      0x7F    },
     {   NULL,   "setusr",       R3K_INH2,       0,      0x6F    },
     {   NULL,   "sures",        R3K_INH2,       0,      0x7D    },
+    {   NULL,   "syscall",      R3K_INH2,       0,      0x75    },
     {   NULL,   "uma",          R3K_INH2,       0,      0xC0    },
     {   NULL,   "ums",          R3K_INH2,       0,      0xC8    },
 
@@ -269,7 +266,9 @@ struct	mne	mne[] = {
     {   NULL,   "lret",         S_INH2,         0,      0x45    },
     {   NULL,   "bool",         X_BOOL,         0,      0xCC    },
     {   NULL,   "ldp",          X_LDP,          0,      0x64    },
-    {   NULL,   "syscall",      R4K_INH2,       0,      0x75    },
     {   NULL,   "sysret",       R4K_INH2,       0,      0x83    },
+    {   NULL,   "test",         X_TEST,         0,      0x4C    },
+    {   NULL,   "cbm",          X_CBM,          0,      0x82    },
+    {   NULL,   "ldf",          X_LDF,          0,      0x82    },
     {   NULL,   "mulu",         X_R4K_MULU,     S_EOL,  0xA7    }
 };

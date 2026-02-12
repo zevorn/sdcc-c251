@@ -94,8 +94,11 @@ addr(struct expr *esp)
            *     ref to memory, scan the next 'symbol' to see if
            *     it is a register or an absolute address
            */
-		if ((indx = admode(R8)) != 0) {
-			mode = S_INDB;
+                if ((indx = admode(R32_JKHL)) != 0) {
+                        mode = S_R32_JKHL;
+		} else
+                if ((indx = admode(R32_BCDE)) != 0) {
+                        mode = S_R32_BCDE;
 		} else
 		if ((indx = admode(R8X)) != 0) {
 			mode = S_R8X;
@@ -166,6 +169,9 @@ addr(struct expr *esp)
 		} else
                 if ((indx = admode(RXPC)) != 0) {
                         mode = S_RXPC;
+		} else
+                if ((indx = admode(R8IP)) != 0) {
+                        mode = S_R8IP;
 		} else {
 			mode = S_USER;
 			expr(esp, 0);
