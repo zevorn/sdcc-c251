@@ -1,3 +1,11 @@
+2026-02-13 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabadr.c
+	  sdas/asrab/rabmch.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: r4 16-bit JK instructions
+
 2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/rotate.c.in:
