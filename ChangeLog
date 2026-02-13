@@ -3,6 +3,23 @@
 	* src/z80/peep.c:
 	  Improve handling of R4K instructions in peephole optimizer.
 
+2026-02-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/sha3-256.c:
+	  Fall back to GCC-style endianness test for older host compiler.
+	* support/regression/tests/mulextra.c.in:
+	  Disable a test for pdk14, which doesn't have enough RAM.
+	* src/SDCCopt.c:
+	  Improve use of unsigned 32x8->64 multiplication support routine.
+
+2026-02-13 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabadr.c
+	  sdas/asrab/rabmch.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: r4 16-bit JK instructions
+
 2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c,
@@ -23,6 +40,11 @@
 	* src/z80/gen.c,
 	  src/z80/peep.c:
 	  Enable use of further R4K instructions in r4k/r5k/r6k codegen.
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/rotate.c.in:
+	  Disable test case that fails due to lackof optimizations (RFE #1013).
 
 2026-02-12 Janko Stamenović
 

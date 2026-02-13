@@ -170,6 +170,9 @@ addr(struct expr *esp)
                 if ((indx = admode(RXPC)) != 0) {
                         mode = S_RXPC;
 		} else
+                if ((indx = admode(R16_JK_OR_ALT)) != 0) {
+                        mode = S_R16_JK_OR_ALT;
+		} else
                 if ((indx = admode(R8IP)) != 0) {
                         mode = S_R8IP;
 		} else {
@@ -325,6 +328,12 @@ struct  adsym   R16_ALT[] = {
     {	"de'",	DE|0400	},
     {	"hl'",	HL|0400	},
     {   "",     0000 }
+};
+
+struct	adsym	R16_JK_OR_ALT[] = {
+    {	"jk'",	1|0400	},
+    {	"jk",	0|0400	},
+    {	"",	0000	}
 };
 
 struct  adsym   R32_BCDE[] = {
