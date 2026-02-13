@@ -2,6 +2,10 @@
 
 	* support/regression/tests/sha3-256.c:
 	  Fall back to GCC-style endianness test for older host compiler.
+	* support/regression/tests/mulextra.c.in:
+	  Disable a test for pdk14, which doesn't have enough RAM.
+	* src/SDCCopt.c:
+	  Improve use of unsigned 32x8->64 multiplication support routine.
 
 2026-02-13 Janko Stamenović
 
