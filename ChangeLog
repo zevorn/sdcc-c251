@@ -1,3 +1,8 @@
+2026-02-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/sha3-256.c:
+	  Fall back to GCC-style endianness test for older host compiler.
+
 2026-02-13 Janko Stamenović
 
 	* sdas/asrab/rab.h
