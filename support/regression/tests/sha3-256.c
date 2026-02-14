@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 #include <string.h>
-#if __STDC_VERSION__ >= 201112L || defined(__SDCC)
+#if __STDC_VERSION__ >= 202311L || defined(__SDCC)
 #include <stdbit.h>
 #else // Fall back to GCC-specific macro
 #define __STDC_ENDIAN_NATIVE__ __BYTE_ORDER__

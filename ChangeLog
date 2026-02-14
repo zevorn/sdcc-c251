@@ -1,3 +1,8 @@
+2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/sha3-256.c:
+	  Fix check for pre-C23 host compiler.
+
 2026-02-13 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/sha3-256.c:
