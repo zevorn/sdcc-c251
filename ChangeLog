@@ -9,6 +9,11 @@
 
 2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* support/regression/tests/sha3-256.c:
+	  Fix check for pre-C23 host compiler.
+
+2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/gen.c,
 	  src/z80/peep.c:
 	  Enable further use of R4K instructions in r4k/r5k/r6k codegen.

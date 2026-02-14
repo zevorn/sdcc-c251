@@ -282,6 +282,25 @@ static const char *srcE[8]= {
 static const char *srcD[4]= {
   "IX", "IY", "SP", "HL"
 };
+static const char *cc[16]= {
+  "M",
+  "P",
+  "SLT",
+  "SGE",
+  "SLE",
+  "SGT",
+  "VS",
+  "VC",
+
+  "EQ/Z",
+  "NE/NZ",
+  "LT/CS",
+  "GE/CC",
+  "LE",
+  "GT",
+  "T",
+  "F"
+};
 
 /* Byte index +1 */
 static const u8_t code_loc[256]= {
@@ -355,7 +374,7 @@ cl_t870c::disassc(t_addr addr, chars *comment)
   code4= rom->get(addr+4);
   code32= (code3<<24) | (code2<<16) | (code1<<8) | (code0<<0);
 
-  if ((de= get_dis_entry(addr)) == NULL)
+  if (((de= get_dis_entry(addr)) == NULL) || (de->mnemonic == NULL))
     return strdup("UNKNOWN/INVALID");
   b= de->mnemonic;
   
@@ -402,8 +421,10 @@ cl_t870c::disassc(t_addr addr, chars *comment)
 	  else if (fmt=="b_1.0")  work.appendf("%d", code1&7);
 	  else if (fmt=="b_2.0")  work.appendf("%d", code2&7);
 	  else if (fmt=="b_3.0")  work.appendf("%d", code3&7);
-	  else if (fmt=="rr_0.0h") work.append(rr_names[code0&7][0]);
-	  else if (fmt=="rr_0.0l") work.append(rr_names[code0&7][1]);
+	  else if (fmt=="rr_0.0h")work.append(rr_names[code0&7][0]);
+	  else if (fmt=="rr_0.0l")work.append(rr_names[code0&7][1]);
+	  else if (fmt=="cc")     work.append(cc[code0&0xf]);
+	  else if (fmt=="cc1")    work.append(cc[code1&0xf]);
 	  else if (fmt=="vw")
 	    {
 	      work.appendf("0x%04x", u16= code1+code2*256);
@@ -507,6 +528,24 @@ cl_t870c::disassc(t_addr addr, chars *comment)
 		  d= -d;
 		  code1= d;
 		  work.appendf("-0x%02x", code1);
+		}
+	      else
+		work.appendf("+0x%02x", d);
+	      if (comment)
+		{
+		  comment->appendf("; %04x", a);
+		}
+	    }
+	  else if (fmt=="ra8_2")
+	    {
+	      i16_t d= code2;
+	      if (d & 0x80) d|= 0xff00;
+	      u16_t a= ((addr+2) + d + 0);
+	      if (d<0)
+		{
+		  d= -d;
+		  code2= d;
+		  work.appendf("-0x%02x", code2);
 		}
 	      else
 		work.appendf("+0x%02x", d);
@@ -622,6 +661,25 @@ cl_t870c::aof_srcD(u32_t code32)
     case 7: return (i8_t)((code32>>8)&0xff) + rHL;
     }
   return 0;
+}
+
+void
+cl_t870c::stack_check_overflow(class cl_stack_op *op)
+{
+  if (op)
+    {
+      if (op->get_op() & stack_write_operation)
+	{
+	  t_addr a= op->get_after();
+	  if (a < sp_limit)
+	    {
+              class cl_error_stack_overflow *e=
+                new cl_error_stack_overflow(op);
+              e->init();
+              error(e);
+	    }
+	}
+    }
 }
 
 int
@@ -949,6 +1007,31 @@ cl_t870c::xch16_rm(C16 *a, u16_t addr)
   wr16(addr, a->get());
   a->W(t);  
   cF.W(rF|MJF);
+  return resGO;
+}
+
+int
+cl_t870c::pop(MCELL *reg)
+{
+  u16_t a= rSP+1;
+  u16_t v;
+  v= rd16(a);
+  cSP.W(a+1);
+  reg->W(v);
+  return resGO;
+}
+
+int
+cl_t870c::push(MCELL *reg)
+{
+  t_addr sp_before= rSP;
+  u16_t a= rSP-1;
+  t_mem val;
+  wr16(a, val= reg->R());
+  cSP.W(a-1);
+  class cl_stack_push *o= new cl_stack_push(instPC, val, sp_before, rSP);
+  o->init();
+  stack_write(o);
   return resGO;
 }
 
@@ -1718,6 +1801,17 @@ cl_t870c::jr(u8_t a)
 }
 
 int
+cl_t870c::jr_cc(u8_t a, bool cond)
+{
+  i8_t v= a;
+  if (cond)
+    PC= (PC + v + 0) & PCmask;
+  else
+    cF.W(rF|MJF);
+  return resGO;
+}
+
+int
 cl_t870c::jrs(u8_t code, bool cond)
 {
   i16_t v= code & 0x1f;
@@ -1728,7 +1822,8 @@ cl_t870c::jrs(u8_t code, bool cond)
       PC= (PC + v + 1) & PCmask;
       tick(extra_ticks()[page|code]);
     }
-  cF.W(rF|MJF);
+  else
+    cF.W(rF|MJF);
   return resGO;
 }
 
