@@ -1,5 +1,9 @@
 2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* Merge rabbit branch.
+
+2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/gen.c,
 	  src/z80/peep.c:
 	  Fix distance calculations across R4K instructions.
