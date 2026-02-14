@@ -993,7 +993,8 @@ packRegisters (eBBlock * ebp)
         {
           sym_link *to_type = operandType (IC_LEFT (ic));
           sym_link *from_type = operandType (IC_RIGHT (ic));
-          if ((IS_PTR (to_type) || IS_INT (to_type)) && IS_PTR (from_type))
+          if ((IS_PTR (to_type) || IS_INT (to_type)) && IS_PTR (from_type) &&
+            !(IS_RAB && (IS_FARPTR (to_type) ^ IS_FARPTR (from_type)))) // Except Rabbit casts of pointers to/from __far - could remat in principle, but would require work in codegen first.
             {
               OP_SYMBOL (IC_RESULT (ic))->remat = 1;
               OP_SYMBOL (IC_RESULT (ic))->rematiCode = ic;

@@ -299,6 +299,7 @@ z80MightReadFlag(const lineNode *pl, const char *what)
   if((IS_R4K || IS_R5K || IS_R6K) &&
     (lineIsInst (pl, "cbm") ||
     lineIsInst (pl, "clr") ||
+    lineIsInst (pl, "mulu") ||
     lineIsInst (pl, "test")))
     return false;
 
@@ -665,11 +666,14 @@ z80MightRead(const lineNode *pl, const char *what)
   if((IS_R4K || IS_R5K || IS_R6K) && (!strcmp(pl->line, "ex\tjk, hl") || !strcmp(pl->line, "ex\tjk,hl")))
     return(!strcmp(what, "h") || !strcmp(what, "l") || !strcmp(what, "j") || !strcmp(what, "k"));
 
+  if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "mulu"))
+    return (!strcmp(what, "b") || !strcmp(what, "c") || !strcmp(what, "d") || !strcmp(what, "e"));
+
   if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "test"))
     return (argCont (larg, what));
 
   if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "cbm"))
-    return (!strcmp(what, "a"));
+    return (strchr("ahlde", *what));
 
   if(IS_EZ80 && lineIsInst (pl, "lea") ||
     IS_TLCS90 && lineIsInst (pl, "lda"))
@@ -903,7 +907,8 @@ z80SurelyWritesFlag(const lineNode *pl, const char *what)
 
   if((IS_R4K || IS_R5K || IS_R6K) &&
     (lineIsInst (pl, "cbm") ||
-    lineIsInst (pl, "clr")))
+    lineIsInst (pl, "clr") ||
+    lineIsInst (pl, "mulu")))
     return false;
 
   if(lineIsInst (pl, "mlt"))
@@ -952,7 +957,7 @@ z80SurelyWritesFlag(const lineNode *pl, const char *what)
      IS_R800 && lineIsInst (pl, "multuw"))
      return (strcmp(what, "hf") && strcmp(what, "sf"));
 
-  printf("z80SurelyWritesFlag unknown asm inst line: %s\n", pl->line);
+  printf("Warning: z80SurelyWritesFlag unknown asm inst line: %s\n", pl->line);
 
   return false; // Fail-safe: we have no idea what happens at this line, so assume it writes nothing.
 }
@@ -1014,6 +1019,7 @@ z80SurelyWrites (const lineNode *pl, const char *what)
     what = "ix";
 
   const char *larg = lineArg (pl, 0);
+  const char *rarg = lineArg (pl, 1);
 
   //ld a, #0x00
   if((lineIsInst (pl, "xor") || lineIsInst (pl, "sub")) && !strcmp(what, "a") &&
@@ -1047,17 +1053,51 @@ z80SurelyWrites (const lineNode *pl, const char *what)
       return(false);
     }
 
+  if (lineIsInst (pl, "ccf") ||
+    lineIsInst (pl, "ei") ||
+    lineIsInst (pl, "di") ||
+    lineIsInst (pl, "scf"))
+    return (false);
+
+  if (lineIsInst (pl, "cp"))
+    return (false);
+
+  if (lineIsInst (pl, "cpl") ||
+    lineIsInst (pl, "daa") ||
+    lineIsInst (pl, "rla") ||
+    lineIsInst (pl, "rra") ||
+    lineIsInst (pl, "rlca") ||
+    lineIsInst (pl, "rrca"))
+    return (what[0] == 'a');
+
+  if (lineIsInst (pl, "ex"))
+    return (strstr (larg, what) || strstr (rarg, what));
+
+  if (lineIsInst (pl, "ld") && larg[0] == '-' || larg[0] == '(' || isdigit (larg[0]))
+    return (false);
   if (lineIsInst (pl, "ld") && !strncmp (larg, "hl,", 3))
     return(what[0] == 'h' || what[0] == 'l');
   if (lineIsInst (pl, "ld") && !strncmp (larg, "de,", 3))
     return(what[0] == 'd' || what[0] == 'e');
   if (lineIsInst (pl, "ld") && !strncmp (larg, "bc,", 3))
     return(what[0] == 'b' || what[0] == 'c');
+  if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "ld") && !strncmp (larg, "bcde,", 5))
+    return(strchr ("bcde", *what));
+  if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "ld") && !strncmp (larg, "jkhl,", 5))
+    return(strchr ("jkhl", *what));
+  if (lineIsInst (pl, "ld") && !strncmp (larg, "ix,", 3))
+    return(!strcmp (what, "ix"));
   if (lineIsInst (pl, "ld") && !strncmp (larg, "iy,", 3))
     return(!strcmp (what, "iy"));
   if ((lineIsInst (pl, "ld") || lineIsInst (pl, "in"))
+    && strlen(what) > 1 && larg && larg[0] && larg[1] == ',')
+    return (false);
+  if ((lineIsInst (pl, "ld") || lineIsInst (pl, "in"))
     && strlen (larg) >= strlen (what) && larg[strlen (what)] == ',')
     return (!strncmp (larg, what, strlen (what)));
+
+  if (!IS_SM83 && (lineIsInst (pl, "ldir") || lineIsInst (pl, "lddr")))
+    return(strchr ("bcdehl", *what));
 
   if(IS_RAB && lineIsInst (pl, "ldp") && strncmp(pl->line + 4, "hl", 2) == 0 && (what[0] == 'h' || what[0] == 'l'))
     return(true);
@@ -1065,10 +1105,15 @@ z80SurelyWrites (const lineNode *pl, const char *what)
   if(IS_SM83 && (lineIsInst (pl, "ldd") || lineIsInst (pl, "ldi") || lineIsInst (pl, "ldh")))
     return(strncmp(pl->line + 4, what, strlen(what)) == 0);
 
-  if(lineIsInst (pl, "pop") && !strncmp (pl->line + 4, "af", 2))
-    return(what[0] == 'a');
-  if(lineIsInst (pl, "pop") && strstr(pl->line + 4, what))
-    return(true);
+  if (lineIsInst (pl, "pop") && !strncmp (larg, "af", 2))
+    return (what[0] == 'a');
+  else if (lineIsInst (pl, "pop") && !strncmp (larg, "ix", 2))
+    return (!strcmp (what, "ix"));
+  else if (lineIsInst (pl, "pop") && !strncmp (larg, "iy", 2))
+    return (!strcmp (what, "iy"));
+  else if (lineIsInst (pl, "pop"))
+    return (strstr (larg, what));
+  
   if (lineIsInst (pl, "call") && strchr(pl->line, ',') == 0)
     return (callSurelyWrites (pl, what));
 
@@ -1082,14 +1127,6 @@ z80SurelyWrites (const lineNode *pl, const char *what)
   if (IS_Z180 || IS_EZ80 || IS_Z80N)
     if (lineIsInst (pl, "mlt"))
       return (strchr (larg, *what));
-
-  if (IS_R800)
-    if (lineIsInst (pl, "multu"))
-      return (strchr("hl", *what));
-
-  if (IS_R800)
-    if (lineIsInst (pl, "multuw"))
-      return (strchr("dehl", *what));
 
   if (IS_Z180 || IS_EZ80)
     {
@@ -1112,7 +1149,29 @@ z80SurelyWrites (const lineNode *pl, const char *what)
   if (IS_SM83 && lineIsInst (pl, "ldhl") && (what[0] == 'h' || what[0] == 'l'))
     return(true);
 
-  //printf("z80SurelyWrites unknown asm inst line: %s\n", pl->line);
+  if (IS_RAB && lineIsInst (pl, "bool"))
+    return (!strncmp (larg, what, strlen(what)) || strchr (larg, *what));
+
+  if (IS_RAB && lineIsInst (pl, "cbm"))
+    return (false);
+
+  if (IS_RAB && lineIsInst (pl, "mul"))
+    return (strchr("hlbc", *what));
+
+  if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "mulu"))
+    return (strchr ("hlbc", *what));
+
+  if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "test"))
+    return (false);
+
+  if (IS_R800 && lineIsInst (pl, "multu"))
+    return (strchr ("hl", *what));
+
+  if (IS_R800 && lineIsInst (pl, "multuw"))
+    return (strchr ("dehl", *what));
+
+  //printf("Warning: z80SurelyWrites unknown asm inst line: %s\n", pl->line);
+  //printf("larg '%s' what '%s'\n", larg ? larg : "", what);
 
   return(false);
 }
@@ -1589,10 +1648,40 @@ int z80instructionSize(lineNode *pl)
   /* All ld instructions */
   if(lineIsInst (pl, "ld"))
     {
-      /* These 4 are the only cases of 4 byte long ld instructions. */
-      if(!STRNCASECMP(op0start, "ix", 2) || !STRNCASECMP(op0start, "iy", 2))
+      // Rabbit 4000 32-bit loads
+      if ((IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP (op0start, "bcde", 2) || !STRNCASECMP (op0start, "jkhl", 2)))
+        {
+          if (op1start[0] == '(' && !STRNCASECMP(op1start, "(hl)", 2))
+            return (4); // ld bcde, (mn)
+          else if (argCont (op1start, "(ix)") || argCont (op1start, "(iy)") || argCont (op1start, "(sp)"))
+            return (3); // ld bcde, d(ix)/n(sp)
+          else
+            return(2);
+        }
+      if ((IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP (op1start, "bcde", 2) || !STRNCASECMP (op1start, "jkhl", 2)))
+        {
+          if (op1start[0] == '(' && !STRNCASECMP(op0start, "(hl)", 2))
+            return (4); // ld (mn), bcde
+          else if (argCont (op0start, "(ix)") || argCont (op0start, "(iy)") || argCont (op0start, "(sp)"))
+            return (3); // ld d(ix)/n(sp), bcde
+          else
+            return(2);
+        }
+
+      // Rabbit 16-bit pointer load
+      if(IS_RAB && !STRNCASECMP(op0start, "hl", 2) && (argCont (op1start, "(hl)") || argCont (op1start, "(iy)")))
+        return(3);
+      if(IS_RAB && !STRNCASECMP(op0start, "hl", 2) && (argCont (op1start, "(sp)") || argCont (op1start, "(ix)")))
+        return(2);
+      if(IS_RAB && (argCont (op0start, "(hl)") || argCont (op0start, "(iy)")) && !STRNCASECMP(op1start, "hl", 2) )
+        return(3);
+      if(IS_RAB && (argCont (op0start, "(sp)") || argCont (op0start, "(ix)")) && !STRNCASECMP(op1start, "hl", 2))
+        return(2);
+
+      // These 4 are the only cases of 4 byte long Z80 ld instructions.
+      if(!STRNCASECMP (op0start, "ix", 2) || !STRNCASECMP (op0start, "iy", 2))
         return(4);
-      if((argCont(op0start, "(ix)") || argCont(op0start, "(iy)")) && op1start[0] == '#')
+      if((argCont (op0start, "(ix)") || argCont (op0start, "(iy)")) && op1start[0] == '#')
         return(4);
 
       if(op0start[0] == '('               && STRNCASECMP(op0start, "(bc)", 4) &&
@@ -1603,12 +1692,6 @@ int z80instructionSize(lineNode *pl)
          STRNCASECMP(op0start, "(de)", 4) && STRNCASECMP(op1start, "(hl" , 3) &&
          STRNCASECMP(op0start, "hl", 2)   && STRNCASECMP(op0start, "a", 1))
         return(4);
-
-      /* Rabbit 16-bit pointer load */
-      if(IS_RAB && !STRNCASECMP(op0start, "hl", 2) && (argCont(op1start, "(hl)") || argCont(op1start, "(iy)")))
-        return(4);
-      if(IS_RAB && !STRNCASECMP(op0start, "hl", 2) && (argCont(op1start, "(sp)") || argCont(op1start, "(ix)")))
-        return(3);
 
       /* eZ80 16-bit pointer load */
       if(IS_EZ80 &&
@@ -1649,8 +1732,6 @@ int z80instructionSize(lineNode *pl)
       if(!STRNCASECMP(op1start, "ix", 2) || !STRNCASECMP(op1start, "iy", 2))
         return(2);
 
-      // todo: Rabbit 4000 32-bit loads!
-
       /* All other ld instructions */
       return(1);
     }
@@ -1678,17 +1759,20 @@ int z80instructionSize(lineNode *pl)
           werrorfl(pl->ic->filename, pl->ic->lineno, W_UNRECOGNIZED_ASM, __func__, 4, pl->line);
           return(4);
         }
-      if(argCont(op0start, "(sp)") && (IS_RAB || !STRNCASECMP(op1start, "ix", 2) || !STRNCASECMP(op1start, "iy", 2)))
+      if (argCont(op0start, "(sp)") && (IS_RAB || !STRNCASECMP(op1start, "ix", 2) || !STRNCASECMP(op1start, "iy", 2)))
+        return(2);
+      if ((IS_R4K || IS_R5K | IS_R6K) && (!STRNCASECMP (op0start, "bc", 2) || !STRNCASECMP (op0start, "jk", 2) || !STRNCASECMP (op0start, "bcde", 4)))
         return(2);
       return(1);
     }
 
   /* Push / pop */
-  if(lineIsInst (pl, "push")  && IS_Z80N && op0start[0] == '#')
+  if(lineIsInst (pl, "push") && (IS_Z80N || IS_R4K || IS_R5K || IS_R6K) && op0start[0] == '#')
     return(4);
   if(lineIsInst (pl, "push") || lineIsInst (pl, "pop"))
     {
-      if(!STRNCASECMP(op0start, "ix", 2) || !STRNCASECMP(op0start, "iy", 2))
+      if(!STRNCASECMP(op0start, "ix", 2) || !STRNCASECMP(op0start, "iy", 2) ||
+        (IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP(op0start, "bcde", 4) || !STRNCASECMP(op0start, "jkhl", 4)))
         return(2);
       return(1);
     }

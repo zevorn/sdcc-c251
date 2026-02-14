@@ -1,10 +1,10 @@
 ;--------------------------------------------------------------------------
-;  crt0.s - Generic crt0.s for a Rabbit 3000A
+;  crt0.s - Generic crt0.s for a Rabbit 5000
 ;	derived from "Generic crt0.s for a Z80"
 ;
 ;  Copyright (C) 2000, Michael Hope
 ;  Modified for Rabbit by Leland Morrison 2011
-;  Copyright (C) 2020, Philipp Klaus Krause
+;  Copyright (C) 2020-2025, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -41,11 +41,19 @@ MB0CR		.equ	0x14 ; Memory Bank 0 Control Register
 MB1CR		.equ	0x15 ; Memory Bank 1 Control Register
 MB2CR		.equ	0x16 ; Memory Bank 2 Control Register
 MB3CR		.equ	0x17 ; Memory Bank 3 Control Register
+EDMR		.equ	0x420 ; Enable Dual-Mode Register
 
 	.area	_HEADER (ABS)
 
 	; Reset vector - assuming smode0 and smode1 input pins are grounded
 	.org 	0
+
+	; Switch to instruction set mode 10
+.r4k00
+	ld	a, #0x80
+	ioi
+	ld	(EDMR), a
+.r4k10
 
 	; Setup internal interrupts. Upper byte of interrupt vector table address. Needs to be even.
 	ld	a, #2
@@ -144,6 +152,12 @@ skip_gsinit:
 	.area	_BSEG
 	.area   _BSS
 	.area   _HEAP
+	.area   _HEAP_END
+	.area   _SSEG
+
+	.area   _XCONST
+
+	.area   _XDATA
 
 	.area   _CODE
 _exit::
@@ -170,7 +184,6 @@ gsinit::
 	ld	d, h
 	inc	de
 	ldir
-
 zeroed_data:
 
 	ld	bc, #l__INITIALIZER

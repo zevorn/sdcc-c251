@@ -1,7 +1,31 @@
 2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* Merge rabbit branch.
+
+2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Fix distance calculations across R4K instructions.
+	* device/lib/r2ka/__muluint2ulong.s,
+	  device/lib/r3ka/__muluint2ulong.s:
+	  Fix unsigned 16x16->32 multiplication support routine for r2ka and r3ka.
+
+2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* support/regression/tests/sha3-256.c:
 	  Fix check for pre-C23 host compiler.
+
+2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Enable further use of R4K instructions in r4k/r5k/r6k codegen.
+
+2026-02-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Improve handling of R4K instructions in peephole optimizer.
 
 2026-02-13 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -19,6 +43,27 @@
 	  sdas/asrab/rabmch.c
 	  sdas/asxxsrc/asxxxx.h
 	  sdasrab: r4 16-bit JK instructions
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Enable use of further R4K instructions in r4k/r5k/r6k codegen.
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/r2ka/__muluint2ulong.s,
+	  device/lib/r3ka/__muluint2ulong.s,
+	  device/lib/r2ka/Makefile.in,
+	  device/lib/r3ka/Makefile.in,
+	  src/z80/main.c:
+	  unsigned 16x16->32 multiplication support routine for r2ka and r3ka.
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Enable use of further R4K instructions in r4k/r5k/r6k codegen.
 
 2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -41,10 +86,59 @@
 	  sdas/asxxsrc/asxxxx.h
 	  sdasrab: more r4k instructions and .r4k10 modes of them
 
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Enable use of further R4K instructions in r4k/r5k/r6k codegen.
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  support/regression/tests/memory.c.in,
+	  .version:
+	  Save register pair jk in r4k/r5k/r6k interrupt handlers.
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peeph.def:
+	  Use R4K 32-bit push/pop.
+
+2026-02-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/r6k/crt0.s,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  support/regression/tests/far_rabbits.c.in:
+	  Enable use of a first Rabbit 4000 instruction (mulu) in r4k/r5k/r6k port.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/r4k/crt0.s,
+	  device/lib/r5k/crt0.s,
+	  device/lib/r6k/crt0.s,
+	  src/z80/peep.c,
+	  srcz80/gen.c:
+	  Preparations for use of Rabbit instruction mode 10 in r4k/r5k/r6k codegen.
+
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCglue.c:
 	  Remove redundant emission of assembler directives.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/r4k/crt0.s,
+	  device/lib/r5k/crt0.s,
+	  device/lib/r6k/crt0.s,
+	  sdas/asrab/rabpst.c,
+	  src/z80/main.c:
+	  Setup for use of Rabbit instruction mode 10.
+
+2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c:
+	  Revert a change that broke ds390.
 
 2026-02-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -732,6 +826,29 @@
 	* src/SDCCopt.c,
 	  support/valdiag/tests/_Optional.c:
 	  A bit of _Optional code cleanup and additional testing.
+
+2025-12-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/malloc.c,
+	  device/lib/r2k/crt0.s,
+	  device/lib/r2ka/crt0.s,
+	  device/lib/r3ka/crt0.s,
+	  device/lib/r3ka/heap.s,
+	  device/lib/r4k/crt0.s,
+	  device/lib/r5k/crt0.s,
+	  device/lib/r6k/crt0.s,
+	  doc/sdccman.lyx,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCmain.c,
+	  src/SDCCsymt.c,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  src/z80/ralloc.c,
+	  support/regression/tests/far_rabbit_fields.c,
+	  support/regression/tests/far_rabbits.c.in,
+	  doc/rabbit-memory.svg,
+	  support/regression/tests/far_rabbit_pointers.c:
+	  Further work on Rabbit __far support.
 
 2025-12-14 Gabriele Gorla <gorlik@yahoo.com>
 
@@ -1728,7 +1845,7 @@
 	  support/regression/ports/ucez80/spec.mk,
 	  support/scripts/sdcc.nsi:
 	  Some cleanup for the ez80_z80 port to ez80 port change.
-
+	  
 2025-10-21 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCast.c,
@@ -1785,9 +1902,6 @@
 
 	* src/z80/gen.c:
 	  Improve passing of struct/union parameters for tlcs, ez80.
-
-2025-10-17 Janko Stamenović
-	  Fixing previous ChangeLog file references
 
 2025-10-17 Janko Stamenović
 

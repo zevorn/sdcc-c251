@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
-;  heap.s
+;  __muluint2ulong.s
 ;
-;  Copyright (C) 2001, Michael Hope
+;  Copyright (c) 2026, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -13,7 +13,7 @@
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ;  GNU General Public License for more details.
 ;
-;  You should have received a copy of the GNU General Public License 
+;  You should have received a copy of the GNU General Public License
 ;  along with this library; see the file COPYING. If not, write to the
 ;  Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
 ;   MA 02110-1301, USA.
@@ -26,20 +26,68 @@
 ;   might be covered by the GNU General Public License.
 ;--------------------------------------------------------------------------
 
-; Just stubs - not copyrightable
+.module __muluint2ulong
 
-        ;; Stubs that hook the heap in
-        .globl ___sdcc_heap_init
-        .globl ___sdcc_heap
+.r2k
+.optsdcc -mr2ka sdcccall(1)
+  
+.globl ___muluint2ulong
 
-        .area   _GSINIT
-        call    ___sdcc_heap_init
+; uint32_t __muluint2ulong (uint16_t l, uint16_t r);
 
-        .area   _HEAP
-___sdcc_heap::
-        ;; For now just allocate 1k of heap.
-        .ds     1023
+.area _CODE
 
-        .area   _HEAP_END
-___sdcc_heap_end::
-        .ds     1
+; An unusual aspect of the Rabbit 2000A to 3000A is that is has a signed
+; 16x16 multiplication, but not unsigned one. So we use the former to
+; implement the latter.
+
+___muluint2ulong:
+
+pop	iy
+
+ex	de, hl
+pop	hl
+rl	h
+rla
+srl	h
+push	hl
+rl	d
+rla
+srl	d
+ld	c, l
+ld	b, h
+
+mul
+push	hl
+
+bool	hl
+ld	l, h
+rrca
+jr	nc, 1$
+ld	hl, 2(sp)
+1$:
+rrca
+jr	nc, 2$
+add	hl, de
+2$:
+rr	hl
+
+ld	e, c
+ld	c, a
+rra
+and	a, #0x80
+add	a, b
+ld	d, a
+ld	a, c
+pop	bc
+adc	hl, bc
+
+ld	b, a
+rra
+and	a, b
+and	a, #0x40
+add	a, h
+ld	h, a
+
+jp	(iy)
+
