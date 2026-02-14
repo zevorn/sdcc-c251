@@ -46,14 +46,14 @@ ___muluint2ulong:
 pop	iy
 
 ex	de, hl
-rl	d
-rla
-srl	d
 pop	hl
 rl	h
 rla
 srl	h
 push	hl
+rl	d
+rla
+srl	d
 ld	c, l
 ld	b, h
 
@@ -64,7 +64,7 @@ bool	hl
 ld	l, h
 rrca
 jr	nc, 1$
-ld	hl, 0(sp)
+ld	hl, 2(sp)
 1$:
 rrca
 jr	nc, 2$

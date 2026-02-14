@@ -3,6 +3,9 @@
 	* src/z80/gen.c,
 	  src/z80/peep.c:
 	  Fix distance calculations across R4K instructions.
+	* device/lib/r2ka/__muluint2ulong.s,
+	  device/lib/r3ka/__muluint2ulong.s:
+	  Fix unsigned 16x16->32 multiplication support routine for r2ka and r3ka.
 
 2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
 
