@@ -1,5 +1,11 @@
 2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Fix some issues from the rabbit branch merge.
+
+2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/peeph.def:
 	  Fix a peephole optimizer rule issue affecting r5k.
 
