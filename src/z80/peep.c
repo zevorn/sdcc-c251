@@ -1648,10 +1648,40 @@ int z80instructionSize(lineNode *pl)
   /* All ld instructions */
   if(lineIsInst (pl, "ld"))
     {
-      /* These 4 are the only cases of 4 byte long ld instructions. */
-      if(!STRNCASECMP(op0start, "ix", 2) || !STRNCASECMP(op0start, "iy", 2))
+      // Rabbit 4000 32-bit loads
+      if ((IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP (op0start, "bcde", 2) || !STRNCASECMP (op0start, "jkhl", 2)))
+        {
+          if (op1start[0] == '(' && !STRNCASECMP(op1start, "(hl)", 2))
+            return (4); // ld bcde, (mn)
+          else if (argCont (op1start, "(ix)") || argCont (op1start, "(iy)") || argCont (op1start, "(sp)"))
+            return (3); // ld bcde, d(ix)/n(sp)
+          else
+            return(2);
+        }
+      if ((IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP (op1start, "bcde", 2) || !STRNCASECMP (op1start, "jkhl", 2)))
+        {
+          if (op1start[0] == '(' && !STRNCASECMP(op0start, "(hl)", 2))
+            return (4); // ld (mn), bcde
+          else if (argCont (op0start, "(ix)") || argCont (op0start, "(iy)") || argCont (op0start, "(sp)"))
+            return (3); // ld d(ix)/n(sp), bcde
+          else
+            return(2);
+        }
+
+      // Rabbit 16-bit pointer load
+      if(IS_RAB && !STRNCASECMP(op0start, "hl", 2) && (argCont (op1start, "(hl)") || argCont (op1start, "(iy)")))
+        return(3);
+      if(IS_RAB && !STRNCASECMP(op0start, "hl", 2) && (argCont (op1start, "(sp)") || argCont (op1start, "(ix)")))
+        return(2);
+      if(IS_RAB && (argCont (op0start, "(hl)") || argCont (op0start, "(iy)")) && !STRNCASECMP(op1start, "hl", 2) )
+        return(3);
+      if(IS_RAB && (argCont (op0start, "(sp)") || argCont (op0start, "(ix)")) && !STRNCASECMP(op1start, "hl", 2))
+        return(2);
+
+      // These 4 are the only cases of 4 byte long Z80 ld instructions.
+      if(!STRNCASECMP (op0start, "ix", 2) || !STRNCASECMP (op0start, "iy", 2))
         return(4);
-      if((argCont(op0start, "(ix)") || argCont(op0start, "(iy)")) && op1start[0] == '#')
+      if((argCont (op0start, "(ix)") || argCont (op0start, "(iy)")) && op1start[0] == '#')
         return(4);
 
       if(op0start[0] == '('               && STRNCASECMP(op0start, "(bc)", 4) &&
@@ -1662,12 +1692,6 @@ int z80instructionSize(lineNode *pl)
          STRNCASECMP(op0start, "(de)", 4) && STRNCASECMP(op1start, "(hl" , 3) &&
          STRNCASECMP(op0start, "hl", 2)   && STRNCASECMP(op0start, "a", 1))
         return(4);
-
-      /* Rabbit 16-bit pointer load */
-      if(IS_RAB && !STRNCASECMP(op0start, "hl", 2) && (argCont(op1start, "(hl)") || argCont(op1start, "(iy)")))
-        return(4);
-      if(IS_RAB && !STRNCASECMP(op0start, "hl", 2) && (argCont(op1start, "(sp)") || argCont(op1start, "(ix)")))
-        return(3);
 
       /* eZ80 16-bit pointer load */
       if(IS_EZ80 &&
@@ -1708,8 +1732,6 @@ int z80instructionSize(lineNode *pl)
       if(!STRNCASECMP(op1start, "ix", 2) || !STRNCASECMP(op1start, "iy", 2))
         return(2);
 
-      // todo: Rabbit 4000 32-bit loads!
-
       /* All other ld instructions */
       return(1);
     }
@@ -1737,7 +1759,9 @@ int z80instructionSize(lineNode *pl)
           werrorfl(pl->ic->filename, pl->ic->lineno, W_UNRECOGNIZED_ASM, __func__, 4, pl->line);
           return(4);
         }
-      if(argCont(op0start, "(sp)") && (IS_RAB || !STRNCASECMP(op1start, "ix", 2) || !STRNCASECMP(op1start, "iy", 2)))
+      if (argCont(op0start, "(sp)") && (IS_RAB || !STRNCASECMP(op1start, "ix", 2) || !STRNCASECMP(op1start, "iy", 2)))
+        return(2);
+      if ((IS_R4K || IS_R5K | IS_R6K) && (!STRNCASECMP (op0start, "bc", 2) || !STRNCASECMP (op0start, "jk", 2) || !STRNCASECMP (op0start, "bcde", 4)))
         return(2);
       return(1);
     }
@@ -1748,7 +1772,7 @@ int z80instructionSize(lineNode *pl)
   if(lineIsInst (pl, "push") || lineIsInst (pl, "pop"))
     {
       if(!STRNCASECMP(op0start, "ix", 2) || !STRNCASECMP(op0start, "iy", 2) ||
-        (IS_R4K || IS_R5K || IS_R6K) && (STRNCASECMP(op0start, "bcde", 4) || STRNCASECMP(op0start, "jkhl", 4)))
+        (IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP(op0start, "bcde", 4) || !STRNCASECMP(op0start, "jkhl", 4)))
         return(2);
       return(1);
     }

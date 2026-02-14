@@ -7330,10 +7330,10 @@ genIpush (const iCode *ic)
           emit3w_o (A_PUSH, ic->left->aop, size - 2, 0, 0);
           d = 2;
         }
-      else if (size >= 4 && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) &&
+      else if (size >= 4 && (IS_R4K || IS_R5K || IS_R6K) &&
         (ic->left->aop->type == AOP_STK || ic->left->aop->type == AOP_IY) && (bc_free && de_free || jk_free && hl_free ))
         {
-          bool use_bcde = bc_free && de_free ;
+          bool use_bcde = bc_free && de_free;
           genMove_o (use_bcde ? ASMOP_BCDE : ASMOP_JKHL, 0, ic->left->aop, size - 4, 4, a_free, hl_free, de_free, iy_free, true);
           emit2 (use_bcde ? "push bcde" : "push jkhl");
           cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);

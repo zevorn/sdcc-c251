@@ -336,7 +336,7 @@ interpretLine (lineNode **pl, char *buff, bool back)
             {
               dist += port->peep.getSize(*pl);
 #if 0
-              fprintf(stderr, "Line: %s, dist: %i, total: %i\n", (*pl)->line, port->peep.getSize(*pl), dist);
+              fprintf(stderr, "Line: \"%s\" dist: %i, total: %i\n", (*pl)->line, port->peep.getSize(*pl), dist);
 #endif
             }
           else
