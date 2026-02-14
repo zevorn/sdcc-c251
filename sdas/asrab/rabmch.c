@@ -358,6 +358,14 @@ machine(struct mne *mp)
                         outab(0x42 | v2 << 4);
                         break;
                 }
+		if (t1 == S_R16 && v1 == HL &&
+		     rf == S_SUB && t2 == S_R16_JK_OR_ALT
+		     && (v2&0xff) == 0 && IS_R_4K_10_OR_R_4K_11(rxk_mode)) {
+			if (IS_R_4K_10(rxk_mode))
+				outab( 0x7F );
+			outab(0x45);
+			break;
+		}
                 if ((t1 == S_R16) && (v1 == HL) &&
                     (t2 == S_R16) && (v2 == DE)) {
 			if (op == 0xA0) { /* and */
@@ -461,8 +469,8 @@ machine(struct mne *mp)
 			break;
 		}
 
-                if ((t1 == S_R32_JKHL) && (t2 == S_R32_BCDE) &&
-                    (rf == S_ADD)) {
+                if (t1 == S_R32_JKHL && t2 == S_R32_BCDE &&
+                        rf == S_ADD && IS_ANY_R_4K(rxk_mode)) {
                         /* rabbit 4000 - ED C6   "add  jkhl, bcde"  */
                         outab(0xED);
                         outab(0xC6);
@@ -472,23 +480,33 @@ machine(struct mne *mp)
 		v1 = (int) e1.e_addr;
 		v2 = (int) e2.e_addr;
 
-                if ((t1 == S_R16) && (v1 == SP) && (t2 == S_IMMED)) {
-                        /* rabbit 4000 - add sp,#n  n=signed displacement */
+                if ( t1 == S_R16 && v1 == SP && t2 == S_IMMED) {
+                        /* add sp,#n  n=signed displacement */
 			outab(0x27);
 			outrb(&e2, 0);
 			break;
 		}
 
-                if ((t1 == S_R16) && (v1 == HL) && (t2 == S_R16)) {
-                        if (v2 > SP)
-                                aerr( );
+                if (t1 == S_R16 && v1 == HL) {
+			if (t2 == S_R16) {
+				if (v2 > SP)
+					aerr( );
 
-                        if (rf == S_ADC)
-                                outab(0xED);
+				if (rf == S_ADC)
+					outab(0xED);
 
-                        op = (rf == S_ADD) ? 0x09 : 0x4A;
-                        outab(op | (v2 << 4) );
-                        break;
+				op = (rf == S_ADD) ? 0x09 : 0x4A;
+				outab(op | (v2 << 4));
+				break;
+			}
+			if (t2 == S_R16_JK_OR_ALT && 
+				(v2&0xff) == 0 &&
+				IS_R_4K_10_OR_R_4K_11(rxk_mode)) {
+				if (IS_R_4K_10(rxk_mode))
+					outab( 0x7F );
+				outab(0x65); // add hl, jk
+				break;
+			}
                 }
 
                 if ((t1 == S_R16) && ((v1 == IX) || (v1 == IY)) &&
@@ -586,6 +604,22 @@ machine(struct mne *mp)
 			outrw(&e2, 0);
 			break;
 		}
+		if (t1 == S_R16_JK_OR_ALT && (v1&0xff)==0
+			&& IS_R_4K_10_OR_R_4K_11(rxk_mode)) {
+				if (t2 == S_INDM) {
+					if (IS_R_4K_10(rxk_mode))
+						outab( 0x7F );
+					outab(0x99);
+					outrw(&e2, 0);
+					break;
+				} else if (t2 == S_IMMED) {
+					if (IS_R_4K_10(rxk_mode))
+						outab( 0x7F );
+					outab(0xA9);
+					outrw(&e2, 0);
+					break;
+				}
+		}
                 if ((t1 == S_R16) && (v1 == HL))
                 {
                         if ((t2 == S_IDIX) || (t2 == S_IDIY) ||
@@ -640,6 +674,15 @@ machine(struct mne *mp)
 				outab(0xED);
 				outab(0x43 | (v2<<4));
 			}
+			outrw(&e1, 0);
+			break;
+		}
+		if (t1 == S_INDM && t2 == S_R16_JK_OR_ALT
+			&& (v2&0xff)==0
+			&& IS_R_4K_10_OR_R_4K_11(rxk_mode)) {
+			if (IS_R_4K_10(rxk_mode))
+				outab( 0x7F );
+			outab(0x89);
 			outrw(&e1, 0);
 			break;
 		}
@@ -868,8 +911,20 @@ machine(struct mne *mp)
                                         outab(0x74);
                                         break;
                                 }
-                        }
-        
+			} else if (IS_R_4K_10_OR_R_4K_11(rxk_mode)) {
+				if (t1 == S_R16_JK_OR_ALT && v2 == HL) {
+					if (v1) {
+						outab( 0xED );
+						outab( 0x7C );
+						break;
+					} else {
+						if (IS_R_4K_10(rxk_mode))
+							outab( 0x7F );
+						outab( 0xB9 );
+						break;
+					}
+				}
+			}
                         if ((t1 == S_IDSP) && (v1 == 0)) {
                                 /* 0xE3 is EX DE',HL on rabbit 2000 
                                  * but DD/FD E3 "ex (sp),ix|iy" is valid
@@ -889,7 +944,10 @@ machine(struct mne *mp)
                         outab(0x08);
                         break;
                 }
-                if ((t1==S_R32_JKHL) && (t2==S_R32_BCDE)) {
+                if (t1==S_R32_JKHL && t2==S_R32_BCDE &&
+			IS_R_4K_10_OR_R_4K_11(rxk_mode)) {
+			if (IS_R_4K_10(rxk_mode))
+				outab( 0x7F );
                         outab(0xB4);
                         break;
                 }

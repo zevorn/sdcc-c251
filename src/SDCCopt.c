@@ -884,37 +884,56 @@ convilong (iCode *ic, eBBlock *ebp)
         }
     }
   if (op == '*' && (mul_u32_u8_64 || port->hasNativeMulFor) &&
-    (IS_SYMOP (left) && bitVectnBitsOn (OP_DEFS (left)) == 1 /*|| IS_OP_LITERAL (left) && operandLitValue (left) < 256 && operandLitValue (left) >= 0*/) &&
-    (IS_SYMOP (right) && bitVectnBitsOn (OP_DEFS (right)) == 1 /*|| IS_OP_LITERAL (right) && operandLitValue (right) < 256 && operandLitValue (right) >= 0*/) &&
+    (IS_SYMOP (left) && bitVectnBitsOn (OP_DEFS (left)) == 1 || IS_OP_LITERAL (left) && operandLitValue (left) <= 255 && operandLitValue (left) >= 0) &&
+    (IS_SYMOP (right) && bitVectnBitsOn (OP_DEFS (right)) == 1 || IS_OP_LITERAL (right) && operandLitValue (right) <= 255 && operandLitValue (right) >= 0) &&
     getSize (leftType) == 8 && getSize (rightType) == 8)
     {
       iCode *lic = IS_SYMOP (left) ? hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (left))) : 0;
       iCode *ric = IS_SYMOP (right) ? hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (right))) : 0;
 
-      if ((lic && lic->op == CAST && IS_INTEGRAL (operandType (lic->right)) && getSize (operandType (lic->right)) <= 4 && SPEC_USIGN (operandType (lic->right))) && // Todo: Allow !lic / !ric for literal operands?
-        (ric && ric->op == CAST && IS_INTEGRAL (operandType (ric->right)) && getSize (operandType (ric->right)) <= 1 && SPEC_USIGN (operandType (ric->right))))
+      bool swapop = false;
+      if (ric && ric->op == CAST && getSize (operandType (ric->right)) > 1 || IS_OP_LITERAL (right) && (operandLitValue (right) < 0 || operandLitValue (right) > 255))
+        {
+          iCode *tic = lic;
+          lic = ric;
+          ric = tic;
+          swapop = true;
+        }
+      sym_link *roptype =  (ric && ric->op == CAST) ? operandType (ric->right) : UCHARTYPE;
+
+      if ((lic && lic->op == CAST && IS_INTEGRAL (operandType (lic->right)) && getSize (operandType (lic->right)) <= 4 && SPEC_USIGN (operandType (lic->right))) && // todo: allow literal left?
+        (!ric || ric->op == CAST && IS_INTEGRAL (operandType (ric->right)) && getSize (operandType (ric->right)) <= 1 && SPEC_USIGN (operandType (ric->right))))
         {
           func = mul_u32_u8_64;
 
-          if (func || port->hasNativeMulFor && lic && ric && port->hasNativeMulFor (ic, operandType (lic->right), operandType (ric->right)))
+          if (func || port->hasNativeMulFor && lic && ric && port->hasNativeMulFor (ic, operandType (lic->right), roptype))
             {
+              if (swapop)
+                {
+                  operand *top = ic->left;
+                  ic->left = ic->right;
+                  ic->right = top;
+                  left = ic->left;
+                  right = ic->right;
+                }
+
               if (!lic)
-                ic->left = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (left), operandLitValueUll (left)), false);
+                ic->left = operandFromValue (valCastLiteral (newLongLink(), operandLitValue (left), operandLitValueUll (left)), false);
               else
                 {
-                  if (getSize (operandType (IC_RIGHT (lic))) == 4)
+                  if (getSize (operandType (lic->right)) == 4)
                     lic->op = '=';
                   OP_SYMBOL (left)->type = newLongLink ();
                   SPEC_USIGN (OP_SYMBOL (left)->type) = 1;
                 }   
 
               if (!ric)
-                ic->right = operandFromValue (valCastLiteral (newIntLink(), operandLitValue (right), operandLitValueUll (right)), false);
+                ic->right = operandFromValue (valCastLiteral (roptype, operandLitValue (right), operandLitValueUll (right)), false);
               else
                 {
                   ric->op = '=';
                   OP_SYMBOL (right)->type = newCharLink ();
-                  SPEC_USIGN (OP_SYMBOL (left)->type) = 1;
+                  SPEC_USIGN (OP_SYMBOL (right)->type) = 1;
                 }    
 
               if (func) // Use support function
@@ -922,6 +941,12 @@ convilong (iCode *ic, eBBlock *ebp)
               else // Native
                 return;
             }
+        }
+      if (swapop)
+        {
+          iCode *tic = lic;
+          lic = ric;
+          ric = tic;
         }
     }
   if (op == '*' && (mul_32_32_64[0] || mul_16_16_32[1] || port->hasNativeMulFor) &&
@@ -1042,8 +1067,8 @@ found:
   wassert (func);
 
   // Update left and right - they might have changed due to inserted casts.
-  left = IC_LEFT (ic);
-  right = IC_RIGHT (ic);
+  left = ic->left;
+  right = ic->right;
   unsetDefsAndUses (ic);
   remiCodeFromeBBlock (ebp, ic);
 
@@ -4029,9 +4054,9 @@ eBBlockFromiCode (iCode *ic)
    * receives for unused parameters.
    */
   discardDeadParamReceives (ebbi->bbOrder, ebbi->count);
-
+dumpEbbsToFileExt (DUMP_CUSTOM0, ebbi);
   narrowReads (ebbi);
-
+dumpEbbsToFileExt (DUMP_CUSTOM1, ebbi);
   checkRestartAtomic (ebbi);
 
   /* allocate registers & generate code */

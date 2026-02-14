@@ -83,7 +83,7 @@ void *malloc(size_t size)
 		__sdcc_heap_init();
 #endif
 
-	if(/*!size || implementation choice - allow 0-sized allocations - makes it easier to have consitency between malloc and realloc */ size + offsetof(struct header, next_free) < size)
+	if(/*!size || implementation choice - allow 0-sized allocations - makes it easier to have consistency between malloc and realloc */ size + offsetof(struct header, next_free) < size)
 		return(0);
 	size += offsetof(struct header, next_free);
 	if(size < sizeof(struct header)) // Requiring a minimum size makes it easier to implement free(), and avoid memory leaks.
