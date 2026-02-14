@@ -88,6 +88,25 @@ enum flag_mask_t {
   MALL= MJF|MZF|MCF|MHF|MSF|MVF
 };
 
+#define COND_Z		(rF&MZF)
+#define COND_NZ		(!(rF&MZF))
+#define COND_CS		(rF&MCF)
+#define COND_CC		(!(rF&MCF))
+#define COND_LE		(rF&(MCF|MZF))
+#define COND_GT		(!(rF&(MCF|MZF)))
+#define COND_T		(rF&MJF)
+#define COND_F		(!(rF&MJF))
+
+#define S_XOR_V		(((rF&MSF)?1:0)^((rF&MVF)?1:0))
+#define COND_M		(rF&MSF)
+#define COND_P		(!(rF&MSF))
+#define COND_SLT	(S_XOR_V)
+#define COND_SGE	(!S_XOR_V)
+#define COND_SLE        (S_XOR_V || COND_Z)
+#define COND_SGT	(!S_XOR_V && COND_NZ)
+#define COND_VS		(rF&MVF)
+#define COND_VC		(!(rF&MVF))
+
 // bit nr to bit mask converter
 extern u8_t bit_mask[8];
 
@@ -144,6 +163,7 @@ public:
   virtual u16_t aof_dst5(u32_t code32);
   virtual u16_t aof_srcE(u32_t code32);
   virtual u16_t aof_srcD(u32_t code32);
+  virtual void stack_check_overflow(class cl_stack_op *op);
   
   virtual int exec_inst(void);
   virtual int exec1(void);
@@ -196,6 +216,9 @@ public:
   virtual int xch16_rr(C16 *a, C16 *b);
   virtual int xch16_rm(C16 *a, u16_t addr);
 
+  virtual int pop(MCELL *reg);
+  virtual int push(MCELL *reg);
+  
   // bit operations
   virtual int ld1m(C8 *src, u8_t bitnr);
   virtual int ld1r(C8 *src, u8_t bitnr);
@@ -240,6 +263,7 @@ public:
   // jump
   virtual int jr(u8_t a);
   virtual int jrs(u8_t code, bool cond);
+  virtual int jr_cc(u8_t a, bool cond);
   
 #include "alias870c.h"
   // 0 00 - 0 00
@@ -324,6 +348,10 @@ public:
   virtual int LD_rrSP_mn(MP) { return ldi16(&cSP, mn()); }
   virtual int instruction_4f(MP) { sd_pca(); return execS(); }
   // 0 50 - 0 5f
+  virtual int PUSH_rrWA(MP) { return push(&cWA); }
+  virtual int PUSH_rrBC(MP) { return push(&cBC); }
+  virtual int PUSH_rrDE(MP) { return push(&cDE); }
+  virtual int PUSH_rrHL(MP) { return push(&cHL); }
   virtual int instruction_54(MP) { sd_ixd(); return execD(); }
   virtual int instruction_55(MP) { sd_iyd(); return execD(); }
   virtual int instruction_56(MP) { sd_spd(); return execD(); }
@@ -431,10 +459,22 @@ public:
   virtual int CLR_mx_6(MP) { sd_x(); return clrm(sdc, 6); }
   virtual int CLR_mx_7(MP) { sd_x(); return clrm(sdc, 7); }
   // 0 d0 - 0 df
+  virtual int POP_rrWA(MP) { return pop(&cWA); }
+  virtual int POP_rrBC(MP) { return pop(&cBC); }
+  virtual int POP_rrDE(MP) { return pop(&cDE); }
+  virtual int POP_rrHL(MP) { return pop(&cHL); }
   virtual int instruction_d4(MP) { sd_ixd(); return execS(); }
   virtual int instruction_d5(MP) { sd_iyd(); return execS(); }
   virtual int instruction_d6(MP) { sd_spd(); return execS(); }
   virtual int instruction_d7(MP) { sd_hld(); return execS(); }
+  virtual int JR_Z(MP)  { return jr_cc(fetch(), COND_Z); }
+  virtual int JR_NZ(MP) { return jr_cc(fetch(), COND_NZ); }
+  virtual int JR_CS(MP) { return jr_cc(fetch(), COND_CS); }
+  virtual int JR_CC(MP) { return jr_cc(fetch(), COND_CC); }
+  virtual int JR_LE(MP) { return jr_cc(fetch(), COND_LE); }
+  virtual int JR_GT(MP) { return jr_cc(fetch(), COND_GT); }
+  virtual int JR_T(MP)  { return jr_cc(fetch(), COND_T); }
+  virtual int JR_F(MP)  { return jr_cc(fetch(), COND_F); }
   // 0 e0 - 0 ef
   virtual int instruction_e0(MP) { sd_x(); return execS(); }
   virtual int instruction_e1(MP) { sd_vw(); return execS(); }
@@ -679,6 +719,16 @@ public:
   virtual int CLR_g_6(MP) { return clrr(regs8[sda], 6); }
   virtual int CLR_g_7(MP) { return clrr(regs8[sda], 7); }
   // 1 d0 - 1 df
+  virtual int JR_M(MP)   { return jr_cc(fetch(), COND_M); }
+  virtual int JR_P(MP)   { return jr_cc(fetch(), COND_P); }
+  virtual int JR_SLT(MP) { return jr_cc(fetch(), COND_SLT); }
+  virtual int JR_SGE(MP) { return jr_cc(fetch(), COND_SGE); }
+  virtual int JR_SLE(MP) { return jr_cc(fetch(), COND_SLE); }
+  virtual int JR_SGT(MP) { return jr_cc(fetch(), COND_SGT); }
+  virtual int JR_VS(MP)  { return jr_cc(fetch(), COND_VS); }
+  virtual int JR_VC(MP)  { return jr_cc(fetch(), COND_VC); }
+  virtual int PUSH_gg(MP) { return push(regs16[sda]); }
+  virtual int POP_gg(MP) { return pop(regs16[sda]); }
   virtual int DAA_g(MP);
   virtual int DAS_g(MP);
   virtual int LD_PSW_n(MP) { cF.W(fetch()); return resGO; }
