@@ -1967,6 +1967,8 @@ linkEdit (char **envp)
         {
           WRITE_SEG_LOC ("_CODE", options.code_loc);
           WRITE_SEG_LOC ("_DATA", options.data_loc);
+          if (TARGET_RABBIT_LIKE)
+            WRITE_SEG_LOC ("_XDATA", options.xdata_loc);
         }
 
       /* If the port has any special linker area declarations, get 'em */

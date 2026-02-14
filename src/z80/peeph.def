@@ -374,7 +374,7 @@ replace restart {
 	; common peephole 26d moved push %1 before de/hl swap.
 	push	%1
 	ex	de, hl
-} if notSame(%1 'hl' 'de')
+} if notSame(%1 'hl' 'de'), notSame(%1 'bcde'), notSame(%1 'jkhl')
 
 replace restart {
 	ex	de, hl

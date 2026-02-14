@@ -282,6 +282,78 @@ static const char *srcE[8]= {
 static const char *srcD[4]= {
   "IX", "IY", "SP", "HL"
 };
+static const char *cc[16]= {
+  "M",
+  "P",
+  "SLT",
+  "SGE",
+  "SLE",
+  "SGT",
+  "VS",
+  "VC",
+
+  "EQ/Z",
+  "NE/NZ",
+  "LT/CS",
+  "GE/CC",
+  "LE",
+  "GT",
+  "T",
+  "F"
+};
+
+/* Byte index +1 */
+static const u8_t code_loc[256]= {
+  /* 0 */ 1,0,0,0, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* 1 */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* 2 */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* 3 */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* 4 */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,2,
+  /* 5 */ 1,1,1,1, 3,3,3,3, 1,1,1,1, 1,1,1,1,
+  /* 6 */ 1,1,1,1, 1,1,1,1, 0,0,0,0, 0,0,0,0,
+  /* 7 */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* 8 */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* 9 */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* a */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* b */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* c */ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+  /* d */ 1,1,1,1, 3,3,3,3, 1,1,1,1, 1,1,1,1,
+  /* e */ 3,4,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2,
+  /* f */ 3,4,2,2, 2,2,2,2, 0,1,1,1, 1,1,1,1
+};
+
+struct dis_entry *
+cl_t870c::get_dis_entry(t_addr addr)
+{
+  t_mem code32;
+  u8_t code0, code1, code2, code3, code4;
+  int i;
+  struct dis_entry *dtab, *de;
+  
+  code0= rom->get(addr);
+  code1= rom->get(addr+1);
+  code2= rom->get(addr+2);
+  code3= rom->get(addr+3);
+  code4= rom->get(addr+4);
+  code32= (code3<<24) | (code2<<16) | (code1<<8) | (code0<<0);
+
+  if ((dtab= dis_tbl()) == NULL)
+    return NULL;
+  u32_t cloc, cmask;
+  cloc= code_loc[code0]-1;
+  cmask= 0x000000ff << (8*cloc);
+  if ((code0 == 0xf9) && (type->type == CPU_TLCS870C))
+    return NULL;
+  i= 0;
+  while (
+	 ((code32 & dtab[i].mask) != dtab[i].code ||
+	  !(dtab[i].mask & cmask))
+	 &&
+	 dtab[i].mnemonic)
+    i++;
+  de= &dtab[i];
+  return de;
+}
 
 char *
 cl_t870c::disassc(t_addr addr, chars *comment)
@@ -293,6 +365,7 @@ cl_t870c::disassc(t_addr addr, chars *comment)
   int i;
   bool first;
   u16_t u16;
+  struct dis_entry *dtab, *de;
   
   code= code0= rom->get(addr);
   code1= rom->get(addr+1);
@@ -301,17 +374,9 @@ cl_t870c::disassc(t_addr addr, chars *comment)
   code4= rom->get(addr+4);
   code32= (code3<<24) | (code2<<16) | (code1<<8) | (code0<<0);
 
-  if ((code0 == 0xf9) && (type->type == CPU_TLCS870C))
-    return strdup("INVALID");
-  i= 0;
-  while ((code32 & dis_tbl()[i].mask) != dis_tbl()[i].code &&
-	 dis_tbl()[i].mnemonic)
-    i++;
-  if (dis_tbl()[i].mnemonic == NULL)
-    {
-      return strdup("UNKNOWN/INVALID");
-    }
-  b= dis_tbl()[i].mnemonic;
+  if (((de= get_dis_entry(addr)) == NULL) || (de->mnemonic == NULL))
+    return strdup("UNKNOWN/INVALID");
+  b= de->mnemonic;
   
   first= true;
   for (i=0; b[i]; i++)
@@ -356,8 +421,10 @@ cl_t870c::disassc(t_addr addr, chars *comment)
 	  else if (fmt=="b_1.0")  work.appendf("%d", code1&7);
 	  else if (fmt=="b_2.0")  work.appendf("%d", code2&7);
 	  else if (fmt=="b_3.0")  work.appendf("%d", code3&7);
-	  else if (fmt=="rr_0.0h") work.append(rr_names[code0&7][0]);
-	  else if (fmt=="rr_0.0l") work.append(rr_names[code0&7][1]);
+	  else if (fmt=="rr_0.0h")work.append(rr_names[code0&7][0]);
+	  else if (fmt=="rr_0.0l")work.append(rr_names[code0&7][1]);
+	  else if (fmt=="cc")     work.append(cc[code0&0xf]);
+	  else if (fmt=="cc1")    work.append(cc[code1&0xf]);
 	  else if (fmt=="vw")
 	    {
 	      work.appendf("0x%04x", u16= code1+code2*256);
@@ -469,6 +536,24 @@ cl_t870c::disassc(t_addr addr, chars *comment)
 		  comment->appendf("; %04x", a);
 		}
 	    }
+	  else if (fmt=="ra8_2")
+	    {
+	      i16_t d= code2;
+	      if (d & 0x80) d|= 0xff00;
+	      u16_t a= ((addr+2) + d + 0);
+	      if (d<0)
+		{
+		  d= -d;
+		  code2= d;
+		  work.appendf("-0x%02x", code2);
+		}
+	      else
+		work.appendf("+0x%02x", d);
+	      if (comment)
+		{
+		  comment->appendf("; %04x", a);
+		}
+	    }
 	  else if (fmt=="a16_1")
 	    {
 	      u16_t a= code1 + code2*256;
@@ -511,23 +596,11 @@ cl_t870c::disassc(t_addr addr, chars *comment)
 int
 cl_t870c::inst_length(t_addr addr)
 {
-  struct dis_entry *tabl= dis_tbl();
-  int i;
-  t_mem code, code0;
+  struct dis_entry *de= get_dis_entry(addr);
 
-  if (!rom)
-    return(0);
-
-  code0= rom->get(addr);
-  code = code0;
-  code+= rom->get(addr+1)<<8;
-  code+= rom->get(addr+2)<<16;
-  code+= rom->get(addr+3)<<24;
-
-  if ((code0 == 0xf9) && (type->type == CPU_TLCS870C))
+  if ((de == NULL) || (de->mnemonic == NULL))
     return 1;
-  for (i= 0; tabl[i].mnemonic && (code & tabl[i].mask) != tabl[i].code; i++) ;
-  return(tabl[i].mnemonic?tabl[i].length:1);
+  return de->length;
 }
 
 u16_t
@@ -588,6 +661,25 @@ cl_t870c::aof_srcD(u32_t code32)
     case 7: return (i8_t)((code32>>8)&0xff) + rHL;
     }
   return 0;
+}
+
+void
+cl_t870c::stack_check_overflow(class cl_stack_op *op)
+{
+  if (op)
+    {
+      if (op->get_op() & stack_write_operation)
+	{
+	  t_addr a= op->get_after();
+	  if (a < sp_limit)
+	    {
+              class cl_error_stack_overflow *e=
+                new cl_error_stack_overflow(op);
+              e->init();
+              error(e);
+	    }
+	}
+    }
 }
 
 int
@@ -915,6 +1007,31 @@ cl_t870c::xch16_rm(C16 *a, u16_t addr)
   wr16(addr, a->get());
   a->W(t);  
   cF.W(rF|MJF);
+  return resGO;
+}
+
+int
+cl_t870c::pop(MCELL *reg)
+{
+  u16_t a= rSP+1;
+  u16_t v;
+  v= rd16(a);
+  cSP.W(a+1);
+  reg->W(v);
+  return resGO;
+}
+
+int
+cl_t870c::push(MCELL *reg)
+{
+  t_addr sp_before= rSP;
+  u16_t a= rSP-1;
+  t_mem val;
+  wr16(a, val= reg->R());
+  cSP.W(a-1);
+  class cl_stack_push *o= new cl_stack_push(instPC, val, sp_before, rSP);
+  o->init();
+  stack_write(o);
   return resGO;
 }
 
@@ -1684,6 +1801,17 @@ cl_t870c::jr(u8_t a)
 }
 
 int
+cl_t870c::jr_cc(u8_t a, bool cond)
+{
+  i8_t v= a;
+  if (cond)
+    PC= (PC + v + 0) & PCmask;
+  else
+    cF.W(rF|MJF);
+  return resGO;
+}
+
+int
 cl_t870c::jrs(u8_t code, bool cond)
 {
   i16_t v= code & 0x1f;
@@ -1694,7 +1822,8 @@ cl_t870c::jrs(u8_t code, bool cond)
       PC= (PC + v + 1) & PCmask;
       tick(extra_ticks()[page|code]);
     }
-  cF.W(rF|MJF);
+  else
+    cF.W(rF|MJF);
   return resGO;
 }
 

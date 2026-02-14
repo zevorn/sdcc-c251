@@ -108,6 +108,12 @@ skip_gsinit:
 	.area	_BSEG
 	.area   _BSS
 	.area   _HEAP
+	.area   _HEAP_END
+	.area   _SSEG
+
+	.area   _XCONST
+
+	.area   _XDATA
 
 	.area   _CODE
 _exit::
@@ -134,7 +140,6 @@ gsinit::
 	ld	d, h
 	inc	de
 	ldir
-
 zeroed_data:
 
 	ld	bc, #l__INITIALIZER

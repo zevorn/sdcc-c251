@@ -135,6 +135,7 @@
 #define S_R16AF_ALT     42
 
 #define S_R8IP	        43
+#define S_R16_JK_OR_ALT	44
 
 /*
  * Indexing modes
@@ -258,6 +259,8 @@ extern  struct  adsym   RXPC[];
 
 extern	struct	adsym	CND[];
 extern  struct  adsym   ALT_CND[];
+
+extern	struct	adsym	R16_JK_OR_ALT[];
 
 	/* machine dependent functions */
 

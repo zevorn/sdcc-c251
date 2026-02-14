@@ -51621,6 +51621,255 @@ The internal interrupts 2 to 7 are software interrupts (for the rst and syscall 
  More complex prioritites (changing priority while the handler is executing) require interrupt handlers written in assembler.
 \end_layout
 
+\begin_layout Subsubsection
+Rabbit memory map and memory models
+\end_layout
+
+\begin_layout Standard
+Most Rabbit instructions operate on a 64K logical address space.
+ The Rabbits support a 1M (up to Rabbit 3000A) or 512K to 16M (from Rabbit 4000,
+ configured via MECR register,
+ default is 1M) physical address space,
+ which the logical address space is mapped into via a memory management unit (MMU).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename rabbit-memory.svg
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+SDCC assumes a 1M physical address space,
+ and that memory for the program and constant data (typically flash) is located from 0x0 in the physical address space,
+ up to at most 0x7ffff.
+ It assumes that memory for non-constant data (typically RAM) is mapped from 0x80000.
+ This is the typical hardware configuration for Rabbit-based systems,
+ including the Rabbit Control Modules (RCM).
+\end_layout
+
+\begin_layout Standard
+The logical address space is divided into four segments,
+ which the MMU maps into physical address space.
+ SDCC uses the Rabbit 
+\begin_inset Quotes sld
+\end_inset
+
+Root
+\begin_inset Quotes srd
+\end_inset
+
+ segment for the SDCC code,
+ gsinit,
+ etc segments (startup code,
+ const data not in __far,
+ program code in small memory model).
+ It uses the 
+\begin_inset Quotes sld
+\end_inset
+
+Stack
+\begin_inset Quotes srd
+\end_inset
+
+ segment for the SDCC data segment,
+ stack and heap (non-const data no in __far).
+ The SDCC xdata segment (non-const data in __far) is placed in physical memory above 0x80000 (exact location can be given by 
+\emph on
+-
+\series bold
+\emph default
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+
+\series default
+\emph on
+-
+\emph default
+xram-loc
+\begin_inset Index idx
+range none
+pageformat default
+status open
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-xram-loc
+\end_layout
+
+\end_inset
+
+),
+ the SDCC xconst segment (const data in __far) is placed in physical memory above 0x0 (directly after code,
+ gsinit,
+ etc).
+ The Rabbit 
+\begin_inset Quotes sld
+\end_inset
+
+Data
+\begin_inset Quotes srd
+\end_inset
+
+ segment is not used directly by SDCC.
+ Its intended use is for user-defined named address spaces.
+ The Rabbit 
+\begin_inset Quotes sld
+\end_inset
+
+XPC
+\begin_inset Quotes srd
+\end_inset
+
+ segment is used for the SDCC xcode segment (program code in medium memory model).
+\end_layout
+
+\begin_layout Standard
+The size of the Rabbit 
+\begin_inset Quotes sld
+\end_inset
+
+Root
+\begin_inset Quotes srd
+\end_inset
+
+,
+ 
+\begin_inset Quotes sld
+\end_inset
+
+Data
+\begin_inset Quotes srd
+\end_inset
+
+ and 
+\begin_inset Quotes sld
+\end_inset
+
+Stack
+\begin_inset Quotes srd
+\end_inset
+
+ segments can be adjusted according to user needs by setting up the SEGSIZE register in __sdcc_external_startup and the 
+\emph on
+-
+\series bold
+\emph default
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+
+\series default
+\emph on
+-
+\emph default
+data-loc
+\begin_inset Index idx
+range none
+pageformat default
+status open
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-data-loc
+\end_layout
+
+\end_inset
+
+ command line option (the value for the option shall be 0xS000,
+ where S matches the upper nibble of the SEGSIZE register).
+\end_layout
+
+\begin_layout Standard
+Pointers to objects that are not __far-qualified objects are represented by their logical address as 16-bit value.
+ Pointers to objects that are __far-qualified are represented by their physical address as 24-bit value.
+\end_layout
+
+\begin_layout Standard
+The default crt0 that ships with SDCC uses a 32KB 
+\begin_inset Quotes sld
+\end_inset
+
+Root
+\begin_inset Quotes srd
+\end_inset
+
+ segment followed by a 8KB 
+\begin_inset Quotes sld
+\end_inset
+
+Data
+\begin_inset Quotes srd
+\end_inset
+
+ segment,
+ a 16KB 
+\begin_inset Quotes sld
+\end_inset
+
+Stack
+\begin_inset Quotes srd
+\end_inset
+
+ segment and the 8KB 
+\begin_inset Quotes sld
+\end_inset
+
+XPC
+\begin_inset Quotes srd
+\end_inset
+
+ segment.
+\end_layout
+
 \begin_layout Subsection
 Z80,
  Z180,

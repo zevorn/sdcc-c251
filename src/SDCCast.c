@@ -5008,7 +5008,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
     case CAST:                 /* change the type   */
       /* cannot cast to struct / union */
       if (IS_AGGREGATE (LTYPE (tree)))
-        {printTypeChain (LTYPE (tree), 0);
+        {
           werrorfl (tree->filename, tree->lineno, E_CAST_ILLEGAL);
           goto errorTreeReturn;
         }

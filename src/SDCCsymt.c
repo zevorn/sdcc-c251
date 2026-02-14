@@ -3091,7 +3091,7 @@ comparePtrType (sym_link *dest, sym_link *src, bool mustCast, bool ignoreimplici
 
 /*--------------------------------------------------------------------*/
 /* compareType - will do type check return 1 if match, 0 if no match, */
-/*               -1 if castable, -2 if only signedness differs        */ // Hmm. Does "castable" mean "implicitly castable" here? Apparently this function is used that way in SDCCast.c.
+/*               -1 if castable, -2 if only signedness differs        */ // Hmm. Does "castable" mean "implicitly castable" here? Apparently this function is used that way in SDCCast.c (but not at RETURN, where it means castable at all).
 /* ignoreimplicitintrinsic - ignore implicitly assigned intrinsic named address spaces */
 /*--------------------------------------------------------------------*/
 int
@@ -3113,6 +3113,7 @@ compareType (sym_link *dest, sym_link *src, bool ignoreimplicitintrinsic)
   /* if dest is a declarator then */
   if (IS_DECL (dest))
     {
+      bool mustCast = false;
       if (IS_DECL (src))
         {
           // UPOINTER results in false negatives if it reaches here.
@@ -3142,24 +3143,23 @@ compareType (sym_link *dest, sym_link *src, bool ignoreimplicitintrinsic)
             {
               return -1;
             }
-
-          if (IS_GENPTR (dest) && IS_FARPTR (src) && !port->far_in_generic)
-            return 0;
-          if (IS_FARPTR (dest) && IS_GENPTR (src) && !port->generic_in_far)
-            return 0;
-
+          if ((IS_FARPTR (dest) ^  IS_FARPTR (src)) && (port->far_in_generic || port->generic_in_far))
+            mustCast = true;
+          
           if (IS_PTR (src) && (IS_GENPTR (dest) || ((DCL_TYPE (src) == POINTER) && (DCL_TYPE (dest) == IPOINTER))))
             {
               return comparePtrType (dest, src, true, ignoreimplicitintrinsic);
             }
-          if (IS_FARPTR (dest) && (IS_GENPTR (src) || DCL_TYPE (src) == POINTER) && port->generic_in_far)
-            return -1;
+
+
           if (IS_PTR (dest) && IS_ARRAY (src))
             {
               value *val = aggregateToPointer (valFromType (src));
               int res = compareType (dest, val->type, ignoreimplicitintrinsic);
               Safe_free (val->type);
               Safe_free (val);
+              if (mustCast && (res == 1 || res == -2))
+                res = -1;
               return res;
             }
           if (IS_PTR (dest) && IS_FUNC (dest->next) && IS_FUNC (src))
