@@ -5447,15 +5447,15 @@ skip_byte_push_iy:
           int ex[2] = {-1, -1};
 
           i = result->regs[b] - roffset;
-          if (i > 0 && i < n && !assigned[i] && aopInReg (source, soffset + i, b + 1))
+          if (i >= 0 && i < n && !assigned[i] && aopInReg (source, soffset + i, b + 1))
             ex[0] = i;
           i = result->regs[b + 1] - roffset;
-          if (i > 0 && i < n && !assigned[i] && aopInReg (source, soffset + i, b))
+          if (i >= 0 && i < n && !assigned[i] && aopInReg (source, soffset + i, b))
             ex[1] = i;
 
           if (ex[0] >= 0 && ex[1] >= 0)
             {
-              asmop *xchaop = (b == C_IDX) ? ASMOP_BC : (b == E_IDX) ? ASMOP_DE : ASMOP_JK;
+              asmop *xchaop = (b == C_IDX) ? ASMOP_BC : (b == E_IDX) ? ASMOP_DE : (b == L_IDX) ? ASMOP_HL : ASMOP_JK;
               emit3w (A_SWAP, xchaop, 0);
               assigned[ex[0]] = true;
               assigned[ex[1]] = true;

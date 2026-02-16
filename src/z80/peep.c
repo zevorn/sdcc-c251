@@ -303,6 +303,9 @@ z80MightReadFlag(const lineNode *pl, const char *what)
     lineIsInst (pl, "test")))
     return false;
 
+  if (IS_R6K && lineIsInst (pl, "swap"))
+    return false;
+
   if(IS_TLCS90 &&
     (lineIsInst (pl, "div") ||
     lineIsInst (pl, "lda") ||
@@ -674,6 +677,9 @@ z80MightRead(const lineNode *pl, const char *what)
 
   if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "cbm"))
     return (strchr("ahlde", *what));
+
+  if (IS_R6K && lineIsInst (pl, "swap"))
+    return (argCont (larg, what));
 
   if(IS_EZ80 && lineIsInst (pl, "lea") ||
     IS_TLCS90 && lineIsInst (pl, "lda"))
