@@ -3,6 +3,7 @@
 #define CLR_CF 			instruction_04
 #define SET_CF 			instruction_05
 #define CPL_CF 			instruction_06
+#define CMP_x_n			instruction_07
 #define LDW_mx_mn               instruction_08
 #define LDW_mhl_mn              instruction_09
 #define LD_mx_n                 instruction_0a
@@ -106,6 +107,24 @@
 #define XOR_A_n                 instruction_65
 #define OR_A_n                  instruction_66
 #define CMP_A_n                 instruction_67
+
+// 0 70 - 0 7f
+#define CALLV_0			instruction_70
+#define CALLV_1			instruction_71
+#define CALLV_2			instruction_72
+#define CALLV_3			instruction_73
+#define CALLV_4			instruction_74
+#define CALLV_5			instruction_75
+#define CALLV_6			instruction_76
+#define CALLV_7			instruction_77
+#define CALLV_8			instruction_78
+#define CALLV_9			instruction_79
+#define CALLV_a			instruction_7a
+#define CALLV_b			instruction_7b
+#define CALLV_c			instruction_7c
+#define CALLV_d			instruction_7d
+#define CALLV_e			instruction_7e
+#define CALLV_f			instruction_7f
 
 // 0 80 - 0 8f
 #define JRS_T_a00               instruction_80
@@ -215,7 +234,9 @@
 
 // 0 f0 - 0 ff
 #define LD_RBS                  instruction_f9
+#define RET			instruction_fa
 #define JR_a                    instruction_fc
+#define CALL_mn			instruction_fd
 #define JP_mn                   instruction_fe
 
 // 1 00 - 1 3f ALU r,g
@@ -474,6 +495,8 @@
 #define POP_gg			instruction_1d9
 #define DAA_g			instruction_1da
 #define DAS_g			instruction_1db
+#define PUSH_PSW		instruction_1dc
+#define POP_PSW			instruction_1dd
 #define LD_PSW_n		instruction_1de
 
 // 1 e0 - 1 ef
@@ -504,6 +527,7 @@
 #define ROLC_g			instruction_1f6
 #define RORC_g			instruction_1f7
 #define NEG_gg			instruction_1fa
+#define CALL_gg			instruction_1fd
 #define JP_gg                   instruction_1fe
 #define SWAP_g                  instruction_1ff
 
@@ -774,9 +798,11 @@
 #define SET_src_A               instruction_2f2
 #define LD_src_A_CF             instruction_2f3
 #define ROLD_A_src		instruction_2f6
+#define RORD_A_src		instruction_2f7
 #define DEC_src                 instruction_2f8
 #define LD_dst_n                instruction_2f9
 #define CLR_src_A               instruction_2fa
 #define CPL_src_A               instruction_2fb
 #define LD_CF_src_A             instruction_2fc
+#define CALL_src		instruction_2fd
 #define JP_src                  instruction_2fe
