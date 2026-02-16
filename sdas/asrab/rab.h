@@ -114,6 +114,9 @@
 #define CC_Z            5
 #define CC_NC           6
 #define CC_C            7
+#define CC_GE         0x8
+#define CC_LEU        0x9
+#define CC_LE         0xa
 
 /*
  * Symbol types
@@ -178,64 +181,71 @@
 #define	S_SBC		86
 #define S_NEG           83
 #define	S_CPU		88
+#define	S_MUL		89
+
 
 /*
  * Processor Types (S_CPU)
  */
 #define	X_R2K		0
-#define	X_HD64		1
-#define	X_Z80		2
-#define	X_R3KA		3
-#define X_R4K00         4
-#define X_R4K01         5
-#define X_R4K10         6
-#define X_R4K11         7
+#define	X_R3KA		1
+#define X_R4K00         2
+#define X_R4K01         3
+#define X_R4K10         4
+#define X_R4K11         5
+#define X_R6K00         6
+#define X_R6K01         7
+#define X_R6K10         8
+#define X_R6K11         9
 
-/*
- * HD64180 Instructions
- */
-#define	HD_INH2		90
-#define	HD_IN		91
-#define	HD_OUT		92
-#define	HD_MLT		93
-#define	HD_TST		94
-#define	HD_TSTIO	95
 
 /*
  * Rabbit 2000 / Rabbit 4000 specific Instructions
  */
-#define X_LJP                97
-#define X_LCALL              98
-#define X_BOOL               99
-#define X_LDP               100
-#define X_R3K_MODE          101
-#define R3K_INH1            102
-#define R3K_INH2            103
+#define	X_MULU		90
+#define X_LJP           91
+#define X_LCALL         92
+#define X_BOOL          93
+#define X_LDP           94
+#define X_R3K_MODE      95
+#define R3K_INH1        96
+#define R3K_INH2        97
 
-#define X_R4K_XSTART        105
-/* the remaining instructions are only on Rabbit 4000: */
-#define X_R4K_MULU          106
-#define X_JRE               107
-#define X_CLR               108
-#define R4K_INH2            109
-#define X_TEST              110
-#define X_CBM               111
-#define X_LDF               112
+#define X_R4K_XSTART    98
+/* the remaining instructions are Rabbit >= 4000 */
+#define X_R4K_MULU	99
+#define X_JRE		100
+#define X_CLR		101
+#define R4K_INH2	102
+#define X_TEST		103
+#define X_CBM		104
+#define X_LDF		105
+#define X_SWAP		106
+#define R6K_1_ALW       107
+
 
 #define BCDE_PG           0xDD
 #define JKHL_PG           0xFD
 
-#define R_2K 0
-#define R_3KA 1
-#define R_4K_00 2
-#define R_4K_01 3
-#define R_4K_10 4
-#define R_4K_11 5
-#define IS_R_4K_10_OR_R_4K_11(x) ((x)==R_4K_10 || (x)==R_4K_11)
-#define IS_R_4K_10(x) ((x)==R_4K_10)
-#define IS_R_4K_11(x) ((x)==R_4K_11)
+#define R_2K       0
+#define R_3KA      3
+#define R_4K       4
+#define R_6K       6
 
-#define IS_ANY_R_4K(x) ((x)>=R_4K_00)
+#define R_NOMODE   0
+#define R_MODE00   1
+#define R_MODE01   2
+#define R_MODE10   3
+#define R_MODE11   4
+
+#define IS_MIN_MODE_01(x) ((x.mode)>=R_MODE01)
+#define IS_MODE_10_OR_11(x) ((x.mode)>=R_MODE10)
+#define IS_MODE_10(x) ((x.mode)==R_MODE10)
+#define IS_MODE_11(x) ((x.mode)==R_MODE11)
+#define IS_MIN_3KA(x) ((x.cpu)>=R_3KA)
+#define IS_MIN_4K(x) ((x.cpu)>=R_4K)
+#define IS_ONLY_4K(x) ((x.cpu)==R_4K)
+#define IS_MIN_6K(x) ((x.cpu)>=R_6K)
 
 
 struct adsym
@@ -259,6 +269,7 @@ extern  struct  adsym   RXPC[];
 
 extern	struct	adsym	CND[];
 extern  struct  adsym   ALT_CND[];
+extern  struct  adsym   R6_CND[];
 
 extern	struct	adsym	R16_JK_OR_ALT[];
 

@@ -169,6 +169,10 @@ struct	mne	mne[] = {
     {   NULL,   ".r4k10",       S_CPU,          0,      X_R4K10 },
     {   NULL,   ".r4k11",       S_CPU,          0,      X_R4K11 },
     {   NULL,   ".r4k",         S_CPU,          0,      X_R4K11 },
+    {   NULL,   ".r6k00",       S_CPU,          0,      X_R6K00 },
+    {   NULL,   ".r6k01",       S_CPU,          0,      X_R6K01 },
+    {   NULL,   ".r6k10",       S_CPU,          0,      X_R6K10 },
+    {   NULL,   ".r6k11",       S_CPU,          0,      X_R6K11 },
 
         /* Rabbit instructions */
 
@@ -243,7 +247,7 @@ struct	mne	mne[] = {
     {	NULL,	"reti",		S_INH2,		0,	0x4D	},
     {   NULL,   "lret",         S_INH2,         0,      0x45    },
 
-    {   NULL,   "mul",          S_INH1,         0,      0xF7    },
+    {   NULL,   "mul",          S_MUL,          0,      0xF7    },
 
     {   NULL,   "idet",         R3K_INH1,       0,      0x5B    },
     {   NULL,   "lddsr",        R3K_INH2,       0,      0x98    },
@@ -259,6 +263,9 @@ struct	mne	mne[] = {
     {   NULL,   "uma",          R3K_INH2,       0,      0xC0    },
     {   NULL,   "ums",          R3K_INH2,       0,      0xC8    },
 
+    {   NULL,   "swap",         X_SWAP,         0,      0x00    },
+
+    {   NULL,   "mulu",         X_MULU,         0,      0x00    },
     {   NULL,   "jre",          X_JRE,          0,      0xA3    },
     {   NULL,   "clr",          X_CLR,          0,      0xBF    },
     {   NULL,   "ljp",          X_LJP,          0,      0xC7    },
@@ -267,8 +274,11 @@ struct	mne	mne[] = {
     {   NULL,   "bool",         X_BOOL,         0,      0xCC    },
     {   NULL,   "ldp",          X_LDP,          0,      0x64    },
     {   NULL,   "sysret",       R4K_INH2,       0,      0x83    },
+
     {   NULL,   "test",         X_TEST,         0,      0x4C    },
     {   NULL,   "cbm",          X_CBM,          0,      0x82    },
-    {   NULL,   "ldf",          X_LDF,          0,      0x82    },
-    {   NULL,   "mulu",         X_R4K_MULU,     S_EOL,  0xA7    }
+    {   NULL,   "alts",         R6K_1_ALW,      0,      0x40    },
+    {   NULL,   "altsd",        R6K_1_ALW,      0,      0x64    },
+
+    {   NULL,   "ldf",          X_LDF,          S_EOL,  0x00    },
 };

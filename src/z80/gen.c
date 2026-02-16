@@ -12608,7 +12608,7 @@ fix:
       // There is no good signed compare in the Z80, so we need workarounds.
       if (sign)
         {
-          if (ifx && ((IS_R4K || IS_R5K) && IC_TRUE (ifx) || IS_R6K_NOTYET || IS_TLCS90)) // Some Rabbits do have conditional jumps that (for some cases) allow an efficient signed compare.
+          if (ifx && ((IS_R4K_NOTYET || IS_R5K_NOTYET) && IC_TRUE (ifx) || IS_R6K_NOTYET || IS_TLCS90)) // Some Rabbits do have conditional jumps that (for some cases) allow an efficient signed compare. WARNING: TThere is soemthign wrong with jp lt! Enabling this works fine on uCsim, but breaks on a real Rabbit 4000!
             {
               genIfxJump (ifx, "lt");
               return;

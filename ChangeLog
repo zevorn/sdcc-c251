@@ -1,3 +1,23 @@
+2026-02-16 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabadr.c
+	  sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: r6k modes and instructions as in FR 714
+
+2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Fix some issues from the rabbit branch merge.
+
+2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peeph.def:
+	  Fix a peephole optimizer rule issue affecting r5k.
+
 2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge rabbit branch.
