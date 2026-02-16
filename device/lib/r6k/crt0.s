@@ -49,11 +49,11 @@ EDMR		.equ	0x420 ; Enable Dual-Mode Register
 	.org 	0
 
 	; Switch to instruction set mode 10
-.r4k00
+.r6k00
 	ld	a, #0x80
 	ioi
 	ld	(EDMR), a
-.r4k10
+.r6k10
 
 	; Setup internal interrupts. Upper byte of interrupt vector table address. Needs to be even.
 	ld	a, #2

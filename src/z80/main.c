@@ -1093,7 +1093,7 @@ _z80_genAssemblerStart (FILE * of)
   else if (TARGET_IS_R4K || TARGET_IS_R5K)
     fprintf (of, "\t.r4k10\n");
   else if (TARGET_IS_R6K)
-    fprintf (of, "\t.r4k10\n"); // Todo: adjust when we actually emit R6K instructions, too!
+    fprintf (of, "\t.r6k10\n");
   else if (TARGET_IS_TLCS90)
     fprintf (of, "\tby = 0xffed\n");
   else if (TARGET_IS_EZ80)
