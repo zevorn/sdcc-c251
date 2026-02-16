@@ -1,3 +1,12 @@
+2026-02-16 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabadr.c
+	  sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: r6k modes and instructions as in FR 714
+
 2026-02-14 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c,
