@@ -532,79 +532,79 @@ ${Section} "SDCC Rabbit 3000A library" SEC11
   File "${DEV_ROOT}\lib\r3ka\*.*"
 ${SectionEnd}
 
-${Section} "SDCC Rabbit 4000 library" SEC11
+${Section} "SDCC Rabbit 4000 library" SEC12
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\r4k"
   File "${DEV_ROOT}\lib\r4k\*.*"
 ${SectionEnd}
 
-${Section} "SDCC Rabbit 5000 library" SEC11
+${Section} "SDCC Rabbit 5000 library" SEC13
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\r5k"
   File "${DEV_ROOT}\lib\r5k\*.*"
 ${SectionEnd}
 
-${Section} "SDCC Rabbit 6000 library" SEC11
+${Section} "SDCC Rabbit 6000 library" SEC14
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\r6k"
   File "${DEV_ROOT}\lib\r6k\*.*"
 ${SectionEnd}
 
-${Section} "SDCC Z80 library" SEC12
+${Section} "SDCC Z80 library" SEC15
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\z80"
   File "${DEV_ROOT}\lib\z80\*.*"
 ${SectionEnd}
 
-${Section} "SDCC mcs51 small model library" SEC13
+${Section} "SDCC mcs51 small model library" SEC16
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\small"
   File "${DEV_ROOT}\lib\small\*.*"
 ${SectionEnd}
 
-${Section} "SDCC mcs51 medium model library" SEC14
+${Section} "SDCC mcs51 medium model library" SEC17
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\medium"
   File "${DEV_ROOT}\lib\medium\*.*"
 ${SectionEnd}
 
-${Section} "SDCC mcs51 large model library" SEC15
+${Section} "SDCC mcs51 large model library" SEC18
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\large"
   File "${DEV_ROOT}\lib\large\*.*"
 ${SectionEnd}
 
-${Section} "SDCC mcs51 huge model library" SEC16
+${Section} "SDCC mcs51 huge model library" SEC19
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\huge"
   File "${DEV_ROOT}\lib\huge\*.*"
 ${SectionEnd}
 
-${Section} "SDCC mcs51 small-stack-auto model library" SEC17
+${Section} "SDCC mcs51 small-stack-auto model library" SEC20
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\small-stack-auto"
   File "${DEV_ROOT}\lib\small-stack-auto\*.*"
 ${SectionEnd}
 
-${Section} "SDCC mcs51 large-stack-auto model library" SEC18
+${Section} "SDCC mcs51 large-stack-auto model library" SEC21
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\large-stack-auto"
   File "${DEV_ROOT}\lib\large-stack-auto\*.*"
 ${SectionEnd}
 
-${Section} "SDCC HC08 library" SEC19
+${Section} "SDCC HC08 library" SEC22
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\hc08"
   File "${DEV_ROOT}\lib\hc08\*.*"
 ${SectionEnd}
 
-${Section} "SDCC S08 library" SEC20
+${Section} "SDCC S08 library" SEC23
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\s08"
   File "${DEV_ROOT}\lib\s08\*.*"
 ${SectionEnd}
 
-${Section} "SDCC PIC16 library" SEC21
+${Section} "SDCC PIC16 library" SEC24
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\pic16"
   File "${DEV_ROOT}\lib\pic16\*.o"
@@ -614,7 +614,7 @@ ${Section} "SDCC PIC16 library" SEC21
   File "${DEV_ROOT}\non-free\lib\pic16\*.lib"
 ${SectionEnd}
 
-${Section} "SDCC PIC14 library" SEC22
+${Section} "SDCC PIC14 library" SEC25
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\pic14"
   File "${DEV_ROOT}\lib\pic14\*.lib"
@@ -623,19 +623,19 @@ ${Section} "SDCC PIC14 library" SEC22
   File "${DEV_ROOT}\non-free\lib\pic14\*.lib"
 ${SectionEnd}
 
-${Section} "SDCC STM8 medium model library" SEC23
+${Section} "SDCC STM8 medium model library" SEC26
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\stm8"
   File "${DEV_ROOT}\lib\stm8\*.*"
 ${SectionEnd}
 
-${Section} "SDCC TLCS90 library" SEC24
+${Section} "SDCC TLCS90 library" SEC27
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\tlcs90"
   File "${DEV_ROOT}\lib\tlcs90\*.*"
 ${SectionEnd}
 
-${Section} "SDCC library sources" SEC25
+${Section} "SDCC library sources" SEC28
   SectionIn 1
   SetOutPath "$INSTDIR\lib\src\ds390\examples"
   File "${DEV_ROOT}\lib\src\ds390\examples\MOVED"
@@ -863,85 +863,85 @@ ${Section} "SDCC library sources" SEC25
   File "${DEV_ROOT}\lib\src\*.c"
 ${SectionEnd}
 
-${Section} "SDCC STM8 large model library" SEC26
+${Section} "SDCC STM8 large model library" SEC29
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\stm8-large"
   File "${DEV_ROOT}\lib\stm8-large\*.*"
 ${SectionEnd}
 
-${Section} "SDCC eZ80 library" SEC27
+${Section} "SDCC eZ80 library" SEC30
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\ez80"
   File "${DEV_ROOT}\lib\ez80\*.*"
 ${SectionEnd}
 
-${Section} "SDCC PDK13 library" SEC28
+${Section} "SDCC PDK13 library" SEC31
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\pdk13"
   File "${DEV_ROOT}\lib\pdk13\*.*"
 ${SectionEnd}
 
-${Section} "SDCC PDK14 library" SEC29
+${Section} "SDCC PDK14 library" SEC32
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\pdk14"
   File "${DEV_ROOT}\lib\pdk14\*.*"
 ${SectionEnd}
 
-${Section} "SDCC PDK15 library" SEC30
+${Section} "SDCC PDK15 library" SEC33
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\pdk15"
   File "${DEV_ROOT}\lib\pdk15\*.*"
 ${SectionEnd}
 
-${Section} "SDCC PDK15 stack-auto library" SEC31
+${Section} "SDCC PDK15 stack-auto library" SEC34
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\pdk15-stack-auto"
   File "${DEV_ROOT}\lib\pdk15-stack-auto\*.*"
 ${SectionEnd}
 
-${Section} "SDCC Z80N library" SEC32
+${Section} "SDCC Z80N library" SEC35
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\z80n"
   File "${DEV_ROOT}\lib\z80n\*.*"
 ${SectionEnd}
 
-${Section} "SDCC Rabbit 2000A library" SEC33
+${Section} "SDCC Rabbit 2000A library" SEC36
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\r2ka"
   File "${DEV_ROOT}\lib\r2ka\*.*"
 ${SectionEnd}
 
-${Section} "SDCC MOS 6502 library" SEC34
+${Section} "SDCC MOS 6502 library" SEC37
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\mos6502"
   File "${DEV_ROOT}\lib\mos6502\*.*"
 ${SectionEnd}
 
-${Section} "SDCC R800 library" SEC35
+${Section} "SDCC R800 library" SEC38
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\r800"
   File "${DEV_ROOT}\lib\r800\*.*"
 ${SectionEnd}
 
-${Section} "SDCC WDC 65C02 library" SEC36
+${Section} "SDCC WDC 65C02 library" SEC39
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\mos65c02"
   File "${DEV_ROOT}\lib\mos65c02\*.*"
 ${SectionEnd}
 
-${Section} "SDCC S08 stack-auto library" SEC37
+${Section} "SDCC S08 stack-auto library" SEC40
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\s08-stack-auto"
   File "${DEV_ROOT}\lib\s08-stack-auto\*.*"
 ${SectionEnd}
 
-${Section} "SDCC f8 library" SEC38
+${Section} "SDCC f8 library" SEC41
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\f8"
   File "${DEV_ROOT}\lib\f8\*.*"
 ${SectionEnd}
 
-${Section} "SDCC f8l library" SEC39
+${Section} "SDCC f8l library" SEC42
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\f8l"
   File "${DEV_ROOT}\lib\f8l\*.*"
@@ -962,34 +962,37 @@ LangString DESC_SEC08 ${LANG_ENGLISH} "SDCC SM83 library"
 LangString DESC_SEC09 ${LANG_ENGLISH} "SDCC Z180 library"
 LangString DESC_SEC10 ${LANG_ENGLISH} "SDCC Rabbit 2000 library"
 LangString DESC_SEC11 ${LANG_ENGLISH} "SDCC Rabbit 3000A library"
-LangString DESC_SEC12 ${LANG_ENGLISH} "SDCC Z80 library"
-LangString DESC_SEC13 ${LANG_ENGLISH} "SDCC mcs51 small model library"
-LangString DESC_SEC14 ${LANG_ENGLISH} "SDCC mcs51 medium model library"
-LangString DESC_SEC15 ${LANG_ENGLISH} "SDCC mcs51 large model library"
-LangString DESC_SEC16 ${LANG_ENGLISH} "SDCC mcs51 huge model library"
-LangString DESC_SEC17 ${LANG_ENGLISH} "SDCC mcs51 small-stack-auto model library"
-LangString DESC_SEC18 ${LANG_ENGLISH} "SDCC mcs51 large-stack-auto model library"
-LangString DESC_SEC19 ${LANG_ENGLISH} "SDCC HC08 library"
-LangString DESC_SEC20 ${LANG_ENGLISH} "SDCC S08 library"
-LangString DESC_SEC21 ${LANG_ENGLISH} "SDCC PIC16 library"
-LangString DESC_SEC22 ${LANG_ENGLISH} "SDCC PIC14 library"
-LangString DESC_SEC23 ${LANG_ENGLISH} "SDCC STM8 medium model library"
-LangString DESC_SEC24 ${LANG_ENGLISH} "SDCC TLCS90 library"
-LangString DESC_SEC25 ${LANG_ENGLISH} "SDCC library sources"
-LangString DESC_SEC26 ${LANG_ENGLISH} "SDCC STM8 large model library"
-LangString DESC_SEC27 ${LANG_ENGLISH} "SDCC eZ80 library"
-LangString DESC_SEC28 ${LANG_ENGLISH} "SDCC PDK13 library"
-LangString DESC_SEC29 ${LANG_ENGLISH} "SDCC PDK14 library"
-LangString DESC_SEC30 ${LANG_ENGLISH} "SDCC PDK15 library"
-LangString DESC_SEC31 ${LANG_ENGLISH} "SDCC PDK15 stack-auto library"
-LangString DESC_SEC32 ${LANG_ENGLISH} "SDCC Z80N library"
-LangString DESC_SEC33 ${LANG_ENGLISH} "SDCC Rabbit 2000A library"
-LangString DESC_SEC34 ${LANG_ENGLISH} "SDCC MOS 6502 library"
-LangString DESC_SEC35 ${LANG_ENGLISH} "SDCC R800 library"
-LangString DESC_SEC36 ${LANG_ENGLISH} "SDCC WDC 65C02 library"
-LangString DESC_SEC37 ${LANG_ENGLISH} "SDCC S08 stack-auto library"
-LangString DESC_SEC38 ${LANG_ENGLISH} "SDCC f8 library"
-LangString DESC_SEC39 ${LANG_ENGLISH} "SDCC f8l library"
+LangString DESC_SEC12 ${LANG_ENGLISH} "SDCC Rabbit 4000 library"
+LangString DESC_SEC13 ${LANG_ENGLISH} "SDCC Rabbit 5000 library"
+LangString DESC_SEC14 ${LANG_ENGLISH} "SDCC Rabbit 6000 library"
+LangString DESC_SEC15 ${LANG_ENGLISH} "SDCC Z80 library"
+LangString DESC_SEC16 ${LANG_ENGLISH} "SDCC mcs51 small model library"
+LangString DESC_SEC17 ${LANG_ENGLISH} "SDCC mcs51 medium model library"
+LangString DESC_SEC18 ${LANG_ENGLISH} "SDCC mcs51 large model library"
+LangString DESC_SEC19 ${LANG_ENGLISH} "SDCC mcs51 huge model library"
+LangString DESC_SEC20 ${LANG_ENGLISH} "SDCC mcs51 small-stack-auto model library"
+LangString DESC_SEC21 ${LANG_ENGLISH} "SDCC mcs51 large-stack-auto model library"
+LangString DESC_SEC22 ${LANG_ENGLISH} "SDCC HC08 library"
+LangString DESC_SEC23 ${LANG_ENGLISH} "SDCC S08 library"
+LangString DESC_SEC24 ${LANG_ENGLISH} "SDCC PIC16 library"
+LangString DESC_SEC25 ${LANG_ENGLISH} "SDCC PIC14 library"
+LangString DESC_SEC26 ${LANG_ENGLISH} "SDCC STM8 medium model library"
+LangString DESC_SEC27 ${LANG_ENGLISH} "SDCC TLCS90 library"
+LangString DESC_SEC28 ${LANG_ENGLISH} "SDCC library sources"
+LangString DESC_SEC29 ${LANG_ENGLISH} "SDCC STM8 large model library"
+LangString DESC_SEC30 ${LANG_ENGLISH} "SDCC eZ80 library"
+LangString DESC_SEC31 ${LANG_ENGLISH} "SDCC PDK13 library"
+LangString DESC_SEC32 ${LANG_ENGLISH} "SDCC PDK14 library"
+LangString DESC_SEC33 ${LANG_ENGLISH} "SDCC PDK15 library"
+LangString DESC_SEC34 ${LANG_ENGLISH} "SDCC PDK15 stack-auto library"
+LangString DESC_SEC35 ${LANG_ENGLISH} "SDCC Z80N library"
+LangString DESC_SEC36 ${LANG_ENGLISH} "SDCC Rabbit 2000A library"
+LangString DESC_SEC37 ${LANG_ENGLISH} "SDCC MOS 6502 library"
+LangString DESC_SEC38 ${LANG_ENGLISH} "SDCC R800 library"
+LangString DESC_SEC39 ${LANG_ENGLISH} "SDCC WDC 65C02 library"
+LangString DESC_SEC40 ${LANG_ENGLISH} "SDCC S08 stack-auto library"
+LangString DESC_SEC41 ${LANG_ENGLISH} "SDCC f8 library"
+LangString DESC_SEC42 ${LANG_ENGLISH} "SDCC f8l library"
 
 ;Assign language strings to sections
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
@@ -1032,6 +1035,11 @@ LangString DESC_SEC39 ${LANG_ENGLISH} "SDCC f8l library"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC35} $(DESC_SEC35)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC36} $(DESC_SEC36)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC37} $(DESC_SEC37)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC38} $(DESC_SEC38)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC39} $(DESC_SEC39)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC40} $(DESC_SEC40)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC41} $(DESC_SEC41)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC42} $(DESC_SEC42)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 ;--------------------------------
 

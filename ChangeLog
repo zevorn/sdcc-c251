@@ -1,3 +1,8 @@
+2026-02-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/scripts/sdcc.nsi:
+	  Fix section numbering for Windows installer.
+
 2026-02-16 Janko Stamenović
 
 	* sdas/asrab/rab.h
