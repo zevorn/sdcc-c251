@@ -1,3 +1,11 @@
+2026-02-17 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: more r4k instructions as in FR 714
+
 2026-02-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* device/lib/pic16/libsdcc/char/divschar.c,

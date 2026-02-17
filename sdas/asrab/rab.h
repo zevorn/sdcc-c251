@@ -222,7 +222,8 @@
 #define X_LDF		105
 #define X_SWAP		106
 #define R6K_1_ALW       107
-
+#define X_FLAG		108
+#define X_BOX		109
 
 #define BCDE_PG           0xDD
 #define JKHL_PG           0xFD

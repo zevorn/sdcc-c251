@@ -182,6 +182,8 @@ struct	mne	mne[] = {
     {	NULL,	"jp",		S_JP,		0,	0xC2	},
     {	NULL,	"jr",		S_JR,		0,	0x18	},
     {   NULL,   "djnz",         S_DJNZ,         0,      0x10    },
+    {   NULL,   "dwjnz",        S_DJNZ,         0,      0xed    },
+
     {	NULL,	"ret",		S_RET,		0,	0xC0	},
 
     {   NULL,   "bit",          S_BIT,          0,      0x40    },
@@ -209,12 +211,17 @@ struct	mne	mne[] = {
     {   NULL,   "ioi",          S_IN,           0,      0xD3    },
     {   NULL,   "ioe",          S_OUT,          0,      0xDB    },
 
-    {   NULL,   "rl",           S_RL,           0,      0x10    },
+
+    {   NULL,   "rla",          S_RL,           0,      0x17    },
+    {   NULL,   "rra",          S_RL,           0,      0x1F    },
+
     {   NULL,   "rlc",          S_RL,           0,      0x00    },
-    {   NULL,   "rr",           S_RL,           0,      0x18    },
     {   NULL,   "rrc",          S_RL,           0,      0x08    },
+    {   NULL,   "rl",           S_RL,           0,      0x10    },
+    {   NULL,   "rr",           S_RL,           0,      0x18    },
     {   NULL,   "sla",          S_RL,           0,      0x20    },
     {   NULL,   "sra",          S_RL,           0,      0x28    },
+    {   NULL,   "sll",          S_RL,           0,      0x30    }, 
     {   NULL,   "srl",          S_RL,           0,      0x38    },
 
     {	NULL,	"rst",		S_RST,		0,	0xC7	},
@@ -233,9 +240,7 @@ struct	mne	mne[] = {
 
     {   NULL,   "altd",         S_INH1,         0,      0x76    },
 
-    {   NULL,   "rla",          S_INH1,         0,      0x17    },
     {   NULL,   "rlca",         S_INH1,         0,      0x07    },
-    {   NULL,   "rra",          S_INH1,         0,      0x1F    },
     {   NULL,   "rrca",         S_INH1,         0,      0x0F    },
     {   NULL,   "scf",          S_INH1,         0,      0x37    },
 
@@ -267,6 +272,7 @@ struct	mne	mne[] = {
 
     {   NULL,   "mulu",         X_MULU,         0,      0x00    },
     {   NULL,   "jre",          X_JRE,          0,      0xA3    },
+    {   NULL,   "flag",		X_FLAG,		0,	0xA4	},
     {   NULL,   "clr",          X_CLR,          0,      0xBF    },
     {   NULL,   "ljp",          X_LJP,          0,      0xC7    },
     {   NULL,   "lcall",        X_LCALL,        0,      0xCF    },
@@ -274,6 +280,8 @@ struct	mne	mne[] = {
     {   NULL,   "bool",         X_BOOL,         0,      0xCC    },
     {   NULL,   "ldp",          X_LDP,          0,      0x64    },
     {   NULL,   "sysret",       R4K_INH2,       0,      0x83    },
+    {   NULL,   "ibox",         X_BOX,          0,      0x02    },
+    {   NULL,   "sbox",         X_BOX,          0,      0x12    },
 
     {   NULL,   "test",         X_TEST,         0,      0x4C    },
     {   NULL,   "cbm",          X_CBM,          0,      0x82    },
