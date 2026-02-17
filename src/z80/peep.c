@@ -651,7 +651,11 @@ z80MightRead(const lineNode *pl, const char *what)
     lineIsInst (pl, "ipset2") ||
     lineIsInst (pl, "ipset3")))
     return(false);
-    
+
+  // Check this here before the rules for the (pre-R6K) mul and mulu variants without arguments below.
+  if (IS_R6K && (lineIsInst (pl, "mul") || lineIsInst (pl, "mulu")) && larg && rarg)
+    return (argCont (larg, what) || argCont (rarg, what));
+ 
   if (IS_RAB && lineIsInst (pl, "mul"))
     return (!strcmp(what, "b") || !strcmp(what, "c") || !strcmp(what, "d") || !strcmp(what, "e"));
 
@@ -1161,9 +1165,13 @@ z80SurelyWrites (const lineNode *pl, const char *what)
   if (IS_RAB && lineIsInst (pl, "cbm"))
     return (false);
 
-  if (IS_RAB && lineIsInst (pl, "mul"))
-    return (strchr("hlbc", *what));
+  // Check this here before the rules for the (pre-R6K) mul and mulu variants without arguments below.
+  if (IS_R6K && (lineIsInst (pl, "mul") || lineIsInst (pl, "mulu")) && larg && rarg &&
+    !STRNCASECMP (larg, "hl", 2) && !STRNCASECMP (rarg, "de", 2))
+    return (strchr ("jkhl", *what));
 
+  if (IS_RAB && lineIsInst (pl, "mul"))
+    return (strchr ("hlbc", *what));
   if ((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "mulu"))
     return (strchr ("hlbc", *what));
 
