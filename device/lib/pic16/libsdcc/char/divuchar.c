@@ -1,9 +1,8 @@
 /*-------------------------------------------------------------------------
-   _divuchar.c - routine for unsigned char (8 bit) division
+   _divuchar.c :- routine for unsigned char (8 bit) division. just calls
+                  routine for unsigned int division
 
-   Copyright (C) 1999, Jean-Louis Vern <jlvern AT gmail.com>
-   Adopted for char (8-bit) and pic16 port by
-     - Vangelis Rokas, <vrokas AT otenet.gr> (2004)
+   Copyright (C) 2017, Philipp Klaus Krause . pkk@spth.de
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -12,7 +11,7 @@
 
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License 
@@ -28,36 +27,12 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#include <sdcc-lib.h>
-
-//#define MSB_SET(x)	((x >> (8*sizeof(x)-1)) & 1)
-#define MSB_SET(x)	(x & 0x80)
-
-unsigned char
-_divuchar (unsigned char a, unsigned char b) _IL_REENTRANT
+unsigned int
+_divuchar (unsigned char x, unsigned char y)
 {
-  unsigned char reste = 0;
-  unsigned char count = 8;
-  char c;
-
-  do
-  {
-    // reste: a <- 0;
-    c = MSB_SET(a);
-    a <<= 1;
-    reste <<= 1;
-    if (c)
-      reste |= 1;
-
-    if (reste >= b)
-    {
-      reste -= b;
-
-      // a <- (result = 1)
-      a |= 1;
-    }
-  }
-  while (--count);
-
-  return a;
+  // If we don't go via volatile, optimizations will just convert the / to an 8x8 one, implemented by this very function, so we get endless recursion.
+  volatile unsigned int tx = x;
+  volatile unsigned int ty = y;
+  return (tx / ty);
 }
+

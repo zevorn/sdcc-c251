@@ -1,3 +1,12 @@
+2026-02-17 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/pic16/libsdcc/char/divschar.c,
+	  device/lib/pic16/libsdcc/char/divuchar.c,
+	  device/lib/pic16/libsdcc/char/modschar.c,
+	  device/lib/pic16/libsdcc/char/moduchar.c,
+	  src/SDCCsymt.c:
+	  Replace pic16-specific char division support routines by generic ones.
+
 2026-02-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/scripts/sdcc.nsi:

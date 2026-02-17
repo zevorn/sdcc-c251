@@ -1,9 +1,8 @@
 /*-------------------------------------------------------------------------
-   _modschar.c - routine for signed char (8 bit) modulus
+   _modschar.c :- routine for signed char (8 bit) division. just calls
+                 routine for signed int division after sign extension
 
-   Copyright (C) 1999, Sandeep Dutta <sandeep.dutta AT usa.net> 
-   Adopted for char (8-bit) and pic16 port by
-     Vangelis Rokas, <vrokas AT otenet.gr> (2004)
+   Copyright (C) 2013, Philipp Klaus Krause . pkk@spth.de
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -12,7 +11,7 @@
 
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License 
@@ -28,21 +27,9 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#include <sdcc-lib.h>
-
-unsigned char _moduchar (unsigned char a, unsigned char b);
-
-signed char _modschar (signed char a, signed char b) _IL_REENTRANT
+signed int
+_modschar (signed char x, signed char y)
 {
-  register char r;
-  char ta, tb;
-
-    if(a<0)ta = -a; else ta = a;
-    if(b<0)tb = -b; else tb = b;
-    
-    r = _moduchar(ta, tb);
-    
-    if (a < 0) return -r;
-    else return r;
+  return ((int)x % (int)y);
 }
 

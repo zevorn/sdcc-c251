@@ -31,7 +31,7 @@
 
 #include <sdcc-lib.h>
 
-unsigned char _divuchar (unsigned char a, unsigned char b);
+unsigned int _divuchar (unsigned char a, unsigned char b);
 
 int _divschar (signed char a, signed char b) _IL_REENTRANT
 {
