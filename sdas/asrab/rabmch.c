@@ -93,22 +93,22 @@ machine(struct mne *mp)
 	op = (int) mp->m_valu;
 	rf = mp->m_type;
 
-        if (rab.cpu < R_4K && rf >= X_R4K_XSTART)
+        if (rab.cpu < R_4K && rf >= X_R4K_XFIRST)
                 rf = 0;
 
 	switch (rf) {
 	case S_CPU:
 		switch (op) {
-		case X_R2K:   rab.cpu=R_2K;  rab.mode = R_NOMODE; break;
-		case X_R3KA:  rab.cpu=R_3KA; rab.mode = R_NOMODE; break;
-		case X_R4K00: rab.cpu=R_4K;  rab.mode = R_MODE00; break;
-		case X_R4K01: rab.cpu=R_4K;  rab.mode = R_MODE01; break;
-		case X_R4K10: rab.cpu=R_4K;  rab.mode = R_MODE10; break;
-		case X_R4K11: rab.cpu=R_4K;  rab.mode = R_MODE11; break;
-		case X_R6K00: rab.cpu=R_6K;  rab.mode = R_MODE00; break;
-		case X_R6K01: rab.cpu=R_6K;  rab.mode = R_MODE01; break;
-		case X_R6K10: rab.cpu=R_6K;  rab.mode = R_MODE10; break;
-		case X_R6K11: rab.cpu=R_6K;  rab.mode = R_MODE11; break;
+		case T_R2K:   rab.cpu=R_2K;  rab.mode = R_NOMODE; break;
+		case T_R3KA:  rab.cpu=R_3KA; rab.mode = R_NOMODE; break;
+		case T_R4K00: rab.cpu=R_4K;  rab.mode = R_MODE00; break;
+		case T_R4K01: rab.cpu=R_4K;  rab.mode = R_MODE01; break;
+		case T_R4K10: rab.cpu=R_4K;  rab.mode = R_MODE10; break;
+		case T_R4K11: rab.cpu=R_4K;  rab.mode = R_MODE11; break;
+		case T_R6K00: rab.cpu=R_6K;  rab.mode = R_MODE00; break;
+		case T_R6K01: rab.cpu=R_6K;  rab.mode = R_MODE01; break;
+		case T_R6K10: rab.cpu=R_6K;  rab.mode = R_MODE10; break;
+		case T_R6K11: rab.cpu=R_6K;  rab.mode = R_MODE11; break;
 		default: break;
 		}
 		sym[2].s_addr = op;
@@ -120,7 +120,7 @@ machine(struct mne *mp)
 		outab(op);
 		break;
 
-	case S_INH2:
+	case S_ED_0ARGS:
 		outab(0xED);
 		outab(op);
 		break;
@@ -140,6 +140,8 @@ machine(struct mne *mp)
 	case S_PUSH:
 		t1 = addr(&e1);
 		v1 = (int) e1.e_addr;
+		if (t1 == S_USER)
+			t1 = e1.e_mode = S_IMMED;
 		if (t1 == S_R16AF) {
 			outab(op+0x30);
 			break;
@@ -228,6 +230,8 @@ machine(struct mne *mp)
 			}
 			t1 = addr(&e1);
 			v1 = (int)e1.e_addr;
+			if (t1 == S_USER)
+				t1 = e1.e_mode = S_IMMED;
 			if (IS_MIN_4K(rab) && t1 == S_IMMED && v1 == 8) {
 				comma(1);
 				t2 = addr(&e2);
@@ -241,7 +245,9 @@ machine(struct mne *mp)
 		}
 		t1 = 0;
 		t2 = addr(&e2);
-                if ((t2 == S_IMMED) && IS_MIN_4K(rab)) {
+		if (t2 == S_USER)
+			t2 = e1.e_mode = S_IMMED;
+                if (t2 == S_IMMED && IS_MIN_4K(rab)) {
                         v1 = (int) e2.e_addr;
                         /* v1 should be shift count of 1,2,4, or 8 */
                         comma(1);
@@ -319,7 +325,8 @@ machine(struct mne *mp)
         case S_SUB:  /* sub */
         case S_SBC:  /* sbc */
 		t1 = addr(&e1);
-
+		if (t1 == S_USER)
+			t1 = e1.e_mode = S_IMMED;
                 if (!(more())) {
                         /* handle case for implicit target of 'A' register */
                         t2 = t1;
@@ -330,6 +337,8 @@ machine(struct mne *mp)
 		} else {
 			comma(1);
 			t2 = addr(&e2);
+			if (t2 == S_USER)
+				t2 = e1.e_mode = S_IMMED;
 			v1 = (int) e1.e_addr;
 			v2 = (int) e2.e_addr;
                         ep = &e2;
@@ -490,10 +499,14 @@ machine(struct mne *mp)
 	case S_ADD:
 	case S_ADC:
 		t1 = addr(&e1);
+		if (t1 == S_USER)
+			t1 = e1.e_mode = S_IMMED;
 		t2 = 0;
 		if (more()) {
 			comma(1);
 			t2 = addr(&e2);
+			if (t2 == S_USER)
+				t2 = e1.e_mode = S_IMMED;
 		}
 		if (t2 == 0) {
                         /* implied destination of the 8-bit 'a' register */
@@ -604,9 +617,13 @@ machine(struct mne *mp)
 
 	case S_LD:
 		t1 = addr(&e1);
+		if (t1 == S_USER)
+			t1 = e1.e_mode = S_IMMED;
 		v1 = (int) e1.e_addr;
 		comma(1);
 		t2 = addr(&e2);
+		if (t2 == S_USER)
+			t2 = e1.e_mode = S_IMMED;
 		v2 = (int) e2.e_addr;
                 if (t1 == S_R8) {
                         if (t2 == S_IMMED) {
@@ -1027,14 +1044,8 @@ machine(struct mne *mp)
                 }
 		xerr('a', "Invalid Addressing Mode.");
 		break;
-      
-	case S_IN:
-	case S_OUT:
-		outab(op);
-		break;
-      
-	case S_DEC:
-	case S_INC:
+            
+	case S_INCDEC:
 		t1 = addr(&e1);
 		v1 = (int) e1.e_addr;
 		if (t1 == S_R8) {
@@ -1050,16 +1061,11 @@ machine(struct mne *mp)
 			outrb(&e1, 0);
 			break;
 		}
-		if (t1 == S_R16) {
+		if (t1 == S_R16 && (op == 0x04 || op == 0x05)) {
 			v1 = gixiy(v1);
-			if (rf == S_INC) {
-				outab(0x03|(v1<<4));
-				break;
-			}
-			if (rf == S_DEC) {
-				outab(0x0B|(v1<<4));
-				break;
-			}
+			op = (op == 0x04) ? 0x03 : 0x0B;
+			outab(op | (v1<<4));
+			break;
 		}
 		xerr('a', "Invalid Addressing Mode.");
 		break;
@@ -1107,7 +1113,8 @@ machine(struct mne *mp)
 			comma(1);
 		}
                 else if ((v1 = admode(CND)) != 0 && rf != S_DJNZ) {
-			if ((v1 &= 0xFF) <= 0x03) {
+			v1 &= 0xFF;
+			if (v1 <= 0x03) {
 				op += (v1+1)<<3;
 			} else {
 				xerr('a', "Condition code required.");
@@ -1198,19 +1205,22 @@ machine(struct mne *mp)
 		xerr('a', "Invalid Addressing Mode.");
 		break;
      
-        case X_LJP:
-        case X_LCALL:
-                /* bank jump or call for rabbit processor */
+        case X_LJP: /* ljp lcall */
 		t1 = addr(&e1);
+		if (t1 == S_USER)
+			t1 = e1.e_mode = S_IMMED;
 		comma(1);
 		t2 = addr(&e2);
+		if (t2 == S_USER)
+			t2 = e1.e_mode = S_IMMED;
 		v1 = (int) e1.e_addr;
-                if ((t1 == S_USER) && (t2 == S_IMMED)) {
+                if (t1 == S_IMMED && t2 == S_IMMED) {
 			outab(op);
-			outrw(&e1, 0);
-			outrb(&e2, 0);
+			outrw(&e2, 0);
+			outrb(&e1, 0);
 			break;
 		}
+		aerr( );
 		break;
 
 	case X_FLAG:
@@ -1515,8 +1525,10 @@ machine(struct mne *mp)
 		if (!IS_MIN_4K(rab))
 			xerr('o', "A Rabbit 4000 Instruction.");
 		t1 = addr(&e1);
+		if (t1 == S_USER)
+			t1 = e1.e_mode = S_IMMED;
 		v1 = (int) e1.e_addr;
-		if ( t1 == S_IMMED ) {
+		if (t1 == S_IMMED) {
 			outab(0xED);
 			outab(0x00);
 			outrb(&e1, 0);
@@ -1730,7 +1742,7 @@ minit(void)
 	 */
         exprmasks(3);
 	if (pass == 0) {
-		sym[2].s_addr = X_R2K;
+		sym[2].s_addr = T_R2K;
 	}
 }
 

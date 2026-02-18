@@ -162,17 +162,17 @@ struct	mne	mne[] = {
 
 	/* Machines: only Rabbit CPUs */
 
-    {   NULL,   ".r2k",         S_CPU,          0,      X_R2K   },
-    {   NULL,   ".r3ka",        S_CPU,          0,      X_R3KA  },
-    {   NULL,   ".r4k00",       S_CPU,          0,      X_R4K00 },
-    {   NULL,   ".r4k01",       S_CPU,          0,      X_R4K01 },
-    {   NULL,   ".r4k10",       S_CPU,          0,      X_R4K10 },
-    {   NULL,   ".r4k11",       S_CPU,          0,      X_R4K11 },
-    {   NULL,   ".r4k",         S_CPU,          0,      X_R4K11 },
-    {   NULL,   ".r6k00",       S_CPU,          0,      X_R6K00 },
-    {   NULL,   ".r6k01",       S_CPU,          0,      X_R6K01 },
-    {   NULL,   ".r6k10",       S_CPU,          0,      X_R6K10 },
-    {   NULL,   ".r6k11",       S_CPU,          0,      X_R6K11 },
+    {   NULL,   ".r2k",         S_CPU,          0,      T_R2K   },
+    {   NULL,   ".r3ka",        S_CPU,          0,      T_R3KA  },
+    {   NULL,   ".r4k00",       S_CPU,          0,      T_R4K00 },
+    {   NULL,   ".r4k01",       S_CPU,          0,      T_R4K01 },
+    {   NULL,   ".r4k10",       S_CPU,          0,      T_R4K10 },
+    {   NULL,   ".r4k11",       S_CPU,          0,      T_R4K11 },
+    {   NULL,   ".r4k",         S_CPU,          0,      T_R4K11 },
+    {   NULL,   ".r6k00",       S_CPU,          0,      T_R6K00 },
+    {   NULL,   ".r6k01",       S_CPU,          0,      T_R6K01 },
+    {   NULL,   ".r6k10",       S_CPU,          0,      T_R6K10 },
+    {   NULL,   ".r6k11",       S_CPU,          0,      T_R6K11 },
 
         /* Rabbit instructions */
 
@@ -190,8 +190,8 @@ struct	mne	mne[] = {
     {   NULL,   "res",          S_BIT,          0,      0x80    },
     {   NULL,   "set",          S_BIT,          0,      0xC0    },
 
-    {   NULL,   "inc",          S_INC,          0,      0x04    },
-    {   NULL,   "dec",          S_DEC,          0,      0x05    },
+    {   NULL,   "inc",          S_INCDEC,       0,      0x04    },
+    {   NULL,   "dec",          S_INCDEC,       0,      0x05    },
 
     {   NULL,   "add",          S_ADD,          0,      0x80    },
     {   NULL,   "adc",          S_ADC,          0,      0x88    },
@@ -199,18 +199,18 @@ struct	mne	mne[] = {
 
     {   NULL,   "and",          S_AND,          0,      0xA0    },
     {   NULL,   "or",           S_AND,          0,      0xB0    },
-    {   NULL,   "sub",          S_SUB,          0,      0x90    },
     {   NULL,   "xor",          S_AND,          0,      0xA8    },
     {   NULL,   "cp",           S_AND,          0,      0xB8    },
+
+    {   NULL,   "sub",          S_SUB,          0,      0x90    },
 
     {   NULL,   "ex",           S_EX,           0,      0xE3    },
 
     {	NULL,	"push",		S_PUSH,		0,	0xC5	},
     {   NULL,   "pop",          S_PUSH,         0,      0xC1    },
 
-    {   NULL,   "ioi",          S_IN,           0,      0xD3    },
-    {   NULL,   "ioe",          S_OUT,          0,      0xDB    },
-
+    {   NULL,   "ioi",          S_INH1,          0,     0xD3    },
+    {   NULL,   "ioe",          S_INH1,          0,     0xDB    },
 
     {   NULL,   "rla",          S_RL,           0,      0x17    },
     {   NULL,   "rra",          S_RL,           0,      0x1F    },
@@ -230,11 +230,11 @@ struct	mne	mne[] = {
     {   NULL,   "cpl",          S_INH1,         0,      0x2F    },
 
     {   NULL,   "ipset",	S_IM,		0,	0xED	},
-    {   NULL,   "ipset0",       S_INH2,         0,      0x46    },
-    {   NULL,   "ipset1",       S_INH2,         0,      0x56    },
-    {   NULL,   "ipset2",       S_INH2,         0,      0x4E    },
-    {   NULL,   "ipset3",       S_INH2,         0,      0x5E    },
-    {   NULL,   "ipres",        S_INH2,         0,      0x5D    },
+    {   NULL,   "ipset0",       S_ED_0ARGS,     0,      0x46    },
+    {   NULL,   "ipset1",       S_ED_0ARGS,     0,      0x56    },
+    {   NULL,   "ipset2",       S_ED_0ARGS,     0,      0x4E    },
+    {   NULL,   "ipset3",       S_ED_0ARGS,     0,      0x5E    },
+    {   NULL,   "ipres",        S_ED_0ARGS,     0,      0x5D    },
     {	NULL,	"exx",		S_INH1,		0,	0xD9	},
     {	NULL,	"nop",		S_INH1,		0,	0x00	},
 
@@ -244,13 +244,13 @@ struct	mne	mne[] = {
     {   NULL,   "rrca",         S_INH1,         0,      0x0F    },
     {   NULL,   "scf",          S_INH1,         0,      0x37    },
 
-    {   NULL,   "ldd",          S_INH2,         0,      0xA8    },
-    {   NULL,   "lddr",         S_INH2,         0,      0xB8    },
-    {   NULL,   "ldi",          S_INH2,         0,      0xA0    },
-    {   NULL,   "ldir",         S_INH2,         0,      0xB0    },
+    {   NULL,   "ldd",          S_ED_0ARGS,     0,      0xA8    },
+    {   NULL,   "lddr",         S_ED_0ARGS,     0,      0xB8    },
+    {   NULL,   "ldi",          S_ED_0ARGS,     0,      0xA0    },
+    {   NULL,   "ldir",         S_ED_0ARGS,     0,      0xB0    },
     {   NULL,   "neg",          S_NEG,          0,      0x44    },
-    {	NULL,	"reti",		S_INH2,		0,	0x4D	},
-    {   NULL,   "lret",         S_INH2,         0,      0x45    },
+    {	NULL,	"reti",		S_ED_0ARGS,	0,	0x4D	},
+    {   NULL,   "lret",         S_ED_0ARGS,     0,      0x45    },
 
     {   NULL,   "mul",          S_MUL,          0,      0xF7    },
 
@@ -275,8 +275,8 @@ struct	mne	mne[] = {
     {   NULL,   "flag",		X_FLAG,		0,	0xA4	},
     {   NULL,   "clr",          X_CLR,          0,      0xBF    },
     {   NULL,   "ljp",          X_LJP,          0,      0xC7    },
-    {   NULL,   "lcall",        X_LCALL,        0,      0xCF    },
-    {   NULL,   "lret",         S_INH2,         0,      0x45    },
+    {   NULL,   "lcall",        X_LJP,          0,      0xCF    },
+    {   NULL,   "lret",         S_ED_0ARGS,     0,      0x45    },
     {   NULL,   "bool",         X_BOOL,         0,      0xCC    },
     {   NULL,   "ldp",          X_LDP,          0,      0x64    },
     {   NULL,   "sysret",       R4K_INH2,       0,      0x83    },

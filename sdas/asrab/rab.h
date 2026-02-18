@@ -59,11 +59,13 @@
 	$(STACK) = 3000
 */
 
+
 /*
  * Indirect Addressing delimeters
  */
 #define	LFIND		'('
 #define RTIND		')'
+
 
 /*
  * Registers
@@ -118,6 +120,9 @@
 #define CC_LEU        0x9
 #define CC_LE         0xa
 
+
+
+
 /*
  * Symbol types
  */
@@ -162,68 +167,47 @@
 #define	S_JR		63
 #define	S_RET		64
 #define	S_BIT		65
-#define	S_INC		66
-#define	S_DEC		67
-#define	S_ADD		68
-#define	S_ADC		69
-#define	S_AND		70
-#define	S_EX		71
-#define	S_PUSH		72
-#define	S_IN		73
-#define	S_OUT		74
-#define	S_RL		75
-#define	S_RST		76
-#define	S_IM		77
-#define	S_INH1		78
-#define	S_INH2		81
-#define	S_DJNZ		84
-#define	S_SUB		85
-#define	S_SBC		86
-#define S_NEG           83
-#define	S_CPU		88
-#define	S_MUL		89
-
-
-/*
- * Processor Types (S_CPU)
- */
-#define	X_R2K		0
-#define	X_R3KA		1
-#define X_R4K00         2
-#define X_R4K01         3
-#define X_R4K10         4
-#define X_R4K11         5
-#define X_R6K00         6
-#define X_R6K01         7
-#define X_R6K10         8
-#define X_R6K11         9
-
-
-/*
- * Rabbit 2000 / Rabbit 4000 specific Instructions
- */
+#define	S_INCDEC	66
+#define	S_ADD		67
+#define	S_ADC		68
+#define	S_AND		69
+#define	S_EX		70
+#define	S_PUSH		71
+#define	S_RL		72
+#define	S_RST		73
+#define	S_IM		74
+#define	S_INH1		75
+#define	S_ED_0ARGS	76
+#define	S_DJNZ		77
+#define	S_SUB		78
+#define	S_SBC		79
+#define S_NEG           80
+#define	S_CPU		81
+#define	S_MUL		82
+/* Rabbit specific Instructions */
 #define	X_MULU		90
 #define X_LJP           91
-#define X_LCALL         92
-#define X_BOOL          93
-#define X_LDP           94
-#define X_R3K_MODE      95
-#define R3K_INH1        96
-#define R3K_INH2        97
-
-#define X_R4K_XSTART    98
+#define X_BOOL          92
+#define X_LDP           93
+#define X_R3K_MODE      94
+#define R3K_INH1        95
+#define R3K_INH2        96
 /* the remaining instructions are Rabbit >= 4000 */
-#define X_R4K_MULU	99
-#define X_JRE		100
-#define X_CLR		101
-#define R4K_INH2	102
-#define X_TEST		103
-#define X_CBM		104
-#define X_LDF		105
-#define X_SWAP		106
-#define R6K_1_ALW       107
-#define X_FLAG		108
-#define X_BOX		109
+#define X_R4K_XFIRST    97
+#define X_R4K_MULU	97
+#define X_JRE		98
+#define X_CLR		99
+#define R4K_INH2	100
+#define X_TEST		101
+#define X_CBM		102
+#define X_LDF		103
+#define X_SWAP		104
+#define R6K_1_ALW       105
+#define X_FLAG		106
+#define X_BOX		107
+
+
+
 
 #define BCDE_PG           0xDD
 #define JKHL_PG           0xFD
@@ -247,6 +231,20 @@
 #define IS_MIN_4K(x) ((x.cpu)>=R_4K)
 #define IS_ONLY_4K(x) ((x.cpu)==R_4K)
 #define IS_MIN_6K(x) ((x.cpu)>=R_6K)
+
+/*
+ * Processor Types (S_CPU)
+ */
+#define	T_R2K		0
+#define	T_R3KA		1
+#define T_R4K00         2
+#define T_R4K01         3
+#define T_R4K10         4
+#define T_R4K11         5
+#define T_R6K00         6
+#define T_R6K01         7
+#define T_R6K10         8
+#define T_R6K11         9
 
 
 struct adsym

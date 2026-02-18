@@ -1,3 +1,11 @@
+2026-02-18 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: improvements, including '#'
+
 2026-02-17 Janko Stamenović
 
 	* sdas/asrab/rab.h
