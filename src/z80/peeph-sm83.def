@@ -313,9 +313,9 @@ replace {
 } by {
 	; sm83 peephole 18e pushed #%2 faster
 	xor	a, a
-	scf
+	inc	a
 	push	af
-} if operandsLiteral(%2), immdInRange(0x00D0 0x00D0 '+' %2 0 %x3), notUsed(%1 'af')
+} if operandsLiteral(%2), immdInRange(0x0100 0x0100 '+' %2 0 %x3), notUsed(%1 'af')
 
 replace {
 	ld	%1, #%2
@@ -323,9 +323,9 @@ replace {
 } by {
 	; sm83 peephole 18f pushed #%2 faster
 	xor	a, a
-	inc	a
+	dec	a
 	push	af
-} if operandsLiteral(%2), immdInRange(0x0100 0x0100 '+' %2 0 %x3), notUsed(%1 'af')
+} if operandsLiteral(%2), immdInRange(0xFF60 0xFF60 '+' %2 0 %x3), notUsed(%1 'af')
 
 replace {
 	ld	%1, #%2
@@ -335,17 +335,7 @@ replace {
 	scf
 	sbc	a, a
 	push	af
-} if operandsLiteral(%2), immdInRange(0xFF30 0xFF30 '+' %2 0 %x3), notUsed(%1 'af')
-
-replace {
-	ld	%1, #%2
-	push	%1
-} by {
-	; sm83 peephole 18h pushed #%2 faster
-	xor	a, a
-	dec	a
-	push	af
-} if operandsLiteral(%2), immdInRange(0xFF60 0xFF60 '+' %2 0 %x3), notUsed(%1 'af')
+} if operandsLiteral(%2), immdInRange(0xFF70 0xFF70 '+' %2 0 %x3), notUsed(%1 'af')
 
 replace {
 	push	af

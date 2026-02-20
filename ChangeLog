@@ -2,6 +2,9 @@
 
 	* support/regression/tests/argval.c.in:
 	  Test for bug #3937.
+	* src/z80/gen.c,
+	  src/z80/peeph-sm83.def:
+	  Fix bug #3973.
 
 2026-02-18 Janko Stamenović
 
