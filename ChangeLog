@@ -1,5 +1,12 @@
 2026-02-20 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* support/sdbinutils/libiberty,
+	  support/sdbinutils/include/demangle.h,
+	  support/sdbinutils/include/sha1.h:
+	  Sync libiberty with GNU binutils 2.46.
+
+2026-02-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* support/sdbinutils:
 	  Reduce diff to upstream GNU binutils 3.38.
 
