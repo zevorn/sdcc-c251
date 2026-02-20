@@ -49,7 +49,7 @@
    pointer to the minisymbol.  */
 
 struct size_sym
-{ //
+{
   const void *minisym;
   bfd_vma size;
 };
@@ -58,7 +58,7 @@ struct size_sym
    get_relocs.  */
 
 struct get_relocs_info
-{ //
+{
   asection **secs;
   arelent ***relocs;
   long *relcount;
@@ -66,7 +66,7 @@ struct get_relocs_info
 };
 
 struct extended_symbol_info
-{ //
+{
   symbol_info *sinfo;
   bfd_vma ssize;
   elf_symbol_type *elfinfo;
@@ -111,7 +111,7 @@ static void print_value (bfd *, bfd_vma);
 
 /* Support for different output formats.  */
 struct output_fns
-{ //
+{
   /* Print the name of an object file given on the command line.  */
   void (*print_object_filename) (const char *);
 
@@ -131,7 +131,7 @@ struct output_fns
 
 /* Indices in `formats'.  */
 enum formats
-{ //
+{
   FORMAT_BSD = 0,
   FORMAT_SYSV,
   FORMAT_POSIX,
@@ -142,7 +142,7 @@ enum formats
 #define FORMAT_DEFAULT FORMAT_BSD
 
 static struct output_fns formats[FORMAT_MAX] =
-{ //
+{
   {print_object_filename_bsd,
    print_archive_filename_bsd,
    print_archive_member_bsd,
@@ -223,7 +223,7 @@ static bfd *lineno_cache_bfd;
 static bfd *lineno_cache_rel_bfd;
 
 typedef enum unicode_display_type
-{ //
+{
   unicode_default = 0,
   unicode_locale,
   unicode_escape,
@@ -235,7 +235,7 @@ typedef enum unicode_display_type
 static unicode_display_type unicode_display = unicode_default;
 
 enum long_option_values
-{ //
+{
   OPTION_TARGET = 200,
   OPTION_PLUGIN,
   OPTION_SIZE_SORT,
@@ -246,7 +246,7 @@ enum long_option_values
 };
 
 static struct option long_options[] =
-{ //
+{
   {"debug-syms", no_argument, &print_debug_syms, 1},
   {"demangle", optional_argument, 0, 'C'},
   {"dynamic", no_argument, &dynamic, 1},
@@ -531,7 +531,7 @@ display_utf8 (const unsigned char * in, char * out, unsigned int * consumed)
 
  valid:
   switch (unicode_display)
-    { //
+    {
     case unicode_locale:
       /* Copy the bytes into the output buffer as is.  */
       memcpy (out, in, nchars);
@@ -927,7 +927,7 @@ numeric_reverse (const void *x, const void *y)
 }
 
 static int (*(sorters[2][2])) (const void *, const void *) =
-{ //
+{
   { non_numeric_forward, non_numeric_reverse },
   { numeric_forward, numeric_reverse }
 };

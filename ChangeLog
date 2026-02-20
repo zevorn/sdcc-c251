@@ -1,5 +1,10 @@
 2026-02-20 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* support/sdbinutils:
+	  Reduce diff to upstream GNU binutils 3.38.
+
+2026-02-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* support/regression/tests/argval.c.in:
 	  Test for bug #3937.
 	* src/z80/gen.c,
