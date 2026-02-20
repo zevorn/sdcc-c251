@@ -4,7 +4,9 @@
 	  Test for bug #3937.
 	* src/z80/gen.c,
 	  src/z80/peeph-sm83.def:
-	  Fix bug #3973.
+	  Fix bug #3937.
+	* support/scripts/sdcc.nsi:
+	  Include mos6502-stack-auto library in Windows installer.
 
 2026-02-18 Janko Stamenović
 

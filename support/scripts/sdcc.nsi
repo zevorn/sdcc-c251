@@ -917,10 +917,10 @@ ${Section} "SDCC MOS 6502 library" SEC37
   File "${DEV_ROOT}\lib\mos6502\*.*"
 ${SectionEnd}
 
-${Section} "SDCC R800 library" SEC38
+${Section} "SDCC MOS 6502 stack-auto library" SEC38
   SectionIn 1 2
-  SetOutPath "$INSTDIR\lib\r800"
-  File "${DEV_ROOT}\lib\r800\*.*"
+  SetOutPath "$INSTDIR\lib\mos6502-stack-auto"
+  File "${DEV_ROOT}\lib\mos6502-stack-auto\*.*"
 ${SectionEnd}
 
 ${Section} "SDCC WDC 65C02 library" SEC39
@@ -929,19 +929,25 @@ ${Section} "SDCC WDC 65C02 library" SEC39
   File "${DEV_ROOT}\lib\mos65c02\*.*"
 ${SectionEnd}
 
-${Section} "SDCC S08 stack-auto library" SEC40
+${Section} "SDCC R800 library" SEC40
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\r800"
+  File "${DEV_ROOT}\lib\r800\*.*"
+${SectionEnd}
+
+${Section} "SDCC S08 stack-auto library" SEC41
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\s08-stack-auto"
   File "${DEV_ROOT}\lib\s08-stack-auto\*.*"
 ${SectionEnd}
 
-${Section} "SDCC f8 library" SEC41
+${Section} "SDCC f8 library" SEC42
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\f8"
   File "${DEV_ROOT}\lib\f8\*.*"
 ${SectionEnd}
 
-${Section} "SDCC f8l library" SEC42
+${Section} "SDCC f8l library" SEC43
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\f8l"
   File "${DEV_ROOT}\lib\f8l\*.*"
@@ -988,11 +994,12 @@ LangString DESC_SEC34 ${LANG_ENGLISH} "SDCC PDK15 stack-auto library"
 LangString DESC_SEC35 ${LANG_ENGLISH} "SDCC Z80N library"
 LangString DESC_SEC36 ${LANG_ENGLISH} "SDCC Rabbit 2000A library"
 LangString DESC_SEC37 ${LANG_ENGLISH} "SDCC MOS 6502 library"
-LangString DESC_SEC38 ${LANG_ENGLISH} "SDCC R800 library"
+LangString DESC_SEC38 ${LANG_ENGLISH} "SDCC MOS 6502 stack-auto library"
 LangString DESC_SEC39 ${LANG_ENGLISH} "SDCC WDC 65C02 library"
-LangString DESC_SEC40 ${LANG_ENGLISH} "SDCC S08 stack-auto library"
-LangString DESC_SEC41 ${LANG_ENGLISH} "SDCC f8 library"
-LangString DESC_SEC42 ${LANG_ENGLISH} "SDCC f8l library"
+LangString DESC_SEC40 ${LANG_ENGLISH} "SDCC R800 library"
+LangString DESC_SEC41 ${LANG_ENGLISH} "SDCC S08 stack-auto library"
+LangString DESC_SEC42 ${LANG_ENGLISH} "SDCC f8 library"
+LangString DESC_SEC43 ${LANG_ENGLISH} "SDCC f8l library"
 
 ;Assign language strings to sections
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
@@ -1040,6 +1047,7 @@ LangString DESC_SEC42 ${LANG_ENGLISH} "SDCC f8l library"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC40} $(DESC_SEC40)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC41} $(DESC_SEC41)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC42} $(DESC_SEC42)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC43} $(DESC_SEC43)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 ;--------------------------------
 
@@ -1443,6 +1451,7 @@ ${Section} Uninstall SECUNINSTALL
   RMDir "$INSTDIR\lib\src\pdk15-stack-auto"
   RMDir "$INSTDIR\lib\src\tlcs90"
   RMDir "$INSTDIR\lib\src\mos6502"
+  RMDir "$INSTDIR\lib\src\mos6502-stack-auto"
   RMDir "$INSTDIR\lib\src\z80n"
   RMDir "$INSTDIR\lib\src\r800"
   RMDir "$INSTDIR\lib\src\mos65c02"
@@ -1484,6 +1493,7 @@ ${Section} Uninstall SECUNINSTALL
   RMDir "$INSTDIR\lib\pdk15-stack-auto"
   RMDir "$INSTDIR\lib\tlcs90"
   RMDir "$INSTDIR\lib\mos6502"
+  RMDir "$INSTDIR\lib\mos6502-stack-auto"
   RMDir "$INSTDIR\lib\z80n"
   RMDir "$INSTDIR\lib\r800"
   RMDir "$INSTDIR\lib\mos65c02"
