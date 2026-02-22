@@ -20,7 +20,7 @@ void testPassArg(void)
 unsigned int callee(int narg, ...)
 {
 	va_list ap;
-	va_start(ap, i);
+	va_start(ap, narg);
 	unsigned int ret = va_arg(ap, unsigned int);
 	if(narg == 2)
 		return ret += va_arg(ap, unsigned int) << 8;
