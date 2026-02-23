@@ -1,3 +1,8 @@
+2026-02-22 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+	  Add special case for SOF in genAssignLit().
+
 2026-02-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/sdbinutils:
