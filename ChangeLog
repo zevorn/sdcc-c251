@@ -4,7 +4,9 @@
 	  Add special case for SOF in genAssignLit().
    	* src/mos6502/genrshift.c:
       Special case SOF in genrsh16().
-   	
+   	* src/mos6502/genminus.c:
+      Special case SOF in genMinusDec().
+      
 2026-02-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/sdbinutils:
