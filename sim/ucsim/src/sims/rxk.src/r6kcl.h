@@ -29,6 +29,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define R6KCL_HEADER
 
 #include "r5kcl.h"
+#include "r6kwrap.h"
+#include "dp0m6.h"
 
 
 class cl_r6k: public cl_r5k
@@ -36,6 +38,16 @@ class cl_r6k: public cl_r5k
  public:
   cl_r6k(class cl_sim *asim);
   virtual const char *id_string(void);
+
+  virtual struct dis_entry *dis_entry(t_addr addr);
+
+  virtual void mode3k(void);
+  virtual void mode01(void);
+  virtual void mode10(void);
+  virtual void mode4k(void);
+
+  virtual int JP_GE_MN(MP) { return jp_f_mn(cond_GE(rF)); }
+  virtual int JP_LE_MN(MP) { return jp_f_mn(cond_LE(rF)); }
 };
 
 

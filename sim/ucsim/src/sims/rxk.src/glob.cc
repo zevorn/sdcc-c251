@@ -36,6 +36,7 @@ instruction_wrapper_fn itab_ed[256];
 instruction_wrapper_fn itab_fd[256];
 instruction_wrapper_fn itab_7f[256];
 instruction_wrapper_fn itab_7f10[256];
+instruction_wrapper_fn itab_49[256];
 
 u8_t sbox_tab[256];
 u8_t ibox_tab[256];
@@ -209,6 +210,20 @@ struct dis_entry disass_rxk[]=
     { 0, 0, 0, 0, 0, 0, 0 }
   };
 
+/*
+  3rd byte is a bit mask, shows if inst avail in a mode:
+  1000 (8) inst avail in mode3 (11)
+  0100 (4) inst avail in mode2 (10)
+  0010 (2) inst avail in mode1 (01)
+  0001 (1) inst avail in mode0 (00) 
+ */
+struct dis_entry disass_r6k[]=
+  {
+    { 0x80043, 0x00ff, ' ', 3, "JP GE,%w" },
+    { 0x80053, 0x00ff, ' ', 3, "JP LE,%w" },
+    
+    { 0, 0, 0, 0, 0, 0, 0 }
+  };
 
 #define ROTL8(x,shift) ((/*u8_t*/u8_t) ((x) << (shift)) | ((x) >> (8 - (shift))))
 
