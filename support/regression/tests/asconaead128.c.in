@@ -52,13 +52,13 @@
 #endif
 
 // Bug #3920 - fails test
-#if defined(IMPL_opt32_lowsize) && defined(__SDCC) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
+#if defined(IMPL_opt32_lowsize) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 #undef OP_encrypt
 #undef OP_decrypt
 #endif
 
-// Bug #3920 - fails to test
-#if defined(IMPL_opt8) && defined(__SDCC) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
+// Bug #3920 - fails test
+#if defined(IMPL_opt8) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 #undef OP_encrypt
 #undef OP_decrypt
 #endif
@@ -69,14 +69,14 @@
 #undef OP_decrypt
 #endif
 
-// Bug #3920 - fails to test
-#if defined(IMPL_opt8_lowsize) && defined(__SDCC) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
+// Bug #3920 - fails test
+#if defined(IMPL_opt8_lowsize) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 #undef OP_encrypt
 #undef OP_decrypt
 #endif
 
-// Bug #3920 - fails to test
-#if defined(IMPL_opt8_mylowsize) && defined(__SDCC) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
+// Bug #3920 - fails test
+#if defined(IMPL_opt8_mylowsize) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 #undef OP_encrypt
 #undef OP_decrypt
 #endif
