@@ -9,7 +9,7 @@
 
 typedef unsigned char uint8_t;
 typedef unsigned int uint16_t;
-typedef unsigned char bool;
+typedef unsigned char bool_;
 
 typedef struct _Struct {
   uint8_t abyte1;
@@ -20,7 +20,7 @@ typedef struct _Struct {
 Struct storage;
 
 uint16_t srcInt;
-bool flag;
+bool_ flag;
 
 extern void fn1(const Struct*) __z88dk_fastcall;
 
