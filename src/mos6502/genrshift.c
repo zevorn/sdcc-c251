@@ -298,11 +298,19 @@ genrsh16 (operand * result, operand * left, int shCount, int sign)
             }
           else 
 	    emit6502op ("lsr", "a");
-
-          transferRegReg(m6502_reg_a, m6502_reg_x, true);
-          loadRegFromAop (m6502_reg_a, AOP (left), 0);
-	  emit6502op ("ror", "a");
-          storeRegToAop (m6502_reg_xa, AOP (result), 0);
+          if(AOP_TYPE(left)==AOP_SOF)
+            {
+              storeRegTempAlways (m6502_reg_a, true);
+              loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	      emit6502op ("ror", "a");
+              loadRegTemp (m6502_reg_x);
+            }
+          else
+            {
+              transferRegReg(m6502_reg_a, m6502_reg_x, true);
+              loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	      emit6502op ("ror", "a");
+            }
         }
       else
 	{

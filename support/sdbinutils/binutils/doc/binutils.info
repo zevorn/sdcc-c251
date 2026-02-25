@@ -5828,7 +5828,7 @@ File: binutils.info,  Node: Binutils Index,  Prev: GNU Free Documentation Licens
 Binutils Index
 **************
 
-
+ [index ]
 * Menu:
 
 * -enable-deterministic-archives:        ar cmdline.          (line 150)

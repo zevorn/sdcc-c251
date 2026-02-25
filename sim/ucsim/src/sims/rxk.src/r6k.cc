@@ -25,18 +25,132 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA. */
 /*@1@*/
 
+#include "glob.h"
+#include "49wrap.h"
+#include "r6kwrap.h"
+
 #include "r6kcl.h"
 
 
 cl_r6k::cl_r6k(class cl_sim *asim):
   cl_r5k(asim)
 {
+  fill_49_wrappers(itab_49);
+  // 6k specific stuff on 7f page in 10 mode
+  itab_7f10[0x43]= instruction_wrapper_6k11_43;
+  itab_7f10[0x44]= instruction_wrapper_6k11_44;
+  itab_7f10[0x4b]= instruction_wrapper_6k11_4b;
+  itab_7f10[0x53]= instruction_wrapper_6k11_53;
+  itab_7f10[0x59]= instruction_wrapper_6k11_59;
+  itab_7f10[0x69]= instruction_wrapper_6k11_69;
+  itab_7f10[0x80]= instruction_wrapper_6k11_80;
+  itab_7f10[0x88]= instruction_wrapper_6k11_88;
+  itab_7f10[0x90]= instruction_wrapper_6k11_90;
 }
 
 const char *
 cl_r6k::id_string(void)
 {
   return "R6K";
+}
+
+struct dis_entry *
+cl_r6k::dis_entry(t_addr addr)
+{
+  u8_t code0= rom->read(addr);
+  t_mem codew= code0 + 256*(rom->read(addr+1));
+  struct dis_entry *de;
+  int i;
+  i= 0;
+  while (disass_r6k[i].mnemonic)
+    {
+      int em, km;
+      de= &disass_r6k[i];
+      em= de->code >> 16;
+      km= 1<<kmode;
+      if (em & km)
+	{
+	  t_mem mc= codew & de->mask;
+	  t_mem cc= de->code & 0xffff;
+	  if (mc == cc)
+	    return de;
+	}
+      i++;
+    }
+  return cl_r5k::dis_entry(addr);
+}
+
+
+void
+cl_r6k::mode3k(void)
+{
+  cl_r5k::mode3k();
+}
+
+
+void
+cl_r6k::mode01(void)
+{
+  cl_r5k::mode01();
+}
+
+
+void
+cl_r6k::mode10(void)
+{
+  cl_r5k::mode10();
+}
+
+void
+cl_r6k::mode4k(void)
+{
+  cl_r5k::mode4k();
+  itab[0x43]= instruction_wrapper_6k11_43;
+  itab[0x44]= instruction_wrapper_6k11_44;
+  itab[0x4b]= instruction_wrapper_6k11_4b;
+  itab[0x53]= instruction_wrapper_6k11_53;
+  itab[0x59]= instruction_wrapper_6k11_59;
+  itab[0x69]= instruction_wrapper_6k11_69;
+  itab[0x80]= instruction_wrapper_6k11_80;
+  itab[0x88]= instruction_wrapper_6k11_88;
+  itab[0x90]= instruction_wrapper_6k11_90;
+}
+
+int
+cl_r6k::EX_JKHL_BCDE_(MP)
+{
+  u32_t t;
+  if (altd)
+    {
+      t= rJKHL;
+      cJKHL.W(raBCDE);
+      caBCDE.W(t);
+    }
+  else
+    {
+      t= raJKHL;
+      caJKHL.W(raBCDE);
+      caBCDE.W(t);
+    }
+  return resGO;
+}
+
+int
+cl_r6k::MUL_HL_DE(MP)
+{
+  i32_t a= (i16_t)rHL;
+  i32_t b= (i16_t)rDE;
+  destJKHL().W(a * b);
+  tick(10);
+  return resGO;
+}
+
+int
+cl_r6k::MULU_HL_DE(MP)
+{
+  destJKHL().W((u32_t)rHL * (u32_t)rDE);
+  tick(10);
+  return resGO;
 }
 
 

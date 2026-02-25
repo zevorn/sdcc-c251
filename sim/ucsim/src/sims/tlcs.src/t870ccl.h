@@ -128,6 +128,7 @@ public:
   struct rbank_870c_t *rbanks, *rbank;
   u16_t rSP;
   u8_t rPSW;
+  u8_t imf; // interrupt mask flag (0 or 1)
   C8 cW, cA, cB, cC, cD, cE, cH, cL, cPSW;
   C8 *regs8[8];
   C16 cWA, cBC, cDE, cHL, cIX, cIY, cSP;
@@ -135,6 +136,7 @@ public:
   class cl_address_space *asc, *asd;
   class cl_memory_chip *ram_chip, *rom_chip, *bootrom_chip;
   u16_t sp_limit;
+  u16_t vector_start;
 public:
   // (src) or (dst) memory cell for 8/16 bit ops
   class cl_cell8 *sdc;
@@ -264,6 +266,7 @@ public:
   virtual int jr(u8_t a);
   virtual int jrs(u8_t code, bool cond);
   virtual int jr_cc(u8_t a, bool cond);
+  virtual int call(u16_t a);
   
 #include "alias870c.h"
   // 0 00 - 0 00
@@ -271,6 +274,7 @@ public:
   virtual int CLR_CF(MP);
   virtual int SET_CF(MP);
   virtual int CPL_CF(MP);
+  virtual int CMP_x_n(MP) { sd_x(); return cmp8(sdc, fetch()); }
   virtual int LDW_mx_mn(MP);
   virtual int LDW_mhl_mn(MP);
   virtual int LD_mx_n(MP) { sd_x(); return st8(sdc, fetch()); }
@@ -373,6 +377,23 @@ public:
   virtual int XOR_A_n(MP) { return xor8(&cA, fetch()); }
   virtual int OR_A_n(MP) { return or8(&cA, fetch()); }
   virtual int CMP_A_n(MP) { return cmp8(&cA, fetch()); }
+  // 0 70 - 0 7f
+  virtual int CALLV_0(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_1(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_2(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_3(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_4(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_5(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_6(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_7(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_8(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_9(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_a(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_b(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_c(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_d(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_e(MP) { return call(rd16(vector_start+2*(code&0xf))); }
+  virtual int CALLV_f(MP) { return call(rd16(vector_start+2*(code&0xf))); }
   // 0 80 - 0 8f
   virtual int JRS_T_a10(MP) { return jrs(code, rF&MJF); }
   virtual int JRS_T_a11(MP) { return jrs(code, rF&MJF); }
@@ -502,7 +523,9 @@ public:
   virtual int instruction_f6(MP) { sd_spM(); return execD(); }
   virtual int instruction_f7(MP) { sd_hlc(); return execD(); }
   virtual int LD_RBS(MP);
+  virtual int RET(MP) { return pop(&cPC); }
   virtual int JR_a(MP) { return jr(fetch()); }
+  virtual int CALL_mn(MP) { return call(fetch16()); }
   virtual int JP_mn(MP) { PC= fetch16(); return resGO; }
   // 1 00 - 1 3f ALU r,g
   virtual int ADDC_rA_g(MP) { return add8(&cA, regs8[sda]->R(), true); }
@@ -731,6 +754,8 @@ public:
   virtual int POP_gg(MP) { return pop(regs16[sda]); }
   virtual int DAA_g(MP);
   virtual int DAS_g(MP);
+  virtual int PUSH_PSW(MP);
+  virtual int POP_PSW(MP);
   virtual int LD_PSW_n(MP) { cF.W(fetch()); return resGO; }
   // 1 e0 - 1 ef
   virtual int CPL_g_0(MP) { return cplr(regs8[sda], 0); }
@@ -759,6 +784,7 @@ public:
   virtual int ROLC_g(MP);
   virtual int RORC_g(MP);
   virtual int NEG_gg(MP);
+  virtual int CALL_gg(MP) { return call(regs16[sda]->get()); }
   virtual int JP_gg(MP) { PC= regs16[sda]->get(); return resGO; }
   virtual int SWAP_g(MP);
   // 2 00 - 2 3f ALU r,(src)
@@ -1005,11 +1031,13 @@ public:
   virtual int SET_src_A(MP) { return setm(sdc, rA&7); }
   virtual int LD_src_A_CF(MP);
   virtual int ROLD_A_src(MP);
+  virtual int RORD_A_src(MP);
   virtual int DEC_src(MP) { return dec8m(sdc); }
   virtual int LD_dst_n(MP) { return st8(sdc, fetch()); }
   virtual int CPL_src_A(MP) { return cplm(sdc, rA&7); }
   virtual int CLR_src_A(MP) { return clrm(sdc, rA&7); }
   virtual int LD_CF_src_A(MP);
+  virtual int CALL_src(MP) { return call(rd16(sda)); }
   virtual int JP_src(MP) { PC= rd16(sda); return resGO; }
 };
 

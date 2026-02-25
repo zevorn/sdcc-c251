@@ -7339,6 +7339,54 @@ genIpush (const iCode *ic)
           cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
           d = 4;
         }
+      else if (size >= 2 && IS_SM83 && a_free &&
+         (aopIsLitVal (ic->left->aop, size - 2, 2, 0x0000) ||
+          aopIsLitVal (ic->left->aop, size - 2, 2, 0x0080) ||
+          aopIsLitVal (ic->left->aop, size - 2, 2, 0x0090) ||
+          aopIsLitVal (ic->left->aop, size - 2, 2, 0x00c0) ||
+          aopIsLitVal (ic->left->aop, size - 2, 2, 0x0100) ||
+          aopIsLitVal (ic->left->aop, size - 2, 2, 0xff60) ||
+          aopIsLitVal (ic->left->aop, size - 2, 2, 0xff70)))
+         {
+           if (aopIsLitVal (ic->left->aop, size - 2, 2, 0x0000))
+             {
+               emit3 (A_XOR, ASMOP_A, ASMOP_A); // Clear a and all flags except z.
+               emit3 (A_RRCA, 0, 0);            // Clear z flag.
+             }
+           else if (aopIsLitVal (ic->left->aop, size - 2, 2, 0x0080))
+             {
+               emit3 (A_XOR, ASMOP_A, ASMOP_A); // Clear a and all flags except z.
+             }
+           else if (aopIsLitVal (ic->left->aop, size - 2, 2, 0x0090))
+             {
+               emit3 (A_XOR, ASMOP_A, ASMOP_A); // Clear a and all flags except z.
+               emit3 (A_SCF, 0, 0);             // Set c flag.
+             }
+           else if (aopIsLitVal (ic->left->aop, size - 2, 2, 0x00c0))
+             {
+               emit3 (A_SUB, ASMOP_A, ASMOP_A); // Clear a and all flags except z and n.
+             }
+           else if (aopIsLitVal (ic->left->aop, size - 2, 2, 0x0100))
+             {
+               emit3 (A_XOR, ASMOP_A, ASMOP_A); // Clear a and all flags except z.
+               emit3 (A_INC, ASMOP_A, 0);       // Clear all flags, set a to 0x01.
+             }
+           else if (aopIsLitVal (ic->left->aop, size - 2, 2, 0xff60))
+             {
+               emit3 (A_XOR, ASMOP_A, ASMOP_A); // Clear a.
+               emit3 (A_DEC, ASMOP_A, 0);       // Clear all flags except n and h, set a to 0xff.
+             }
+           else if (aopIsLitVal (ic->left->aop, size - 2, 2, 0xff70))
+             {
+               emit3 (A_SCF, 0, 0);             // Set c flag.
+               emit3 (A_SBC, ASMOP_A, ASMOP_A); // Set all flags except z, set a to 0xff.
+             }
+           else
+             wassert(0);
+           emit2 ("push af");               // Pushes 0x0000: a is 0x00, 4 upper flag bits have just been set to 0x0, lower 4 flag bits are hardwired to 0x0.
+           cost2 (1, 1, 2, 1, 11, 11, 10, 11, 16, 8, 4, 3, 3, 3, 4);
+           d = 2;
+         }
       else if (size >= 2 &&
           (hl_free || de_free || bc_free ||
           aopInReg (IC_LEFT (ic)->aop, size - 1, B_IDX) && c_free || b_free && aopInReg (IC_LEFT (ic)->aop, size - 2, C_IDX) ||
@@ -7425,14 +7473,6 @@ genIpush (const iCode *ic)
            emit2 ("ex (sp), hl");
            cost2 (1 + IS_RAB, 2, -1, 3, 19, 16, 15, 15, -1, 14, -1, 8, 8, 5, 5);
            spillPair (PAIR_HL);
-           d = 2;
-         }
-       else if (size >= 2 && IS_SM83 && aopIsLitVal (ic->left->aop, size - 2, 2, 0x0000) && a_free)
-         {
-           emit3 (A_XOR, ASMOP_A, ASMOP_A); // Clear a and all flags except z
-           emit3 (A_RRCA, 0, 0);            // Clear z flag.
-           emit2 ("push af");               // Pushes 0x0000: a is 0x00, 4 upper flag bits have just been set to 0x0, lower 4 flag bits are hardwired to 0x0.
-           cost2 (1, 1, 2, 1, 11, 11, 10, 11, 16, 8, 4, 3, 3, 3, 4);
            d = 2;
          }
        else if (aopInReg (IC_LEFT (ic)->aop, size - 1, A_IDX))
