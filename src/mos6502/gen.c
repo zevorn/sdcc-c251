@@ -4043,7 +4043,7 @@ genCpl (iCode * ic)
           rmwWithReg ("com", m6502_reg_a);
           storeRegToAop (m6502_reg_a, AOP (result), 1);
         }
-     goto release;
+      goto release;
     }
 
   needpullreg = pushRegIfSurv (m6502_reg_a);
@@ -4455,14 +4455,14 @@ genIpush (iCode * ic)
   //  l = aopGet (AOP (left), 0, false, true);
   /*
     if (AOP_TYPE (left) == AOP_IMMD || AOP_TYPE (left) == AOP_LIT ||IS_AOP_XY (AOP (left)))
-      {
-        if ((size == 2) && m6502_reg_xy->isDead || IS_AOP_XY (AOP (left)))
-          {
-            loadRegFromAop (m6502_reg_xy, AOP (left), 0);
-            m6502_pushReg (m6502_reg_xy, true);
-            goto release;
-          }
-     }
+    {
+    if ((size == 2) && m6502_reg_xy->isDead || IS_AOP_XY (AOP (left)))
+    {
+    loadRegFromAop (m6502_reg_xy, AOP (left), 0);
+    m6502_pushReg (m6502_reg_xy, true);
+    goto release;
+    }
+    }
   */
 
   if (AOP_TYPE (left) == AOP_REG)
@@ -5466,7 +5466,7 @@ genCmp (iCode * ic, iCode * ifx)
 
   if(right_zero)
     emitComment (TRACEGEN|VVDBG, "%s - right is zero", 
-               __func__);
+		 __func__);
 
   if (ifx)
     {
@@ -5487,9 +5487,9 @@ genCmp (iCode * ic, iCode * ifx)
     }
 
   if (sign && right_zero && opcode=='<')
-      br_inst = "bmi";
+    br_inst = "bmi";
   else if(sign && right_zero && opcode==GE_OP)
-      br_inst = "bpl";
+    br_inst = "bpl";
 
   if (sign && right_zero && aopCanBit(AOP(left))
       && (opcode=='<' || opcode ==GE_OP) )
@@ -7732,7 +7732,7 @@ genPointerSet (iCode * ic)
     {
       ptr_str = "DPTR";
       yoff = setupDPTR(result, litOffset, rematOffset, 
-		     !needloada && IS_AOP_WITH_A(AOP(right)) && AOP_TYPE(result)!=AOP_SOF);
+		       !needloada && IS_AOP_WITH_A(AOP(right)) && AOP_TYPE(result)!=AOP_SOF);
     }
   else
     {
@@ -7955,6 +7955,8 @@ static bool genAssignLit (operand * result, operand * right)
   unsigned char value[sizeof(assigned)];
   int size;
   int offset,offset2;
+  bool restore_a = false;
+  bool restore_x = false;
 
   /* Make sure this is a literal assignment */
   if (AOP_TYPE (right) != AOP_LIT)
@@ -7982,6 +7984,14 @@ static bool genAssignLit (operand * result, operand * right)
       value[offset] = byteOfVal (AOP (right)->aopu.aop_lit, offset);
     }
 
+  if(AOP_TYPE(result)==AOP_SOF)
+    {
+      restore_a = storeRegTempIfSurv(m6502_reg_a);
+      restore_x = storeRegTempIfSurv(m6502_reg_x);
+    }
+
+  emitComment (TRACEGEN, "  %s - ra:%d rx:%d", __func__, restore_a, restore_x);
+
   for (offset=0; offset<size; offset++)
     {
       if (assigned[offset])
@@ -8001,6 +8011,11 @@ static bool genAssignLit (operand * result, operand * right)
 	    }
 	}
     }
+
+  if(restore_x)
+    loadRegTemp(m6502_reg_x);
+  if(restore_a)
+    loadRegTemp(m6502_reg_a);
 
   return true;
 }

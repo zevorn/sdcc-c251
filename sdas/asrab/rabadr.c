@@ -378,3 +378,10 @@ struct  adsym   ALT_CND[] = {
     {   "C",    CC_C |0400  },
     {   "",     0000        }
 };
+
+struct  adsym   R6_CND[] = {
+    {   "GE",   CC_GE|0400  },
+    {   "LEU",  CC_LEU|0400 },
+    {   "LE",   CC_LE|0400  },
+    {   "",     0000        }
+};

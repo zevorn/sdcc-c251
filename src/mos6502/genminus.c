@@ -155,9 +155,14 @@ genMinusDec (iCode * ic)
       if(reg)
         {
           bool needpullx=false;
+          bool needpulla=false;
 
           if(AOP_TYPE(result)==AOP_SOF || AOP_TYPE(left)==AOP_SOF)
-            needpullx=storeRegTempIfSurv(m6502_reg_x);
+            {
+              needpullx=storeRegTempIfSurv(m6502_reg_x);
+              needpulla=storeRegTempIfSurv(m6502_reg_a);
+              reg=m6502_reg_a;
+            }
 
           tlbl = safeNewiTempLabel (NULL);
           loadRegFromAop (reg, AOP (left), 0);
@@ -165,6 +170,7 @@ genMinusDec (iCode * ic)
           rmwWithAop (OPINCDEC, AOP (result), 1);
           safeEmitLabel (tlbl);
           rmwWithAop (OPINCDEC, AOP (result), 0);
+          loadOrFreeRegTemp(m6502_reg_a, needpulla);
           loadOrFreeRegTemp(m6502_reg_x, needpullx);
           return true;
         }
@@ -266,6 +272,7 @@ m6502_genMinus (iCode * ic)
         loadRegTemp(m6502_reg_x);
       else
         loadRegTemp(NULL);
+
       if(restore_a)
         loadRegTemp(m6502_reg_a);
       else
@@ -312,6 +319,7 @@ m6502_genMinus (iCode * ic)
       emit6502op("eor", "#0xff");
       if (maskedtopbyte)
 	emit6502op ("and", IMMDFMT, topbytemask);
+
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       fastRestoreOrFreeA (savea);
       goto release;

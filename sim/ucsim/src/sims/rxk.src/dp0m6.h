@@ -1,0 +1,92 @@
+/*
+ * Simulator of microcontrollers (dp0m6.h)
+ *
+ * Copyright (C) 2020 Drotos Daniel
+ * 
+ * To contact author send email to dr.dkdb@gmail.com
+ *
+ */
+
+/* This file is part of microcontroller simulator: ucsim.
+
+UCSIM is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+UCSIM is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with UCSIM; see the file COPYING.  If not, write to the Free
+Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA. */
+/*@1@*/
+
+#ifndef DP0M6_HEADER
+#define DP0M6_HEADER
+
+/*
+add iy, #d
+and hl, d(ix)
+and hl, n(sp)
+cp hl, d(ix)
+cp hl, n(sp)
++ jp ge, mn
++ jp le, mn
++ jp leu, mn
++ jr ge, e
++ jr le, e
++ jr leu, e
+or hl, d(ix)
+or hl, n(sp)
+sbc hl, d(ix)
+sbc hl, n(sp)
++ swap bc
++ swap de
++ swap hl
+xor hl, d(ix)
+xor hl, n(sp)
+*/
+
+#define JP_GE_MN		instruction_6k11_43
+#define EX_JKHL_BCDE_		instruction_6k11_44
+#define JP_LEU_MN		instruction_6k11_4b
+#define JP_LE_MN		instruction_6k11_53
+#define MUL_HL_DE		instruction_6k11_59
+#define MULU_HL_DE		instruction_6k11_69
+#define JR_GE_E			instruction_6k11_80
+#define JR_LEU_E		instruction_6k11_88
+#define JR_LE_E			instruction_6k11_90
+
+#define TEST_DE			instruction_6ked_5c
+#define TSTNULL_PW		instruction_6ked_86
+#define SWAP_B			instruction_6ked_87
+#define TSTNULL_PX		instruction_6ked_96
+#define SWAP_C			instruction_6ked_97
+#define LLJP_LEU_LXPC_MN	instruction_6ked_9a
+#define JRE_LEU_EE		instruction_6ked_9b
+#define FLAG_LEU_HL		instruction_6ked_9c
+#define TSTNULL_PY		instruction_6ked_a6
+#define SWAP_D			instruction_6ked_a7
+#define TSTNULL_PZ		instruction_6ked_b6
+#define SWAP_E			instruction_6ked_b7
+#define SWAP_H			instruction_6ked_c7
+#define SWAP_BC			instruction_6ked_cf
+#define SWAP_L			instruction_6ked_d7
+#define SWAP_DE			instruction_6ked_df
+#define LLJP_GE_LXPC_MN		instruction_6ked_e2
+#define JRE_GE_EE		instruction_6ked_e3
+#define FLAG_GE_HL		instruction_6ked_e4
+#define SWAP_HL			instruction_6ked_ef
+#define LLJP_LE_LXPC_MN		instruction_6ked_f2
+#define JRE_LE_EE		instruction_6ked_f3
+#define FLAG_LE_HL		instruction_6ked_f4
+#define SWAP_A			instruction_6ked_f7
+#define SWAP_JK			instruction_6ked_ff
+
+#endif
+
+/* End of rxk.src/dp0m6.h */

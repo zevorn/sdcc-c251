@@ -50,13 +50,13 @@ alwaysFalse(void)
 static void
 testNot(void)
 {
-    {type} true = alwaysTrue();
-    {type} false = alwaysFalse();
+    {type} true_ = alwaysTrue();
+    {type} false_ = alwaysFalse();
 
-    ASSERT(not false);
-    ASSERT(not not true);
-    ASSERT(not not not false);
-	ASSERT(true not_eq false);
+    ASSERT(not false_);
+    ASSERT(not not true_);
+    ASSERT(not not not false_);
+	ASSERT(true_ not_eq false_);
 }
 
 static void

@@ -60,29 +60,29 @@ testLogicalAnd(void)
 {
 #if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
-    {type} true = alwaysTrue();
-    {type} false = alwaysFalse();
+    {type} true_ = alwaysTrue();
+    {type} false_ = alwaysFalse();
 
-    ASSERT(true);
-    ASSERT(!false);
-    ASSERT(true && true && true);
-    ASSERT(true && !false);
-    ASSERT(!false && true);
+    ASSERT(true_);
+    ASSERT(!false_);
+    ASSERT(true_ && true_ && true_);
+    ASSERT(true_ && !false_);
+    ASSERT(!false_ && true_);
 
     /* Test that the evaluation is aborted on the first false. */
-    if (true && false && neverGetHere1()) {
+    if (true_ && false_ && neverGetHere1()) {
         /* Tested using neverGetHere1() */
     }
 
     /* Alternate that is similar. */
-    if (true && false) {
+    if (true_ && false_) {
         neverGetHere2();
         /* Tested using neverGetHere2() */
     }
 
     resetGetHere();
     /* Test that the evaluation is done left to right. */
-    if (alwaysGetHere() && true && false) {
+    if (alwaysGetHere() && true_ && false_) {
         ASSERT(hit == 1);
     }
 #endif
@@ -93,23 +93,23 @@ static void
 testLogicalOr(void)
 {
 #if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
-    {type} true = alwaysTrue();
-    {type} false = alwaysFalse();
+    {type} true_ = alwaysTrue();
+    {type} false_ = alwaysFalse();
 
-    ASSERT(true);
-    ASSERT(!false);
-    ASSERT(false || false || true);
-    ASSERT(!true || !false);
-    ASSERT(false || true);
+    ASSERT(true_);
+    ASSERT(!false_);
+    ASSERT(false_ || false_ || true_);
+    ASSERT(!true_ || !false_);
+    ASSERT(false_ || true_);
 
     /* Test that the evaluation is aborted on the first hit. */
-    if (false || true || neverGetHere3()) {
+    if (false_ || true_ || neverGetHere3()) {
         /* Tested using neverGetHere3() */
     }
 
     resetGetHere();
     /* Test that the evaluation is done left to right. */
-    if (alwaysGetHere() || true || false) {
+    if (alwaysGetHere() || true_ || false_) {
         ASSERT(hit == 1);
     }
 #endif
@@ -118,23 +118,23 @@ testLogicalOr(void)
 static void
 testNot(void)
 {
-    {type} true = alwaysTrue();
-    {type} false = alwaysFalse();
+    {type} true_ = alwaysTrue();
+    {type} false_ = alwaysFalse();
 
-    ASSERT(!false);
-    ASSERT(!!true);
-    ASSERT(!!!false);
+    ASSERT(!false_);
+    ASSERT(!!true_);
+    ASSERT(!!!false_);
 }
 
 static void
 testFlagToVariable(void)
 {
-    {type} true = alwaysTrue();
-    {type} false = alwaysFalse();
-    {type} val = !true;
+    {type} true_ = alwaysTrue();
+    {type} false_ = alwaysFalse();
+    {type} val = !true_;
 
     ASSERT(!val);
-    val = !!false;
-    ASSERT(!false);
+    val = !!false_;
+    ASSERT(!false_);
 }
 

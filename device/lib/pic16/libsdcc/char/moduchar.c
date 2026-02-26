@@ -1,10 +1,7 @@
 /*-------------------------------------------------------------------------
-   _moduchar.c :- routine for unsigned char (8 bit) modulus
+   _moduchar.c :- routine for signed char (8 bit) division.
 
-   Copyright (C) 1999, Sandeep Dutta <sandeep.dutta AT usa.net>
-   Bug fixes by Martijn van Balen <aed AT >ae.nl
-   Adopted for char (8-bit) and pic16 port by
-     Vangelis Rokas, <vrokas AT otenet.gr> (2004)
+   Copyright (C) 2013, Philipp Klaus Krause . pkk@spth.de
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -13,7 +10,7 @@
 
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License 
@@ -29,33 +26,12 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#include <sdcc-lib.h>
-
-//#define MSB_SET(x) ((x >> (8*sizeof(x)-1)) & 1) 
-#define MSB_SET(x)	(x & 0x80)
-
-
-unsigned char _moduchar (unsigned char a, unsigned char b) _IL_REENTRANT
+unsigned int
+_moduchar (unsigned char x, unsigned char y)
 {
-  unsigned char count = 0;
-    
-  while (!MSB_SET(b))
-  {
-    b <<= 1;
-    if (b > a)
-    {
-      b >>=1;
-      break;
-    }
-    count++;
-  }
-
-  do
-  {
-    if (a >= b)
-      a -= b;
-    b >>= 1;
-  }
-  while (count--);
-  return a;
+  // If we don't go via volatile, optimizations will just convert the % to an 8x8 one, implemented by this very function, so we get endless recursion.
+  volatile unsigned int tx = x;
+  volatile unsigned int ty = y;
+  return (tx % ty);
 }
+

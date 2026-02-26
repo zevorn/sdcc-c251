@@ -36,6 +36,7 @@ instruction_wrapper_fn itab_ed[256];
 instruction_wrapper_fn itab_fd[256];
 instruction_wrapper_fn itab_7f[256];
 instruction_wrapper_fn itab_7f10[256];
+instruction_wrapper_fn itab_49[256];
 
 u8_t sbox_tab[256];
 u8_t ibox_tab[256];
@@ -209,6 +210,63 @@ struct dis_entry disass_rxk[]=
     { 0, 0, 0, 0, 0, 0, 0 }
   };
 
+/*
+  3rd byte is a bit mask, shows if inst avail in a mode:
+  1000 (8) inst avail in mode3 (11)
+  0100 (4) inst avail in mode2 (10)
+  0010 (2) inst avail in mode1 (01)
+  0001 (1) inst avail in mode0 (00) 
+ */
+struct dis_entry disass_r6k[]=
+  {
+    { 0x80043, 0x00ff, ' ', 3, "JP GE,%w" },
+    { 0x80044, 0x00ff, ' ', 2, "EX JKHL,BCDE'" },
+    { 0x8004b, 0x00ff, ' ', 3, "JP LEU,%w" },
+    { 0x80053, 0x00ff, ' ', 3, "JP LE,%w" },
+    { 0x80059, 0x00ff, ' ', 1, "MUL HL,DE" },
+    { 0x80069, 0x00ff, ' ', 1, "MULU HL,DE" },
+    { 0x80080, 0x00ff, ' ', 2, "JR GE,%r" },
+    { 0x80088, 0x00ff, ' ', 2, "JR LEU,%r" },
+    { 0x80090, 0x00ff, ' ', 2, "JR LE,%r" },
+
+    { 0x4437f, 0xffff, ' ', 4, "JP GE,%w" },
+    { 0x4447f, 0xffff, ' ', 4, "EX JKHL,BCDE'" },
+    { 0x44b7f, 0xffff, ' ', 4, "JP LEU,%w" },
+    { 0x4537f, 0xffff, ' ', 4, "JP LE,%w" },
+    { 0x4597f, 0xffff, ' ', 2, "MUL HL,DE" },
+    { 0x4697f, 0xffff, ' ', 2, "MULU HL,DE" },
+    { 0x4807f, 0xffff, ' ', 3, "JR GE,%r" },
+    { 0x4887f, 0xffff, ' ', 3, "JR LEU,%r" },
+    { 0x4907f, 0xffff, ' ', 3, "JR LE,%r" },
+
+    { 0xf5ced, 0xffff, ' ', 2, "TEST DE" },
+    { 0xf86ed, 0xffff, ' ', 2, "TSTNULL PW" },
+    { 0xf87ed, 0xffff, ' ', 2, "SWAP B" },
+    { 0xf96ed, 0xffff, ' ', 2, "TSTNULL PX" },
+    { 0xf97ed, 0xffff, ' ', 2, "SWAP C" },
+    { 0xf9aed, 0xffff, ' ', 6, "LLJP LEU,%X,%w" },
+    { 0xf9bed, 0xffff, ' ', 4, "JRE LEU,%R" },
+    { 0xf9ced, 0xffff, ' ', 2, "FLAG LEU,HL" },
+    { 0xfa6ed, 0xffff, ' ', 2, "TSTNULL PY" },
+    { 0xfa7ed, 0xffff, ' ', 2, "SWAP D" },
+    { 0xfb6ed, 0xffff, ' ', 2, "TSTNULL PZ" },
+    { 0xfb7ed, 0xffff, ' ', 2, "SWAP E" },
+    { 0xfc7ed, 0xffff, ' ', 2, "SWAP H" },
+    { 0xfcfed, 0xffff, ' ', 2, "SWAP BC" },
+    { 0xfd7ed, 0xffff, ' ', 2, "SWAP L" },
+    { 0xfdfed, 0xffff, ' ', 2, "SWAP DE" },
+    { 0xfe2ed, 0xffff, ' ', 6, "LLJP GE,%X,%w" },
+    { 0xfe3ed, 0xffff, ' ', 4, "JRE GE,%R" },
+    { 0xfe4ed, 0xffff, ' ', 2, "FLAG GE,HL" },
+    { 0xfefed, 0xffff, ' ', 2, "SWAP HL" },
+    { 0xff2ed, 0xffff, ' ', 6, "LLJP LE,%X,%w" },
+    { 0xff3ed, 0xffff, ' ', 4, "JRE LE,%R" },
+    { 0xff4ed, 0xffff, ' ', 2, "FLAG LE,HL" },
+    { 0xff7ed, 0xffff, ' ', 2, "SWAP A" },
+    { 0xfffed, 0xffff, ' ', 2, "SWAP JK" },
+    
+    { 0, 0, 0, 0, 0, 0, 0 }
+  };
 
 #define ROTL8(x,shift) ((/*u8_t*/u8_t) ((x) << (shift)) | ((x) >> (8 - (shift))))
 
