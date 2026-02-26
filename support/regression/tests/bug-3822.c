@@ -30,3 +30,8 @@ void f2(void) {
     int i;  // make sure that function parameters do not leak into this scope
     i;
 }
+
+void testBug(void)
+{
+}
+

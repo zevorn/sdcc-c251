@@ -1,3 +1,8 @@
+2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* tests/bug-3822.c:
+	  Add test function to silence warning in regression test infrastructure.
+
 2026-02-25 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/bug-3169.c,
