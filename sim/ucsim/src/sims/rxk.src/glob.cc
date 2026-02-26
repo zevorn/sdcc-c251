@@ -239,6 +239,32 @@ struct dis_entry disass_r6k[]=
     { 0x4887f, 0xffff, ' ', 3, "JR LEU,%r" },
     { 0x4907f, 0xffff, ' ', 3, "JR LE,%r" },
 
+    { 0xf5ced, 0xffff, ' ', 2, "TEST DE" },
+    { 0xf86ed, 0xffff, ' ', 2, "TSTNULL PW" },
+    { 0xf87ed, 0xffff, ' ', 2, "SWAP B" },
+    { 0xf96ed, 0xffff, ' ', 2, "TSTNULL PX" },
+    { 0xf97ed, 0xffff, ' ', 2, "SWAP C" },
+    { 0xf9aed, 0xffff, ' ', 6, "LLJP LEU,%X,%w" },
+    { 0xf9bed, 0xffff, ' ', 4, "JRE LEU,%R" },
+    { 0xf9ced, 0xffff, ' ', 2, "FLAG LEU,HL" },
+    { 0xfa6ed, 0xffff, ' ', 2, "TSTNULL PY" },
+    { 0xfa7ed, 0xffff, ' ', 2, "SWAP D" },
+    { 0xfb6ed, 0xffff, ' ', 2, "TSTNULL PZ" },
+    { 0xfb7ed, 0xffff, ' ', 2, "SWAP E" },
+    { 0xfc7ed, 0xffff, ' ', 2, "SWAP H" },
+    { 0xfcfed, 0xffff, ' ', 2, "SWAP BC" },
+    { 0xfd7ed, 0xffff, ' ', 2, "SWAP L" },
+    { 0xfdfed, 0xffff, ' ', 2, "SWAP DE" },
+    { 0xfe2ed, 0xffff, ' ', 6, "LLJP GE,%X,%w" },
+    { 0xfe3ed, 0xffff, ' ', 4, "JRE GE,%R" },
+    { 0xfe4ed, 0xffff, ' ', 2, "FLAG GE,HL" },
+    { 0xfefed, 0xffff, ' ', 2, "SWAP HL" },
+    { 0xff2ed, 0xffff, ' ', 6, "LLJP LE,%X,%w" },
+    { 0xff3ed, 0xffff, ' ', 4, "JRE LE,%R" },
+    { 0xff4ed, 0xffff, ' ', 2, "FLAG LE,HL" },
+    { 0xff7ed, 0xffff, ' ', 2, "SWAP A" },
+    { 0xfffed, 0xffff, ' ', 2, "SWAP JK" },
+    
     { 0, 0, 0, 0, 0, 0, 0 }
   };
 

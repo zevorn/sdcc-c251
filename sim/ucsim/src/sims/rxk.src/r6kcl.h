@@ -38,6 +38,7 @@ class cl_r6k: public cl_r5k
  public:
   cl_r6k(class cl_sim *asim);
   virtual const char *id_string(void);
+  virtual int init(void);
 
   virtual struct dis_entry *dis_entry(t_addr addr);
 
@@ -46,6 +47,7 @@ class cl_r6k: public cl_r5k
   virtual void mode10(void);
   virtual void mode4k(void);
 
+  // page0 (mode11) and page 7f (mode10)
   virtual int JP_GE_MN(MP) { return jp_f_mn(cond_GE(rF)); }
   virtual int JP_LE_MN(MP) { return jp_f_mn(cond_LE(rF)); }
   virtual int JP_LEU_MN(MP) { return jp_f_mn(cond_LEU(rF)); }
@@ -55,6 +57,36 @@ class cl_r6k: public cl_r5k
   virtual int EX_JKHL_BCDE_(MP);
   virtual int MUL_HL_DE(MP);
   virtual int MULU_HL_DE(MP);
+  // page ed
+  virtual int TEST_DE(MP) { return test16(rDE); }
+  virtual int tstnull_pp(u32_t pp);
+  virtual int TSTNULL_PW(MP) { return tstnull_pp(rPW); }
+  virtual int TSTNULL_PX(MP) { return tstnull_pp(rPX); }
+  virtual int TSTNULL_PY(MP) { return tstnull_pp(rPY); }
+  virtual int TSTNULL_PZ(MP) { return tstnull_pp(rPZ); }
+  virtual int swap_r(u8_t sr, C8 &dr);
+  virtual int SWAP_B(MP) { return swap_r(rB, destB()); }
+  virtual int SWAP_C(MP) { return swap_r(rC, destC()); }
+  virtual int SWAP_D(MP) { return swap_r(rD, destD()); }
+  virtual int SWAP_E(MP) { return swap_r(rE, destE()); }
+  virtual int SWAP_H(MP) { return swap_r(rH, destH()); }
+  virtual int SWAP_L(MP) { return swap_r(rL, destL()); }
+  virtual int SWAP_A(MP) { return swap_r(rA, destA()); }
+  virtual int swap_rp(u16_t sr, C16 &dr);
+  virtual int SWAP_BC(MP) { return swap_rp(rBC, destBC()); }
+  virtual int SWAP_DE(MP) { return swap_rp(rDE, destDE()); }
+  virtual int SWAP_HL(MP) { return swap_rp(rHL, destHL()); }
+  virtual int SWAP_JK(MP) { return swap_rp(rJK, destJK()); }
+  virtual int lljp_cc(bool cond);
+  virtual int LLJP_LEU_LXPC_MN(MP) { return lljp_cc((bool)cond_LEU(rF)); }
+  virtual int LLJP_GE_LXPC_MN(MP) { return lljp_cc((bool)cond_GE(rF)); }
+  virtual int LLJP_LE_LXPC_MN(MP) { return lljp_cc((bool)cond_LE(rF)); }
+  virtual int JRE_GE_EE(MP) { return jre_cx_cc(cond_GE(rF)); }
+  virtual int JRE_LE_EE(MP) { return jre_cx_cc(cond_LE(rF)); }
+  virtual int JRE_LEU_EE(MP) { return jre_cx_cc(cond_LEU(rF)); }
+  virtual int FLAG_GE_HL(MP) { destHL().W(cond_GE(rF)?1:0); tick(3); return resGO; }
+  virtual int FLAG_LE_HL(MP) { destHL().W(cond_LE(rF)?1:0); tick(3); return resGO; }
+  virtual int FLAG_LEU_HL(MP) { destHL().W(cond_LEU(rF)?1:0); tick(3); return resGO; }
 };
 
 
