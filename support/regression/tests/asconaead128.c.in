@@ -64,7 +64,7 @@
 #endif
 
 // Bug #3920 - fails test
-#if defined(IMPL_bi8) && __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
+#if defined(IMPL_bi8) && (__STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__ || defined (__SDCC))
 #undef OP_encrypt
 #undef OP_decrypt
 #endif
