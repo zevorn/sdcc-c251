@@ -184,8 +184,9 @@ f8instructionSize (lineNode *pl)
     else
       werrorfl("unknown", 0, W_UNRECOGNIZED_ASM, __func__, 999, pl->line);
 
-  if (lineIsInst (pl, "adc") || lineIsInst (pl, "add") || lineIsInst (pl, "and") ||  lineIsInst (pl, "cp") ||
-    lineIsInst (pl, "or") || lineIsInst (pl, "sbc") || lineIsInst (pl, "sub") || lineIsInst (pl, "xor"))
+  if (larg &&
+    (lineIsInst (pl, "adc") || lineIsInst (pl, "add") || lineIsInst (pl, "and") ||  lineIsInst (pl, "cp") ||
+    lineIsInst (pl, "or") || lineIsInst (pl, "sbc") || lineIsInst (pl, "sub") || lineIsInst (pl, "xor")))
     {
       if (!strncmp (larg, "xl", 2) && isReg8 (rarg))
         return 1;
@@ -205,10 +206,11 @@ f8instructionSize (lineNode *pl)
         return 4;
     }
 
-  if (lineIsInst (pl, "bool") || lineIsInst (pl, "clr") || lineIsInst (pl, "daa") || lineIsInst (pl, "dec") ||
+  if (larg &&
+    (lineIsInst (pl, "bool") || lineIsInst (pl, "clr") || lineIsInst (pl, "daa") || lineIsInst (pl, "dec") ||
     lineIsInst (pl, "inc") ||  lineIsInst (pl, "pop") ||  lineIsInst (pl, "push") ||  lineIsInst (pl, "rlc") ||
     lineIsInst (pl, "rrc") || lineIsInst (pl, "sll") || lineIsInst (pl, "sra") || lineIsInst (pl, "srl") ||
-    lineIsInst (pl, "thrd") || lineIsInst (pl, "tst"))
+    lineIsInst (pl, "thrd") || lineIsInst (pl, "tst")))
     {
       if (!strncmp (larg, "xl", 2))
         return 1;
@@ -220,11 +222,12 @@ f8instructionSize (lineNode *pl)
         return 3;
     }
 
-  if (!IS_F8L && (lineIsInst (pl, "adcw") || lineIsInst (pl, "sbcw") && !rarg[0]) ||
+  if (larg &&
+    (!IS_F8L && (lineIsInst (pl, "adcw") || lineIsInst (pl, "sbcw") && (!rarg || !rarg[0]) ||
     !IS_F8L && lineIsInst (pl, "boolw") || lineIsInst (pl, "clrw") || !IS_F8L && lineIsInst (pl, "decw") || lineIsInst (pl, "incw") ||
     !IS_F8L && lineIsInst (pl, "incnw") || !IS_F8L && lineIsInst (pl, "mul") || !IS_F8L && lineIsInst (pl, "negw") || lineIsInst (pl, "popw") ||
     lineIsInst (pl, "pushw") || !IS_F8L && lineIsInst (pl, "sllw") || !IS_F8L && lineIsInst (pl, "sraw") || !IS_F8L && lineIsInst (pl, "srlw") ||
-    !IS_F8L && lineIsInst (pl, "rlcw") || !IS_F8L && lineIsInst (pl, "rrcw") || lineIsInst (pl, "tstw"))
+    !IS_F8L && lineIsInst (pl, "rlcw") || !IS_F8L && lineIsInst (pl, "rrcw") || lineIsInst (pl, "tstw"))))
     {
       if (larg[0] == 'y')
         return 1;
@@ -236,9 +239,9 @@ f8instructionSize (lineNode *pl)
         return 3;
     }
 
-  if (lineIsInst (pl, "xch") && larg[0] == 'f' && isSprel (rarg))
+  if (larg && lineIsInst (pl, "xch") && larg[0] == 'f' && isSprel (rarg))
     return 1;
-  else if (lineIsInst (pl, "xch"))
+  else if (larg && lineIsInst (pl, "xch"))
     return 1 + (larg[0] != 'y');
   
   if (lineIsInst (pl, "addw") && !strncmp (larg, "sp", 2) && rarg[0] == '#')
@@ -252,7 +255,7 @@ f8instructionSize (lineNode *pl)
         return 3;
     }
 
-  if (!IS_F8L && (lineIsInst (pl, "addw") || lineIsInst (pl, "cpw") || lineIsInst (pl, "orw") || lineIsInst (pl, "sbcw") ||
+  if (!IS_F8L && larg && (lineIsInst (pl, "addw") || lineIsInst (pl, "cpw") || lineIsInst (pl, "orw") || lineIsInst (pl, "sbcw") ||
     lineIsInst (pl, "subw") || lineIsInst (pl, "xorw")))
     {
       if (larg[0] == 'y' && rarg[0] == 'x')
@@ -269,7 +272,7 @@ f8instructionSize (lineNode *pl)
         return 4;
     }
 
-  if (lineIsInst (pl, "ld"))
+  if (larg && lineIsInst (pl, "ld"))
     {
       if (!strncmp (larg, "xl", 2) && isReg8 (rarg))
         return 1;
@@ -299,10 +302,10 @@ f8instructionSize (lineNode *pl)
         return 4;
     }
 
-  if (!IS_F8L && (lineIsInst (pl, "ldi") || lineIsInst (pl, "ldwi")) && isYrel (larg))
+  if (!IS_F8L && larg && (lineIsInst (pl, "ldi") || lineIsInst (pl, "ldwi")) && isYrel (larg))
     return 2;
 
-  if (lineIsInst (pl, "ldw"))
+  if (larg && lineIsInst (pl, "ldw"))
     {
       if (larg[0] == 'y' && rarg[0] == 'x')
         return 1;
@@ -332,7 +335,7 @@ f8instructionSize (lineNode *pl)
         return 4;
     }
 
-  if (!IS_F8L && lineIsInst (pl, "rot"))
+  if (!IS_F8L && larg && lineIsInst (pl, "rot"))
     {
       if (!strncmp (larg, "xl", 2))
         return 2;
@@ -340,7 +343,7 @@ f8instructionSize (lineNode *pl)
         return 3;
     }
 
-  if (!IS_F8L && (lineIsInst (pl, "zex") || lineIsInst (pl, "sex")))
+  if (!IS_F8L && larg && (lineIsInst (pl, "zex") || lineIsInst (pl, "sex")))
     {
       if (!strncmp (larg, "y", 1) && !strncmp (rarg, "xl", 2))
         return 1;
@@ -351,7 +354,7 @@ f8instructionSize (lineNode *pl)
   if (!IS_F8L && lineIsInst (pl, "mad"))
     return 1;
 
-  if (lineIsInst (pl, "call") || lineIsInst (pl, "jp"))
+  if (larg && (lineIsInst (pl, "call") || lineIsInst (pl, "jp")))
     {
       if (larg[0] == 'y')
         return 1;
@@ -367,7 +370,7 @@ f8instructionSize (lineNode *pl)
       else
         return 2;
     }
-  else if (!IS_F8L && lineIsInst (pl, "dnjnz"))
+  else if (!IS_F8L && larg && lineIsInst (pl, "dnjnz"))
     {
       if (!strncmp (larg, "yh", 2))
         return 2;

@@ -5439,7 +5439,7 @@ skip_byte_push_iy:
     }
 
   // Try to use Rabbit 6000 swap rr
-  if (IS_R6K_NOTYET)
+  if (IS_R6K)
     for (int b = C_IDX; b <= K_IDX; b += 2)
       if (regsize >= 2 && (b == C_IDX || b == E_IDX || b == L_IDX || b == K_IDX))
         {

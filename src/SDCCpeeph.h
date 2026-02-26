@@ -95,7 +95,7 @@ static inline const char *lineArg (const lineNode *pl, int i)
     return (NULL);
 
   // Skip instruction menmonic (for argument 0) or the comma (for further arguments), and any whitespace beside it.
-   while (isspace (*arg))
+  while (isspace (*arg))
     arg++;
   while (*arg && !isspace (*arg) && *arg != ',')
     arg++;
@@ -104,6 +104,9 @@ static inline const char *lineArg (const lineNode *pl, int i)
 
   // Check for comment
   if (*arg == ';')
+    return (NULL);
+
+  if (*arg == 0 || *arg == '\n')
     return (NULL);
 
   return (arg);

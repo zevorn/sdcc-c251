@@ -1,5 +1,13 @@
 2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCCpeeph.h,
+	  src/z80/gen.c,
+	  src/f8/peep.c,
+	  src/z80/peep.c:
+	  Use R6K swap rr in r6k port.
+
+2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* tests/bug-3822.c:
 	  Add test function to silence warning in regression test infrastructure.
 	* support/regression/tests/asconaead128.c.in:
