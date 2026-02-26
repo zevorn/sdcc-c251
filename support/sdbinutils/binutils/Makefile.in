@@ -126,11 +126,12 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = $(am__EXEEXT_8) $(am__EXEEXT_10) $(am__EXEEXT_15) \
+bin_PROGRAMS = $(am__EXEEXT_5) $(am__EXEEXT_7) \
+	$(am__EXEEXT_8) $(am__EXEEXT_9) $(am__EXEEXT_10) \
 	@BUILD_SRCONV@ @BUILD_DLLTOOL@ @BUILD_WINDRES@ @BUILD_WINDMC@ \
-	$(am__EXEEXT_11) \
+	$(am__EXEEXT_11) $(am__EXEEXT_13) \
 	@BUILD_DLLWRAP@ $(am__empty)
-noinst_PROGRAMS = $(am__EXEEXT_17) $(am__EXEEXT_21) @BUILD_MISC@
+noinst_PROGRAMS = $(am__EXEEXT_17) @BUILD_MISC@
 EXTRA_PROGRAMS = srconv$(EXEEXT) sysdump$(EXEEXT) coffdump$(EXEEXT) \
 	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 	$(am__EXEEXT_4)
@@ -171,28 +172,29 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/../mkinstalldirs
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES = po/Makefile.in
 CONFIG_CLEAN_VPATH_FILES =
-am__EXEEXT_1 = nlmconv$(EXEEXT)
-am__EXEEXT_2 = dlltool$(EXEEXT)
-am__EXEEXT_3 = windres$(EXEEXT)
-am__EXEEXT_4 = windmc$(EXEEXT)
-am__EXEEXT_5 = dllwrap$(EXEEXT)
-am__EXEEXT_6 = size$(EXEEXT)
-am__EXEEXT_7 = objdump$(EXEEXT)
-am__EXEEXT_8 = sdar$(EXEEXT)
-am__EXEEXT_9 = strings$(EXEEXT)
-am__EXEEXT_10 = sdranlib$(EXEEXT)
-am__EXEEXT_11 = sdobjcopy$(EXEEXT)
-am__EXEEXT_12 = addr2line$(EXEEXT)
-am__EXEEXT_13 = readelf$(EXEEXT)
-am__EXEEXT_14 = elfedit$(EXEEXT)
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"
-am__EXEEXT_15 = sdnm$(EXEEXT)
-am__EXEEXT_16 = strip-new$(EXEEXT)
-am__EXEEXT_17 = cxxfilt$(EXEEXT)
-am__EXEEXT_18 = $(am__EXEEXT_15) $(am__EXEEXT_16) $(am__EXEEXT_17)
-am__EXEEXT_19 = bfdtest1$(EXEEXT)
-am__EXEEXT_20 = bfdtest2$(EXEEXT)
-am__EXEEXT_21 = $(am__EXEEXT_19) $(am__EXEEXT_20)
+am__EXEEXT_1 = dlltool$(EXEEXT)
+am__EXEEXT_2 = windres$(EXEEXT)
+am__EXEEXT_3 = windmc$(EXEEXT)
+am__EXEEXT_4 = dllwrap$(EXEEXT)
+am__EXEEXT_5 = size$(EXEEXT)
+am__EXEEXT_6 = objdump$(EXEEXT)
+am__EXEEXT_7 = sdar$(EXEEXT)
+am__EXEEXT_8 = strings$(EXEEXT)
+am__EXEEXT_9 = sdranlib$(EXEEXT)
+am__EXEEXT_10 = sdobjcopy$(EXEEXT)
+am__EXEEXT_11 = addr2line$(EXEEXT)
+am__EXEEXT_12 = readelf$(EXEEXT)
+am__EXEEXT_13 = elfedit$(EXEEXT)
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
+	"$(DESTDIR)$(infodir)" "$(DESTDIR)$(man1dir)"
+am__EXEEXT_14 = sdnm$(EXEEXT)
+am__EXEEXT_15 = strip-new$(EXEEXT)
+am__EXEEXT_16 = cxxfilt$(EXEEXT)
+am__EXEEXT_17 = $(am__EXEEXT_14) $(am__EXEEXT_15) $(am__EXEEXT_16)
+am__EXEEXT_18 = bfdtest1$(EXEEXT)
+am__EXEEXT_19 = bfdtest2$(EXEEXT)
+am__EXEEXT_20 = testsuite/gentestdlls$(EXEEXT)
+am__EXEEXT_21 = $(am__EXEEXT_18) $(am__EXEEXT_19) $(am__EXEEXT_20)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__objects_1 = bucomm.$(OBJEXT) version.$(OBJEXT) filemode.$(OBJEXT)
 am_addr2line_OBJECTS = addr2line.$(OBJEXT) $(am__objects_1)
@@ -244,10 +246,10 @@ am_objdump_OBJECTS = objdump.$(OBJEXT) dwarf.$(OBJEXT) prdbg.$(OBJEXT) \
 	$(am__objects_2)
 objdump_OBJECTS = $(am_objdump_OBJECTS)
 @ENABLE_LIBCTF_TRUE@am__DEPENDENCIES_2 = ../libctf/libctf.la
-am_sdranlib_OBJECTS = ar.$(OBJEXT) is-ranlib.$(OBJEXT) arparse.$(OBJEXT) \
+am_ranlib_OBJECTS = ar.$(OBJEXT) is-ranlib.$(OBJEXT) arparse.$(OBJEXT) \
 	arlex.$(OBJEXT) arsup.$(OBJEXT) rename.$(OBJEXT) \
 	binemul.$(OBJEXT) emul_$(EMULATION).$(OBJEXT) $(am__objects_1)
-sdranlib_OBJECTS = $(am_sdranlib_OBJECTS)
+ranlib_OBJECTS = $(am_ranlib_OBJECTS)
 am_readelf_OBJECTS = readelf.$(OBJEXT) version.$(OBJEXT) \
 	unwind-ia64.$(OBJEXT) dwarf.$(OBJEXT) demanguse.$(OBJEXT) \
 	$(am__objects_2)
@@ -369,7 +371,7 @@ SOURCES = $(addr2line_SOURCES) $(ar_SOURCES) $(EXTRA_ar_SOURCES) \
 	bfdtest1.c bfdtest2.c $(coffdump_SOURCES) $(cxxfilt_SOURCES) \
 	$(dlltool_SOURCES) $(dllwrap_SOURCES) $(elfedit_SOURCES) \
 	$(nm_new_SOURCES) $(objcopy_SOURCES) $(objdump_SOURCES) \
-	$(EXTRA_objdump_SOURCES) $(sdranlib_SOURCES) $(readelf_SOURCES) \
+	$(EXTRA_objdump_SOURCES) $(ranlib_SOURCES) $(readelf_SOURCES) \
 	$(size_SOURCES) $(srconv_SOURCES) $(strings_SOURCES) \
 	$(strip_new_SOURCES) $(sysdump_SOURCES) \
 	testsuite/gentestdlls.c $(windmc_SOURCES) $(windres_SOURCES)
@@ -401,7 +403,7 @@ AM_V_texidevnull = $(am__v_texidevnull_@AM_V@)
 am__v_texidevnull_ = $(am__v_texidevnull_@AM_DEFAULT_V@)
 am__v_texidevnull_0 = > /dev/null
 am__v_texidevnull_1 = 
-# INFO_DEPS = doc/binutils.info
+INFO_DEPS = doc/binutils.info
 am__TEXINFO_TEX_DIR = $(srcdir)
 DVIS = doc/binutils.dvi
 PDFS = doc/binutils.pdf
@@ -630,7 +632,7 @@ zlibdir = @zlibdir@
 zlibinc = @zlibinc@
 AUTOMAKE_OPTIONS = dejagnu no-dist foreign subdir-objects info-in-builddir no-texinfo.tex
 ACLOCAL_AMFLAGS = -I .. -I ../config -I ../bfd
-SUBDIRS =
+#SUBDIRS = po
 tooldir = $(exec_prefix)/$(target_alias)
 MAINTAINERCLEANFILES = $(man_MANS) doc/binutils.info doc/cxxfilt.man
 
@@ -642,23 +644,17 @@ am__skipyacc =
 # This is where we get zlib from.  zlibdir is -L../zlib and zlibinc is
 # -I../zlib, unless we were configured with --with-system-zlib, in which
 # case both are empty.
-# Try to statically link libz when cross compiling to Windows so that we
-# don't need to package the dll
-ifeq ($(CROSSCOMPILING), 1)
- ZLIB = @zlibdir@ -Wl,-Bstatic -lz -Wl,-Bdynamic
-else
- ZLIB = @zlibdir@ -lz
-endif
+ZLIB = @zlibdir@ -lz
 ZLIBINC = @zlibinc@
 AM_CFLAGS = $(WARN_CFLAGS) $(ZLIBINC)
 AM_CFLAGS_FOR_BUILD = $(WARN_CFLAGS_FOR_BUILD) $(ZLIBINC)
 
 # these two are almost the same program
 AR_PROG = sdar
-RANLIB_PROG = sdranlib
+RANLIB_PROG = ranlib
 
 # objcopy and strip should be the same program
-OBJCOPY_PROG = sdobjcopy
+OBJCOPY_PROG = sdsdobjcopy
 STRIP_PROG = strip-new
 STRINGS_PROG = strings
 READELF_PROG = readelf
@@ -684,7 +680,7 @@ BFDTEST1_PROG = bfdtest1
 BFDTEST2_PROG = bfdtest2
 GENTESTDLLS_PROG = testsuite/gentestdlls
 TEST_PROGS = $(BFDTEST1_PROG) $(BFDTEST2_PROG) $(GENTESTDLLS_PROG)
-RENAMED_PROGS = $(NM_PROG)
+RENAMED_PROGS = $(NM_PROG) $(STRIP_PROG) $(DEMANGLER_PROG)
 
 # Stuff that goes in tooldir/ if appropriate.
 TOOL_PROGS = sdnm sdar sdranlib sdobjcopy
@@ -769,7 +765,7 @@ nm_new_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 ar_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 strings_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 strip_new_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
-sdranlib_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
+ranlib_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 cxxfilt_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 objcopy_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 srconv_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
@@ -803,10 +799,10 @@ ar_SOURCES = arparse.y arlex.l ar.c not-ranlib.c arsup.c rename.c binemul.c \
 
 EXTRA_ar_SOURCES = $(CFILES)
 ar_LDADD = $(BFDLIB) $(LIBIBERTY) $(LEXLIB) $(LIBINTL)
-sdranlib_SOURCES = ar.c is-ranlib.c arparse.y arlex.l arsup.c rename.c \
+ranlib_SOURCES = ar.c is-ranlib.c arparse.y arlex.l arsup.c rename.c \
 	binemul.c emul_$(EMULATION).c $(BULIBS)
 
-sdranlib_LDADD = $(BFDLIB) $(LIBIBERTY) $(LEXLIB) $(LIBINTL)
+ranlib_LDADD = $(BFDLIB) $(LIBIBERTY) $(LEXLIB) $(LIBINTL)
 addr2line_SOURCES = addr2line.c $(BULIBS)
 srconv_SOURCES = srconv.c coffgrok.c $(BULIBS)
 dlltool_SOURCES = dlltool.c defparse.y deflex.l $(BULIBS)
@@ -846,6 +842,25 @@ MANCONF = -Dman
 TEXI2POD = perl $(top_srcdir)/../etc/texi2pod.pl $(AM_MAKEINFOFLAGS)
 POD2MAN = pod2man --center="GNU Development Tools" \
 	 --release="binutils-$(VERSION)" --section=1
+
+
+# List of man pages generated from binutils.texi
+man_MANS = \
+	doc/addr2line.1 \
+	doc/ar.1 \
+	doc/dlltool.1 \
+	doc/nm.1 \
+	doc/objcopy.1 \
+	doc/objdump.1 \
+	doc/ranlib.1 \
+	doc/readelf.1 \
+	doc/size.1 \
+	doc/strings.1 \
+	doc/strip.1 \
+	doc/elfedit.1 \
+	doc/windres.1 \
+	doc/windmc.1 \
+	doc/$(DEMANGLER_NAME).1
 
 info_TEXINFOS = doc/binutils.texi
 binutils_TEXI = $(srcdir)/doc/binutils.texi
@@ -979,7 +994,7 @@ arparse.h: arparse.c
 	@if test ! -f $@; then $(MAKE) $(AM_MAKEFLAGS) arparse.c; else :; fi
 
 sdar$(EXEEXT): $(ar_OBJECTS) $(ar_DEPENDENCIES) $(EXTRA_ar_DEPENDENCIES) 
-	@rm -f ar$(EXEEXT)
+	@rm -f sdar$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(ar_OBJECTS) $(ar_LDADD) $(LIBS)
 
 bfdtest1$(EXEEXT): $(bfdtest1_OBJECTS) $(bfdtest1_DEPENDENCIES) $(EXTRA_bfdtest1_DEPENDENCIES) 
@@ -1018,16 +1033,16 @@ sdnm$(EXEEXT): $(nm_new_OBJECTS) $(nm_new_DEPENDENCIES) $(EXTRA_nm_new_DEPENDENC
 	$(AM_V_CCLD)$(LINK) $(nm_new_OBJECTS) $(nm_new_LDADD) $(LIBS)
 
 sdobjcopy$(EXEEXT): $(objcopy_OBJECTS) $(objcopy_DEPENDENCIES) $(EXTRA_objcopy_DEPENDENCIES) 
-	@rm -f sdobjcopy$(EXEEXT)
+	@rm -f objcopy$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(objcopy_OBJECTS) $(objcopy_LDADD) $(LIBS)
 
 objdump$(EXEEXT): $(objdump_OBJECTS) $(objdump_DEPENDENCIES) $(EXTRA_objdump_DEPENDENCIES) 
 	@rm -f objdump$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(objdump_OBJECTS) $(objdump_LDADD) $(LIBS)
 
-sdranlib$(EXEEXT): $(sdranlib_OBJECTS) $(sdranlib_DEPENDENCIES) $(EXTRA_sdranlib_DEPENDENCIES) 
-	@rm -f sdranlib$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(sdranlib_OBJECTS) $(sdranlib_LDADD) $(LIBS)
+sdranlib$(EXEEXT): $(ranlib_OBJECTS) $(ranlib_DEPENDENCIES) $(EXTRA_ranlib_DEPENDENCIES) 
+	@rm -f ranlib$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(ranlib_OBJECTS) $(ranlib_LDADD) $(LIBS)
 
 readelf$(EXEEXT): $(readelf_OBJECTS) $(readelf_DEPENDENCIES) $(EXTRA_readelf_DEPENDENCIES) 
 	@rm -f readelf$(EXEEXT)
@@ -1630,9 +1645,23 @@ install-data-am: install-info-am install-man
 
 install-dvi: install-dvi-recursive
 
-install-dvi-am:
-
-install-exec-am: install-binPROGRAMS install-binSCRIPTS
+install-dvi-am: $(DVIS)
+	@$(NORMAL_INSTALL)
+	@list='$(DVIS)'; test -n "$(dvidir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(dvidir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(dvidir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(dvidir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(dvidir)" || exit $$?; \
+	done
+install-exec-am: install-binPROGRAMS install-binSCRIPTS \
+	install-exec-local
 
 install-html: install-html-recursive
 
@@ -2112,7 +2141,3 @@ info-local: $(MANS)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
-
-info:
-	@echo sdranlib_SOURCES ${sdranlib_SOURCES}
-

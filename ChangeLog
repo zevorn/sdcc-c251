@@ -1,5 +1,10 @@
 2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* support/sdbinutils:
+	  Reduce diff to upstream GNU binutils 3.38.
+
+2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* tests/bug-3822.c:
 	  Add test function to silence warning in regression test infrastructure.
 	* support/regression/tests/asconaead128.c.in:
