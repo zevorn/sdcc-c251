@@ -35,6 +35,18 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 cl_r6k::cl_r6k(class cl_sim *asim):
   cl_r5k(asim)
 {
+}
+
+const char *
+cl_r6k::id_string(void)
+{
+  return "R6K";
+}
+
+int
+cl_r6k::init(void)
+{
+  cl_r5k::init();
   fill_49_wrappers(itab_49);
   // 6k specific stuff on 7f page in 10 mode
   itab_7f10[0x43]= instruction_wrapper_6k11_43;
@@ -46,13 +58,34 @@ cl_r6k::cl_r6k(class cl_sim *asim):
   itab_7f10[0x80]= instruction_wrapper_6k11_80;
   itab_7f10[0x88]= instruction_wrapper_6k11_88;
   itab_7f10[0x90]= instruction_wrapper_6k11_90;
+  // 6k specific stuff on ed pade
+  itab_ed[0x5c]= instruction_wrapper_6ked_5c;
+  itab_ed[0x86]= instruction_wrapper_6ked_86;
+  itab_ed[0x87]= instruction_wrapper_6ked_87;
+  itab_ed[0x96]= instruction_wrapper_6ked_96;
+  itab_ed[0x97]= instruction_wrapper_6ked_97;
+  itab_ed[0x9a]= instruction_wrapper_6ked_9a;
+  itab_ed[0x9b]= instruction_wrapper_6ked_9b;
+  itab_ed[0xa6]= instruction_wrapper_6ked_a6;
+  itab_ed[0xa7]= instruction_wrapper_6ked_a7;
+  itab_ed[0xb6]= instruction_wrapper_6ked_b6;
+  itab_ed[0xb7]= instruction_wrapper_6ked_b7;
+  itab_ed[0xc7]= instruction_wrapper_6ked_c7;
+  itab_ed[0xcf]= instruction_wrapper_6ked_cf;
+  itab_ed[0xd7]= instruction_wrapper_6ked_d7;
+  itab_ed[0xdf]= instruction_wrapper_6ked_df;
+  itab_ed[0xe2]= instruction_wrapper_6ked_e2;
+  itab_ed[0xe3]= instruction_wrapper_6ked_e3;
+  itab_ed[0xe4]= instruction_wrapper_6ked_e4;
+  itab_ed[0xef]= instruction_wrapper_6ked_ef;
+  itab_ed[0xf2]= instruction_wrapper_6ked_f2;
+  itab_ed[0xf3]= instruction_wrapper_6ked_f3;
+  itab_ed[0xf4]= instruction_wrapper_6ked_f4;
+  itab_ed[0xf7]= instruction_wrapper_6ked_f7;
+  itab_ed[0xff]= instruction_wrapper_6ked_ff;
+  return 0;
 }
 
-const char *
-cl_r6k::id_string(void)
-{
-  return "R6K";
-}
 
 struct dis_entry *
 cl_r6k::dis_entry(t_addr addr)
@@ -149,7 +182,63 @@ int
 cl_r6k::MULU_HL_DE(MP)
 {
   destJKHL().W((u32_t)rHL * (u32_t)rDE);
-  tick(10);
+  tick(11);
+  return resGO;
+}
+
+int
+cl_r6k::tstnull_pp(u32_t pp)
+{
+  class cl_cell8 &rf= destF();
+  u8_t f= rF & ~(flagZ|flagC);
+  if (pp == 0xffff0000)
+    f|= (flagZ|flagC);
+  if (pp == 0)
+    f|= flagZ;
+  rf.W(f);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::swap_r(u8_t sr, C8 &dr)
+{
+  u8_t v2= 0;
+  int i, m;
+  for (i= 0, m= 0x80; i<8; i++, m>>=1)
+    {
+      v2>>= 1;
+      v2|= ((sr&m)?0x80:0);
+    }
+  dr.W(v2);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::swap_rp(u16_t sr, C16 &dr)
+{
+  u16_t v2= (sr<<8)|(sr>>8);
+  dr.W(v2);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::lljp_cc(bool cond)
+{
+  u16_t mn, lxpc;
+  mn= fetch();
+  mn+= fetch() * 256;
+  lxpc= fetch();
+  lxpc+= fetch() * 256;
+  lxpc&= 0xfff;
+  if (cond)
+    {
+      PC= mn;
+      LXPC->W(lxpc);
+    }
+  tick(13);
   return resGO;
 }
 
