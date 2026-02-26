@@ -1,7 +1,8 @@
 2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
-	* support/sdbinutils/config:
-	  Sync sdbinutils config with GNU binutils 2.46.
+	* support/sdbinutils/config,
+	  support/sdbinutils/binutils/doc:
+	  Sync part of sdbinutils with GNU binutils 2.46.
 
 2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
