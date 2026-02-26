@@ -1,11 +1,23 @@
+2026-02-25 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/bug-3169.c,
+	  support/regression/tests/iso646.c.in,
+	  support/regression/tests/logic.c.in:
+	  Rename variables with names conflicting with C23 keywords to make tests compile as C23.
+	* support/regression/tests/asconaead128.c.in,
+	  support/regression/tests/asconhash256.c.in:
+	  Disable Ascon tests for big-endian host where they fail due to known upstream issue.
+	* support/regression/tests/gcrypt-serpent.c.in:
+	  Integer promotion fix for pre-C23 fallback in test.
+
 2026-02-22 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c:
 	  Add special case for SOF in genAssignLit().
    	* src/mos6502/genrshift.c:
-      Special case SOF in genrsh16().
+	  Special case SOF in genrsh16().
    	* src/mos6502/genminus.c:
-      Special case SOF in genMinusDec().
+	  Special case SOF in genMinusDec().
       
 2026-02-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
