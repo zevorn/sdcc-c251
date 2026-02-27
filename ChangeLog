@@ -1,13 +1,6 @@
 2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
-	* support/sdbinutils/config,
-	  support/sdbinutils/binutils/doc:
-	  Sync part of sdbinutils with GNU binutils 2.46.
-
-2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
-
-	* support/sdbinutils:
-	  Reduce diff to upstream GNU binutils 3.38.
+	* Revert yesterday's binutils changes.
 
 2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
