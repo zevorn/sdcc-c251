@@ -226,8 +226,11 @@ extern size_t strlen (const char *s);
 #endif
 #endif
 
-/* C2y length function: */
+// C2y length function
 extern size_t strnlen (const char *s, size_t n);
+
+// Non-standard, but very common extension strsep
+char *strsep(char **restrict sp, const char *restrict delim);
 
 #ifdef __SDCC_ds390
 extern void __xdata *memcpyx(void __xdata *, void __xdata *, int) __naked;

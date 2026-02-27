@@ -1,5 +1,23 @@
 2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* device/lib/strsep.c,
+	  support/regression/tests/strsep.c,
+	  device/lib/strtok.c,
+	  device/include/string.h,
+	  device/lib/incl.mk,
+	  device/lib/pic14/Makefile.in,
+	  device/lib/pic14/aclocal.m4,
+	  device/lib/pic14/configure,
+	  device/lib/pic14/libc/Makefile.am,
+	  device/lib/pic14/libc/Makefile.in,
+	  device/lib/pic14/libm/Makefile.in,
+	  device/lib/pic14/libsdcc/enhanced/Makefile.in,
+	  device/lib/pic14/libsdcc/enhanced-no-xinst/Makefile.in,
+	  device/lib/pic14/libsdcc/regular/Makefile.in:
+	  Provide strsep.
+
+2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Revert yesterday's binutils changes.
 
 2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>

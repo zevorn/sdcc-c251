@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------------------
-   _strtok.c - part of string library functions
+   strtok.c - part of string library functions
 
    Copyright (C) 1999, Sandeep Dutta . sandeep.dutta@usa.net
 
@@ -33,7 +33,7 @@
 #pragma noinvariant
 #endif
 
-char * strtok ( char * str, const char * control )
+char *strtok (char *restrict str, const char control[restrict static 1])
 {
 	static char * s;
 	register char * s1;
@@ -67,3 +67,4 @@ char * strtok ( char * str, const char * control )
 	else
 		return NULL;
 }
+

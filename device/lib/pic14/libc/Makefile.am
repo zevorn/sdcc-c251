@@ -95,9 +95,10 @@ libc_a_SOURCES += _strncmp.c
 libc_a_SOURCES += _strncpy.c
 libc_a_SOURCES += _strpbrk.c
 libc_a_SOURCES += _strrchr.c
+libc_a_SOURCES += strsep.c
 libc_a_SOURCES += _strspn.c
 libc_a_SOURCES += _strstr.c
-libc_a_SOURCES += _strtok.c
+libc_a_SOURCES += strtok.c
 libc_a_SOURCES += strxfrm.c
 
 # time.h
