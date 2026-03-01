@@ -11,7 +11,8 @@
 	  support/sdbinutils/binutils/ChangeLog-2019,
 	  support/sdbinutils/binutils/ChangeLog-2020,
 	  support/sdbinutils/binutils/Makefile.am,
-	  support/sdbinutils/binutils/bfdtest2.c:
+	  support/sdbinutils/binutils/bfdtest2.c,
+	  support/sdbinutils/binutils/Makefile.in:
 	  Reduce diff to upstream GNU binutils 2.38.
 
 2026-02-28 Janko Stamenović
