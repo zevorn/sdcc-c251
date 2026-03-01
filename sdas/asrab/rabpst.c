@@ -274,12 +274,23 @@ struct	mne	mne[] = {
     {   NULL,   "jre",          X_JRE,          0,      0xA3    },
     {   NULL,   "flag",		X_FLAG,		0,	0xA4	},
     {   NULL,   "clr",          X_CLR,          0,      0xBF    },
+
     {   NULL,   "ljp",          X_LJP,          0,      0xC7    },
     {   NULL,   "lcall",        X_LJP,          0,      0xCF    },
+    {   NULL,   "lljp",         X_LJP,          0,      0x87    },
+    {   NULL,   "llcall",       X_LJP,          0,      0x8F    },
+
+
     {   NULL,   "lret",         S_ED_0ARGS,     0,      0x45    },
     {   NULL,   "bool",         X_BOOL,         0,      0xCC    },
     {   NULL,   "ldp",          X_LDP,          0,      0x64    },
+
     {   NULL,   "sysret",       R4K_INH2,       0,      0x83    },
+    {   NULL,   "llret",        R4K_INH2,       0,      0x8B    },
+    {   NULL,   "copy",         R4K_INH2,       0,      0x80    },
+    {   NULL,   "copyr",        R4K_INH2,       0,      0x88    },
+    {   NULL,   "exp",          R4K_INH2,       0,      0xD9    },
+
     {   NULL,   "ibox",         X_BOX,          0,      0x02    },
     {   NULL,   "sbox",         X_BOX,          0,      0x12    },
 

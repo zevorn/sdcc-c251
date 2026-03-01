@@ -1,3 +1,10 @@
+2026-03-01 Janko Stamenović
+
+	* sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: add various r4k instructions, including lljp, llcall, llret
+
 2026-02-28 Janko Stamenović
 
 	* sdas/asrab/rab.h

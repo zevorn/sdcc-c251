@@ -1214,19 +1214,52 @@ machine(struct mne *mp)
 		xerr('a', "Invalid Addressing Mode.");
 		break;
      
-        case X_LJP: /* ljp lcall */
-		t1 = addr(&e1);
-		if (t1 == S_USER)
-			t1 = e1.e_mode = S_IMMED;
-		comma(1);
-		t2 = addr(&e2);
-		if (t2 == S_USER)
-			t2 = e1.e_mode = S_IMMED;
-		v1 = (int) e1.e_addr;
-                if (t1 == S_IMMED && t2 == S_IMMED) {
+        case X_LJP: 
+		if (op == 0xC7 || op == 0xCF) { /* ljp lcall */
+			t1 = addr(&e1);
+			if (t1 == S_USER)
+				t1 = e1.e_mode = S_IMMED;
+			comma(1);
+			t2 = addr(&e2);
+			if (t2 == S_USER)
+				t2 = e2.e_mode = S_IMMED;
+			if (t1 == S_IMMED && t2 == S_IMMED) {
+				outab(op);
+				outrw(&e2, 0);
+				outrb(&e1, 0);
+				break;
+			}
+		}
+		if (op == 0x87) { /* lljp */
+			if ((v1 = admode(ALT_CND)) != 0) {
+				comma(1);
+				t1 = addr(&e1);
+				if (t1 == S_USER)
+					t1 = e1.e_mode = S_IMMED;
+				comma(1);
+				t2 = addr(&e2);
+				if (t2 == S_USER)
+					t2 = e2.e_mode = S_IMMED;
+				outab(0xED);
+				outab(0xA2 + ((v1&0xff) << 3));
+				outrw(&e2, 0);
+				outrw(&e1, 0);
+				break;
+			}
+		}
+		if (op == 0x87 || op == 0x8F) { /* lljp llcall */
+			t1 = addr(&e1);
+			if (t1 == S_USER)
+				t1 = e1.e_mode = S_IMMED;
+			comma(1);
+			t2 = addr(&e2);
+			if (t2 == S_USER)
+				t2 = e2.e_mode = S_IMMED;
+			if (IS_MODE_10(rab))
+				outab( 0x7F );
 			outab(op);
 			outrw(&e2, 0);
-			outrb(&e1, 0);
+			outrw(&e1, 0);
 			break;
 		}
 		aerr( );
