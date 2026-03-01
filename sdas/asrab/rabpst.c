@@ -291,8 +291,8 @@ struct	mne	mne[] = {
     {   NULL,   "copyr",        R4K_INH2,       0,      0x88    },
     {   NULL,   "exp",          R4K_INH2,       0,      0xD9    },
 
-    {   NULL,   "ibox",         X_BOX,          0,      0x02    },
-    {   NULL,   "sbox",         X_BOX,          0,      0x12    },
+    {   NULL,   "sbox",         X_BOX,          0,      0x02    },
+    {   NULL,   "ibox",         X_BOX,          0,      0x12    },
 
     {   NULL,   "test",         X_TEST,         0,      0x4C    },
     {   NULL,   "cbm",          X_CBM,          0,      0x82    },
