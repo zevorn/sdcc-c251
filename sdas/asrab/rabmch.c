@@ -154,6 +154,14 @@ machine(struct mne *mp)
                                 outab(0x7E);  /* pop  */
                         break;
 		}
+		if (t1 == S_R16SU && IS_MIN_3KA(rab)) {
+                        outab(0xED);
+                        if (op == 0xC5)
+                                outab(0x66);  /* push */
+                        else
+                                outab(0x6E);  /* pop  */
+                        break;
+		}
 		if (t1 == S_R16 && (v1 &= 0xFF) != SP) {
 			if (v1 != gixiy(v1)) {
 				outab(op+0x20);
@@ -330,6 +338,7 @@ machine(struct mne *mp)
                 if (!(more())) {
                         /* handle case for implicit target of 'A' register */
                         t2 = t1;
+			e2.e_mode = e1.e_mode;
                         t1 = S_R8;
                         v1 = A;
                         v2 = (int) e1.e_addr;
@@ -338,7 +347,7 @@ machine(struct mne *mp)
 			comma(1);
 			t2 = addr(&e2);
 			if (t2 == S_USER)
-				t2 = e1.e_mode = S_IMMED;
+				t2 = e2.e_mode = S_IMMED;
 			v1 = (int) e1.e_addr;
 			v2 = (int) e2.e_addr;
                         ep = &e2;
@@ -506,7 +515,7 @@ machine(struct mne *mp)
 			comma(1);
 			t2 = addr(&e2);
 			if (t2 == S_USER)
-				t2 = e1.e_mode = S_IMMED;
+				t2 = e2.e_mode = S_IMMED;
 		}
 		if (t2 == 0) {
                         /* implied destination of the 8-bit 'a' register */

@@ -120,9 +120,10 @@ COMMON_SDCC = \
   _strncpy.c \
   _strpbrk.c \
   _strrchr.c \
+  strsep.c \
   _strspn.c \
   _strstr.c \
-  _strtok.c \
+  strtok.c \
   memccpy.c \
   _memchr.c \
   _memcmp.c \

@@ -175,6 +175,9 @@ addr(struct expr *esp)
 		} else
                 if ((indx = admode(R8IP)) != 0) {
                         mode = S_R8IP;
+		} else
+                if ((indx = admode(R16SU)) != 0) {
+                        mode = S_R16SU;
 		} else {
 			mode = S_USER;
 			expr(esp, 0);
@@ -348,6 +351,11 @@ struct  adsym   R32_JKHL[] = {
 
 struct  adsym   RXPC[] = {
   {   "xpc",    1|0400  },
+  {   "",       0000    }
+};
+
+struct  adsym   R16SU[] = {
+  {   "su",     1|0400  },
   {   "",       0000    }
 };
 

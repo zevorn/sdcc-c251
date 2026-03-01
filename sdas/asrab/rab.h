@@ -145,6 +145,9 @@
 #define S_R8IP	        43
 #define S_R16_JK_OR_ALT	44
 
+#define S_R16SU	        45
+
+
 /*
  * Indexing modes
  */
@@ -271,6 +274,8 @@ extern  struct  adsym   ALT_CND[];
 extern  struct  adsym   R6_CND[];
 
 extern	struct	adsym	R16_JK_OR_ALT[];
+
+extern	struct	adsym	R16SU[];
 
 	/* machine dependent functions */
 

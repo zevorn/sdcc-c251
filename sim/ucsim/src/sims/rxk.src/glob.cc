@@ -31,6 +31,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 
 instruction_wrapper_fn itab[256];
+instruction_wrapper_fn itab_11[256]; // dummy, not used
 instruction_wrapper_fn itab_dd[256];
 instruction_wrapper_fn itab_ed[256];
 instruction_wrapper_fn itab_fd[256];
@@ -252,8 +253,10 @@ struct dis_entry disass_r6k[]=
     { 0xfb6ed, 0xffff, ' ', 2, "TSTNULL PZ" },
     { 0xfb7ed, 0xffff, ' ', 2, "SWAP E" },
     { 0xfc7ed, 0xffff, ' ', 2, "SWAP H" },
+    { 0xfceed, 0xffff, ' ', 2, "ADC JKHL,BCDE" },
     { 0xfcfed, 0xffff, ' ', 2, "SWAP BC" },
     { 0xfd7ed, 0xffff, ' ', 2, "SWAP L" },
+    { 0xfdeed, 0xffff, ' ', 2, "SBC JKHL,BCDE" },
     { 0xfdfed, 0xffff, ' ', 2, "SWAP DE" },
     { 0xfe2ed, 0xffff, ' ', 6, "LLJP GE,%X,%w" },
     { 0xfe3ed, 0xffff, ' ', 4, "JRE GE,%R" },
@@ -264,6 +267,43 @@ struct dis_entry disass_r6k[]=
     { 0xff4ed, 0xffff, ' ', 2, "FLAG LE,HL" },
     { 0xff7ed, 0xffff, ' ', 2, "SWAP A" },
     { 0xfffed, 0xffff, ' ', 2, "SWAP JK" },
+
+    { 0xf32dd, 0xffff, ' ', 2, "SWAP BCDE" },
+    { 0xf32fd, 0xffff, ' ', 2, "SWAP JKHL" },
+    { 0xf80dd, 0xffff, ' ', 3, "ADD HL,(IX,%d)" },
+    { 0xf80fd, 0xffff, ' ', 3, "ADD HL,(IY,%d)" },
+    { 0xf81dd, 0xffff, ' ', 3, "ADC HL,(IX,%d)" },
+    { 0xf81fd, 0xffff, ' ', 3, "ADC HL,(IY,%d)" },
+    { 0xf82dd, 0xffff, ' ', 3, "ADD JKHL,(IX,%d)" },
+    { 0xf82fd, 0xffff, ' ', 3, "ADD JKHL,(IY,%d)" },
+    { 0xf83dd, 0xffff, ' ', 3, "ADC JKHL,(IX,%d)" },
+    { 0xf83fd, 0xffff, ' ', 3, "ADC JKHL,(IY,%d)" },
+    { 0xf90dd, 0xffff, ' ', 3, "SUB HL,(IX,%d)" },
+    { 0xf90fd, 0xffff, ' ', 3, "SUB HL,(IY,%d)" },
+    { 0xf91dd, 0xffff, ' ', 3, "SBC HL,(IX,%d)" },
+    { 0xf91fd, 0xffff, ' ', 3, "SBC HL,(IY,%d)" },
+    { 0xf92dd, 0xffff, ' ', 3, "SUB JKHL,(IX,%d)" },
+    { 0xf92fd, 0xffff, ' ', 3, "SUB JKHL,(IY,%d)" },
+    { 0xf93dd, 0xffff, ' ', 3, "SBC JKHL,(IX,%d)" },
+    { 0xf93fd, 0xffff, ' ', 3, "SBC JKHL,(IY,%d)" },
+    { 0xfa0dd, 0xffff, ' ', 3, "AND HL,(IX%d)" },
+    { 0xfa0fd, 0xffff, ' ', 3, "AND HL,(IY%d)" },
+    { 0xfa1dd, 0xffff, ' ', 3, "XOR HL,(IX%d)" },
+    { 0xfa1fd, 0xffff, ' ', 3, "XOR HL,(IY%d)" },
+    { 0xfa2dd, 0xffff, ' ', 3, "AND JKHL,(IX%d)" },
+    { 0xfa2fd, 0xffff, ' ', 3, "AND JKHL,(IY%d)" },
+    { 0xfa3dd, 0xffff, ' ', 3, "XOR JKHL,(IX%d)" },
+    { 0xfa3fd, 0xffff, ' ', 3, "XOR JKHL,(IY%d)" },
+    { 0xfb0dd, 0xffff, ' ', 3, "OR HL,(IX%d)" },
+    { 0xfb0fd, 0xffff, ' ', 3, "OR HL,(IY%d)" },
+    { 0xfb1dd, 0xffff, ' ', 3, "CP HL,(IX%d)" },
+    { 0xfb1fd, 0xffff, ' ', 3, "CP HL,(IY%d)" },
+    { 0xfb2dd, 0xffff, ' ', 3, "OR JKHL,(IX%d)" },
+    { 0xfb2fd, 0xffff, ' ', 3, "OR JKHL,(IY%d)" },
+    { 0xfb3dd, 0xffff, ' ', 3, "CP JKHL,(IX%d)" },
+    { 0xfb3fd, 0xffff, ' ', 3, "CP JKHL,(IY%d)" },
+    { 0xfc5dd, 0xffff, ' ', 3, "ADD IX,%d" },
+    { 0xfc5fd, 0xffff, ' ', 3, "ADD IY,%d" },
     
     { 0, 0, 0, 0, 0, 0, 0 }
   };
