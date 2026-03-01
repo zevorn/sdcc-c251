@@ -1,5 +1,5 @@
 /* bucomm.c -- Bin Utils COMmon code.
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
+   Copyright (C) 1991-2022 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -25,22 +25,9 @@
 #include "bfd.h"
 #include "libiberty.h"
 #include "filenames.h"
-#include "libbfd.h"
-
-#include <time.h>		/* ctime, maybe time_t */
+#include <time.h>
 #include <assert.h>
 #include "bucomm.h"
-
-#ifndef HAVE_TIME_T_IN_TIME_H
-#ifndef HAVE_TIME_T_IN_TYPES_H
-typedef long time_t;
-#endif
-#endif
-
-static const char * endian_string (enum bfd_endian);
-static int display_target_list (void);
-static int display_info_table (int, int);
-static int display_target_tables (void);
 
 /* Error reporting.  */
 
@@ -50,8 +37,12 @@ void
 bfd_nonfatal (const char *string)
 {
   const char *errmsg;
+  enum bfd_error err = bfd_get_error ();
 
-  errmsg = bfd_errmsg (bfd_get_error ());
+  if (err == bfd_error_no_error)
+    errmsg = _("cause of error unknown");
+  else
+    errmsg = bfd_errmsg (err);
   fflush (stdout);
   if (string)
     fprintf (stderr, "%s: %s: %s\n", program_name, string, errmsg);
@@ -66,10 +57,10 @@ bfd_nonfatal (const char *string)
    bfd error message is printed.  In summary, error messages are of
    one of the following forms:
 
-   PROGRAM:file: bfd-error-message
-   PROGRAM:file[section]: bfd-error-message
-   PROGRAM:file: printf-message: bfd-error-message
-   PROGRAM:file[section]: printf-message: bfd-error-message.  */
+   PROGRAM: file: bfd-error-message
+   PROGRAM: file[section]: bfd-error-message
+   PROGRAM: file: printf-message: bfd-error-message
+   PROGRAM: file[section]: printf-message: bfd-error-message.  */
 
 void
 bfd_nonfatal_message (const char *filename,
@@ -79,33 +70,37 @@ bfd_nonfatal_message (const char *filename,
 {
   const char *errmsg;
   const char *section_name;
-  va_list args;
+  enum bfd_error err = bfd_get_error ();
 
-  errmsg = bfd_errmsg (bfd_get_error ());
+  if (err == bfd_error_no_error)
+    errmsg = _("cause of error unknown");
+  else
+    errmsg = bfd_errmsg (err);
   fflush (stdout);
   section_name = NULL;
-  va_start (args, format);
   fprintf (stderr, "%s", program_name);
-  
+
   if (abfd)
     {
       if (!filename)
 	filename = bfd_get_archive_filename (abfd);
       if (section)
-	section_name = bfd_get_section_name (abfd, section);
+	section_name = bfd_section_name (section);
     }
   if (section_name)
-    fprintf (stderr, ":%s[%s]", filename, section_name);
+    fprintf (stderr, ": %s[%s]", filename, section_name);
   else
-    fprintf (stderr, ":%s", filename);
+    fprintf (stderr, ": %s", filename);
 
   if (format)
     {
+      va_list args;
+      va_start (args, format);
       fprintf (stderr, ": ");
       vfprintf (stderr, format, args);
+      va_end (args);
     }
   fprintf (stderr, ": %s\n", errmsg);
-  va_end (args);
 }
 
 void
@@ -216,9 +211,6 @@ list_supported_architectures (const char *name, FILE *f)
   free (arches);
 }
 
-/* The length of the longest architecture name + 1.  */
-#define LONGEST_ARCH sizeof ("powerpc:common")
-
 static const char *
 endian_string (enum bfd_endian endian)
 {
@@ -230,184 +222,205 @@ endian_string (enum bfd_endian endian)
     }
 }
 
+/* Data passed to do_display_target and other target iterators.  */
+
+struct display_target {
+  /* Temp file.  */
+  char *filename;
+  /* Return status.  */
+  int error;
+  /* Number of targets.  */
+  int count;
+  /* Size of info in bytes.  */
+  size_t alloc;
+  /* Per-target info.  */
+  struct {
+    /* Target name.  */
+    const char *name;
+    /* Non-zero if target/arch combination supported.  */
+    unsigned char arch[bfd_arch_last - bfd_arch_obscure - 1];
+  } *info;
+};
+
 /* List the targets that BFD is configured to support, each followed
-   by its endianness and the architectures it supports.  */
+   by its endianness and the architectures it supports.  Also build
+   info about target/archs.  */
 
 static int
-display_target_list (void)
+do_display_target (const bfd_target *targ, void *data)
 {
-  char *dummy_name;
-  int t;
-  int ret = 1;
+  struct display_target *param = (struct display_target *) data;
+  bfd *abfd;
+  size_t amt;
 
-  dummy_name = make_temp_file (NULL);
-  for (t = 0; bfd_target_vector[t]; t++)
+  param->count += 1;
+  amt = param->count * sizeof (*param->info);
+  if (param->alloc < amt)
     {
-      const bfd_target *p = bfd_target_vector[t];
-      bfd *abfd = bfd_openw (dummy_name, p->name);
-      int a;
+      size_t size = ((param->count < 64 ? 64 : param->count)
+		     * sizeof (*param->info) * 2);
+      param->info = xrealloc (param->info, size);
+      memset ((char *) param->info + param->alloc, 0, size - param->alloc);
+      param->alloc = size;
+    }
+  param->info[param->count - 1].name = targ->name;
 
-      printf (_("%s\n (header %s, data %s)\n"), p->name,
-	      endian_string (p->header_byteorder),
-	      endian_string (p->byteorder));
+  printf (_("%s\n (header %s, data %s)\n"), targ->name,
+	  endian_string (targ->header_byteorder),
+	  endian_string (targ->byteorder));
 
-      if (abfd == NULL)
+  abfd = bfd_openw (param->filename, targ->name);
+  if (abfd == NULL)
+    {
+      bfd_nonfatal (param->filename);
+      param->error = 1;
+    }
+  else if (!bfd_set_format (abfd, bfd_object))
+    {
+      if (bfd_get_error () != bfd_error_invalid_operation)
 	{
-          bfd_nonfatal (dummy_name);
-          ret = 0;
-	  continue;
+	  bfd_nonfatal (targ->name);
+	  param->error = 1;
 	}
-
-      if (! bfd_set_format (abfd, bfd_object))
-	{
-	  if (bfd_get_error () != bfd_error_invalid_operation)
-            {
-	      bfd_nonfatal (p->name);
-              ret = 0;
-            }
-	  bfd_close_all_done (abfd);
-	  continue;
-	}
+    }
+  else
+    {
+      enum bfd_architecture a;
 
       for (a = bfd_arch_obscure + 1; a < bfd_arch_last; a++)
-	if (bfd_set_arch_mach (abfd, (enum bfd_architecture) a, 0))
-	  printf ("  %s\n",
-		  bfd_printable_arch_mach ((enum bfd_architecture) a, 0));
-      bfd_close_all_done (abfd);
+	if (bfd_set_arch_mach (abfd, a, 0))
+	  {
+	    printf ("  %s\n", bfd_printable_arch_mach (a, 0));
+	    param->info[param->count - 1].arch[a - bfd_arch_obscure - 1] = 1;
+	  }
     }
-  unlink (dummy_name);
-  free (dummy_name);
+  if (abfd != NULL)
+    bfd_close_all_done (abfd);
 
-  return ret;
+  return param->error;
 }
 
-/* Print a table showing which architectures are supported for entries
-   FIRST through LAST-1 of bfd_target_vector (targets across,
-   architectures down).  */
+static void
+display_target_list (struct display_target *arg)
+{
+  arg->filename = make_temp_file (NULL);
+  arg->error = 0;
+  arg->count = 0;
+  arg->alloc = 0;
+  arg->info = NULL;
+
+  bfd_iterate_over_targets (do_display_target, arg);
+
+  unlink (arg->filename);
+  free (arg->filename);
+}
+
+/* Calculate how many targets we can print across the page.  */
 
 static int
-display_info_table (int first, int last)
+do_info_size (int targ, int width, const struct display_target *arg)
 {
-  int t;
-  int ret = 1;
-  char *dummy_name;
-  int a;
+  while (targ < arg->count)
+    {
+      width -= strlen (arg->info[targ].name) + 1;
+      if (width < 0)
+	return targ;
+      ++targ;
+    }
+  return targ;
+}
 
-  /* Print heading of target names.  */
-  printf ("\n%*s", (int) LONGEST_ARCH, " ");
-  for (t = first; t < last && bfd_target_vector[t]; t++)
-    printf ("%s ", bfd_target_vector[t]->name);
-  putchar ('\n');
+/* Print header of target names.  */
 
-  dummy_name = make_temp_file (NULL);
-  for (a = bfd_arch_obscure + 1; a < bfd_arch_last; a++)
-    if (strcmp (bfd_printable_arch_mach ((enum bfd_architecture) a, 0),
-                "UNKNOWN!") != 0)
-      {
-	printf ("%*s ", (int) LONGEST_ARCH - 1,
-		bfd_printable_arch_mach ((enum bfd_architecture) a, 0));
-	for (t = first; t < last && bfd_target_vector[t]; t++)
-	  {
-	    const bfd_target *p = bfd_target_vector[t];
-	    bfd_boolean ok = TRUE;
-	    bfd *abfd = bfd_openw (dummy_name, p->name);
+static void
+do_info_header (int targ, int stop_targ, const struct display_target *arg)
+{
+  while (targ != stop_targ)
+    printf ("%s ", arg->info[targ++].name);
+}
 
-	    if (abfd == NULL)
-	      {
-		bfd_nonfatal (p->name);
-                ret = 0;
-		ok = FALSE;
-	      }
+/* Print a table row.  */
 
-	    if (ok)
-	      {
-		if (! bfd_set_format (abfd, bfd_object))
-		  {
-		    if (bfd_get_error () != bfd_error_invalid_operation)
-                      {
-		        bfd_nonfatal (p->name);
-                        ret = 0;
-                      }
-		    ok = FALSE;
-		  }
-	      }
-
-	    if (ok)
-	      {
-		if (! bfd_set_arch_mach (abfd, (enum bfd_architecture) a, 0))
-		  ok = FALSE;
-	      }
-
-	    if (ok)
-	      printf ("%s ", p->name);
-	    else
-	      {
-		int l = strlen (p->name);
-		while (l--)
-		  putchar ('-');
-		putchar (' ');
-	      }
-	    if (abfd != NULL)
-	      bfd_close_all_done (abfd);
-	  }
-	putchar ('\n');
-      }
-  unlink (dummy_name);
-  free (dummy_name);
-
-  return ret;
+static void
+do_info_row (int targ, int stop_targ, enum bfd_architecture a,
+	     const struct display_target *arg)
+{
+  while (targ != stop_targ)
+    {
+      if (arg->info[targ].arch[a - bfd_arch_obscure - 1])
+	fputs (arg->info[targ].name, stdout);
+      else
+	{
+	  int l = strlen (arg->info[targ].name);
+	  while (l--)
+	    putchar ('-');
+	}
+      ++targ;
+      if (targ != stop_targ)
+	putchar (' ');
+    }
 }
 
 /* Print tables of all the target-architecture combinations that
    BFD has been configured to support.  */
 
-static int
-display_target_tables (void)
+static void
+display_target_tables (const struct display_target *arg)
 {
-  int t;
-  int columns;
-  int ret = 1;
-  char *colum;
+  const char *columns;
+  int width, start_targ, stop_targ;
+  enum bfd_architecture arch;
+  int longest_arch = 0;
 
-  columns = 0;
-  colum = getenv ("COLUMNS");
-  if (colum != NULL)
-    columns = atoi (colum);
-  if (columns == 0)
-    columns = 80;
-
-  t = 0;
-  while (bfd_target_vector[t] != NULL)
+  for (arch = bfd_arch_obscure + 1; arch < bfd_arch_last; arch++)
     {
-      int oldt = t, wid;
-
-      wid = LONGEST_ARCH + strlen (bfd_target_vector[t]->name) + 1;
-      ++t;
-      while (wid < columns && bfd_target_vector[t] != NULL)
-	{
-	  int newwid;
-
-	  newwid = wid + strlen (bfd_target_vector[t]->name) + 1;
-	  if (newwid >= columns)
-	    break;
-	  wid = newwid;
-	  ++t;
-	}
-      if (! display_info_table (oldt, t))
-        ret = 0;
+      const char *s = bfd_printable_arch_mach (arch, 0);
+      int len = strlen (s);
+      if (len > longest_arch)
+	longest_arch = len;
     }
 
-  return ret;
+  width = 0;
+  columns = getenv ("COLUMNS");
+  if (columns != NULL)
+    width = atoi (columns);
+  if (width == 0)
+    width = 80;
+
+  for (start_targ = 0; start_targ < arg->count; start_targ = stop_targ)
+    {
+      stop_targ = do_info_size (start_targ, width - longest_arch - 1, arg);
+
+      printf ("\n%*s", longest_arch + 1, " ");
+      do_info_header (start_targ, stop_targ, arg);
+      putchar ('\n');
+
+      for (arch = bfd_arch_obscure + 1; arch < bfd_arch_last; arch++)
+	{
+	  if (strcmp (bfd_printable_arch_mach (arch, 0), "UNKNOWN!") != 0)
+	    {
+	      printf ("%*s ", longest_arch,
+		      bfd_printable_arch_mach (arch, 0));
+
+	      do_info_row (start_targ, stop_targ, arch, arg);
+	      putchar ('\n');
+	    }
+	}
+    }
 }
 
 int
 display_info (void)
 {
+  struct display_target arg;
+
   printf (_("BFD header file version %s\n"), BFD_VERSION_STRING);
-  if (! display_target_list () || ! display_target_tables ())
-    return 1;
-  else
-    return 0;
+
+  display_target_list (&arg);
+  if (!arg.error)
+    display_target_tables (&arg);
+
+  return arg.error;
 }
 
 /* Display the archive header for an element as if it were an ls -l listing:
@@ -415,7 +428,7 @@ display_info (void)
    Mode       User\tGroup\tSize\tDate               Name */
 
 void
-print_arelt_descr (FILE *file, bfd *abfd, bfd_boolean verbose)
+print_arelt_descr (FILE *file, bfd *abfd, bool verbose, bool offsets)
 {
   struct stat buf;
 
@@ -429,8 +442,12 @@ print_arelt_descr (FILE *file, bfd *abfd, bfd_boolean verbose)
 	  const char *ctime_result = (const char *) ctime (&when);
 	  bfd_size_type size;
 
-	  /* POSIX format:  skip weekday and seconds from ctime output.  */
-	  sprintf (timebuf, "%.12s %.4s", ctime_result + 4, ctime_result + 20);
+	  /* PR binutils/17605: Check for corrupt time values.  */
+	  if (ctime_result == NULL)
+	    sprintf (timebuf, _("<time data corrupt>"));
+	  else
+	    /* POSIX format:  skip weekday and seconds from ctime output.  */
+	    sprintf (timebuf, "%.12s %.4s", ctime_result + 4, ctime_result + 20);
 
 	  mode_string (buf.st_mode, modebuf);
 	  modebuf[10] = '\0';
@@ -442,7 +459,17 @@ print_arelt_descr (FILE *file, bfd *abfd, bfd_boolean verbose)
 	}
     }
 
-  fprintf (file, "%s\n", bfd_get_filename (abfd));
+  fprintf (file, "%s", bfd_get_filename (abfd));
+
+  if (offsets)
+    {
+      if (bfd_is_thin_archive (abfd) && abfd->proxy_origin)
+        fprintf (file, " 0x%lx", (unsigned long) abfd->proxy_origin);
+      else if (!bfd_is_thin_archive (abfd) && abfd->origin)
+        fprintf (file, " 0x%lx", (unsigned long) abfd->origin);
+    }
+
+  fprintf (file, "\n");
 }
 
 /* Return a path for a new temporary file in the same directory
@@ -498,7 +525,7 @@ template_in_dir (const char *path)
    as FILENAME.  */
 
 char *
-make_tempname (char *filename)
+make_tempname (const char *filename, int *ofd)
 {
   char *tmpname = template_in_dir (filename);
   int fd;
@@ -516,7 +543,7 @@ make_tempname (char *filename)
       free (tmpname);
       return NULL;
     }
-  close (fd);
+  *ofd = fd;
   return tmpname;
 }
 
@@ -524,7 +551,7 @@ make_tempname (char *filename)
    directory containing FILENAME.  */
 
 char *
-make_tempdir (char *filename)
+make_tempdir (const char *filename)
 {
   char *tmpname = template_in_dir (filename);
 
@@ -570,7 +597,10 @@ off_t
 get_file_size (const char * file_name)
 {
   struct stat statbuf;
-  
+
+  if (file_name == NULL)
+    return (off_t) -1;
+
   if (stat (file_name, &statbuf) < 0)
     {
       if (errno == ENOENT)
@@ -578,12 +608,29 @@ get_file_size (const char * file_name)
       else
 	non_fatal (_("Warning: could not locate '%s'.  reason: %s"),
 		   file_name, strerror (errno));
-    }  
+    }
+  else if (S_ISDIR (statbuf.st_mode))
+    non_fatal (_("Warning: '%s' is a directory"), file_name);
   else if (! S_ISREG (statbuf.st_mode))
     non_fatal (_("Warning: '%s' is not an ordinary file"), file_name);
   else if (statbuf.st_size < 0)
     non_fatal (_("Warning: '%s' has negative size, probably it is too large"),
                file_name);
+#if defined (_WIN32) && !defined (__CYGWIN__)
+  else if (statbuf.st_size == 0)
+    {
+      /* MS-Windows 'stat' reports the null device as a regular file;
+	 fix that.  */
+      int fd = open (file_name, O_RDONLY | O_BINARY);
+      if (isatty (fd))
+	{
+	  close (fd);
+	  non_fatal (_("Warning: '%s' is not an ordinary file"),
+		     /* libtool wants to see /dev/null in the output.  */
+		     strcasecmp (file_name, "nul") ? file_name : "/dev/null");
+	}
+    }
+#endif
   else
     return statbuf.st_size;
 
@@ -600,8 +647,9 @@ bfd_get_archive_filename (const bfd *abfd)
   size_t needed;
 
   assert (abfd != NULL);
-  
-  if (!abfd->my_archive)
+
+  if (abfd->my_archive == NULL
+      || bfd_is_thin_archive (abfd->my_archive))
     return bfd_get_filename (abfd);
 
   needed = (strlen (bfd_get_filename (abfd->my_archive))
@@ -611,14 +659,7 @@ bfd_get_archive_filename (const bfd *abfd)
       if (curr)
 	free (buf);
       curr = needed + (needed >> 1);
-      buf = (char *) bfd_malloc (curr);
-      /* If we can't malloc, fail safe by returning just the file name.
-	 This function is only used when building error messages.  */
-      if (!buf)
-	{
-	  curr = 0;
-	  return bfd_get_filename (abfd);
-	}
+      buf = (char *) xmalloc (curr);
     }
   sprintf (buf, "%s(%s)", bfd_get_filename (abfd->my_archive),
 	   bfd_get_filename (abfd));
@@ -629,18 +670,18 @@ bfd_get_archive_filename (const bfd *abfd)
    is valid for writing.  For security reasons absolute paths
    and paths containing /../ are not allowed.  See PR 17533.  */
 
-bfd_boolean
+bool
 is_valid_archive_path (char const * pathname)
 {
   const char * n = pathname;
 
   if (IS_ABSOLUTE_PATH (n))
-    return FALSE;
+    return false;
 
   while (*n)
     {
       if (*n == '.' && *++n == '.' && ( ! *++n || IS_DIR_SEPARATOR (*n)))
-	return FALSE;
+	return false;
 
       while (*n && ! IS_DIR_SEPARATOR (*n))
 	n++;
@@ -648,5 +689,5 @@ is_valid_archive_path (char const * pathname)
 	n++;
     }
 
-  return TRUE;
+  return true;
 }

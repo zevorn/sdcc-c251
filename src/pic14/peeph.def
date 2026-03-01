@@ -62,7 +62,7 @@
 // will have to leave the second move in.
 //
 // To get around this proble, the peep rule can be followed
-// by a conditon:  "if NZ". Which is to say, apply the rule
+// by a condition:  "if NZ". Which is to say, apply the rule
 // if Z bit is not needed in the code that follows. The optimizer
 // is smart enough to look more than one instruction past the
 // target block...
@@ -282,14 +282,6 @@ replace restart {
 } by {
         ;     peep 11 - Removed redundant move
         movf    %1,w
-}
-
-replace restart {
-        comf    %1,w
-        movwf   %1
-} by {
-        ;     peep 12 - Removed redundant move
-        comf    %1,f
 }
 
 replace restart {

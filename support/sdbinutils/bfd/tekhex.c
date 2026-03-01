@@ -1,5 +1,5 @@
 /* BFD backend for Extended Tektronix Hex Format  objects.
-   Copyright (C) 1992-2014 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
    Written by Steve Chamberlain of Cygnus Support <sac@cygnus.com>.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -30,7 +30,7 @@
 	devices like PROM programmers and ICE equipment.
 
 	It seems that the sections are described as being really big,
-        the example I have says that the text section is 0..ffffffff.
+	the example I have says that the text section is 0..ffffffff.
 	BFD would barf with this, many apps would try to alloc 4GB to
 	read in the file.
 
@@ -39,7 +39,7 @@
 	one section for each block of data, called "blknnnn" which we
 	stick all the data into.
 
-	TekHex may come out of 	order and there is no header, so an
+	TekHex may come out of order and there is no header, so an
 	initial scan is required  to discover the minimum and maximum
 	addresses used to create the vma and size of the sections we
 	create.
@@ -121,10 +121,10 @@ static char sum_block[256];
    <---------------------- 3a (58 chars) ------------------->
 
    %1B3709T_SEGMENT1108FFFFFFFF
-         ^         ^^ ^- 8 character integer 0xffffffff
-         |         |+-   1 character integer 0
-         |         +--   type 1 symbol (section definition)
-         +------------   9 char symbol T_SEGMENT
+	 ^         ^^ ^- 8 character integer 0xffffffff
+	 |         |+-   1 character integer 0
+	 |         +--   type 1 symbol (section definition)
+	 +------------   9 char symbol T_SEGMENT
 
    %2B3AB9T_SEGMENT7Dgcc_compiled$1087hello$c10
    %373829T_SEGMENT80int$t1$r1$$214741080char$t2$r2$0$12710
@@ -204,12 +204,12 @@ static void
 tekhex_init (void)
 {
   unsigned int i;
-  static bfd_boolean inited = FALSE;
+  static bool inited = false;
   int val;
 
   if (! inited)
     {
-      inited = TRUE;
+      inited = true;
       hex_init ();
       val = 0;
       for (i = 0; i < 10; i++)
@@ -266,54 +266,57 @@ typedef struct tekhex_data_struct
 
 #define enda(x) (x->vma + x->size)
 
-static bfd_boolean
-getvalue (char **srcp, bfd_vma *valuep)
+static bool
+getvalue (char **srcp, bfd_vma *valuep, char * endp)
 {
   char *src = *srcp;
   bfd_vma value = 0;
   unsigned int len;
 
+  if (src >= endp)
+    return false;
+
   if (!ISHEX (*src))
-    return FALSE;
+    return false;
 
   len = hex_value (*src++);
   if (len == 0)
     len = 16;
-  while (len--)
+  while (len-- && src < endp)
     {
       if (!ISHEX (*src))
-	return FALSE;
+	return false;
       value = value << 4 | hex_value (*src++);
     }
 
   *srcp = src;
   *valuep = value;
-  return TRUE;
+  return len == -1U;
 }
 
-static bfd_boolean
-getsym (char *dstp, char **srcp, unsigned int *lenp)
+static bool
+getsym (char *dstp, char **srcp, unsigned int *lenp, char * endp)
 {
   char *src = *srcp;
   unsigned int i;
   unsigned int len;
 
   if (!ISHEX (*src))
-    return FALSE;
+    return false;
 
   len = hex_value (*src++);
   if (len == 0)
     len = 16;
-  for (i = 0; i < len; i++)
+  for (i = 0; i < len && (src + i) < endp; i++)
     dstp[i] = src[i];
   dstp[i] = 0;
   *srcp = src + i;
   *lenp = len;
-  return TRUE;
+  return i == len;
 }
 
 static struct data_struct *
-find_chunk (bfd *abfd, bfd_vma vma, bfd_boolean create)
+find_chunk (bfd *abfd, bfd_vma vma, bool create)
 {
   struct data_struct *d = abfd->tdata.tekhex_data->data;
 
@@ -325,7 +328,7 @@ find_chunk (bfd *abfd, bfd_vma vma, bfd_boolean create)
     {
       /* No chunk for this address, so make one up.  */
       d = (struct data_struct *)
-          bfd_zalloc (abfd, (bfd_size_type) sizeof (struct data_struct));
+	  bfd_zalloc (abfd, (bfd_size_type) sizeof (struct data_struct));
 
       if (!d)
 	return NULL;
@@ -343,7 +346,7 @@ insert_byte (bfd *abfd, int value, bfd_vma addr)
   if (value != 0)
     {
       /* Find the chunk that this byte needs and put it in.  */
-      struct data_struct *d = find_chunk (abfd, addr, TRUE);
+      struct data_struct *d = find_chunk (abfd, addr, true);
 
       d->chunk_data[addr & CHUNK_MASK] = value;
       d->chunk_init[(addr & CHUNK_MASK) / CHUNK_SPAN] = 1;
@@ -353,8 +356,8 @@ insert_byte (bfd *abfd, int value, bfd_vma addr)
 /* The first pass is to find the names of all the sections, and see
   how big the data is.  */
 
-static bfd_boolean
-first_phase (bfd *abfd, int type, char *src)
+static bool
+first_phase (bfd *abfd, int type, char *src, char * src_end)
 {
   asection *section, *alt_section;
   unsigned int len;
@@ -368,46 +371,52 @@ first_phase (bfd *abfd, int type, char *src)
       {
 	bfd_vma addr;
 
-	if (!getvalue (&src, &addr))
-	  return FALSE;
+	if (!getvalue (&src, &addr, src_end))
+	  return false;
 
-	while (*src)
+	while (*src && src < src_end - 1)
 	  {
 	    insert_byte (abfd, HEX (src), addr);
 	    src += 2;
 	    addr++;
 	  }
+	return true;
       }
 
-      return TRUE;
     case '3':
       /* Symbol record, read the segment.  */
-      if (!getsym (sym, &src, &len))
-	return FALSE;
+      if (!getsym (sym, &src, &len, src_end))
+	return false;
       section = bfd_get_section_by_name (abfd, sym);
       if (section == NULL)
 	{
 	  char *n = (char *) bfd_alloc (abfd, (bfd_size_type) len + 1);
 
 	  if (!n)
-	    return FALSE;
+	    return false;
 	  memcpy (n, sym, len + 1);
 	  section = bfd_make_section (abfd, n);
 	  if (section == NULL)
-	    return FALSE;
+	    return false;
 	}
       alt_section = NULL;
-      while (*src)
+      while (src < src_end && *src)
 	{
 	  switch (*src)
 	    {
 	    case '1':		/* Section range.  */
 	      src++;
-	      if (!getvalue (&src, &section->vma))
-		return FALSE;
-	      if (!getvalue (&src, &val))
-		return FALSE;
+	      if (!getvalue (&src, &section->vma, src_end))
+		return false;
+	      if (!getvalue (&src, &val, src_end))
+		return false;
+	      if (val < section->vma)
+		val = section->vma;
 	      section->size = val - section->vma;
+	      /* PR 17512: file: objdump-s-endless-loop.tekhex.
+		 Check for overlarge section sizes.  */
+	      if (section->size & 0x80000000)
+		return false;
 	      section->flags = SEC_HAS_CONTENTS | SEC_LOAD | SEC_ALLOC;
 	      break;
 	    case '0':
@@ -419,25 +428,25 @@ first_phase (bfd *abfd, int type, char *src)
 	    case '8':
 	      /* Symbols, add to section.  */
 	      {
-		bfd_size_type amt = sizeof (tekhex_symbol_type);
+		size_t amt = sizeof (tekhex_symbol_type);
 		tekhex_symbol_type *new_symbol = (tekhex_symbol_type *)
-                    bfd_alloc (abfd, amt);
+		    bfd_alloc (abfd, amt);
 		char stype = (*src);
 
 		if (!new_symbol)
-		  return FALSE;
+		  return false;
 		new_symbol->symbol.the_bfd = abfd;
 		src++;
 		abfd->symcount++;
 		abfd->flags |= HAS_SYMS;
 		new_symbol->prev = abfd->tdata.tekhex_data->symbols;
 		abfd->tdata.tekhex_data->symbols = new_symbol;
-		if (!getsym (sym, &src, &len))
-		  return FALSE;
+		if (!getsym (sym, &src, &len, src_end))
+		  return false;
 		new_symbol->symbol.name = (const char *)
-                    bfd_alloc (abfd, (bfd_size_type) len + 1);
+		    bfd_alloc (abfd, (bfd_size_type) len + 1);
 		if (!new_symbol->symbol.name)
-		  return FALSE;
+		  return false;
 		memcpy ((char *) (new_symbol->symbol.name), sym, len + 1);
 		new_symbol->symbol.section = section;
 		if (stype <= '4')
@@ -453,13 +462,14 @@ first_phase (bfd *abfd, int type, char *src)
 		    else
 		      {
 			if (alt_section == NULL)
-			  alt_section = bfd_get_next_section_by_name (section);
+			  alt_section
+			    = bfd_get_next_section_by_name (NULL, section);
 			if (alt_section == NULL)
 			  alt_section = bfd_make_section_anyway_with_flags
 			    (abfd, section->name,
 			     (section->flags & ~SEC_DATA) | SEC_CODE);
 			if (alt_section == NULL)
-			  return FALSE;
+			  return false;
 			new_symbol->symbol.section = alt_section;
 		      }
 		  }
@@ -470,58 +480,60 @@ first_phase (bfd *abfd, int type, char *src)
 		    else
 		      {
 			if (alt_section == NULL)
-			  alt_section = bfd_get_next_section_by_name (section);
+			  alt_section
+			    = bfd_get_next_section_by_name (NULL, section);
 			if (alt_section == NULL)
 			  alt_section = bfd_make_section_anyway_with_flags
 			    (abfd, section->name,
 			     (section->flags & ~SEC_CODE) | SEC_DATA);
 			if (alt_section == NULL)
-			  return FALSE;
+			  return false;
 			new_symbol->symbol.section = alt_section;
 		      }
 		  }
-		if (!getvalue (&src, &val))
-		  return FALSE;
+		if (!getvalue (&src, &val, src_end))
+		  return false;
 		new_symbol->symbol.value = val - section->vma;
 		break;
 	      }
 	    default:
-	      return FALSE;
+	      return false;
 	    }
 	}
     }
 
-  return TRUE;
+  return true;
 }
 
 /* Pass over a tekhex, calling one of the above functions on each
    record.  */
 
-static bfd_boolean
-pass_over (bfd *abfd, bfd_boolean (*func) (bfd *, int, char *))
+static bool
+pass_over (bfd *abfd, bool (*func) (bfd *, int, char *, char *))
 {
   unsigned int chars_on_line;
-  bfd_boolean is_eof = FALSE;
+  bool is_eof = false;
 
   /* To the front of the file.  */
   if (bfd_seek (abfd, (file_ptr) 0, SEEK_SET) != 0)
-    return FALSE;
+    return false;
+
   while (! is_eof)
     {
       char src[MAXCHUNK];
       char type;
 
       /* Find first '%'.  */
-      is_eof = (bfd_boolean) (bfd_bread (src, (bfd_size_type) 1, abfd) != 1);
-      while (*src != '%' && !is_eof)
-	is_eof = (bfd_boolean) (bfd_bread (src, (bfd_size_type) 1, abfd) != 1);
+      is_eof = (bool) (bfd_bread (src, (bfd_size_type) 1, abfd) != 1);
+      while (!is_eof && *src != '%')
+	is_eof = (bool) (bfd_bread (src, (bfd_size_type) 1, abfd) != 1);
 
       if (is_eof)
 	break;
 
       /* Fetch the type and the length and the checksum.  */
       if (bfd_bread (src, (bfd_size_type) 5, abfd) != 5)
-	return FALSE;
+	return false;
 
       type = src[2];
 
@@ -532,19 +544,18 @@ pass_over (bfd *abfd, bfd_boolean (*func) (bfd *, int, char *))
       chars_on_line = HEX (src) - 5;
 
       if (chars_on_line >= MAXCHUNK)
-	return FALSE;
+	return false;
 
       if (bfd_bread (src, (bfd_size_type) chars_on_line, abfd) != chars_on_line)
-	return FALSE;
+	return false;
 
       /* Put a null at the end.  */
       src[chars_on_line] = 0;
-
-      if (!func (abfd, type, src))
-	return FALSE;
+      if (!func (abfd, type, src, src + chars_on_line))
+	return false;
     }
 
-  return TRUE;
+  return true;
 }
 
 static long
@@ -570,26 +581,26 @@ tekhex_get_symtab_upper_bound (bfd *abfd)
 
 }
 
-static bfd_boolean
+static bool
 tekhex_mkobject (bfd *abfd)
 {
   tdata_type *tdata;
 
   tdata = (tdata_type *) bfd_alloc (abfd, (bfd_size_type) sizeof (tdata_type));
   if (!tdata)
-    return FALSE;
+    return false;
   abfd->tdata.tekhex_data = tdata;
   tdata->type = 1;
   tdata->head =  NULL;
   tdata->symbols = NULL;
   tdata->data = NULL;
-  return TRUE;
+  return true;
 }
 
 /* Return TRUE if the file looks like it's in TekHex format. Just look
    for a percent sign and some hex digits.  */
 
-static const bfd_target *
+static bfd_cleanup
 tekhex_object_p (bfd *abfd)
 {
   char b[4];
@@ -608,7 +619,7 @@ tekhex_object_p (bfd *abfd)
   if (!pass_over (abfd, first_phase))
     return NULL;
 
-  return abfd->xvec;
+  return _bfd_no_cleanup;
 }
 
 static void
@@ -617,7 +628,7 @@ move_section_contents (bfd *abfd,
 		       const void * locationp,
 		       file_ptr offset,
 		       bfd_size_type count,
-		       bfd_boolean get)
+		       bool get)
 {
   bfd_vma addr;
   char *location = (char *) locationp;
@@ -630,7 +641,7 @@ move_section_contents (bfd *abfd,
       /* Get high bits of address.  */
       bfd_vma chunk_number = addr & ~(bfd_vma) CHUNK_MASK;
       bfd_vma low_bits = addr & CHUNK_MASK;
-      bfd_boolean must_write = !get && *location != 0;
+      bool must_write = !get && *location != 0;
 
       if (chunk_number != prev_number || (!d && must_write))
 	{
@@ -656,7 +667,7 @@ move_section_contents (bfd *abfd,
     }
 }
 
-static bfd_boolean
+static bool
 tekhex_get_section_contents (bfd *abfd,
 			     asection *section,
 			     void * locationp,
@@ -665,14 +676,14 @@ tekhex_get_section_contents (bfd *abfd,
 {
   if (section->flags & (SEC_LOAD | SEC_ALLOC))
     {
-      move_section_contents (abfd, section, locationp, offset, count, TRUE);
-      return TRUE;
+      move_section_contents (abfd, section, locationp, offset, count, true);
+      return true;
     }
 
-  return FALSE;
+  return false;
 }
 
-static bfd_boolean
+static bool
 tekhex_set_arch_mach (bfd *abfd,
 		      enum bfd_architecture arch,
 		      unsigned long machine)
@@ -684,7 +695,7 @@ tekhex_set_arch_mach (bfd *abfd,
 
 /* We have to save up all the Tekhexords for a splurge before output.  */
 
-static bfd_boolean
+static bool
 tekhex_set_section_contents (bfd *abfd,
 			     sec_ptr section,
 			     const void * locationp,
@@ -694,11 +705,11 @@ tekhex_set_section_contents (bfd *abfd,
   if (section->flags & (SEC_LOAD | SEC_ALLOC))
     {
       move_section_contents (abfd, section, locationp, offset, bytes_to_do,
-			     FALSE);
-      return TRUE;
+			     false);
+      return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 static void
@@ -785,7 +796,7 @@ out (bfd *abfd, int type, char *start, char *end)
     abort ();
 }
 
-static bfd_boolean
+static bool
 tekhex_write_object_contents (bfd *abfd)
 {
   char buffer[100];
@@ -875,7 +886,7 @@ tekhex_write_object_contents (bfd *abfd)
 		case 'C':
 		case 'U':
 		  bfd_set_error (bfd_error_wrong_format);
-		  return FALSE;
+		  return false;
 		}
 
 	      writesym (&dst, sym->name);
@@ -888,7 +899,7 @@ tekhex_write_object_contents (bfd *abfd)
   /* And the terminator.  */
   if (bfd_bwrite ("%0781010\n", (bfd_size_type) 9, abfd) != 9)
     abort ();
-  return TRUE;
+  return true;
 }
 
 static int
@@ -901,9 +912,9 @@ tekhex_sizeof_headers (bfd *abfd ATTRIBUTE_UNUSED,
 static asymbol *
 tekhex_make_empty_symbol (bfd *abfd)
 {
-  bfd_size_type amt = sizeof (struct tekhex_symbol_struct);
+  size_t amt = sizeof (struct tekhex_symbol_struct);
   tekhex_symbol_type *new_symbol = (tekhex_symbol_type *) bfd_zalloc (abfd,
-                                                                      amt);
+								      amt);
 
   if (!new_symbol)
     return NULL;
@@ -948,35 +959,39 @@ tekhex_print_symbol (bfd *abfd,
     }
 }
 
-#define	tekhex_close_and_cleanup                    _bfd_generic_close_and_cleanup
-#define tekhex_bfd_free_cached_info                 _bfd_generic_bfd_free_cached_info
-#define tekhex_new_section_hook                     _bfd_generic_new_section_hook
-#define tekhex_bfd_is_target_special_symbol ((bfd_boolean (*) (bfd *, asymbol *)) bfd_false)
-#define tekhex_bfd_is_local_label_name               bfd_generic_is_local_label_name
-#define tekhex_get_lineno                           _bfd_nosymbols_get_lineno
-#define tekhex_find_nearest_line                    _bfd_nosymbols_find_nearest_line
-#define tekhex_find_line                            _bfd_nosymbols_find_line
-#define tekhex_find_inliner_info                    _bfd_nosymbols_find_inliner_info
-#define tekhex_bfd_make_debug_symbol                _bfd_nosymbols_bfd_make_debug_symbol
-#define tekhex_read_minisymbols                     _bfd_generic_read_minisymbols
-#define tekhex_minisymbol_to_symbol                 _bfd_generic_minisymbol_to_symbol
+#define	tekhex_close_and_cleanup		    _bfd_generic_close_and_cleanup
+#define tekhex_bfd_free_cached_info		    _bfd_generic_bfd_free_cached_info
+#define tekhex_new_section_hook			    _bfd_generic_new_section_hook
+#define tekhex_bfd_is_target_special_symbol	    _bfd_bool_bfd_asymbol_false
+#define tekhex_bfd_is_local_label_name		     bfd_generic_is_local_label_name
+#define tekhex_get_lineno			    _bfd_nosymbols_get_lineno
+#define tekhex_find_nearest_line		    _bfd_nosymbols_find_nearest_line
+#define tekhex_find_line			    _bfd_nosymbols_find_line
+#define tekhex_find_inliner_info		    _bfd_nosymbols_find_inliner_info
+#define tekhex_get_symbol_version_string	    _bfd_nosymbols_get_symbol_version_string
+#define tekhex_bfd_make_debug_symbol		    _bfd_nosymbols_bfd_make_debug_symbol
+#define tekhex_read_minisymbols			    _bfd_generic_read_minisymbols
+#define tekhex_minisymbol_to_symbol		    _bfd_generic_minisymbol_to_symbol
 #define tekhex_bfd_get_relocated_section_contents   bfd_generic_get_relocated_section_contents
-#define tekhex_bfd_relax_section                    bfd_generic_relax_section
-#define tekhex_bfd_gc_sections                      bfd_generic_gc_sections
+#define tekhex_bfd_relax_section		    bfd_generic_relax_section
+#define tekhex_bfd_gc_sections			    bfd_generic_gc_sections
 #define tekhex_bfd_lookup_section_flags		    bfd_generic_lookup_section_flags
-#define tekhex_bfd_merge_sections                   bfd_generic_merge_sections
-#define tekhex_bfd_is_group_section                 bfd_generic_is_group_section
-#define tekhex_bfd_discard_group                    bfd_generic_discard_group
-#define tekhex_section_already_linked               _bfd_generic_section_already_linked
-#define tekhex_bfd_define_common_symbol             bfd_generic_define_common_symbol
-#define tekhex_bfd_link_hash_table_create           _bfd_generic_link_hash_table_create
-#define tekhex_bfd_link_add_symbols                 _bfd_generic_link_add_symbols
-#define tekhex_bfd_link_just_syms                   _bfd_generic_link_just_syms
-#define tekhex_bfd_copy_link_hash_symbol_type \
-  _bfd_generic_copy_link_hash_symbol_type
-#define tekhex_bfd_final_link                       _bfd_generic_final_link
-#define tekhex_bfd_link_split_section               _bfd_generic_link_split_section
-#define tekhex_get_section_contents_in_window       _bfd_generic_get_section_contents_in_window
+#define tekhex_bfd_merge_sections		    bfd_generic_merge_sections
+#define tekhex_bfd_is_group_section		    bfd_generic_is_group_section
+#define tekhex_bfd_group_name			    bfd_generic_group_name
+#define tekhex_bfd_discard_group		    bfd_generic_discard_group
+#define tekhex_section_already_linked		    _bfd_generic_section_already_linked
+#define tekhex_bfd_define_common_symbol		    bfd_generic_define_common_symbol
+#define tekhex_bfd_link_hide_symbol		    _bfd_generic_link_hide_symbol
+#define tekhex_bfd_define_start_stop		    bfd_generic_define_start_stop
+#define tekhex_bfd_link_hash_table_create	    _bfd_generic_link_hash_table_create
+#define tekhex_bfd_link_add_symbols		    _bfd_generic_link_add_symbols
+#define tekhex_bfd_link_just_syms		    _bfd_generic_link_just_syms
+#define tekhex_bfd_copy_link_hash_symbol_type	    _bfd_generic_copy_link_hash_symbol_type
+#define tekhex_bfd_final_link			    _bfd_generic_final_link
+#define tekhex_bfd_link_split_section		    _bfd_generic_link_split_section
+#define tekhex_get_section_contents_in_window	    _bfd_generic_get_section_contents_in_window
+#define tekhex_bfd_link_check_relocs		    _bfd_generic_link_check_relocs
 
 const bfd_target tekhex_vec =
 {
@@ -993,6 +1008,7 @@ const bfd_target tekhex_vec =
   ' ',				/* AR_pad_char.  */
   16,				/* AR_max_namelen.  */
   0,				/* match priority.  */
+  TARGET_KEEP_UNUSED_SECTION_SYMBOLS, /* keep unused section symbols.  */
   bfd_getb64, bfd_getb_signed_64, bfd_putb64,
   bfd_getb32, bfd_getb_signed_32, bfd_putb32,
   bfd_getb16, bfd_getb_signed_16, bfd_putb16,	/* Data.  */
@@ -1007,16 +1023,16 @@ const bfd_target tekhex_vec =
     _bfd_dummy_target,
   },
   {
-    bfd_false,
+    _bfd_bool_bfd_false_error,
     tekhex_mkobject,
     _bfd_generic_mkarchive,
-    bfd_false,
+    _bfd_bool_bfd_false_error,
   },
   {				/* bfd_write_contents.  */
-    bfd_false,
+    _bfd_bool_bfd_false_error,
     tekhex_write_object_contents,
     _bfd_write_archive_contents,
-    bfd_false,
+    _bfd_bool_bfd_false_error,
   },
 
   BFD_JUMP_TABLE_GENERIC (tekhex),

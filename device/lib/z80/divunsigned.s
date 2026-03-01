@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
 ;  divunsigned.s
 ;
-;  Copyright (C) 2000-2012, Michael Hope, Philipp Klaus Krause, Marco Bodrato
+;  Copyright (C) 2000-2021, Michael Hope, Philipp Klaus Krause, Marco Bodrato
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -13,7 +13,7 @@
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ;  GNU General Public License for more details.
 ;
-;  You should have received a copy of the GNU General Public License 
+;  You should have received a copy of the GNU General Public License
 ;  along with this library; see the file COPYING. If not, write to the
 ;  Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
 ;   MA 02110-1301, USA.
@@ -28,28 +28,18 @@
 
         ;; Originally from GBDK by Pascal Felber.
 
+	.module divunsigned
+	.optsdcc -mz80 sdcccall(1)
+
 .area   _CODE
 
 .globl	__divuint
 .globl	__divuchar
 
-__divuint:
-        pop     af
-        pop     hl
-        pop     de
-        push    de
-        push    hl
-        push    af
-
-        jr      __divu16
 
 __divuchar:
-        ld      hl,#2+1
-        add     hl,sp
-
-        ld      e,(hl)
-        dec     hl
-        ld      l,(hl)
+	ld	e, l
+	ld	l, a
 
         ;; Fall through
 __divu8::
@@ -64,12 +54,13 @@ __divu8::
         ;;   DE = divisor
         ;;
         ;; Exit conditions
-        ;;   HL = quotient
-        ;;   DE = remainder
+        ;;   DE = quotient
+        ;;   HL = remainder
         ;;   carry = 0
         ;;   If divisor is 0, quotient is set to "infinity", i.e HL = 0xFFFF.
         ;;
         ;; Register used: AF,B,DE,HL
+__divuint:
 __divu16::
         ;; Two algorithms: one assumes divisor <2^7, the second
         ;; assumes divisor >=2^7; choose the applicable one.
@@ -98,13 +89,14 @@ __divu16::
         ;; The add above sets the carry, because sbc a,e did set it.
 .nodrop7:
         ccf                     ; Complement borrow so 1 indicates a
-                                ;  successful substraction (this is the
+                                ;  successful subtraction (this is the
                                 ;  next bit of quotient)
         adc     hl,hl
         djnz    .dvloop7
         ;; Carry now contains the same value it contained before
         ;; entering .dvloop7[*]: "0" = valid result.
         ld      e,a             ; DE = remainder, HL = quotient
+        ex	de, hl
         ret
 
 .morethan7bits:
@@ -129,7 +121,7 @@ __divu16::
 	;; The add above sets the carry, because sbc hl,de did set it.
 .nodrop:
         ccf                     ; Complement borrow so 1 indicates a
-                                ;  successful substraction (this is the
+                                ;  successful subtraction (this is the
                                 ;  next bit of quotient)
         rla
         djnz    .dvloop
@@ -138,6 +130,5 @@ __divu16::
         ;; Carry now contains "0" = valid result.
         ld      d,b
         ld      e,a             ; DE = quotient, HL = remainder
-        ex      de,hl           ; HL = quotient, DE = remainder
         ret
 

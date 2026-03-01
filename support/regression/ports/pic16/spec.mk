@@ -1,14 +1,15 @@
 # Regression test specification for the pic16 target running with gpsim
 
-# simulation timeout in seconds
-SIM_TIMEOUT = 25
-
 # path to gpsim
 ifdef GPSIM_PATH
   GPSIM := $(WINE) $(GPSIM_PATH)/gpsim$(EXEEXT)
 else
   GPSIM := $(WINE) gpsim$(EXEEXT)
 endif
+
+EMU = $(GPSIM)
+EMU_FLAGS = -i -s
+EMU_INPUT = -c $(PORTS_DIR)/pic16/gpsim.cmd
 
 ifndef SDCC_BIN_PATH
   ifndef CROSSCOMPILING
@@ -25,7 +26,7 @@ ifdef CROSSCOMPILING
   SDCCFLAGS += -I$(top_srcdir)
 endif
 
-SDCCFLAGS += -mpic16 -pp18f452 --less-pedantic -Wl,-q -DREENTRANT=__reentrant
+SDCCFLAGS += -mpic16 -pp18f452 --less-pedantic -Wl,-q
 SDCCFLAGS += --no-peep
 SDCCFLAGS += --no-warn-non-free
 LINKFLAGS += libsdcc.lib libc18f.lib libm18f.lib
@@ -35,27 +36,19 @@ BINEXT = .cod
 
 EXTRAS = $(PORT_CASES_DIR)/testfwk$(OBJEXT) $(PORT_CASES_DIR)/support$(OBJEXT)
 
-# Rule to link into .ihx
+# Rule to link into .cod
 %$(BINEXT): %$(OBJEXT) $(EXTRAS)
-	-$(SDCC) $(SDCCFLAGS) $(LINKFLAGS) $(EXTRAS) $< -o $@
+	$(SDCC) $(SDCCFLAGS) $(LINKFLAGS) $(EXTRAS) $< -o $@
 
 %$(OBJEXT): %.c
-	-$(SDCC) $(SDCCFLAGS) -c $< -o $@
+	$(SDCC) $(SDCCFLAGS) -c $< -o $@
 
 $(PORT_CASES_DIR)/%$(OBJEXT): $(PORTS_DIR)/$(PORT)/%.c
-	-$(SDCC) $(SDCCFLAGS) -c $< -o $@
+	$(SDCC) $(SDCCFLAGS) -c $< -o $@
 
 .PRECIOUS: gen/pic16/testfwk.o gen/pic16/support.o
 
 $(PORT_CASES_DIR)/%$(OBJEXT): fwk/lib/%.c
 	$(SDCC) $(SDCCFLAGS) -c $< -o $@
-
-# run simulator with SIM_TIMEOUT seconds timeout
-%.out: %$(BINEXT) $(CASES_DIR)/timeout
-	mkdir -p $(dir $@)
-	-$(CASES_DIR)/timeout $(SIM_TIMEOUT) $(GPSIM) -i -s $< -c $(PORTS_DIR)/pic16/gpsim.cmd > $@ || \
-	  echo -e --- FAIL: \"timeout, simulation killed\" in $(<:$(BINEXT)=.c)"\n"--- Summary: 1/1/1: timeout >> $@
-	$(PYTHON) $(srcdir)/get_ticks.py < $@ >> $@
-	-grep -n FAIL $@ /dev/null || true
 
 _clean:

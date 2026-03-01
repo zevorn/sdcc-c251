@@ -13,7 +13,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -31,6 +31,8 @@
 
 #include <limits.h>
 
+#include <sdcc-lib.h>
+
 #define FLT_RADIX       2
 #define FLT_MANT_DIG    24
 #define FLT_EPSILON     1.192092896E-07F
@@ -41,41 +43,76 @@
 #define FLT_MAX_EXP     (+128)
 #define FLT_MAX         3.402823466E+38F
 #define FLT_MAX_10_EXP  (+38)
+#if __STDC_VERSION__ >= 201112L
+#define FLT_DECIMAL_DIG 9
+#define FLT_TRUE_MIN    1.175494351E-38F
+#define FLT_HAS_SUBNORM 0
+#endif
+
+#if __SIZEOF_DOUBLE__ == 4
+
+#define DBL_MANT_DIG    FLT_MANT_DIG
+#define DBL_EPSILON     FLT_EPSILON
+#define DBL_DIG         FLT_DIG
+#define DBL_MIN_EXP     FLT_MIN_EXP
+#define DBL_MIN         FLT_MIN
+#define DBL_MIN_10_EXP  FLT_MIN_10_EXP
+#define DBL_MAX_EXP     FLT_MAX_EXP
+#define DBL_MAX         FLT_MAX
+#define DBL_MAX_10_EXP  FLT_MAX_10_EXP
+#if __STDC_VERSION__ >= 201112L
+#define DBL_DECIMAL_DIG FLT_DECIMAL_DIG
+#define DBL_TRUE_MIN    FLT_TRUE_MIN
+#define DBL_HAS_SUBNORM FLT_HAS_SUBNORM
+#endif
+
+#endif
 
 /* the following deal with IEEE single-precision numbers */
 #if defined(__SDCC_FLOAT_LIB)
 #define EXCESS		126
 #define SIGNBIT		((unsigned long)0x80000000)
 #define __INFINITY	((unsigned long)0x7F800000)
+#define __NAN       ((unsigned long)0xFFC00000)
 #define HIDDEN		(unsigned long)(1ul << 23)
 #define SIGN(fp)	(((unsigned long)(fp) >> (8*sizeof(fp)-1)) & 1)
 #define EXP(fp)		(((unsigned long)(fp) >> 23) & (unsigned int) 0x00FF)
-#define MANT(fp)	(((fp) & (unsigned long)0x007FFFFF) | HIDDEN)
+#define MANT(fp)	(((fp) & (unsigned long)0x00FFFFFF) | HIDDEN)
 #define NORM            0xff000000
 #define PACK(s,e,m)	((s) | ((unsigned long)(e) << 23) | (m))
 #endif
 
-float __uchar2fs (unsigned char);
-float __schar2fs (signed char);
-float __uint2fs (unsigned int);
-float __sint2fs (signed int);
-float __ulong2fs (unsigned long);
-float __slong2fs (signed long);
-unsigned char __fs2uchar (float);
-signed char __fs2schar (float);
-unsigned int __fs2uint (float);
-signed int __fs2sint (float);
-unsigned long __fs2ulong (float);
-signed long __fs2slong (float);
+#define __SDCC_FLOAT_NONBANKED __SDCC_NONBANKED
 
-float __fsadd (float, float);
-float __fssub (float, float);
-float __fsmul (float, float);
-float __fsdiv (float, float);
+float __uchar2fs (unsigned char) __SDCC_FLOAT_NONBANKED;
+float __schar2fs (signed char) __SDCC_FLOAT_NONBANKED;
+float __uint2fs (unsigned int) __SDCC_FLOAT_NONBANKED;
+float __sint2fs (signed int) __SDCC_FLOAT_NONBANKED;
+float __ulong2fs (unsigned long) __SDCC_FLOAT_NONBANKED;
+float __slong2fs (signed long) __SDCC_FLOAT_NONBANKED;
+#ifdef __SDCC_LONGLONG
+float __ulonglong2fs (unsigned long long) __SDCC_FLOAT_NONBANKED;
+float __slonglong2fs (signed long long) __SDCC_FLOAT_NONBANKED;
+#endif
+unsigned char __fs2uchar (float) __SDCC_FLOAT_NONBANKED;
+signed char __fs2schar (float) __SDCC_FLOAT_NONBANKED;
+unsigned int __fs2uint (float) __SDCC_FLOAT_NONBANKED;
+signed int __fs2sint (float) __SDCC_FLOAT_NONBANKED;
+unsigned long __fs2ulong (float) __SDCC_FLOAT_NONBANKED;
+signed long __fs2slong (float) __SDCC_FLOAT_NONBANKED;
+#ifdef __SDCC_LONGLONG
+unsigned long long __fs2ulonglong (float) __SDCC_FLOAT_NONBANKED;
+signed long long __fs2longlong (float) __SDCC_FLOAT_NONBANKED;
+#endif
 
-char __fslt (float, float);
-char __fseq (float, float);
-char __fsgt (float, float);
+float __fsadd (float, float) __SDCC_FLOAT_NONBANKED;
+float __fssub (float, float) __SDCC_FLOAT_NONBANKED;
+float __fsmul (float, float) __SDCC_FLOAT_NONBANKED;
+float __fsdiv (float, float) __SDCC_FLOAT_NONBANKED;
+
+_Bool __fslt (float, float) __SDCC_FLOAT_NONBANKED;
+_Bool __fseq (float, float) __SDCC_FLOAT_NONBANKED;
+_Bool __fsgt (float, float) __SDCC_FLOAT_NONBANKED;
 
 
 #if defined(__SDCC_FLOAT_LIB) && defined(__SDCC_mcs51) && !defined(__SDCC_USE_XSTACK) && !defined(_SDCC_NO_ASM_LIB_FUNCS)

@@ -1,5 +1,5 @@
 /* Mach-O support for BFD.
-   Copyright (C) 2011-2014 Free Software Foundation, Inc.
+   Copyright (C) 2011-2022 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -308,7 +308,7 @@ struct mach_o_twolevel_hints_command_external
 struct mach_o_version_min_command_external
 {
   unsigned char version[4];
-  unsigned char reserved[4];
+  unsigned char sdk[4];
 };
 
 struct mach_o_encryption_info_command_external
@@ -316,6 +316,14 @@ struct mach_o_encryption_info_command_external
   unsigned char cryptoff[4];	/* File offset of the encrypted area.  */
   unsigned char cryptsize[4];	/* Size of the encrypted area.  */
   unsigned char cryptid[4];	/* Encryption method.  */
+};
+
+struct mach_o_encryption_info_64_command_external
+{
+  unsigned char cryptoff[4];	/* File offset of the encrypted area.  */
+  unsigned char cryptsize[4];	/* Size of the encrypted area.  */
+  unsigned char cryptid[4];	/* Encryption method.  */
+  unsigned char pad[4];		/* Pad to make struct size a multiple of 8.  */
 };
 
 struct mach_o_fvmlib_command_external
@@ -337,14 +345,35 @@ struct mach_o_source_version_command_external
 				   and 24 bits for A.  */
 };
 
+struct mach_o_note_command_external
+{
+  unsigned char data_owner[16]; /* Owner name for this note.  */
+  unsigned char offset[8];      /* File offset of the note.  */
+  unsigned char size[8];        /* Length of the note.  */
+};
+
+struct mach_o_build_version_command_external
+{
+  unsigned char platform[4];    /* Target platform.  */
+  unsigned char minos[4];       /* X.Y.Z is encoded in nibbles xxxx.yy.zz.  */
+  unsigned char sdk[4];         /* X.Y.Z is encoded in nibbles xxxx.yy.zz.  */
+  unsigned char ntools[4];      /* Number of tool entries following this.  */
+};
+
 /* The LD_DATA_IN_CODE command use a linkedit_data_command that points to
    a table of entries.  */
 
 struct mach_o_data_in_code_entry_external
 {
-  unsigned char offset[4];	/* Offset from the mach_header. */
+  unsigned char offset[4];	/* Offset from the mach_header.  */
   unsigned char length[2];	/* Number of bytes.  */
   unsigned char kind[2];	/* Kind.  See BFD_MACH_O_DICE_ values.  */
+};
+
+struct mach_o_linker_option_command_external
+{
+  unsigned char count[4];	/* Number of strings.  */
+  /* COUNT null terminated UTF-8 strings, with 0 at the end for padding.  */
 };
 
 struct mach_o_fat_header_external
@@ -361,5 +390,45 @@ struct mach_o_fat_arch_external
   unsigned char size[4];	/* Size of the member.  */
   unsigned char align[4];	/* Power of 2.  */
 };
+
+struct mach_o_dyld_cache_header_external
+{
+  unsigned char magic[16];
+
+  unsigned char mapping_offset[4];
+  unsigned char mapping_count[4];
+  unsigned char images_offset[4];
+  unsigned char images_count[4];
+
+  unsigned char dyld_base_address[8];
+
+  unsigned char code_signature_offset[8];
+  unsigned char code_signature_size[8];
+
+  unsigned char slide_info_offset[8];
+  unsigned char slide_info_size[8];
+
+  unsigned char local_symbols_offset[8];
+  unsigned char local_symbols_size[8];
+};
+
+struct mach_o_dyld_cache_mapping_info_external
+{
+  unsigned char address[8];
+  unsigned char size[8];
+  unsigned char file_offset[8];
+  unsigned char max_prot[4];
+  unsigned char init_prot[4];
+};
+
+struct mach_o_dyld_cache_image_info_external
+{
+  unsigned char address[8];
+  unsigned char mtime[8];
+  unsigned char inode[8];
+  unsigned char path_file_offset[4];
+  unsigned char pad[4];
+};
+
 
 #endif /* _MACH_O_EXTERNAL_H */

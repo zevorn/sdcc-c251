@@ -11,10 +11,9 @@
 
 // Hmm, this test uses identifiers tarting in __, which are reserved for the implementation. We probably should rename them. Philipp
 
-// TODO: Enable when sdcc supports struct assignment.
-#if 0
 #include <stdint.h>
 
+#if !defined(__SDCC_pdk14) // Lack of memory
 typedef uint32_t u_int32_t;
 typedef uint8_t u_int8_t;
 
@@ -92,14 +91,14 @@ __db_txnlist_lsnadd(int val, DB_TXNLIST *elp, DB_LSN *lsnp, u_int32_t flags)
    *lsnp = elp->u.l.lsn_array[0];
    return val;
 }
-
-#define	VLEN	1235
 #endif
+
+#define	VLEN	5  // NOTE: reduced from 1235 to 5 for use with SDCC
 
 void
 testTortureExecute (void)
 {
-#if 0
+#if !(defined(__SDCC_mcs51) && defined(__SDCC_MODEL_SMALL)) && !defined(__SDCC_pdk14) // Lack of memory
   DB_TXNLIST el;
   DB_LSN lsn, lsn_a[VLEN];
   

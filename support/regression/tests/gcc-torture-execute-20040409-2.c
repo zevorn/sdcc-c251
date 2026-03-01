@@ -30,39 +30,33 @@ unsigned int ftest2u(unsigned int x)
   return (x ^ 0x1234) ^ (unsigned int)INT_MIN;
 }
 
+#if 0 // This tests triggers signed integer overflow, which is undefined behaviour in C (though GCC apparently makes it implementation-defined, and tests for the implementation-defined behaviour here).
 int ftest3(int x)
 {
   return (x + INT_MIN) ^ 0x1234;
 }
+#endif
 
 unsigned int ftest3u(unsigned int x)
 {
   return (x + (unsigned int)INT_MIN) ^ 0x1234;
 }
 
+#if 0 // This tests triggers signed integer overflow, which is undefined behaviour in C (though GCC apparently makes it implementation-defined, and tests for the implementation-defined behaviour here).
 int ftest4(int x)
 {
   return (x ^ 0x1234) + INT_MIN;
 }
+#endif
 
 unsigned int ftest4u(unsigned int x)
 {
   return (x ^ 0x1234) + (unsigned int)INT_MIN;
 }
 
-int ftest5(int x)
-{
-  return (x - INT_MIN) ^ 0x1234;
-}
-
 unsigned int ftest5u(unsigned int x)
 {
   return (x - (unsigned int)INT_MIN) ^ 0x1234;
-}
-
-int ftest6(int x)
-{
-  return (x ^ 0x1234) - INT_MIN;
 }
 
 unsigned int ftest6u(unsigned int x)
@@ -98,12 +92,14 @@ unsigned int ftest8u(unsigned int x)
   return (x ^ y) ^ z;
 }
 
+#if 0 // This tests triggers signed integer overflow, which is undefined behaviour in C (though GCC apparently makes it implementation-defined, and tests for the implementation-defined behaviour here).
 int ftest9(int x)
 {
   int y = INT_MIN;
   int z = 0x1234;
   return (x + y) ^ z;
 }
+#endif
 
 unsigned int ftest9u(unsigned int x)
 {
@@ -112,25 +108,20 @@ unsigned int ftest9u(unsigned int x)
   return (x + y) ^ z;
 }
 
+#if 0 // This tests triggers signed integer overflow, which is undefined behaviour in C (though GCC apparently makes it implementation-defined, and tests for the implementation-defined behaviour here).
 int ftest10(int x)
 {
   int y = 0x1234;
   int z = INT_MIN;
   return (x ^ y) + z;
 }
+#endif
 
 unsigned int ftest10u(unsigned int x)
 {
   unsigned int y = 0x1234;
   unsigned int z = (unsigned int)INT_MIN;
   return (x ^ y) + z;
-}
-
-int ftest11(int x)
-{
-  int y = INT_MIN;
-  int z = 0x1234;
-  return (x - y) ^ z;
 }
 
 unsigned int ftest11u(unsigned int x)
@@ -140,13 +131,6 @@ unsigned int ftest11u(unsigned int x)
   return (x - y) ^ z;
 }
 
-int ftest12(int x)
-{
-  int y = 0x1234;
-  int z = INT_MIN;
-  return (x ^ y) - z;
-}
-
 unsigned int ftest12u(unsigned int x)
 {
   unsigned int y = 0x1234;
@@ -154,33 +138,28 @@ unsigned int ftest12u(unsigned int x)
   return (x ^ y) - z;
 }
 
-
 void ftest(int a, int b)
 {
   if (ftest1(a) != b)
     ASSERT (0);
   if (ftest2(a) != b)
     ASSERT (0);
+#if 0 // This tests triggers signed integer overflow, which is undefined behaviour in C (though GCC apparently makes it implementation-defined, and tests for the implementation-defined behaviour here).
   if (ftest3(a) != b)
     ASSERT (0);
   if (ftest4(a) != b)
     ASSERT (0);
-  if (ftest5(a) != b)
-    ASSERT (0);
-  if (ftest6(a) != b)
-    ASSERT (0);
+#endif
   if (ftest7(a) != b)
     ASSERT (0);
   if (ftest8(a) != b)
     ASSERT (0);
+#if 0 // This tests triggers signed integer overflow, which is undefined behaviour in C (though GCC apparently makes it implementation-defined, and tests for the implementation-defined behaviour here).
   if (ftest9(a) != b)
     ASSERT (0);
   if (ftest10(a) != b)
     ASSERT (0);
-  if (ftest11(a) != b)
-    ASSERT (0);
-  if (ftest12(a) != b)
-    ASSERT (0);
+#endif
 }
 
 void ftestu(unsigned int a, unsigned int b)
@@ -211,7 +190,6 @@ void ftestu(unsigned int a, unsigned int b)
     ASSERT (0);
 }
 
-
 void
 testTortureExecute (void)
 {
@@ -238,7 +216,6 @@ testTortureExecute (void)
   ftest(0x9234,0x0000);
   ftest(0x7fff,0xedcb);
   ftest(0xffff,0x6dcb);
-
   ftestu(0x0000,0x9234);
   ftestu(0x8000,0x1234);
   ftestu(0x1234,0x8000);
@@ -249,4 +226,3 @@ testTortureExecute (void)
 
   return;
 }
-

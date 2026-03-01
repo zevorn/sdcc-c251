@@ -2,9 +2,9 @@
  * This declarations of the PIC18F6620 MCU.
  *
  * This file is part of the GNU PIC library for SDCC, originally
- * created by Molnar Karoly <molnarkaroly@users.sf.net> 2014.
+ * created by Molnar Karoly <molnarkaroly@users.sf.net> 2016.
  *
- * This file is generated automatically by the cinc2h.pl, 2014-07-08 08:42:06 UTC.
+ * This file is generated automatically by the cinc2h.pl, 2016-04-13 17:23:50 UTC.
  *
  * SDCC is licensed under the GNU Public license (GPL) v2. Note that
  * this license covers the code to the compiler and other executables,
@@ -1857,13 +1857,13 @@ typedef union
 
   struct
     {
-    unsigned TRISG              : 5;
+    unsigned RG                 : 5;
     unsigned                    : 3;
     };
 
   struct
     {
-    unsigned RG                 : 5;
+    unsigned TRISG              : 5;
     unsigned                    : 3;
     };
   } __TRISGbits_t;
@@ -4072,13 +4072,13 @@ typedef union
 
   struct
     {
-    unsigned STKPTR             : 5;
+    unsigned SP                 : 5;
     unsigned                    : 3;
     };
 
   struct
     {
-    unsigned SP                 : 5;
+    unsigned STKPTR             : 5;
     unsigned                    : 3;
     };
   } __STKPTRbits_t;

@@ -35,15 +35,16 @@
  * based on Microchip MPLAB-C18 startup files
  */
 
-extern stack_end;
-extern TBLPTRU;
-extern TBLPTRH;
-extern TBLPTRL;
-extern FSR0L;
-extern FSR0H;
-extern TABLAT;
-extern POSTINC0;
-extern POSTDEC0;
+extern int stack_end;
+extern int sram_end;
+extern int TBLPTRU;
+extern int TBLPTRH;
+extern int TBLPTRL;
+extern int FSR0L;
+extern int FSR0H;
+extern int TABLAT;
+extern int POSTINC0;
+extern int POSTDEC0;
 
 #if 1
 /* Global variable for forcing gplink to add _cinit section. */
@@ -53,7 +54,7 @@ char __uflags = 0;
 /* External reference to the user's main routine. */
 extern void main (void);
 
-void _entry (void) __naked __interrupt 0;
+void _entry (void) __naked __interrupt (0);
 void _startup (void) __naked;
 
 /* Access bank selector. */
@@ -64,7 +65,7 @@ void _startup (void) __naked;
  * Entry function, placed at interrupt vector 0 (RESET).
  */
 void
-_entry (void) __naked __interrupt 0
+_entry (void) __naked __interrupt (0)
 {
   __asm
     goto    __startup
@@ -107,10 +108,8 @@ _startup (void) __naked
     bcf     0xa6, 6, a      ; EECON1.CFGS  = 0, TBLPTR accesses program memory
 
   /* cleanup the RAM */
-    ; Load FSR0 with top of RAM.
-    setf    _FSR0L, a
-    movlw   0x0e
-    movwf   _FSR0H, a
+    ; Load FSR0 with top of SRAM.
+    lfsr    0, _sram_end
 
     ; Place 0xff at address 0x00 as a sentinel.
     setf    0x00, a

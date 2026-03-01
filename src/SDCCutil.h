@@ -39,6 +39,11 @@ hTab *populateStringHash (const char **pin);
  */
 char *shell_escape (const char *str);
 
+/** Escape string for string constants.
+ *  Returns dynamically allocated string, which should be free-ed.
+ */
+char *string_escape (const char *str);
+
 /** Prints elements of the set to the file, each element on new line
  */
 void fputStrSet (FILE * fp, set * list);
@@ -48,7 +53,7 @@ void fputStrSet (FILE * fp, set * list);
  */
 set *processStrSet (set * list, const char *pre, const char *post, char *(*file) (const char *));
 
-/** Given a set returns a string containing all of the strings seperated
+/** Given a set returns a string containing all of the strings separated
  *  by spaces. The returned string is on the heap.
  */
 const char *joinStrSet (set * list);
@@ -86,7 +91,7 @@ char *buildMacros (const char *cmd);
 
 void populateMainValues (const char **ppin);
 
-char *buildCmdLine (const char **cmds, const char *p1, const char *p2, const char *p3, set *list);
+char *buildCmdLine (const char **cmds, const char *p1, const char *p2, const char *p3, set *list, set *list2);
 
 char *buildCmdLine2 (const char *pcmd, ...);
 
@@ -123,30 +128,7 @@ const char *getBuildEnvironment (void);
  */
 size_t SDCCsnprintf (char *, size_t, const char *, ...);
 
-# if defined(HAVE_VSNPRINTF)
-
-/* best option: we can define our own snprintf which logs errors.
- */
-#  define SNPRINTF SDCCsnprintf
-
-# elif defined(HAVE_SPRINTF)
-
-/* if we can't build a safe snprintf for lack of vsnprintf but there
- * is a native snprintf, use it.
- */
-#  define SNPRINTF snprintf
-
-# elif defined(HAVE_VSPRINTF)
-
-/* we can at least define our own unsafe version.
- */
-#  define SNPRINTF SDCCsnprintf
-
-# else
-/* We don't have a native snprintf nor the functions we need to write one.
- */
-#  error "Need at least one of snprintf, vsnprintf, vsprintf!"
-# endif
+#define SNPRINTF SDCCsnprintf
 
 /** Pragma tokenizer
  */
@@ -168,12 +150,17 @@ char *get_pragma_token (const char *s, struct pragma_token_s *token);
 const char *get_pragma_string (struct pragma_token_s *token);
 void free_pragma_token (struct pragma_token_s *token);
 
-unsigned char hexEscape (const char **src);
-unsigned char universalEscape (const char **src, unsigned int n);
-unsigned char octalEscape (const char **src);
+unsigned long int hexEscape (const char **src);
+unsigned long int universalEscape (const char **src, unsigned int n);
+unsigned long int octalEscape (const char **src);
+unsigned long int delimitedOctalEscape (const char **src);
 const char *copyStr (const char *src, size_t *size);
 
 void getPrefixSuffix(const char *);
 char *setPrefixSuffix(const char *);
 
+char *formatInlineAsm (char *);
+
+void process_identifier (char *dest, const char *src, size_t n);
 #endif
+

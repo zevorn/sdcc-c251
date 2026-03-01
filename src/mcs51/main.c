@@ -37,14 +37,19 @@ static char _defaultRules[] =
 #include "peeph.rul"
 };
 
-#define OPTION_STACK_SIZE       "--stack-size"
+#define OPTION_SMALL_MODEL          "--model-small"
+#define OPTION_MEDIUM_MODEL         "--model-medium"
+#define OPTION_LARGE_MODEL          "--model-large"
+#define OPTION_HUGE_MODEL           "--model-huge"
+#define OPTION_STACK_SIZE           "--stack-size"
 
 static OPTION _mcs51_options[] =
   {
+    { 0, OPTION_SMALL_MODEL, NULL, "internal data space is used (default)"},
+    { 0, OPTION_MEDIUM_MODEL, NULL, "external paged data space is used"},
+    { 0, OPTION_LARGE_MODEL, NULL, "external data space is used"},
+    { 0, OPTION_HUGE_MODEL, NULL, "functions are banked, data in external space"},
     { 0, OPTION_STACK_SIZE,  &options.stack_size, "Tells the linker to allocate this space for stack", CLAT_INTEGER },
-    { 0, "--parms-in-bank1", &options.parms_in_bank1, "use Bank1 for parameter passing"},
-    { 0, "--pack-iram",      NULL, "Tells the linker to pack variables in internal ram (default)"},
-    { 0, "--no-pack-iram",   &options.no_pack_iram, "Deprecated: Tells the linker not to pack variables in internal ram"},
     { 0, "--acall-ajmp",     &options.acall_ajmp, "Use acall/ajmp instead of lcall/ljmp" },
     { 0, "--no-ret-without-call", &options.no_ret_without_call, "Do not use ret independent of acall/lcall" },
     { 0, NULL }
@@ -84,11 +89,15 @@ void mcs51_assignRegisters (ebbIndex *);
 
 static int regParmFlg = 0;      /* determine if we can register a parameter     */
 static int regBitParmFlg = 0;   /* determine if we can register a bit parameter */
+static struct sym_link *regParmFuncType;
+
+extern void mcs51_init_asmops (void);
 
 static void
 _mcs51_init (void)
 {
   asm_addTree (&asm_asxxxx_mapping);
+  mcs51_init_asmops ();
 }
 
 static void
@@ -96,51 +105,38 @@ _mcs51_reset_regparm (struct sym_link *funcType)
 {
   regParmFlg = 0;
   regBitParmFlg = 0;
+  regParmFuncType = funcType;
 }
 
 static int
-_mcs51_regparm (sym_link * l, bool reentrant)
+_mcs51_regparm (sym_link *l, bool reentrant)
 {
+  ++regParmFlg;
+
+  if (IFFUNC_HASVARARGS (regParmFuncType))
+    return 0;
+
+  if (IS_STRUCT (l))
+    return 0;
+
+  // For struct return keep regs free for pushing hidden parameter.
+  if (IS_STRUCT (regParmFuncType->next))
+    return 0;
+
   if (IS_SPEC(l) && (SPEC_NOUN(l) == V_BIT))
     {
       /* bit parameters go to b0 thru b7 */
       if (reentrant && (regBitParmFlg < 8))
         {
           regBitParmFlg++;
-          return 12 + regBitParmFlg;
+          return 1000 + regBitParmFlg;
         }
       return 0;
     }
-  if (options.parms_in_bank1 == 0)
-    {
-      /* simple can pass only the first parameter in a register */
-      if (regParmFlg)
-        return 0;
 
-      regParmFlg = 1;
-      return 1;
-    }
-  else
-    {
-      int size = getSize(l);
-      int remain;
+  bool is_regarg = mcs51IsRegArg (regParmFuncType, regParmFlg, 0);
 
-      /* first one goes the usual way to DPTR */
-      if (regParmFlg == 0)
-        {
-          regParmFlg += 4 ;
-          return 1;
-        }
-      /* second one onwards goes to RB1_0 thru RB1_7 */
-      remain = regParmFlg - 4;
-      if (size > (8 - remain))
-        {
-          regParmFlg = 12 ;
-          return 0;
-        }
-      regParmFlg += size ;
-      return regParmFlg - size + 1;
-    }
+  return (is_regarg ? regParmFlg : 0);
 }
 
 static bool
@@ -163,27 +159,24 @@ _mcs51_finaliseOptions (void)
     case MODEL_SMALL:
       port->mem.default_local_map = data;
       port->mem.default_globl_map = data;
-      port->s.gptr_size = 3;
+      port->s.ptr_size = 3;
       break;
     case MODEL_MEDIUM:
       port->mem.default_local_map = pdata;
       port->mem.default_globl_map = pdata;
-      port->s.gptr_size = 3;
+      port->s.ptr_size = 3;
       break;
     case MODEL_LARGE:
     case MODEL_HUGE:
       port->mem.default_local_map = xdata;
       port->mem.default_globl_map = xdata;
-      port->s.gptr_size = 3;
+      port->s.ptr_size = 3;
       break;
     default:
       port->mem.default_local_map = data;
       port->mem.default_globl_map = data;
       break;
     }
-
-  if (options.parms_in_bank1)
-    addSet(&preArgvSet, Safe_strdup("-DSDCC_PARMS_IN_BANK1"));
 
   /* mcs51 has an assembly coded float library that's almost always reentrant */
   if (!options.useXstack)
@@ -211,42 +204,179 @@ _mcs51_getRegName (const struct reg_info *reg)
 }
 
 static void
-_mcs51_genAssemblerPreamble (FILE * of)
+_mcs51_genAssemblerStart (FILE * of)
 {
-  if (options.parms_in_bank1)
+  if (!options.noOptsdccInAsm)
     {
-      int i;
-      for (i=0; i < 8 ; i++ )
-        fprintf (of, "\tb1_%d = 0x%x \n", i, 8+i);
+      fprintf (of, "\t.optsdcc -m%s", port->target);
+
+      switch (options.model)
+        {
+        case MODEL_SMALL:
+          fprintf (of, " --model-small");
+          break;
+        case MODEL_COMPACT:
+          fprintf (of, " --model-compact");
+          break;
+        case MODEL_MEDIUM:
+          fprintf (of, " --model-medium");
+          break;
+        case MODEL_LARGE:
+          fprintf (of, " --model-large");
+          break;
+        case MODEL_HUGE:
+          fprintf (of, " --model-huge");
+          break;
+        default:
+          break;
+        }
+      /*if(options.stackAuto)      fprintf (asmFile, " --stack-auto"); */
+      if (options.useXstack)
+        fprintf (of, " --xstack");
+      /*if(options.intlong_rent)   fprintf (asmFile, " --int-long-rent"); */
+      /*if(options.float_rent)     fprintf (asmFile, " --float-rent"); */
+      if (options.noRegParams)
+        fprintf (of, " --no-reg-params");
+      if (options.all_callee_saves)
+        fprintf (of, " --all-callee-saves");
+      fprintf (of, "\n");
     }
+}
+
+// Generate support code for restartable sequence implementation of atomics.
+static void
+mcs51_genAtomicSupport (struct dbuf_s *oBuf, unsigned int startaddr)
+{
+//  if (!options.std_c11)
+//    return;
+
+  dbuf_printf (oBuf, "; restartable atomic support routines\n");
+
+  // Support routines need to start on 8B boundary.
+  if (startaddr % 8)
+    {
+      dbuf_printf (oBuf, "\t.ds\t%d\n", 8 - startaddr % 8);
+      startaddr += (8 - startaddr % 8);
+    }
+  // Support routine block may not cross 256B boundary.
+  if (startaddr / 256 != (startaddr + 8 * 4 + 7) / 256)
+    {
+      dbuf_printf (oBuf, "\t.ds\t%d\n", 256 - startaddr % 256);
+      startaddr += 256 - startaddr % 256;
+    }
+
+  dbuf_printf (oBuf, "sdcc_atomic_exchange_rollback_start::\n");
+
+  // Each routine (except the last one) needs to be 8 bytes long.
+  // Restart may happen at bytes 1 to 5 of each routine.
+  dbuf_printf (oBuf, "\tnop\n"
+                     "\tnop\n"
+                     "sdcc_atomic_exchange_pdata_impl:\n"
+                     "\tmovx\ta, @r0\n"
+                     "\tmov\tr3, a\n"
+                     "\tmov\ta, r2\n"
+                     "\tmovx\t@r0, a\n"
+                     "\tsjmp\tsdcc_atomic_exchange_exit\n");
+  dbuf_printf (oBuf, "\tnop\n"
+                     "\tnop\n"
+                     "sdcc_atomic_exchange_xdata_impl:\n"
+                     "\tmovx\ta, @dptr\n"
+                     "\tmov\tr3, a\n"
+                     "\tmov\ta, r2\n"
+                     "\tmovx\t@dptr, a\n"
+                     "\tsjmp\tsdcc_atomic_exchange_exit\n");
+  dbuf_printf (oBuf, "sdcc_atomic_compare_exchange_idata_impl:\n"
+                     "\tmov\ta, @r0\n"
+                     "\tcjne\ta, ar2, .+#5\n"
+                     "\tmov\ta, r3\n"
+                     "\tmov\t@r0, a\n"
+                     "\tret\n"
+                     "\tnop\n");
+  dbuf_printf (oBuf, "sdcc_atomic_compare_exchange_pdata_impl:\n"
+                     "\tmovx\ta, @r0\n"
+                     "\tcjne\ta, ar2, .+#5\n"
+                     "\tmov\ta, r3\n"
+                     "\tmovx\t@r0, a\n"
+                     "\tret\n"
+                     "\tnop\n");
+  dbuf_printf (oBuf, "sdcc_atomic_compare_exchange_xdata_impl:\n"
+                     "\tmovx\ta, @dptr\n"
+                     "\tcjne\ta, ar2, .+#5\n"
+                     "\tmov\ta, r3\n"
+                     "\tmovx\t@dptr, a\n"
+                     "\tret\n");
+  dbuf_printf (oBuf, "sdcc_atomic_exchange_rollback_end::\n\n");
+
+  // The following two routines just need to be in jnb range of the above ones, they don't have alignment requirements.
+
+  // Store value in r2 into byte at b:dptr, return previous byte at b:dptr in dpl.
+  // Overwrites r0, r2, r3.
+  dbuf_printf (oBuf, "sdcc_atomic_exchange_gptr_impl::\n"
+                     "\tjnb\tb.6, sdcc_atomic_exchange_xdata_impl\n"
+                     "\tmov\tr0, dpl\n"
+                     "\tjb\tb.5, sdcc_atomic_exchange_pdata_impl\n"
+                     "sdcc_atomic_exchange_idata_impl:\n"
+                     "\tmov\ta, r2\n"
+                     "\txch\ta, @r0\n"
+                     "\tmov\tdpl, a\n"
+                     "\tret\n"
+                     "sdcc_atomic_exchange_exit:\n"
+                     "\tmov\tdpl, r3\n"
+                     "\tret\n");
+
+  // If the value of the byte at b:dptr is the value of r2, store the value
+  // of r3 into that byte. Return the new value of that byte in a.
+  // Overwrites r0, r2, r3.
+  dbuf_printf (oBuf, "sdcc_atomic_compare_exchange_gptr_impl::\n"
+                     "\tjnb\tb.6, sdcc_atomic_compare_exchange_xdata_impl\n"
+                     "\tmov\tr0, dpl\n"
+                     "\tjb\tb.5, sdcc_atomic_compare_exchange_pdata_impl\n"
+                     "\tsjmp\tsdcc_atomic_compare_exchange_idata_impl\n");
 }
 
 /* Generate interrupt vector table. */
 static int
-_mcs51_genIVT (struct dbuf_s * oBuf, symbol ** interrupts, int maxInterrupts)
+_mcs51_genIVT (struct dbuf_s *oBuf, symbol **interrupts, int maxInterrupts)
 {
   int i;
+  unsigned int nextbyteaddr;
 
   dbuf_printf (oBuf, "\t%cjmp\t__sdcc_gsinit_startup\n", options.acall_ajmp?'a':'l');
-  if((options.acall_ajmp)&&(maxInterrupts)) dbuf_printf (oBuf, "\t.ds\t1\n");
+  nextbyteaddr = options.acall_ajmp ? 2 : 3;
+  if(options.acall_ajmp && maxInterrupts)
+    {
+      dbuf_printf (oBuf, "\t.ds\t1\n");
+      nextbyteaddr += 1;
+    }
 
   /* now for the other interrupts */
   for (i = 0; i < maxInterrupts; i++)
     {
       if (interrupts[i])
         {
-          dbuf_printf (oBuf, "\t%cjmp\t%s\n", options.acall_ajmp?'a':'l', interrupts[i]->rname);
+          dbuf_printf (oBuf, "\t%cjmp\t%s\n", options.acall_ajmp ? 'a' : 'l', interrupts[i]->rname);
+          nextbyteaddr += options.acall_ajmp ? 2 : 3;
           if ( i != maxInterrupts - 1 )
-            dbuf_printf (oBuf, "\t.ds\t%d\n", options.acall_ajmp?6:5);
+            {
+              dbuf_printf (oBuf, "\t.ds\t%d\n", options.acall_ajmp ? 6 : 5);
+              nextbyteaddr += options.acall_ajmp ? 6 : 5;
+            }
         }
       else
         {
           dbuf_printf (oBuf, "\treti\n");
+          nextbyteaddr += 1;
           if ( i != maxInterrupts - 1 )
-            dbuf_printf (oBuf, "\t.ds\t7\n");
+            {
+              dbuf_printf (oBuf, "\t.ds\t7\n");
+              nextbyteaddr += 7;
+            }
         }
     }
-  return TRUE;
+
+  mcs51_genAtomicSupport (oBuf, nextbyteaddr);
+
+  return true;
 }
 
 static void
@@ -323,18 +453,29 @@ static bool cseCostEstimation (iCode *ic, iCode *pdic)
 
 /* Indicate which extended bit operations this port supports */
 static bool
-hasExtBitOp (int op, int size)
+hasExtBitOp (int op, sym_link *left, int right)
 {
-  if (op == RRC
-      || op == RLC
-      || op == GETABIT
-      || op == GETBYTE
-      || op == GETWORD
-      || (op == SWAP && size <= 2)
-     )
-    return TRUE;
-  else
-    return FALSE;
+  switch (op)
+    {
+    case GETABIT:
+    case GETBYTE:
+    case GETWORD:
+      return true;
+    case ROT:
+      {
+        unsigned int lbits = bitsForType (left);
+        if (lbits % 8)
+          return false;
+        if (lbits == 8)
+          return true;
+        if (lbits <= 16 && (right % lbits  == 1 || right % lbits == lbits - 1))
+          return true;
+        if (lbits <= 16 && lbits == right * 2)
+          return true;
+      }
+      return false;
+    }
+  return false;
 }
 
 /* Indicate the expense of an access to an output storage class */
@@ -345,6 +486,15 @@ oclsExpense (struct memmap *oclass)
     return 1;
 
   return 0;
+}
+
+static bool
+_hasNativeMulFor (iCode *ic, sym_link *left, sym_link *right)
+{
+  if (IS_BITINT (OP_SYM_TYPE (IC_RESULT(ic))) && SPEC_BITINTWIDTH (OP_SYM_TYPE (IC_RESULT(ic))) % 8)
+    return false;
+
+  return getSize (left) == 1 && getSize (right) == 1;
 }
 
 static int
@@ -525,15 +675,26 @@ mcs51operandCompare (const void *key, const void *member)
 }
 
 static void
-updateOpRW (asmLineNode *aln, char *op, char *optype)
+updateOpRW (asmLineNode *aln, const char *op_in, const char *optype)
 {
   mcs51operanddata *opdat;
-  char *dot;
 
-  dot = strchr(op, '.');
-  if (dot)
-    *dot = '\0';
+  /* There are two bit instructions that accept negated souce bit operand,
+     where a leading '/' denotes the negation.  Ignore that here.  */
+  if (*op_in == '/')
+    op_in += 1;
 
+  /* Ignore dots or brackets in operand (bit numbes) for operand table search.
+     But remember that it's a bit access for special case handling.  */
+  char op[32];
+  strncpy (op, op_in, 31);
+  op[31] = '\0';
+
+  char *bit_sep;
+  if (bit_sep = strchr (op, '.'))
+    *bit_sep = '\0';
+  else if (bit_sep = strchr (op, '['))
+    *bit_sep = '\0';
   opdat = bsearch (op, mcs51operandDataTable,
                    sizeof(mcs51operandDataTable)/sizeof(mcs51operanddata),
                    sizeof(mcs51operanddata), mcs51operandCompare);
@@ -551,6 +712,13 @@ updateOpRW (asmLineNode *aln, char *op, char *optype)
         aln->regsWritten = bitVectSetBit (aln->regsWritten, opdat->regIdx1);
       if (opdat->regIdx2 >= 0)
         aln->regsWritten = bitVectSetBit (aln->regsWritten, opdat->regIdx2);
+
+      /* Any bit access always implies a read of the full register.  */
+      if (opdat->regIdx1 == A_IDX && bit_sep)
+        aln->regsRead = bitVectSetBit (aln->regsRead, A_IDX);
+
+      if (opdat->regIdx1 == B_IDX && bit_sep)
+        aln->regsRead = bitVectSetBit (aln->regsRead, B_IDX);
     }
   if (op[0] == '@')
     {
@@ -632,6 +800,12 @@ mcs51opcodeCompare (const void *key, const void *member)
   return strcmp((const char *)key, ((mcs51opcodedata *)member)->name);
 }
 
+static const char* skip_spaces (const char* p)
+{
+  while (*p && isspace(*p)) p++;
+  return p;
+}
+
 static asmLineNode *
 asmLineNodeFromLineNode (lineNode *ln)
 {
@@ -641,10 +815,13 @@ asmLineNodeFromLineNode (lineNode *ln)
   const char *p;
   char inst[8];
   mcs51opcodedata *opdat;
+  bool op_ignore_case;
 
   p = ln->line;
 
-  while (*p && isspace(*p)) p++;
+  /* extract instruction */
+
+  p = skip_spaces (p);
   for (op = inst, opsize=1; *p; p++)
     {
       if (isspace(*p) || *p == ';' || *p == ':' || *p == '=')
@@ -658,22 +835,33 @@ asmLineNodeFromLineNode (lineNode *ln)
   if (*p == ';' || *p == ':' || *p == '=')
     return aln;
 
-  while (*p && isspace(*p)) p++;
+  p = skip_spaces (p);
   if (*p == '=')
     return aln;
+
+
+  /* extract first operand.  if it starts with '_' that usually means
+     it's a case sensitive symbol from c code.  */
+  op_ignore_case = *p != '_';
 
   for (op = op1, opsize=1; *p && *p != ','; p++)
     {
       if (!isspace(*p) && opsize < sizeof(op1))
-        *op++ = tolower(*p), opsize++;
+        *op++ = (op_ignore_case ? tolower(*p) : *p), opsize++;
     }
   *op = '\0';
 
   if (*p == ',') p++;
+
+  /* extract second operand.  if it starts with '_' that usually means
+     it's a case sensitive symbol from c code.  */
+  p = skip_spaces (p);
+  op_ignore_case = *p != '_';
+
   for (op = op2, opsize=1; *p && *p != ','; p++)
     {
       if (!isspace(*p) && opsize < sizeof(op2))
-        *op++ = tolower(*p), opsize++;
+        *op++ = (op_ignore_case ? tolower(*p) : *p), opsize++;
     }
   *op = '\0';
 
@@ -690,6 +878,8 @@ asmLineNodeFromLineNode (lineNode *ln)
     {
       updateOpRW (aln, op1, opdat->op1type);
       updateOpRW (aln, op2, opdat->op2type);
+      if (!strcmp (inst, "jnz") || !strcmp (inst, "jz"))
+        aln->regsRead = bitVectSetBit (aln->regsRead, A_IDX);
       if (strchr(opdat->pswtype,'r'))
         aln->regsRead = bitVectSetBit (aln->regsRead, CND_IDX);
       if (strchr(opdat->pswtype,'w'))
@@ -768,11 +958,12 @@ get_model (void)
     $2 is always the output file.
     $3 varies
     $l is the list of extra options that should be there somewhere...
+    $L is the list of extra options that should be passed on the command line...
     MUST be terminated with a NULL.
 */
 static const char *_linkCmd[] =
 {
-  "sdld", "-nf", "$1", NULL
+  "sdld", "-nf", "$1", "$L", NULL
 };
 
 /* $3 is replaced by assembler.debug_opts resp. port->assembler.plain_opts */
@@ -821,13 +1012,15 @@ PORT mcs51_port =
     getRegsRead,
     getRegsWritten,
     mcs51DeadMove,
+    mcs51notUsed,
     NULL,
+    mcs51notUsedFrom,
     NULL,
     NULL,
     NULL,
   },
-  /* Sizes: char, short, int, long, long long, ptr, fptr, gptr, bit, float, max */
-  { 1, 2, 2, 4, 8, 1, 2, 3, 1, 4, 4 },
+  /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, _BitInt (in bits) */
+  { 1, 2, 2, 4, 8, 1, 2, 3, 2, 3, 1, 4, 64 },
   /* tags for generic pointers */
   { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
   {
@@ -838,6 +1031,7 @@ PORT mcs51_port =
     "ISEG    (DATA)",           // idata_name
     "PSEG    (PAG,XDATA)",      // pdata_name
     "XSEG    (XDATA)",          // xdata_name
+    NULL,                       // xconst_name
     "BSEG    (BIT)",            // bit_name
     "RSEG    (ABS,DATA)",       // reg_name
     "GSINIT  (CODE)",           // static_name
@@ -855,19 +1049,21 @@ PORT mcs51_port =
     NULL,
     NULL,
     1,
+    true,                       // unqualified pointer can point to __sfr: TODO: CHECK IF THIS IS ACTUALLY SUPPORTED. Set to true to emulate behaviour of rpevious version of sdcc for now.
     1                           // No fancy alignments supported.
   },
   { _mcs51_genExtraAreas, NULL },
+  0,                            // ABI revision
   {
     +1,         /* direction (+1 = stack grows up) */
     0,          /* bank_overhead (switch between register banks) */
     4,          /* isr_overhead */
     1,          /* call_overhead (2 for return address - 1 for pre-incrementing push */
     1,          /* reent_overhead */
-    1           /* banked_overhead (switch between code banks) */
+    1,          /* banked_overhead (switch between code banks) */
+    0           /* sp points directly at last item pushed */
   },
-  /* mcs51 has an 8 bit mul */
-  { 1, -1 },
+  { -1, false, false },         // Neither int x int -> long nor unsigned long x unsigned char -> unsigned long long multiplication support routine.
   { mcs51_emitDebuggerSymbol },
   {
     256,        /* maxCount */
@@ -886,9 +1082,10 @@ PORT mcs51_port =
   _mcs51_setDefaultOptions,
   mcs51_assignRegisters,
   _mcs51_getRegName,
+  0,
   _mcs51_rtrackUpdate,
   _mcs51_keywords,
-  _mcs51_genAssemblerPreamble,
+  _mcs51_genAssemblerStart,
   NULL,                         /* no genAssemblerEnd */
   _mcs51_genIVT,
   _mcs51_genXINIT,
@@ -897,7 +1094,7 @@ PORT mcs51_port =
   _mcs51_regparm,
   NULL,                         /* process_pragma */
   NULL,                         /* getMangledFunctionName */
-  NULL,                         /* hasNativeMulFor */
+  _hasNativeMulFor,             /* hasNativeMulFor */
   hasExtBitOp,                  /* hasExtBitOp */
   oclsExpense,                  /* oclsExpense */
   FALSE,                        /* use_dw_for_init */
@@ -910,8 +1107,10 @@ PORT mcs51_port =
   0,                            /* leave == */
   FALSE,                        /* No array initializer support. */
   cseCostEstimation,
-  NULL,                         /* no builtin functions */
+  "",                           // no builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  true,                         // __far is a subspace of the generic space.
+  false,                        // the generic space is not a subspace of __far.
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   0,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

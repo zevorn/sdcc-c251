@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+//
+// An optimal, polynomial-time register allocator.
 
 //#define DEBUG_RALLOC_DEC // Uncomment to get debug messages while doing register allocation on the tree decomposition.
 //#define DEBUG_RALLOC_DEC_ASS // Uncomment to get debug messages about assignments while doing register allocation on the tree decomposition (much more verbose than the one above).
@@ -28,9 +30,9 @@ extern "C"
 {
   #include "ralloc.h"
   #include "gen.h"
-  unsigned char dryhc08iCode (iCode *ic);
+  float dryhc08iCode (iCode *ic);
   bool hc08_assignment_optimal;
-};
+}
 
 #define REG_A 0
 #define REG_X 1
@@ -87,66 +89,15 @@ static bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, 
   if(!o || !IS_SYMOP(o))
     return(false);
 
+  if(r >= port->num_regs)
+    return(false);
+
   operand_map_t::const_iterator oi, oi_end;
   for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
     if(oi->second == ia.registers[r][1] || oi->second == ia.registers[r][0])
       return(true);
 
   return(false);
-}
-
-// Check that the operand is either fully in registers or fully in memory.
-template <class G_t, class I_t>
-static bool operand_sane(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
-{
-  if(!o || !IS_SYMOP(o))
-    return(true);
- 
-  operand_map_t::const_iterator oi, oi2, oi_end;
-  boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
-  
-  if(oi == oi_end)
-    return(true);
-
-  // Go to the second byte. If the operand is only a single byte, it cannot be
-  // an unsupported register combination or split between register and memory.
-  oi2 = oi;
-  oi2++;
-  if (oi2 == oi_end)
-    return(true);
-  
-  // Register combinations code generation cannot handle yet (AH, XH, HA).
-  if(a.local.find(oi->second) != a.local.end() && a.local.find(oi2->second) != a.local.end())
-    {
-      const reg_t l = a.global[oi->second];
-      const reg_t h = a.global[oi2->second];
-      if(l == REG_A && h == REG_H || l == REG_H)
-        return(false);
-    }
-  
-  // In registers.
-  if(a.local.find(oi->second) != a.local.end())
-    {
-      while(++oi != oi_end)
-        if(a.local.find(oi->second) == a.local.end())
-          return(false);
-    }
-  else
-    {
-       while(++oi != oi_end)
-        if(a.local.find(oi->second) != a.local.end())
-          return(false);
-    }
- 
-  return(true);
-}
-
-template <class G_t, class I_t>
-static bool inst_sane(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
-{
-  const iCode *ic = G[i].ic;
-
-  return(operand_sane(IC_RESULT(ic), a, i, G, I) && operand_sane(IC_LEFT(ic), a, i, G, I) && operand_sane(IC_RIGHT(ic), a, i, G, I));
 }
 
 template <class G_t, class I_t>
@@ -167,7 +118,7 @@ static bool operand_is_ax(const operand *o, const assignment &a, unsigned short 
     return(false);
   
   // Register combinations code generation cannot handle yet (AX, AH, XH, HA).
-  if(a.local.find(oi->second) != a.local.end() && a.local.find(oi2->second) != a.local.end())
+  if(std::binary_search(a.local.begin(), a.local.end(), oi->second) && std::binary_search(a.local.begin(), a.local.end(), oi2->second))
     {
       const reg_t l = a.global[oi->second];
       const reg_t h = a.global[oi2->second];
@@ -217,7 +168,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == ADDRESS_OF ||
     ic->op == CAST ||
     ic->op == DUMMY_READ_VOLATILE ||
-    ic->op == SWAP)
+    ic->op == ROT && IS_OP_LITERAL (IC_RIGHT (ic)) && (bitsForType (operandType (IC_LEFT (ic))) == 8 || operandLitValueUll (IC_RIGHT (ic)) * 2 == bitsForType (operandType (IC_LEFT (ic)))))
     return(true);
 
   if(ic->op == IFX && ic->generated)
@@ -246,7 +197,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   bool left_in_A = operand_in_reg(result, REG_A, ia, i, G);
   bool left_in_X = operand_in_reg(result, REG_X, ia, i, G);
 
-  const std::set<var_t> &dying = G[i].dying;
+  const cfg_dying_t &dying = G[i].dying;
 
   bool dying_A = result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end();
   bool dying_H = result_in_H || dying.find(ia.registers[REG_H][1]) != dying.end() || dying.find(ia.registers[REG_H][0]) != dying.end();
@@ -316,7 +267,7 @@ static bool AXinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == DUMMY_READ_VOLATILE ||
     ic->op == CRITICAL ||
     ic->op == ENDCRITICAL ||
-    ic->op == SWAP)
+    ic->op == ROT && IS_OP_LITERAL (IC_RIGHT (ic)) && (bitsForType (operandType (IC_LEFT (ic))) == 8 || operandLitValueUll (IC_RIGHT (ic)) * 2 == bitsForType (operandType (IC_LEFT (ic)))))
     return(true);
 
   bool unused_A = (ia.registers[REG_A][1] < 0);
@@ -351,10 +302,10 @@ static void set_surviving_regs(const assignment &a, unsigned short int i, const 
 {
   iCode *ic = G[i].ic;
   
-  ic->rMask = newBitVect(port->num_regs);
-  ic->rSurv = newBitVect(port->num_regs);
+  bitVectClear(ic->rMask);
+  bitVectClear(ic->rSurv);
   
-  std::set<var_t>::const_iterator v, v_end;
+  cfg_alive_t::const_iterator v, v_end;
   for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
     {
       if(a.global[*v] < 0)
@@ -364,15 +315,6 @@ static void set_surviving_regs(const assignment &a, unsigned short int i, const 
         if(!((IC_RESULT(ic) && !POINTER_SET(ic)) && IS_SYMOP(IC_RESULT(ic)) && OP_SYMBOL_CONST(IC_RESULT(ic))->key == I[*v].v))
           ic->rSurv = bitVectSetBit(ic->rSurv, a.global[*v]);
     }
-}
-
-template<class G_t>
-static void unset_surviving_regs(unsigned short int i, const G_t &G)
-{
-  iCode *ic = G[i].ic;
-  
-  freeBitVect(ic->rSurv);
-  freeBitVect(ic->rMask);
 }
 
 template <class G_t, class I_t>
@@ -408,21 +350,70 @@ static void assign_operands_for_cost(const assignment &a, unsigned short int i, 
 {
   const iCode *ic = G[i].ic;
   
-  if(ic->op == IFX)
-    assign_operand_for_cost(IC_COND(ic), a, i, G, I);
-  else if(ic->op == JUMPTABLE)
-    assign_operand_for_cost(IC_JTCOND(ic), a, i, G, I);
-  else
-    {
-      assign_operand_for_cost(IC_LEFT(ic), a, i, G, I);
-      assign_operand_for_cost(IC_RIGHT(ic), a, i, G, I);
-      assign_operand_for_cost(IC_RESULT(ic), a, i, G, I);
-    }
+  assign_operand_for_cost(IC_LEFT(ic), a, i, G, I);
+  assign_operand_for_cost(IC_RIGHT(ic), a, i, G, I);
+  assign_operand_for_cost(IC_RESULT(ic), a, i, G, I);
     
   if(ic->op == SEND && ic->builtinSEND)
     {
       assign_operands_for_cost(a, *(adjacent_vertices(i, G).first), G, I);
     }
+}
+
+// Check that the operand is either fully in registers or fully in memory.
+template <class G_t, class I_t>
+static bool operand_sane(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  if(!o || !IS_SYMOP(o))
+    return(true);
+ 
+  operand_map_t::const_iterator oi, oi2, oi_end;
+  boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
+  
+  if(oi == oi_end)
+    return(true);
+
+  // Go to the second byte. If the operand is only a single byte, it cannot be
+  // an unsupported register combination or split between register and memory.
+  oi2 = oi;
+  oi2++;
+  if (oi2 == oi_end)
+    return(true);
+  
+  // Register combinations code generation cannot handle yet (AH, XH, HA).
+  if(std::binary_search(a.local.begin(), a.local.end(), oi->second) && std::binary_search(a.local.begin(), a.local.end(), oi2->second))
+    {
+      const reg_t l = a.global[oi->second];
+      const reg_t h = a.global[oi2->second];
+      if(l == REG_A && h == REG_H || l == REG_H)
+        return(false);
+    }
+  
+  // In registers.
+  if(std::binary_search(a.local.begin(), a.local.end(), oi->second))
+    {
+      while(++oi != oi_end)
+        if(!std::binary_search(a.local.begin(), a.local.end(), oi->second))
+          return(false);
+      if (OP_SYMBOL_CONST (o)->nRegs > 2) // cannot handle register operand wider than 2 B yet.
+        return (false);
+    }
+  else
+    {
+       while(++oi != oi_end)
+        if(std::binary_search(a.local.begin(), a.local.end(), oi->second))
+          return(false);
+    }
+ 
+  return(true);
+}
+
+template <class G_t, class I_t>
+static bool inst_sane(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+
+  return(operand_sane(IC_RESULT(ic), a, i, G, I) && operand_sane(IC_LEFT(ic), a, i, G, I) && operand_sane(IC_RIGHT(ic), a, i, G, I));
 }
 
 // Cost function.
@@ -437,12 +428,6 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
   if(!inst_sane(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
-  if(!XAinst_ok(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
-
-  if(!AXinst_ok(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
-
 #if 0
   std::cout << "Calculating at cost at ic " << ic->key << " for: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
@@ -455,6 +440,12 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 
   if(ic->generated)
     return(0.0f);
+
+  if(!XAinst_ok(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+
+  if(!AXinst_ok(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
 
   switch(ic->op)
     {
@@ -492,6 +483,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case GETABIT:
     case GETBYTE:
     case GETWORD:
+    case ROT:
     case LEFT_OP:
     case RIGHT_OP:
     case GET_VALUE_AT_ADDRESS:
@@ -505,11 +497,10 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case DUMMY_READ_VOLATILE:
     case CRITICAL:
     case ENDCRITICAL:
-    case SWAP:
       assign_operands_for_cost(a, i, G, I);
       set_surviving_regs(a, i, G, I);
       c = dryhc08iCode(ic);
-      unset_surviving_regs(i, G);
+      ic->generated = false;
       return(c);
     default:
       return(0.0f);
@@ -529,9 +520,9 @@ static void get_best_local_assignment_biased(assignment &a, typename boost::grap
 {
   a = *T[t].assignments.begin();
 
-  std::set<var_t>::const_iterator vi, vi_end;
-  for(vi = T[t].alive.begin(), vi_end = T[t].alive.end(); vi != vi_end; ++vi)
-    a.local.insert(*vi);
+  varset_t newlocal;
+  std::set_union(T[t].alive.begin(), T[t].alive.end(), a.local.begin(), a.local.end(), std::inserter(newlocal, newlocal.end()));
+  a.local = newlocal;
 }
 
 // This is just a dummy for now, it probably isn't really needed for hc08 due to the low number of registers.
@@ -560,7 +551,7 @@ static void extra_ic_generated(iCode *ic)
       if (ifx = ifxForOp (IC_RESULT (ic), ic))
         {
           OP_SYMBOL (IC_RESULT (ic))->for_newralloc = false;
-          OP_SYMBOL (IC_RESULT (ic))->regType == REG_CND;
+          OP_SYMBOL (IC_RESULT (ic))->regType = REG_CND;
           ifx->generated = true;
         }
     }
@@ -636,14 +627,13 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
     }
 
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
-    set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
+    set_surviving_regs(winner, i, G, I);
 
   return(!assignment_optimal);
 }
 
 iCode *hc08_ralloc2_cc(ebbIndex *ebbi)
 {
-  iCode *ic;
 
 #ifdef DEBUG_RALLOC_DEC
   std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n"; std::cout.flush();
@@ -653,7 +643,12 @@ iCode *hc08_ralloc2_cc(ebbIndex *ebbi)
 
   con_t conflict_graph;
 
-  ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
+  iCode *ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
+
+  if (optimize.genconstprop)
+    recomputeValinfos (ic, ebbi, "_2");
+
+  guessCounts(ic, ebbi);
 
   if(options.dump_graphs)
     dump_cfg(control_flow_graph);
@@ -663,9 +658,7 @@ iCode *hc08_ralloc2_cc(ebbIndex *ebbi)
 
   tree_dec_t tree_decomposition;
 
-  thorup_tree_decomposition(tree_decomposition, control_flow_graph);
-
-  nicify(tree_decomposition);
+  get_nice_tree_decomposition(tree_decomposition, control_flow_graph);
 
   alive_tree_dec(tree_decomposition, control_flow_graph);
 
@@ -675,6 +668,8 @@ iCode *hc08_ralloc2_cc(ebbIndex *ebbi)
 
   if(options.dump_graphs)
     dump_tree_decomposition(tree_decomposition);
+
+  guessCounts (ic, ebbi);
 
   hc08_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
 

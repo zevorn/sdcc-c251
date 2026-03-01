@@ -85,6 +85,11 @@
 #include "libiberty.h"
 #include "safe-ctype.h"
 
+#define asxxxx_bfd_group_name                      bfd_generic_group_name
+#define asxxxx_bfd_link_hide_symbol               _bfd_generic_link_hide_symbol
+
+
+
 #define NELEM(x) (sizeof (x) / sizeof (x)[0])
 
 /* ******************* from asld aslink.h ******************* */
@@ -166,14 +171,8 @@
 
 /* Macros for converting between hex and binary.  */
 
-static const char digs[] = "0123456789ABCDEF";
-
 #define NIBBLE(x)    hex_value(x)
 #define HEX(buffer) ((NIBBLE ((buffer)[0])<<4) + NIBBLE ((buffer)[1]))
-#define TOHEX(d, x, ch) \
-        d[1] = digs[(x) & 0xf]; \
-        d[0] = digs[((x)>>4)&0xf]; \
-        ch += ((x) & 0xff);
 #define ISHEX(x)    hex_p(x)
 
 /* When scanning the asxxxx .rel file, a linked list of asxxxx_symbol
@@ -268,18 +267,18 @@ tdata_type;
 static void
 asxxxx_init (void)
 {
-  static bfd_boolean inited = FALSE;
+  static bool inited = false;
 
   if (! inited)
     {
-      inited = TRUE;
+      inited = true;
       hex_init ();
     }
 }
 
 /* Set up the asxxxx .rel tdata information.  */
 
-static bfd_boolean
+static bool
 asxxxx_mkobject (bfd *abfd)
 {
   tdata_type *tdata;
@@ -288,25 +287,31 @@ asxxxx_mkobject (bfd *abfd)
 
   tdata = (tdata_type *) bfd_zalloc (abfd, sizeof (tdata_type));
   if (tdata == NULL)
-    return FALSE;
+    return false;
 
   abfd->tdata.asxxxx_data = tdata;
 
-  return TRUE;
+  return true;
 }
 
 /* Read a byte from an asxxxx .rel file.  Set *ERRORPTR if an error
    occurred.  Return EOF on error or end of file.  */
 
 static int
-asxxxx_get_byte (bfd *abfd, bfd_boolean *errorptr)
+asxxxx_get_byte (bfd *abfd, bool *errorptr)
 {
   bfd_byte c;
 
   if (bfd_bread (&c, (bfd_size_type) 1, abfd) != 1)
     {
-      if (bfd_get_error () != bfd_error_file_truncated)
-        *errorptr = TRUE;
+      if (bfd_get_error () == bfd_error_invalid_operation){
+        // FEATURE? // this error is set at EOF
+        // BUG // caller expects no error
+      } else if (bfd_get_error () == bfd_error_file_truncated){
+         // possibly this error was set at EOF in binutils<2.38
+      } else {
+         *errorptr = true;
+      }
       return EOF;
     }
 
@@ -321,7 +326,7 @@ static void
 asxxxx_bad_byte (bfd *abfd,
                int c,
                unsigned int lineno,
-               bfd_boolean error)
+               bool error)
 {
   if (c == EOF)
     {
@@ -330,7 +335,7 @@ asxxxx_bad_byte (bfd *abfd,
     }
   else
     {
-      char buf[10];
+      char buf[16];
 
       if (! ISPRINT (c))
         sprintf (buf, "\\%03o", (unsigned int) c);
@@ -340,7 +345,7 @@ asxxxx_bad_byte (bfd *abfd,
           buf[1] = '\0';
         }
       (*_bfd_error_handler)
-        (_("%B:%d: Unexpected character `%s' in asxxxx .rel file\n"),
+        (_("%pB:%d: Unexpected character `%s' in asxxxx .rel file\n"),
          abfd, lineno, buf);
       bfd_set_error (bfd_error_bad_value);
     }
@@ -348,14 +353,14 @@ asxxxx_bad_byte (bfd *abfd,
 
 /* Add a new symbol found in an asxxxx .rel file.  */
 
-static bfd_boolean
+static bool
 asxxxx_new_symbol (bfd *abfd, const char *name, symvalue val, flagword flags, struct bfd_section *section)
 {
   struct asxxxx_symbol *n;
 
   n = (struct asxxxx_symbol *) bfd_alloc (abfd, sizeof (* n));
   if (n == NULL)
-    return FALSE;
+    return false;
 
   n->name = name;
   n->val = val;
@@ -371,7 +376,7 @@ asxxxx_new_symbol (bfd *abfd, const char *name, symvalue val, flagword flags, st
 
   ++abfd->symcount;
 
-  return TRUE;
+  return true;
 }
 
 /* Add a new section found in an asxxxx .rel file.  */
@@ -437,13 +442,13 @@ asxxxx_to_asection_flags(bfd *abfd, unsigned int flags, unsigned int sect_size)
   return sect_flags;
 }
 
-static bfd_boolean
+static bool
 asxxxx_new_section (bfd *abfd, const char *sect_name, unsigned int sect_size, unsigned int sect_flags, unsigned int sect_addr)
 {
   asection *sect;
 
   if ((sect = (asection *) bfd_zalloc (abfd, sizeof (*sect))) == NULL)
-    return FALSE;
+    return false;
 
   sect->name = sect_name;
   sect->id = sect->index = NEXT_SECT_ID(abfd);
@@ -460,29 +465,29 @@ asxxxx_new_section (bfd *abfd, const char *sect_name, unsigned int sect_size, un
     }
   abfd->tdata.asxxxx_data->secttail = sect;
 
-  return TRUE;
+  return true;
 }
 
 /* Read the asxxxx .rel file and turn it into sections.  We create a new
    section for each contiguous set of bytes.  */
 
-static bfd_boolean
-asxxxx_skip_spaces (bfd *abfd, int *p_c, unsigned int lineno, bfd_boolean *errorptr)
+static bool
+asxxxx_skip_spaces (bfd *abfd, int *p_c, unsigned int lineno, bool *errorptr)
 {
   if (! ISSPACE (*p_c))
     {
       asxxxx_bad_byte (abfd, *p_c, lineno, *errorptr);
-      return FALSE;
+      return false;
     }
 
   while (ISSPACE (*p_c = asxxxx_get_byte (abfd, errorptr)))
     ;
 
-  return TRUE;
+  return true;
 }
 
-static bfd_boolean
-asxxxx_skip_word (bfd *abfd, char *word, int *p_c, unsigned int lineno, bfd_boolean *errorptr)
+static bool
+asxxxx_skip_word (bfd *abfd, char *word, int *p_c, unsigned int lineno, bool *errorptr)
 {
   char *p;
 
@@ -495,15 +500,15 @@ asxxxx_skip_word (bfd *abfd, char *word, int *p_c, unsigned int lineno, bfd_bool
       else
         {
           asxxxx_bad_byte (abfd, *p_c, lineno, *errorptr);
-          return FALSE;
+          return false;
         }
     }
 
-  return TRUE;
+  return true;
 }
 
-static bfd_boolean
-asxxxx_get_word (bfd *abfd, char **p_word, int *p_c, unsigned int lineno, bfd_boolean *errorptr)
+static bool
+asxxxx_get_word (bfd *abfd, char **p_word, int *p_c, unsigned int lineno, bool *errorptr)
 {
   bfd_size_type alc;
   char *p, *symname;
@@ -551,7 +556,7 @@ asxxxx_get_word (bfd *abfd, char **p_word, int *p_c, unsigned int lineno, bfd_bo
 
   *p_word = symname;
 
-  return TRUE;
+  return true;
 
 error_return:
   if (symbuf != NULL)
@@ -559,11 +564,11 @@ error_return:
 
   *p_word = NULL;
 
-  return FALSE;
+  return false;
 }
 
-static bfd_boolean
-asxxxx_get_hex (bfd *abfd, unsigned int *p_val, int *p_c, unsigned int lineno, bfd_boolean *errorptr)
+static bool
+asxxxx_get_hex (bfd *abfd, unsigned int *p_val, int *p_c, unsigned int lineno, bool *errorptr)
 {
   *p_val = 0;
   while (ISHEX (*p_c))
@@ -575,31 +580,31 @@ asxxxx_get_hex (bfd *abfd, unsigned int *p_val, int *p_c, unsigned int lineno, b
   if (*p_c == EOF)
    {
      asxxxx_bad_byte (abfd, *p_c, lineno, *errorptr);
-     return FALSE;
+     return false;
    }
 
-  return TRUE;
+  return true;
 }
 
-static bfd_boolean
-asxxxx_get_eol (bfd *abfd, int *p_c, unsigned int *p_lineno, bfd_boolean *errorptr)
+static bool
+asxxxx_get_eol (bfd *abfd, int *p_c, unsigned int *p_lineno, bool *errorptr)
 {
   if (*p_c == '\n')
     {
       ++*p_lineno;
-      return TRUE;
+      return true;
     }
   else if (*p_c != '\r')
     {
       asxxxx_bad_byte (abfd, *p_c, *p_lineno, *errorptr);
-      return FALSE;
+      return false;
     }
 
-  return TRUE;
+  return true;
 }
 
-static bfd_boolean
-asxxxx_skip_line (bfd *abfd, int *p_c, unsigned int *p_lineno, bfd_boolean *errorptr)
+static bool
+asxxxx_skip_line (bfd *abfd, int *p_c, unsigned int *p_lineno, bool *errorptr)
 {
   while ((*p_c = asxxxx_get_byte (abfd, errorptr)) != EOF && *p_c != '\n' && *p_c != '\r')
     ;
@@ -639,11 +644,11 @@ asxxxx_set_cpu_type(bfd *abfd, const char *cpu_type)
   SET_CPU_TYPE (abfd, CPU_UNKNOWN);
 }
 
-static bfd_boolean
+static bool
 asxxxx_scan (bfd *abfd, unsigned int *p_lineno)
 {
   int c;
-  bfd_boolean error = FALSE;
+  bool error = false;
 
   bfd_set_error (bfd_error_file_truncated);
 
@@ -777,7 +782,7 @@ asxxxx_scan (bfd *abfd, unsigned int *p_lineno)
           {
             char *symname = NULL;
             unsigned int symval;
-            bfd_boolean is_def;
+            bool is_def;
 
             /* Starting a symbol definition.  */
             c = asxxxx_get_byte (abfd, &error);
@@ -819,19 +824,22 @@ asxxxx_scan (bfd *abfd, unsigned int *p_lineno)
   if (error)
     goto error_return;
 
-  return TRUE;
+  return true;
 
 error_return:
-  return FALSE;
+  return false;
 }
 
 /* Check whether an existing file is an asxxxx .rel file.  */
 
-static bfd_boolean
+static bool
 asxxxx_is_rel (bfd *abfd, unsigned int *p_lineno)
 {
   int c;
-  bfd_boolean error = FALSE;
+  bool error = false;
+
+__begin_check:
+  error = false;
 
   /* [XDQ][HL][234] */
   switch (c = asxxxx_get_byte (abfd, &error))
@@ -839,19 +847,19 @@ asxxxx_is_rel (bfd *abfd, unsigned int *p_lineno)
     default:
       /* unknown line */
       asxxxx_bad_byte (abfd, c, *p_lineno, error);
-      return FALSE;
+      return false;
 
     case ';':
       c = asxxxx_get_byte (abfd, &error);
 
       if (! asxxxx_skip_word (abfd, "!FILE ", &c, *p_lineno, &error))
         {
-          return FALSE;
+          return false;
         }
       /* eat the rest of line */
       if (! asxxxx_skip_line (abfd, &c, p_lineno, &error))
-        return FALSE;
-      break;
+        return false;
+      goto __begin_check;
 
     case 'X':
       SET_RADIX (abfd, RADIX_HEX);
@@ -866,7 +874,7 @@ asxxxx_is_rel (bfd *abfd, unsigned int *p_lineno)
         {
         default:
           asxxxx_bad_byte (abfd, c, *p_lineno, error);
-          return FALSE;
+          return false;
 
         case 'H':
           SET_ENDIAN (abfd, ENDIAN_BIG);
@@ -878,7 +886,7 @@ asxxxx_is_rel (bfd *abfd, unsigned int *p_lineno)
             {
             default:
               asxxxx_bad_byte (abfd, c, *p_lineno, error);
-              return FALSE;
+              return false;
 
             case '\n':
               ++*p_lineno;
@@ -898,7 +906,7 @@ asxxxx_is_rel (bfd *abfd, unsigned int *p_lineno)
             get_eol:
               c = asxxxx_get_byte (abfd, &error);
               if (! asxxxx_get_eol (abfd, &c, p_lineno, &error))
-                return FALSE;
+                return false;
               break;
             }
           break;
@@ -906,10 +914,19 @@ asxxxx_is_rel (bfd *abfd, unsigned int *p_lineno)
       break;
     }
 
-  return error ? FALSE : TRUE;
+  return error ? false : true;
 }
 
-static const bfd_target *
+static void asxxxx_cleanup(bfd *abfd)
+{
+	bfd_release (abfd, abfd->tdata.any);
+	abfd->tdata.any = NULL;
+}
+
+bfd_cleanup
+asxxxx_object_p (bfd *abfd);
+
+bfd_cleanup
 asxxxx_object_p (bfd *abfd)
 {
   void * tdata_save;
@@ -935,43 +952,43 @@ asxxxx_object_p (bfd *abfd)
   if (abfd->symcount > 0)
     abfd->flags |= HAS_SYMS;
 
-  return abfd->xvec;
+  return asxxxx_cleanup;
 }
 
 /* Get the contents of a section.  */
 
-static bfd_boolean
+static bool
 asxxxx_get_section_contents (bfd *abfd ATTRIBUTE_UNUSED,
                            asection *section ATTRIBUTE_UNUSED,
                            void * location ATTRIBUTE_UNUSED,
                            file_ptr offset ATTRIBUTE_UNUSED,
                            bfd_size_type count ATTRIBUTE_UNUSED)
 {
-  return FALSE;
+  return false;
 }
 
 /* Set the architecture.  We accept an unknown architecture here.  */
 
-static bfd_boolean
+static bool
 asxxxx_set_arch_mach (bfd *abfd, enum bfd_architecture arch, unsigned long mach)
 {
   if (arch != bfd_arch_unknown)
     return bfd_default_set_arch_mach (abfd, arch, mach);
 
   abfd->arch_info = & bfd_default_arch_struct;
-  return TRUE;
+  return true;
 }
 
 /* Set the contents of a section.  */
 
-static bfd_boolean
+static bool
 asxxxx_set_section_contents (bfd *abfd ATTRIBUTE_UNUSED,
                            sec_ptr section ATTRIBUTE_UNUSED,
                            const void * location ATTRIBUTE_UNUSED,
                            file_ptr offset ATTRIBUTE_UNUSED,
                            bfd_size_type bytes_to_do ATTRIBUTE_UNUSED)
 {
-  return FALSE;
+  return false;
 }
 
 static int
@@ -1037,6 +1054,8 @@ asxxxx_get_symbol_info (bfd *ignore_abfd ATTRIBUTE_UNUSED,
   bfd_symbol_info (symbol, ret);
 }
 
+#define asxxxx_get_symbol_version_string _bfd_nosymbols_get_symbol_version_string
+
 static void
 asxxxx_print_symbol (bfd *abfd,
                    void * afile,
@@ -1058,11 +1077,17 @@ asxxxx_print_symbol (bfd *abfd,
     }
 }
 
+static bool asxxxx_bfd_is_target_special_symbol(bfd * a, asymbol * b)
+{
+	(void) a;
+	(void) b;
+	return false;
+}
+
 #define asxxxx_find_line                            _bfd_nosymbols_find_line
 #define asxxxx_close_and_cleanup                    _bfd_generic_close_and_cleanup
 #define asxxxx_bfd_free_cached_info                 _bfd_generic_bfd_free_cached_info
 #define asxxxx_new_section_hook                     _bfd_generic_new_section_hook
-#define asxxxx_bfd_is_target_special_symbol         ((bfd_boolean (*) (bfd *, asymbol *)) bfd_false)
 #define asxxxx_bfd_is_local_label_name              bfd_generic_is_local_label_name
 #define asxxxx_get_lineno                           _bfd_nosymbols_get_lineno
 #define asxxxx_find_nearest_line                    _bfd_nosymbols_find_nearest_line
@@ -1088,6 +1113,8 @@ asxxxx_print_symbol (bfd *abfd,
 #define asxxxx_bfd_copy_link_hash_symbol_type       _bfd_generic_copy_link_hash_symbol_type
 #define asxxxx_bfd_final_link                       _bfd_generic_final_link
 #define asxxxx_bfd_link_split_section               _bfd_generic_link_split_section
+#define asxxxx_bfd_link_check_relocs                _bfd_generic_link_check_relocs
+#define asxxxx_bfd_define_start_stop                bfd_generic_define_start_stop
 
 const bfd_target asxxxx_vec =
 {
@@ -1104,6 +1131,7 @@ const bfd_target asxxxx_vec =
   '/',                          /* AR_pad_char.  */
   15,                           /* AR_max_namelen.  */
   1,                            /* match priority.  */
+  TARGET_KEEP_UNUSED_SECTION_SYMBOLS, /* keep unused section symbols.  */
   bfd_getb64, bfd_getb_signed_64, bfd_putb64,
   bfd_getb32, bfd_getb_signed_32, bfd_putb32,
   bfd_getb16, bfd_getb_signed_16, bfd_putb16,   /* Data.  */
@@ -1119,16 +1147,16 @@ const bfd_target asxxxx_vec =
     _bfd_dummy_target,          /* core */
   },
   {     /* Set the format of a file being written.  */
-    bfd_false,
+    false,
     asxxxx_mkobject,            /* object */
     _bfd_generic_mkarchive,     /* archive */
-    bfd_false,                  /* core */
+    false,                  /* core */
   },
   {     /* Write cached information into a file being written, at <<bfd_close>>.  */
-    bfd_false,
-    bfd_false, //    asxxxx_write_object_contents, /* object */
+    false,
+    false, /*    asxxxx_write_object_contents, object */
     _bfd_write_archive_contents,  /* archive */
-    bfd_false,                    /* core */
+    false,                    /* core */
   },
 
   BFD_JUMP_TABLE_GENERIC (asxxxx),

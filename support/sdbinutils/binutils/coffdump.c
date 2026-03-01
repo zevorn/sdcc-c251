@@ -1,5 +1,5 @@
 /* Coff file dumper.
-   Copyright (C) 1994-2014 Free Software Foundation, Inc.
+   Copyright (C) 1994-2022 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -26,7 +26,7 @@
 
 #include "sysdep.h"
 #include "bfd.h"
-#include "bfd_stdint.h"
+#include <stdint.h>
 #include "libiberty.h"
 #include "bucomm.h"
 
@@ -267,6 +267,7 @@ dump_coff_where (struct coff_where *p)
       break;
     case coff_where_strtag:
       printf ("STRTAG");
+      break;
     case coff_where_entag:
       printf ("ENTAG");
       break;
@@ -417,21 +418,23 @@ dump_coff_sfile (struct coff_sfile *p)
 static void
 dump_coff_section (struct coff_section *ptr)
 {
-  int i;
+  unsigned int i;
 
   tab (1);
-  printf (_("section %s %d %d address %x size %x number %d nrelocs %d"),
+  printf (_("section %s %d %d address %x size %x number %d nrelocs %u"),
 	  ptr->name, ptr->code, ptr->data, ptr->address,ptr->size,
 	  ptr->number, ptr->nrelocs);
   nl ();
 
   for (i = 0; i < ptr->nrelocs; i++)
     {
+      struct coff_reloc * r = ptr->relocs + i;
       tab (0);
       printf ("(%x %s %x)",
-	      ptr->relocs[i].offset,
-	      ptr->relocs[i].symbol->name,
-	      ptr->relocs[i].addend);
+	      r->offset,
+	      /* PR 17512: file: 0a38fb7c.  */
+	      r->symbol == NULL ? _("<no sym>") : r->symbol->name,
+	      r->addend);
       nl ();
     }
 
@@ -452,8 +455,6 @@ coff_dump (struct coff_ofile *ptr)
   for (i = 0; i < ptr->nsections; i++)
     dump_coff_section (ptr->sections + i);
 }
-
-char * program_name;
 
 static void
 show_usage (FILE *file, int status)
@@ -487,17 +488,16 @@ main (int ac, char **av)
       { NULL, no_argument, 0, 0 }
     };
 
-#if defined (HAVE_SETLOCALE) && defined (HAVE_LC_MESSAGES)
+#ifdef HAVE_LC_MESSAGES
   setlocale (LC_MESSAGES, "");
 #endif
-#if defined (HAVE_SETLOCALE)
   setlocale (LC_CTYPE, "");
-#endif
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
   program_name = av[0];
   xmalloc_set_program_name (program_name);
+  bfd_set_error_program_name (program_name);
 
   expandargv (&ac, &av);
 
@@ -549,9 +549,11 @@ main (int ac, char **av)
     }
 
   tree = coff_grok (abfd);
-
-  coff_dump (tree);
-  printf ("\n");
+  if (tree)
+    {
+      coff_dump (tree);
+      printf ("\n");
+    }
 
   return 0;
 }

@@ -11,6 +11,7 @@
 
 #include <string.h>
 
+#ifndef __SDCC_pdk14 // Lack of memory - see RFE #609
 struct a;
 
 extern int baz (struct a *restrict x);
@@ -36,16 +37,17 @@ void foo(void)
   struct b x;
   x.c.v = 0;
   x.c.w = 250000;
-// Not supported by sdcc yet!
-//  x.d = x.c;
-  memcpy(&x.d, &x.c, sizeof(struct a));
+  x.d = x.c;
   bar(0, &x, ((void *)0));
 }
+#endif
 
 void
 testTortureExecute (void)
 {
+#ifndef __SDCC_pdk14 // Lack of memory - see RFE #609
   foo();
   return;
+#endif
 }
 

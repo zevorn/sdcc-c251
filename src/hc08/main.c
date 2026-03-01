@@ -77,7 +77,8 @@ static char *_hc08_keywords[] =
 
 void hc08_assignRegisters (ebbIndex *);
 
-static int regParmFlg = 0;      /* determine if we can register a parameter */
+static int regParmFlg;      /* determine if we can register a parameter */
+static struct sym_link *regParmFuncType;
 
 static void
 _hc08_init (void)
@@ -97,11 +98,18 @@ static void
 _hc08_reset_regparm (struct sym_link *funcType)
 {
   regParmFlg = 0;
+  regParmFuncType = funcType;
 }
 
 static int
 _hc08_regparm (sym_link * l, bool reentrant)
 {
+  if (IFFUNC_HASVARARGS (regParmFuncType))
+    return 0;
+
+  if (IS_STRUCT (l))
+    return 0;
+
   int size = getSize(l);
 
   /* If they fit completely, the first two bytes of parameters can go */
@@ -134,22 +142,20 @@ _hc08_parseOptions (int *pargc, char **argv, int *i)
     {
       options.out_fmt = 'E';
       debugFile = &dwarf2DebugFile;
-      return TRUE;
+      return true;
     }
 
-  if (!strcmp (argv[*i], "--oldralloc"))
-    {
-      options.oldralloc = TRUE;
-      return TRUE;
-    }
-
-  return FALSE;
+  return false;
 }
+
+#define OPTION_SMALL_MODEL          "--model-small"
+#define OPTION_LARGE_MODEL          "--model-large"
 
 static OPTION _hc08_options[] =
   {
+    {0, OPTION_SMALL_MODEL, NULL, "8-bit address space for data"},
+    {0, OPTION_LARGE_MODEL, NULL, "16-bit address space for data (default)"},
     {0, "--out-fmt-elf", NULL, "Output executable in ELF format" },
-    {0, "--oldralloc", NULL, "Use old register allocator"},
     {0, NULL }
   };
 
@@ -194,24 +200,32 @@ _hc08_getRegName (const struct reg_info *reg)
 }
 
 static void
-_hc08_genAssemblerPreamble (FILE * of)
+_hc08_genAssemblerStart (FILE * of)
 {
   int i;
   int needOrg = 1;
   symbol *mainExists=newSymbol("main", 0);
   mainExists->block=0;
 
-  fprintf (of, "\t.area %s\n",HOME_NAME);
-  fprintf (of, "\t.area GSINIT0 (CODE)\n");
-  fprintf (of, "\t.area %s\n",port->mem.static_name);
-  fprintf (of, "\t.area %s\n",port->mem.post_static_name);
-  fprintf (of, "\t.area %s\n",CODE_NAME);
-  fprintf (of, "\t.area %s\n",port->mem.xinit_name);
-  fprintf (of, "\t.area %s\n",port->mem.const_name);
-  fprintf (of, "\t.area %s\n",port->mem.data_name);
-  fprintf (of, "\t.area %s\n",port->mem.overlay_name);
-  fprintf (of, "\t.area %s\n",port->mem.xdata_name);
-  fprintf (of, "\t.area %s\n",port->mem.xidata_name);
+  if (!options.noOptsdccInAsm)
+    fprintf (of, "\t.optsdcc -m%s\n", port->target);
+
+  if (TARGET_IS_S08)
+    fprintf (of, "\t.cs08\n");
+
+  fprintf (of, "\n");
+
+  tfprintf (of, "\t!area\n",HOME_NAME);
+  tfprintf (of, "\t.area GSINIT0 (CODE)\n");
+  tfprintf (of, "\t!area\n",STATIC_NAME);
+  tfprintf (of, "\t!area\n",GSFINAL_NAME);
+  tfprintf (of, "\t!area\n",CODE_NAME);
+  tfprintf (of, "\t!area\n",XINIT_NAME);
+  tfprintf (of, "\t!area\n",CONST_NAME);
+  tfprintf (of, "\t!area\n",DATA_NAME);
+  tfprintf (of, "\t!area\n",OVERLAY_NAME);
+  tfprintf (of, "\t!area\n",XDATA_NAME);
+  tfprintf (of, "\t!area\n",XIDATA_NAME);
 
   if ((mainExists=findSymWithLevel(SymbolTab, mainExists)))
     {
@@ -245,7 +259,7 @@ _hc08_genAssemblerPreamble (FILE * of)
         }
       else
         fprintf (of, "\trsp\n");
-      fprintf (of, "\tjsr\t__sdcc_external_startup\n");
+      fprintf (of, "\tjsr\t___sdcc_external_startup\n");
       fprintf (of, "\tbeq\t__sdcc_init_data\n");
       fprintf (of, "\tjmp\t__sdcc_program_startup\n");
       fprintf (of, "__sdcc_init_data:\n");
@@ -310,7 +324,7 @@ _hc08_genIVT (struct dbuf_s * oBuf, symbol ** interrupts, int maxInterrupts)
     }
   dbuf_printf (oBuf, "\t.dw\t%s", "__sdcc_gs_init_startup\n");
 
-  return TRUE;
+  return true;
 }
 
 /* Generate code to copy XINIT to XISEG */
@@ -347,18 +361,31 @@ static bool cseCostEstimation (iCode *ic, iCode *pdic)
 
 /* Indicate which extended bit operations this port supports */
 static bool
-hasExtBitOp (int op, int size)
+hasExtBitOp (int op, sym_link *left, int right)
 {
-  if (op == RRC
-      || op == RLC
-      || (op == SWAP && size <= 2)
-      || op == GETABIT
-      || op == GETBYTE
-      || op == GETWORD
-     )
-    return TRUE;
-  else
-    return FALSE;
+  switch (op)
+    {
+    case GETABIT:
+    case GETBYTE:
+    case GETWORD:
+      return true;
+    case ROT:
+      {
+        unsigned int lbits = bitsForType (left);
+        if (lbits % 8)
+          return false;
+        if (lbits == 8)
+          return true;
+        if (lbits > (unsigned)port->support.shift*8)
+          return false;
+        if (right % lbits  == 1 || right % lbits == lbits - 1)
+          return true;
+        if (lbits <= 16 && lbits == right * 2)
+          return true;
+      }
+      return false;
+    }
+  return false;
 }
 
 /* Indicate the expense of an access to an output storage class */
@@ -395,6 +422,17 @@ hc08_dwarfRegNum (const struct reg_info *reg)
     case SP_IDX: return 15;
     }
   return -1;
+}
+
+static bool
+_hasNativeMulFor (iCode *ic, sym_link *left, sym_link *right)
+{
+  wassert (ic->op == '*' || ic->op == '/' || ic->op == '%');
+
+  if (IS_BITINT (OP_SYM_TYPE (IC_RESULT(ic))) && SPEC_BITINTWIDTH (OP_SYM_TYPE (IC_RESULT(ic))) % 8)
+    return false;
+
+  return getSize (left) == 1 && getSize (right) == 1;
 }
 
 typedef struct asmLineNode
@@ -734,15 +772,22 @@ hc08_getInstructionSize (lineNode *line)
   return line->aln->size;
 }
 
+static const char *
+s08_get_model (void)
+{
+    return(options.stackAuto ? "s08-stack-auto" : "s08");
+}
+
 /** $1 is always the basename.
     $2 is always the output file.
     $3 varies
     $l is the list of extra options that should be there somewhere...
+    $L is the list of extra options that should be passed on the command line...
     MUST be terminated with a NULL.
 */
 static const char *_linkCmd[] =
 {
-  "sdld6808", "-nf", "$1", NULL
+  "sdld6808", "-nf", "$1", "$L", NULL
 };
 
 /* $3 is replaced by assembler.debug_opts resp. port->assembler.plain_opts */
@@ -763,7 +808,7 @@ PORT hc08_port =
   NULL,                         /* Processor name */
   {
     glue,
-    FALSE,                      /* Emit glue around main */
+    false,                      /* Emit glue around main */
     MODEL_SMALL | MODEL_LARGE,
     MODEL_LARGE,
     NULL,                       /* model == target */
@@ -791,11 +836,11 @@ PORT hc08_port =
     hc08_getInstructionSize,
   },
   {
-        /* Sizes: char, short, int, long, long long, ptr, fptr, gptr, bit, float, max */
-    1, 2, 2, 4, 8, 2, 2, 2, 1, 4, 4
+    /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, _BitInt (in bits) */
+    1, 2, 2, 4, 8, 2, 2, 2, 2, 0, 1, 4, 64
   },
   /* tags for generic pointers */
-  { 0x00, 0x40, 0x60, 0x80 },           /* far, near, xstack, code */
+  { 0x00, 0x00, 0x00, 0x00 },           /* far, near, xstack, code */
   {
     "XSEG",
     "STACK",
@@ -804,6 +849,7 @@ PORT hc08_port =
     NULL, /* "ISEG" */
     NULL, /* "PSEG" */
     "XSEG",
+    NULL,                // xconst_name
     NULL, /* "BSEG" */
     "RSEG    (ABS)",
     "GSINIT  (CODE)",
@@ -821,21 +867,23 @@ PORT hc08_port =
     NULL,
     NULL,
     1,
+    false,                // doesn't matter, as port has no __sfr anyway
     1                     // No fancy alignments supported.
   },
   { _hc08_genExtraAreas,
     NULL },
+  0,                      // ABI revision
   {
     -1,         /* direction (-1 = stack grows down) */
     0,          /* bank_overhead (switch between register banks) */
     4,          /* isr_overhead */
     2,          /* call_overhead */
     0,          /* reent_overhead */
-    0           /* banked_overhead (switch between code banks) */
+    0,          /* banked_overhead (switch between code banks) */
+    1           /* sp is offset by 1 from last item pushed */
   },
-    /* hc08 has an 8 bit mul */
   {
-    1, 5
+    5, false, false
   },
   {
     hc08_emitDebuggerSymbol,
@@ -867,9 +915,10 @@ PORT hc08_port =
   _hc08_setDefaultOptions,
   hc08_assignRegisters,
   _hc08_getRegName,
+  0,
   NULL,
   _hc08_keywords,
-  _hc08_genAssemblerPreamble,
+  _hc08_genAssemblerStart,
   _hc08_genAssemblerEnd,        /* no genAssemblerEnd */
   _hc08_genIVT,
   _hc08_genXINIT,
@@ -878,21 +927,23 @@ PORT hc08_port =
   _hc08_regparm,
   NULL,                         /* process_pragma */
   NULL,                         /* getMangledFunctionName */
-  NULL,                         /* hasNativeMulFor */
+  _hasNativeMulFor,             /* hasNativeMulFor */
   hasExtBitOp,                  /* hasExtBitOp */
   oclsExpense,                  /* oclsExpense */
-  TRUE,                         /* use_dw_for_init */
-  FALSE,                        /* little_endian */
+  true,                         /* use_dw_for_init */
+  false,                        /* little_endian */
   0,                            /* leave lt */
   0,                            /* leave gt */
   1,                            /* transform <= to ! > */
   1,                            /* transform >= to ! < */
   1,                            /* transform != to !(a == b) */
   0,                            /* leave == */
-  FALSE,                        /* No array initializer support. */
+  false,                        /* No array initializer support. */
   cseCostEstimation,
-  NULL,                         /* no builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  "",                           // no builtin functions
+  GPOINTER,                     // treat unqualified pointers as "generic" pointers
+  true,
+  false,
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   3,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -907,10 +958,10 @@ PORT s08_port =
   NULL,                         /* Processor name */
   {
     glue,
-    FALSE,                      /* Emit glue around main */
+    false,                      /* Emit glue around main */
     MODEL_SMALL | MODEL_LARGE,
     MODEL_LARGE,
-    NULL,                       /* model == target */
+    s08_get_model,
   },
   {
     _asmCmd,
@@ -935,11 +986,11 @@ PORT s08_port =
     hc08_getInstructionSize,
   },
   {
-        /* Sizes: char, short, int, long, long long, ptr, fptr, gptr, bit, float, max */
-    1, 2, 2, 4, 8, 2, 2, 2, 1, 4, 4
+    /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, _BitInt (in bits) */
+    1, 2, 2, 4, 8, 2, 2, 2, 2, 0, 1, 4, 64
   },
   /* tags for generic pointers */
-  { 0x00, 0x40, 0x60, 0x80 },           /* far, near, xstack, code */
+  { 0x00, 0x00, 0x00, 0x00 },           /* far, near, xstack, code */
   {
     "XSEG",
     "STACK",
@@ -948,6 +999,7 @@ PORT s08_port =
     NULL, /* "ISEG" */
     NULL, /* "PSEG" */
     "XSEG",
+    NULL,                // xconst_name
     NULL, /* "BSEG" */
     "RSEG    (ABS)",
     "GSINIT  (CODE)",
@@ -965,21 +1017,23 @@ PORT s08_port =
     NULL,
     NULL,
     1,
+    false,                // doesn't matter, as port has no __sfr anyway
     1                     // No fancy alignments supported.
   },
   { _hc08_genExtraAreas,
     NULL },
+  0,
   {
     -1,         /* direction (-1 = stack grows down) */
     0,          /* bank_overhead (switch between register banks) */
     4,          /* isr_overhead */
     2,          /* call_overhead */
     0,          /* reent_overhead */
-    0           /* banked_overhead (switch between code banks) */
+    0,          /* banked_overhead (switch between code banks) */
+    1           /* sp is offset by 1 from last item pushed */
   },
-    /* hc08 has an 8 bit mul */
   {
-    1, 5
+    5, false, false
   },
   {
     hc08_emitDebuggerSymbol,
@@ -1011,9 +1065,10 @@ PORT s08_port =
   _hc08_setDefaultOptions,
   hc08_assignRegisters,
   _hc08_getRegName,
+  0,
   NULL,
   _hc08_keywords,
-  _hc08_genAssemblerPreamble,
+  _hc08_genAssemblerStart,
   _hc08_genAssemblerEnd,        /* no genAssemblerEnd */
   _hc08_genIVT,
   _hc08_genXINIT,
@@ -1022,21 +1077,23 @@ PORT s08_port =
   _hc08_regparm,
   NULL,                         /* process_pragma */
   NULL,                         /* getMangledFunctionName */
-  NULL,                         /* hasNativeMulFor */
+  _hasNativeMulFor,             /* hasNativeMulFor */
   hasExtBitOp,                  /* hasExtBitOp */
   oclsExpense,                  /* oclsExpense */
-  TRUE,                         /* use_dw_for_init */
-  FALSE,                        /* little_endian */
+  true,                         /* use_dw_for_init */
+  false,                        /* little_endian */
   0,                            /* leave lt */
   0,                            /* leave gt */
   1,                            /* transform <= to ! > */
   1,                            /* transform >= to ! < */
   1,                            /* transform != to !(a == b) */
   0,                            /* leave == */
-  FALSE,                        /* No array initializer support. */
+  false,                        /* No array initializer support. */
   cseCostEstimation,
-  NULL,                         /* no builtin functions */
-  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  "",                           // no builtin functions
+  GPOINTER,                     // treat unqualified pointers as "generic" pointers
+  true,
+  false,
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   3,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

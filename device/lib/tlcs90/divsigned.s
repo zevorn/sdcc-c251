@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
 ;  divsigned.s
 ;
-;  Copyright (C) 2000-2010, Michael Hope, Philipp Klaus Krause
+;  Copyright (C) 2000-2021, Michael Hope, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -32,23 +32,21 @@
 .globl	__divschar
 
 __divsint:
-        ld	hl, 2 (sp)
-        ld	de, 4 (sp)
+        pop     iy
+        pop     de
 
-        jp      __div16
+	call	__div16
+
+	jp	(iy)
 
 __divschar:
-        ld      hl, #2+1
-        add     hl, sp
-
-        ld      e, (hl)
-        dec     hl
-        ld      l, (hl)
+	ld	e, l
+	ld	l, a
 
 __div8::
         ld      a, l            ; Sign extend
         rlca
-        sbc     a, a
+        sbc     a,a
         ld      h, a
 __div_signexte::
         ld      a, e            ; Sign extend
@@ -82,7 +80,7 @@ __div16::
         ; Take absolute value of dividend
         rla
         jr      NC, .chkde      ; Jump if dividend is positive
-        sub     a, a            ; Substract dividend from 0
+        sub     a, a            ; Subtract dividend from 0
         sub     a, l
         ld      l, a
         sbc     a, a            ; Propagate borrow (A=0xFF if borrow)

@@ -35,11 +35,13 @@ i, UINT8 x, UINT8 y)
 void
 testBug156270(void)
 {
+#ifndef __SDCC_pdk14 // Lack of memory
   S_GAMES_SI_BLOCK_STRUCT b[9];
   s_Games_SI_BlockInit(b, 0, 1, 1);
   ASSERT(b[1].x == 1); /* 1596270 */
   ASSERT(b[1].y == 0); /* 1596270 */
   ASSERT(b[2].x == 2); /* 1596270 */
   ASSERT(b[2].y == 0); /* 1736867 */
+#endif
 }
 

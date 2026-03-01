@@ -200,7 +200,7 @@ not_negative:
 
 #else  // _MODSINT_ASM_
 
-int _modsint (int a, int b)
+int _modsint (int a, int b) __SDCC_NONBANKED
 {
   register int r;
 

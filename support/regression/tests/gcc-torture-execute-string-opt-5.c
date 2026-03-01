@@ -25,9 +25,11 @@ char buf [24];
 void
 testTortureExecute (void)
 {
-#ifndef __SDCC_pic16
+#if !defined(__SDCC_pic16) && !defined(__SDCC_pdk14) // Lack of memory
   const char *const foo = "hello world";
+#if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
   char dst [64];
+#endif
 
   if (strlen (bar) != 8)
     ASSERT (0);
@@ -69,6 +71,7 @@ testTortureExecute (void)
     ASSERT (0);
   if (x != 6 || y != 0)
     ASSERT (0);
+#if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
   dst[5] = ' ';
   dst[6] = '\0';
   x = 5;
@@ -110,5 +113,6 @@ testTortureExecute (void)
     ASSERT (0);
 
   return;
+#endif
 #endif
 }

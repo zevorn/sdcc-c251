@@ -1,14 +1,15 @@
 # Regression test specification for the pic14 target running with gpsim
 
-# simulation timeout in seconds
-SIM_TIMEOUT = 25
-
 # path to gpsim
 ifdef GPSIM_PATH
-  GPSIM := $(WINE) $(GPSIM_PATH)/gpsim$(EXEEXT)
+  GPSIM = $(GPSIM_PATH)/gpsim$(EXEEXT)
 else
-  GPSIM := $(WINE) gpsim$(EXEEXT)
+  GPSIM = gpsim$(EXEEXT)
 endif
+
+EMU_INPUT = $(PORTS_DIR)/$(PORT_BASE)/gpsim.cmd
+EMU_FLAGS = -i -c
+EMU = ${WINE} ${GPSIM}
 
 ifndef SDCC_BIN_PATH
   ifndef CROSSCOMPILING
@@ -25,7 +26,7 @@ ifdef CROSSCOMPILING
   SDCCFLAGS += -I$(top_srcdir)
 endif
 
-SDCCFLAGS += -mpic14 -pp16f877 --less-pedantic -Wl,-q -DREENTRANT=__reentrant
+SDCCFLAGS += -mpic14 -pp16f877 --less-pedantic
 SDCCFLAGS += --no-warn-non-free
 LINKFLAGS += libsdcc.lib libm.lib
 
@@ -48,13 +49,5 @@ $(PORT_CASES_DIR)/%$(OBJEXT): $(PORTS_DIR)/$(PORT)/%.c
 
 $(PORT_CASES_DIR)/%$(OBJEXT): fwk/lib/%.c
 	$(SDCC) $(SDCCFLAGS) -c $< -o $@
-
-# run simulator with SIM_TIMEOUT seconds timeout
-%.out: %$(BINEXT) $(CASES_DIR)/timeout
-	mkdir -p $(dir $@)
-	-$(CASES_DIR)/timeout $(SIM_TIMEOUT) $(GPSIM) -i -s $< -c $(PORTS_DIR)/pic14/gpsim.cmd > $@ || \
-	  echo -e --- FAIL: \"timeout, simulation killed\" in $(<:$(BINEXT)=.c)"\n"--- Summary: 1/1/1: timeout >> $@
-	$(PYTHON) $(srcdir)/get_ticks.py < $@ >> $@
-	-grep -n FAIL $@ /dev/null || true
 
 _clean:

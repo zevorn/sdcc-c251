@@ -5,14 +5,14 @@ include $(top_builddir)/Makefile.common
 clean:
 	rm -f *core *[%~] *.[oa]
 	rm -f .[a-z]*~
-	rm -f *.dep
+	rm -f *.dep *.depcc *.depcxx
 	rm -rf obj
 
 
 # Deleting all files created by configuring or building the program
 # -----------------------------------------------------------------
 distclean: clean
-	rm -f Makefile *.dep Makefile asxxxx_config.h
+	rm -f Makefile *.dep Makefile
 
 
 # Like clean but some files may still exist

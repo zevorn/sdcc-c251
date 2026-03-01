@@ -4,10 +4,15 @@
 
 #include <testfwk.h>
 
+#pragma disable_warning 283
+
+#pragma disable_warning 346 // Expected warning, since we dereference invalid pointers (but that is UB onlyif actually executed at runtime, it shouldn't crash the compiler)
+
 typedef unsigned short u16;
 
 static u16 vn[20];
 
+#ifndef __SDCC_pdk14 // Lack of memory
 #ifndef __SDCC_pic16
 void crash1()
 {
@@ -31,7 +36,9 @@ void crash2()
   vn[0] = v[0] >> s;
 }
 #endif
+#endif
 
 void testBug(void)
 {
 }
+

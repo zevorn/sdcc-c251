@@ -3,9 +3,11 @@
  */
 
 #include <testfwk.h>
+#if !defined(__SDCC_pic14) // Unimplemented setjmp
 #include <setjmp.h>
+#endif
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_z80) || defined(__PORT_HOST)
+#if defined(__SDCC_mcs51) || defined(__SDCC_z80) || defined(__SDCC_z80n) || defined(__PORT_HOST)
 
 jmp_buf b;
 
@@ -54,7 +56,7 @@ int bug(void)
 
 void testBug (void)
 {
-#if defined(__SDCC_mcs51) || defined(__SDCC_z80) || defined(__PORT_HOST)
+#if defined(__SDCC_mcs51) || defined(__SDCC_z80) || defined(__SDCC_z80n) || defined(__PORT_HOST)
 	if (setjmp (b))
 	{
 		ASSERT (j == 42);

@@ -10,6 +10,10 @@
 #include <ctype.h>
 #include <stdio.h>
 
+#ifndef __STDC_VERSION__
+  #warning __STDC_VERSION__ not defined
+#endif
+
 void testCtype (void)
 {
   char c = 'a';
@@ -46,6 +50,8 @@ void testCtype (void)
   ASSERT (isxdigit ('F'));
   ASSERT (!isxdigit ('Z'));
 
+#ifndef __SDCC_pdk14 // Lack of memory
+#if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
   c = 'A';
   d = '0';
 
@@ -55,5 +61,7 @@ void testCtype (void)
 
   ASSERT (tolower (EOF) == EOF);
   ASSERT (toupper (EOF) == EOF);
+#endif
+#endif
 }
 

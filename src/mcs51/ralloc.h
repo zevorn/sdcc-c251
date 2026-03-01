@@ -33,8 +33,7 @@ enum
   R3_IDX, R2_IDX, R1_IDX, R0_IDX,
   B0_IDX, B1_IDX, B2_IDX, B3_IDX,
   B4_IDX, B5_IDX, B6_IDX, B7_IDX,
-  X8_IDX, X9_IDX, X10_IDX, X11_IDX,
-  X12_IDX, CND_IDX,
+  CND_IDX,
   DPL_IDX, DPH_IDX, B_IDX, A_IDX,
   END_IDX
 };
@@ -48,7 +47,7 @@ enum
 typedef struct reg_info
 {
   short type;                   /* can have value
-                                   REG_GPR, REG_PTR or REG_CND */
+                                   REG_GPR, REG_BIT, REG_PTR or REG_CND */
   short rIdx;                   /* index into register table */
   short otype;
   char *name;                   /* name */
@@ -77,5 +76,18 @@ bitVect *mcs51_allBankregs (void);
 
 extern int mcs51_ptrRegReq;
 extern int mcs51_nRegs;
+
+
+/* reverse lookup register mnemonic to ?_IDX enum.
+
+   { "r7", "r6", ... } -> { R7_IDX, R6_IDX, ... }
+   { "ar7", "ar6", ... } -> { R7_IDX, R6_IDX, ... }
+
+   if the input 'name' contains a pair of insn operands (separated by comma)
+   then the first operand will be matched.
+
+   returns -1 if not found.  */
+int mcs51_regname_to_idx (const char* name);
+
 
 #endif

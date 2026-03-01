@@ -27,16 +27,19 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#ifndef _STDINT_H
-#define _STDINT_H       1
+#ifndef __STDC_VERSION_STDINT_H__
+#define __STDC_VERSION_STDINT_H__ __STDC_VERSION__
 
 /* Exact integral types.  */
 
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_ds400) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
+#if !defined(__SDCC_pic14)
 #if __STDC_VERSION__ >= 199901L
 #define __SDCC_LONGLONG
 #endif
 #endif
+
+#ifndef __SPECIFIED_WIDTH_INTEGER_TYPES_DEFINED
+#define __SPECIFIED_WIDTH_INTEGER_TYPES_DEFINED
 
 /* Signed.  */
 
@@ -90,6 +93,8 @@ typedef unsigned long int       uint_fast32_t;
 #ifdef __SDCC_LONGLONG
 typedef unsigned long long int  uint_fast64_t;
 #endif
+
+#endif // __SPECIFIED_WIDTH_INTEGER_TYPES_DEFINED
 
 /* Types for `void *' pointers.  */
 #if defined (__SDCC_mcs51) || defined (__SDCC_ds390)
@@ -196,13 +201,25 @@ typedef unsigned long long int  uintmax_t;
 #endif
 
 /* Minimum for largest signed integral type.  */
-#define INTMAX_MIN             (-__INT32_C(-2147483647L)-1)
+#ifndef __SDCC_LONGLONG
+#define INTMAX_MIN             (-2147483647L-1)
+#else
+#define INTMAX_MIN             (-9223372036854775807LL-1)
+#endif
+
 /* Maximum for largest signed integral type.  */
-#define INTMAX_MAX             (__INT32_C(2147483647L))
+#ifndef __SDCC_LONGLONG
+#define INTMAX_MAX             (2147483647L)
+#else
+#define INTMAX_MAX             (9223372036854775807LL)
+#endif
 
 /* Maximum for largest unsigned integral type.  */
-#define UINTMAX_MAX            (__UINT32_C(4294967295UL))
-
+#ifndef __SDCC_LONGLONG
+#define UINTMAX_MAX            (4294967295UL)
+#else
+#define UINTMAX_MAX            (18446744073709551615ULL)
+#endif
 
 /* Limits of other integer types.  */
 
@@ -214,6 +231,10 @@ typedef unsigned long long int  uintmax_t;
 #define PTRDIFF_MIN           (-32767-1)
 #define PTRDIFF_MAX           (32767)
 #endif
+
+/* */
+#define SIG_ATOMIC_MIN        (0)
+#define SIG_ATOMIC_MAX        (255)
 
 /* Limit of `size_t' type.  */
 #define SIZE_MAX               (65535u)
@@ -234,11 +255,11 @@ typedef unsigned long long int  uintmax_t;
 #define UINT64_C(c)    c ## ULL
 #endif
 
-#define WCHAR_MIN      CHAR_MIN
-#define WCHAR_MAX      CHAR_MAX
+#define WCHAR_MIN      0
+#define WCHAR_MAX      0xffffffff
 
-#define WINT_MIN       INT_MIN
-#define WINT_MAX       INT_MAX
+#define WINT_MIN       0
+#define WINT_MAX       0xffffffff
 
 /* Maximal type.  */
 #ifdef __SDCC_LONGLONG

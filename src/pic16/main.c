@@ -83,13 +83,8 @@ static char *_pic16_keywords[] =
 pic16_sectioninfo_t pic16_sectioninfo;
 int has_xinst_config = 0;
 
-extern char *pic16_processor_base_name(void);
-
-void pic16_pCodeInitRegisters(void);
-
-void pic16_assignRegisters (ebbIndex *);
-
 static int regParmFlg = 0;  /* determine if we can register a parameter */
+static struct sym_link *regParmFuncType;
 
 pic16_options_t pic16_options;
 pic16_config_options_t *pic16_config_options;
@@ -119,11 +114,15 @@ static void
 _pic16_reset_regparm (struct sym_link *funcType)
 {
   regParmFlg = 0;
+  regParmFuncType = funcType;
 }
 
 static int
 _pic16_regparm (sym_link * l, bool reentrant)
 {
+  if (IFFUNC_HASVARARGS (regParmFuncType))
+    return 0;
+
   /* force all parameters via SEND/RECEIVE */
   if(0 /*pic16_options.ip_stack*/) {
     /* for this processor it is simple
@@ -249,11 +248,11 @@ do_pragma (int id, const char *name, const char *cp)
         addSet (&pic16_fix_udata, reg);
 
         sym = newSymbol ("stack", 0);
-        sprintf (sym->rname, "_%s", sym->name);
+        SNPRINTF(sym->rname, sizeof(sym->rname), "_%s", sym->name);
         addSet (&publics, sym);
 
         sym = newSymbol ("stack_end", 0);
-        sprintf (sym->rname, "_%s", sym->name);
+        SNPRINTF(sym->rname, sizeof(sym->rname), "_%s", sym->name);
         addSet (&publics, sym);
 
         initsfpnt = 1;    // force glue() to initialize stack/frame pointers */
@@ -269,8 +268,8 @@ do_pragma (int id, const char *name, const char *cp)
         if (TOKEN_STR != token.type)
           goto code_err;
 
-        absS = Safe_calloc (1, sizeof (absSym));
-        sprintf (absS->name, "_%s", get_pragma_string (&token));
+        absS = Safe_alloc(sizeof(absSym));
+        SNPRINTF(absS->name, sizeof(absS->name), "_%s", get_pragma_string(&token));
 
         cp = get_pragma_token (cp, &token);
         if (TOKEN_INT != token.type)
@@ -332,9 +331,11 @@ do_pragma (int id, const char *name, const char *cp)
 
         while (symname)
           {
-            ssym = Safe_calloc (1, sizeof (sectSym));
-            ssym->name = Safe_calloc (1, strlen (symname) + 2);
-            sprintf (ssym->name, "%s%s", port->fun_prefix, symname);
+            size_t len = strlen(symname) + 2;
+
+            ssym = Safe_alloc(sizeof(sectSym));
+            ssym->name = Safe_alloc(len);
+            SNPRINTF(ssym->name, len, "%s%s", port->fun_prefix, symname);
             ssym->reg = NULL;
 
             addSet (&sectSyms, ssym);
@@ -358,7 +359,7 @@ do_pragma (int id, const char *name, const char *cp)
 
             if(!found)
               {
-                snam = Safe_calloc (1, sizeof (sectName));
+                snam = Safe_alloc(sizeof(sectName));
                 snam->name = Safe_strdup (sectname);
                 snam->regsSet = NULL;
 
@@ -978,7 +979,7 @@ _pic16_setDefaultOptions (void)
   pic16_options.ivt_loc = 0x000000;
   pic16_options.nodefaultlibs = 0;
   pic16_options.dumpcalltree = 0;
-  pic16_options.crt_name = "crt0i.o";       /* the default crt to link */
+  pic16_options.crt_name = "crt0iz.o";       /* the default crt to link */
   pic16_options.no_crt = 0;         /* use crt by default */
   pic16_options.ip_stack = 1;       /* set to 1 to enable ipop/ipush for stack */
   pic16_options.gstack = 0;
@@ -1007,9 +1008,9 @@ _pic16_mangleFunctionName (const char *sz)
 
 
 static void
-_pic16_genAssemblerPreamble (FILE * of)
+_pic16_genAssemblerStart (FILE * of)
 {
-  char *name = pic16_processor_base_name();
+  const char *name = pic16_processor_base_name();
 
   if (!name)
     {
@@ -1228,16 +1229,11 @@ static bool cseCostEstimation (iCode *ic, iCode *pdic)
 
 /* Indicate which extended bit operations this port supports */
 static bool
-hasExtBitOp (int op, int size)
+hasExtBitOp (int op, sym_link *left, int right)
 {
-  if (op == RRC
-      || op == RLC
-      || op == GETABIT
-      /* || op == GETHBIT */ /* GETHBIT doesn't look complete for PIC */
-     )
-    return TRUE;
-  else
-    return FALSE;
+  unsigned int lbits = bitsForType (left);
+  return (op == ROT && ((right & lbits) == 1 || (right % lbits) == lbits - 1) ||
+    op == GETABIT);
 }
 
 /* Indicate the expense of an access to an output storage class */
@@ -1315,12 +1311,14 @@ PORT pic16_port =
     2,      /* int */
     4,      /* long */
     8,      /* long long */
-    2,      /* ptr */
-    3,      /* fptr, far pointers (see Microchip) */
+    2,      /* near ptr */
+    3,      /* far ptr, far pointers (see Microchip) */
     3,      /* gptr */
+    3,      /* func ptr */
+    3,      /* banked func ptr */
     1,      /* bit */
     4,      /* float */
-    4       /* max */
+    0,      /* _BitInt (in bits) */
   },
 
     /* generic pointer tags */
@@ -1339,6 +1337,7 @@ PORT pic16_port =
     "ISEG    (DATA)",       // idata
     "PSEG    (DATA)",       // pdata
     "XSEG    (XDATA)",      // xdata
+    NULL,                   // xconst_name
     "BSEG    (BIT)",        // bit
     "RSEG    (DATA)",       // reg
     "GSINIT  (CODE)",       // static
@@ -1356,12 +1355,14 @@ PORT pic16_port =
     NULL,                   // default location for auto vars
     NULL,                   // default location for global vars
     1,                      // code is read only 1=yes
+    true,                  // unqualified pointer can point to __sfr: TODO: CHECK IF THIS IS ACTUALLY SUPPORTED. Set to true to emulate behaviour of rpevious version of sdcc for now.
     1                       // No fancy alignments supported.
   },
   {
     NULL,       /* genExtraAreaDeclaration */
     NULL        /* genExatrAreaLinkOptions */
   },
+  0,            /* ABI revision */
   {
     /* stack related information */
     -1,         /* -1 stack grows downwards, +1 upwards */
@@ -1369,11 +1370,11 @@ PORT pic16_port =
     4,          /* extra overhead when the function is an ISR */
     1,          /* extra overhead for a function call */
     1,          /* re-entrant space */
-    0           /* 'banked' call overhead, mild overlap with bank_overhead */
+    0,          /* 'banked' call overhead, mild overlap with bank_overhead */
+    1           /* sp is offset by 1 from last item pushed */
   },
-    /* pic16 has an 8 bit mul */
   {
-     0, -1
+    -1, false, false         // Neither int x int -> long nor unsigned long x unsigned char -> unsigned long long multiplication support routine.
   },
   {
     pic16_emitDebuggerSymbol
@@ -1397,9 +1398,10 @@ PORT pic16_port =
   _pic16_setDefaultOptions,
   pic16_assignRegisters,
   _pic16_getRegName,
+  0,
   NULL,
   _pic16_keywords,
-  _pic16_genAssemblerPreamble,
+  _pic16_genAssemblerStart,
   NULL,             /* no genAssemblerEnd */
   _pic16_genIVT,
   NULL, // _pic16_genXINIT
@@ -1420,9 +1422,11 @@ PORT pic16_port =
   1,                /* transform != to !(a == b) */
   0,                /* leave == */
   FALSE,            /* No array initializer support. */
-  0,    //cseCostEstimation,            /* !!!no CSE cost estimation yet */
-  NULL,             /* no builtin functions */
+  0,                //cseCostEstimation,            /* !!!no CSE cost estimation yet */
+  "",               // no builtin functions
   GPOINTER,         /* treat unqualified pointers as "generic" pointers */
+  true,
+  false,
   1,                /* reset labelKey to 1 */
   1,                /* globals & local static allowed */
   0,                /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

@@ -21,6 +21,8 @@
 #ifndef STM8GEN_H
 #define STM8GEN_H 1
 
+#include "ralloc.h"
+
 typedef enum
 {
   AOP_INVALID,
@@ -32,6 +34,8 @@ typedef enum
   AOP_REGSTK,
   /* Is on the stack */
   AOP_STK,
+  /* Is a stack location */
+  AOP_STL,
   /* Is an immediate value */
   AOP_IMMD,
   /* Is in direct space */
@@ -43,7 +47,7 @@ typedef enum
 }
 AOP_TYPE;
 
-/* asmop_byte: A y type for the space a single byte
+/* asmop_byte: A type for the location a single byte
    of an operand can be in */
 typedef struct asmop_byte
 {
@@ -64,16 +68,31 @@ typedef struct asmop
   union
   {
     value *aop_lit;
-    char *aop_immd;
+    struct
+      {
+        char *immd;
+        int immd_off;
+      };
+    int stk_off;
     char *aop_dir;
     asmop_byte bytes[8];
   } aopu;
   signed char regs[6]; // Byte of this aop that is in the register. -1 if no byte of this aop is in the reg.
+  struct valinfo valinfo;
 }
 asmop;
 
 void genSTM8Code (iCode *);
 void stm8_emitDebuggerSymbol (const char *);
+
+bool stm8IsReturned(const char *what);
+
+// Check if what is part of the ith argument (counting from 1) to a function of type ftype.
+// If what is 0, just check if the ith argument is in registers.
+bool stm8IsRegArg(struct sym_link *ftype, int i, const char *what);
+
+// Check if what is part of the any argument (counting from 1) to a function of type ftype.
+bool stm8IsParmInCall(sym_link *ftype, const char *what);
 
 extern bool stm8_assignment_optimal;
 extern long int stm8_call_stack_size;

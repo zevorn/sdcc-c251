@@ -67,60 +67,60 @@ int a=1;	/* ERROR */
 #define AT(x)
 #endif
 
-#if defined(__z80) || defined(__gbz80)
-#define XDATA
-#define DATA
-#else
+#if defined(__has_xdata)
 #define XDATA __xdata
 #define DATA __data
+#else
+#define XDATA
+#define DATA
 #endif
 
 #ifdef TEST9
-#ifdef SDCC
+#ifdef __SDCC
 XDATA int a;	/* IGNORE */
-DATA int a;	/* ERROR(SDCC && !(__z80 || __gbz80)) */
+DATA int a;	/* IGNORE(SDCC && __has_xdata) */ // Should be error, see bug #2735.
 #endif
 #endif
 
 #ifdef TEST9b
-#ifdef SDCC
+#ifdef __SDCC
 DATA int a;	/* IGNORE */
-XDATA int a;	/* ERROR(SDCC && !(__z80 || __gbz80)) */
+XDATA int a;	/* ERROR(SDCC && __has_xdata) */
 #endif
 #endif
 
 #ifdef TEST9c
-#ifdef SDCC
+#ifdef __SDCC
 extern DATA int a;
 DATA int a;
 #endif
 #endif
 
 #ifdef TEST9d
-#ifdef SDCC
+#ifdef __SDCC
 extern XDATA int a;
 XDATA int a;
 #endif
 #endif
 
 #ifdef TEST9e
-#ifdef SDCC
+#ifdef __SDCC
 extern XDATA int a; /* IGNORE */
-DATA int a;	/* ERROR(SDCC && !(__z80 || __gbz80)) */
+DATA int a;	/* ERROR(SDCC && __has_xdata) */
 #endif
 #endif
 
 #ifdef TEST9f
-#ifdef SDCC
+#ifdef __SDCC
 extern DATA int a; /* IGNORE */
-XDATA int a;	/* ERROR(SDCC && !(__z80 || __gbz80)) */
+XDATA int a;	/* ERROR(SDCC && __has_xdata) */
 #endif
 #endif
 
 #ifdef TEST10
-#if defined(SDCC) && !(defined(__z80) || defined(__gbz80))
+#if defined(__SDCC) && defined(__has_xdata)
 extern volatile XDATA AT(0) int a; /* IGNORE */
-volatile XDATA int a;	/* ERROR(SDCC && !(__z80 || __gbz80)) */
+volatile XDATA int a;	/* ERROR(SDCC && __has_xdata) */
 #endif
 #endif
 

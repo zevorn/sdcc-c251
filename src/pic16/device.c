@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------------------
-  device.c - Accomodates subtle variations in PIC16 devices
+  device.c - Accommodates subtle variations in PIC16 devices
 
   Copyright (C) 2000, Scott Dattalo scott@dattalo.com
   PIC16 port:
@@ -433,7 +433,7 @@ pic16_dump_int_registers (FILE *of, set *section)
 
 /**
  * Find the device structure for the named device.
- * Consider usind pic16_find_device() instead!
+ * Consider using pic16_find_device() instead!
  *
  * @param   name
  *      a name for the desired device
@@ -669,7 +669,7 @@ pic16_find_device(const char *name)
                 }
               else
                 {
-                  d = Safe_calloc(1, sizeof(PIC16_device));
+                  d = Safe_alloc(sizeof(PIC16_device));
 
                   // { "p18f452", "18f452", "pic18f452", "f452" }
                   buffer[0] = 'p';
@@ -818,8 +818,7 @@ pic16_find_device(const char *name)
           else if (0 == strcmp(key, "XINST"))
             {
               // XINST %<supported>i
-              res = sscanf(&line[1 + strlen(key)], " %i",
-                           &val[0]);
+              res = sscanf(&line[1 + strlen(key)], " %i", &val[0]);
               if (res < 1)
                 {
                   SYNTAX("<supported> (e.g., 1) expected.");
@@ -889,9 +888,9 @@ void pic16_init_pic(const char *pic_type)
 /*-----------------------------------------------------------------*
  *  char *pic16_processor_base_name(void) - Include file is derived from this.
  *-----------------------------------------------------------------*/
-char *pic16_processor_base_name(void)
-{
 
+const char *pic16_processor_base_name(void)
+{
   if(!pic16)
     return NULL;
 
@@ -1063,9 +1062,6 @@ void pic16_groupRegistersInSection(set *regset)
 }
 
 
-
-
-
 /*-----------------------------------------------------------------*
  *  void pic16_assignConfigWordValue(int address, int value)
  *
@@ -1135,4 +1131,3 @@ pic16_assignIdByteValue(int address, char value)
         } // if
     } // for
 }
-

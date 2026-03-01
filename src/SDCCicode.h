@@ -52,8 +52,6 @@ OPTYPE;
 #define IS_VALOP(op) (op && op->type == VALUE)
 #define IS_TYPOP(op) (op && op->type == TYPE)
 
-#define ADDTOCHAIN(x) addSetHead(&iCodeChain,x)
-
 #define LRFTYPE       sym_link *ltype = operandType(left), \
                            *rtype = operandType(right) ;
 #define LRETYPE       sym_link *letype= getSpec(ltype)   , \
@@ -83,6 +81,10 @@ typedef struct operand
   unsigned int isGptr:1;            /* is a generic pointer  */
   unsigned int isParm:1;            /* is a parameter        */
   unsigned int isLiteral:1;         /* operand is literal    */
+  bool isConstEliminated:1;         // if original const casted to non-const
+  bool isRestrictEliminated:1;      // if original restrict casted to non-restrict
+  bool isOptionalEliminated:1;      // if original _Optional casted to non-_Optional
+  bool isSemDeref:1;                // if original _Optional removed via semantic dereference (&*)
 
   int key;
   union
@@ -107,9 +109,11 @@ extern const operand *validateOpTypeConst (const operand * op,
 #define OP_SYMBOL(op)        validateOpType(op, "OP_SYMBOL", #op, SYMBOL, __FILE__, __LINE__)->svt.symOperand
 #define OP_SYMBOL_CONST(op)  validateOpTypeConst(op, "OP_SYMBOL", #op, SYMBOL, __FILE__, __LINE__)->svt.symOperand
 #define OP_VALUE(op)         validateOpType(op, "OP_VALUE", #op, VALUE, __FILE__, __LINE__)->svt.valOperand
+#define OP_VALUE_CONST(op)   validateOpTypeConst(op, "OP_VALUE", #op, VALUE, __FILE__, __LINE__)->svt.valOperand
 #define OP_SYM_TYPE(op)      validateOpType(op, "OP_SYM_TYPE", #op, SYMBOL, __FILE__, __LINE__)->svt.symOperand->type
 #define OP_SYM_ETYPE(op)     validateOpType(op, "OP_SYM_ETYPE", #op, SYMBOL, __FILE__, __LINE__)->svt.symOperand->etype
 #define SPIL_LOC(op)         validateOpType(op, "SPIL_LOC", #op, SYMBOL, __FILE__, __LINE__)->svt.symOperand->usl.spillLoc
+#define SPIL_LOC_CONST(op)   validateOpTypeConst(op, "SPIL_LOC", #op, SYMBOL, __FILE__, __LINE__)->svt.symOperand->usl.spillLoc
 #define OP_LIVEFROM(op)      validateOpType(op, "OP_LIVEFROM", #op, SYMBOL, __FILE__, __LINE__)->svt.symOperand->liveFrom
 #define OP_LIVETO(op)        validateOpType(op, "OP_LIVETO", #op, SYMBOL, __FILE__, __LINE__)->svt.symOperand->liveTo
 #define OP_REQV(op)          validateOpType(op, "OP_REQV", #op, SYMBOL, __FILE__, __LINE__)->svt.symOperand->reqv
@@ -117,17 +121,19 @@ extern const operand *validateOpTypeConst (const operand * op,
 #define OP_TYPE(op)          validateOpType(op, "OP_TYPE", #op, TYPE, __FILE__, __LINE__)->svt.typeOperand
 
 /* definition for intermediate code */
-#define IC_RESULT(x)     (x)->ulrrcnd.lrr.result
-#define IC_LEFT(x)       (x)->ulrrcnd.lrr.left
-#define IC_RIGHT(x)      (x)->ulrrcnd.lrr.right
-#define IC_COND(x)       (x)->ulrrcnd.cnd.condition
+#define IC_RESULT(x)     (x)->result
+#define IC_LEFT(x)       (x)->left
+#define IC_RIGHT(x)      (x)->right
+#define IC_COND(x)       (x)->left // Not for use in new code. Some code still uses this, as it used to be separate from left.
 #define IC_TRUE(x)       (x)->ulrrcnd.cnd.trueLabel
 #define IC_FALSE(x)      (x)->ulrrcnd.cnd.falseLabel
 #define IC_LABEL(x)      (x)->label
-#define IC_JTCOND(x)     (x)->ulrrcnd.jmpTab.condition
+#define IC_JTCOND(x)     (x)->left // Not for use in new code. Some code still uses this, as it used to be separate from left.
 #define IC_JTLABELS(x)   (x)->ulrrcnd.jmpTab.labels
 #define IC_INLINE(x)     (x)->inlineAsm
 #define IC_ARRAYILIST(x) (x)->arrayInitList
+
+struct valinfos;
 
 typedef struct iCode
 {
@@ -136,7 +142,7 @@ typedef struct iCode
   int seq;                      /* sequence number within routine */
   int seqPoint;                 /* sequence point */
   short depth;                  /* loop depth of this iCode */
-  short level;                  /* scope level */
+  long level;                   /* scope level */
   short block;                  /* sequential block number */
   unsigned nosupdate:1;         /* don't update spillocation with this */
   unsigned generated:1;         /* code generated for this one */
@@ -145,6 +151,10 @@ typedef struct iCode
   unsigned regsSaved:1;         /* registers have been saved */
   unsigned bankSaved:1;         /* register bank has been saved */
   unsigned builtinSEND:1;       /* SEND for parameter of builtin function */
+  bool localEscapeAlive:1;      /* At this iCode, a local variable, a pointer to which has escaped (e.g. by having been stored in a global variable, cast to integer, passed to function) might be alive. */
+  bool parmEscapeAlive:1;       /* At this iCode, a stack parameter, a pointer to which has escaped (e.g. by having been stored in a global variable, cast to integer, passed to function) might be alive. */
+  unsigned inlined:1;           /* from an inlined function */
+  unsigned mergedElsewhere:1;   /* merged into another iCode during optimization */
 
   struct iCode *next;           /* next in chain */
   struct iCode *prev;           /* previous in chain */
@@ -155,19 +165,17 @@ typedef struct iCode
   bitVect *rUsed;               /* registers used by this instruction */
   bitVect *rMask;               /* registers in use during this instruction */
   bitVect *rSurv;               /* registers that survive this instruction (i.e. they are in use, it is not their last use and they are not in the return) */
+  struct valinfos *valinfos;    /* Information on the possible values of symbols just before this iCode. */
+  struct valinfo *resultvalinfo;/* Information on the possible values of the result. */ 
+
+  operand *left;                // left if any
+  operand *right;               // right if any
+  operand *result;              // result of this op, if any
+
   union
   {
     struct
     {
-      operand *left;            /* left if any   */
-      operand *right;           /* right if any  */
-      operand *result;          /* result of this op */
-    }
-    lrr;
-
-    struct
-    {
-      operand *condition;       /* if this is a conditional */
       symbol *trueLabel;        /* true for conditional     */
       symbol *falseLabel;       /* false for conditional    */
     }
@@ -175,7 +183,6 @@ typedef struct iCode
 
     struct
     {
-      operand *condition;       /* condition for the jump */
       set *labels;              /* ordered set of labels  */
     }
     jmpTab;
@@ -189,13 +196,16 @@ typedef struct iCode
   literalList *arrayInitList;   /* point to array initializer list. */
 
   int lineno;                   /* file & lineno for debug information */
-  char *filename;
+  const char *filename;
 
   int parmBytes;                /* if call/pcall, count of parameter bytes
                                    on stack */
   int argreg;                   /* argument regno for SEND/RECEIVE */
   int eBBlockNum;               /* belongs to which eBBlock */
   char riu;                     /* after ralloc, the registers in use */
+  float count;                  /* An execution count or probability */
+  float pcount;                 /* For propagation of count */
+
   struct ast *tree;             /* ast node for this iCode (if not NULL) */
 }
 iCode;
@@ -204,8 +214,8 @@ iCode;
 typedef struct icodeFuncTable
 {
   int icode;
-  char *printName;
-  void (*iCodePrint) (struct dbuf_s *, iCode *, char *);
+  const char *printName;
+  void (*iCodePrint) (struct dbuf_s *, const iCode *, const char *);
   iCode *(*iCodeCopy) (iCode *);
 }
 iCodeTable;
@@ -222,6 +232,7 @@ iCodeTable;
 
 #define SKIP_IC(x)   (x->op == PCALL        ||    \
                       x->op == IPUSH        ||    \
+                      x->op == IPUSH_VALUE_AT_ADDRESS || \
                       x->op == IPOP         ||    \
                       x->op == JUMPTABLE    ||    \
                       x->op == RECEIVE      ||    \
@@ -303,7 +314,7 @@ iCodeTable;
 /*-----------------------------------------------------------------*/
 iCode *reverseiCChain ();
 bool isOperandOnStack (operand *);
-int isOperandVolatile (const operand *, bool);
+bool isOperandVolatile (const operand *, bool);
 int isOperandGlobal (const operand *);
 void printiCChain (iCode *, FILE *);
 operand *ast2iCode (ast *, int);
@@ -315,7 +326,8 @@ int isOperandEqual (const operand *, const operand *);
 iCodeTable *getTableEntry (int);
 int isOperandLiteral (const operand * const);
 operand *operandOperation (operand *, operand *, int, sym_link *);
-double operandLitValue (operand *);
+double operandLitValue (const operand *);
+unsigned long long operandLitValueUll (const operand *);
 operand *operandFromLit (double);
 operand *operandFromOperand (operand *);
 int isParameterToCall (value *, operand *);
@@ -325,21 +337,22 @@ symbol *newiTempLabel (const char *);
 #define LOOPEXITLBL "loopExitLbl"
 symbol *newiTempLoopHeaderLabel (bool);
 iCode *newiCode (int, operand *, operand *);
+iCode *newiCodeParm (int op, operand *left, value *param, sym_link *ftype, int *stack);
 sym_link *operandType (const operand *);
 unsigned int operandSize (operand *);
-operand *operandFromValue (value *);
-operand *operandFromSymbol (symbol *);
+operand *operandFromValue (value *, bool convert_sym_to_ptr);
+operand *operandFromSymbol (symbol *, bool convert_sym_to_ptr);
 operand *operandFromLink (sym_link *);
 sym_link *aggrToPtr (sym_link *, bool);
 int aggrToPtrDclType (sym_link *, bool);
 void setOClass (sym_link * ptr, sym_link * spec);
-int piCode (void *, FILE *);
+int piCode (const iCode *, FILE *);
 int dbuf_printOperand (operand *, struct dbuf_s *);
 int printOperand (operand *, FILE *);
 void setOperandType (operand *, sym_link *);
 bool isOperandInFarSpace (operand *);
 bool isOperandInPagedSpace (operand *);
-bool isOperandInDirSpace (operand *);
+bool isOperandInDirSpace (const operand *);
 bool isOperandInBitSpace (operand *);
 bool isOperandInCodeSpace (operand *);
 operand *opFromOpWithDU (operand *, bitVect *, bitVect *);
@@ -347,11 +360,14 @@ iCode *copyiCode (iCode *);
 operand *newiTempOperand (sym_link *, char);
 operand *newiTempFromOp (operand *);
 iCode *getBuiltinParms (iCode *, int *, operand **);
-int isiCodeInFunctionCall (iCode *);
+int isiCodeInFunctionCall (const iCode *);
+operand *detachiCodeOperand (operand **, iCode *);
+void attachiCodeOperand (operand *, operand **, iCode *);
+
 /*-----------------------------------------------------------------*/
 /* declaration of exported variables                               */
 /*-----------------------------------------------------------------*/
-extern char *filename;
+extern const char *filename;
 extern int lineno;
 #endif
 

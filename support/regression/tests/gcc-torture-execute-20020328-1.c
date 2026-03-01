@@ -10,18 +10,17 @@
 
 int b = 0;
 
-func () { }
+void
+func (void) { }
 
 void
-testit(int x)
+tryit(int x)
 {
-  if (x != 20)
-    ASSERT (0);
+  ASSERT (x == 20);
 }
 
 void
 testTortureExecute (void)
-
 {
   int a = 0;
 
@@ -30,6 +29,6 @@ testTortureExecute (void)
 
   /* simplify_and_const_int would incorrectly omit the mask in
      the line below.  */
-  testit ((a + 23) & 0xfffffffc);
+  tryit ((a + 23) & 0xfffffffc);
   return;
 }

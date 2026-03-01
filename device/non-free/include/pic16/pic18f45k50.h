@@ -2,9 +2,9 @@
  * This declarations of the PIC18F45K50 MCU.
  *
  * This file is part of the GNU PIC library for SDCC, originally
- * created by Molnar Karoly <molnarkaroly@users.sf.net> 2014.
+ * created by Molnar Karoly <molnarkaroly@users.sf.net> 2016.
  *
- * This file is generated automatically by the cinc2h.pl, 2014-07-08 08:41:46 UTC.
+ * This file is generated automatically by the cinc2h.pl, 2016-04-13 17:23:30 UTC.
  *
  * SDCC is licensed under the GNU Public license (GPL) v2. Note that
  * this license covers the code to the compiler and other executables,
@@ -2132,13 +2132,7 @@ typedef union
     unsigned RA4                : 1;
     unsigned RA5                : 1;
     unsigned RA6                : 1;
-    unsigned                    : 1;
-    };
-
-  struct
-    {
-    unsigned RA                 : 7;
-    unsigned                    : 1;
+    unsigned RA7                : 1;
     };
   } __DDRAbits_t;
 
@@ -2159,6 +2153,7 @@ extern __at(0x0F92) volatile __DDRAbits_t DDRAbits;
 #define _TRISA6                 0x40
 #define _RA6                    0x40
 #define _TRISA7                 0x80
+#define _RA7                    0x80
 
 //==============================================================================
 
@@ -2191,13 +2186,7 @@ typedef union
     unsigned RA4                : 1;
     unsigned RA5                : 1;
     unsigned RA6                : 1;
-    unsigned                    : 1;
-    };
-
-  struct
-    {
-    unsigned RA                 : 7;
-    unsigned                    : 1;
+    unsigned RA7                : 1;
     };
   } __TRISAbits_t;
 
@@ -2218,6 +2207,7 @@ extern __at(0x0F92) volatile __TRISAbits_t TRISAbits;
 #define _TRISA_TRISA6           0x40
 #define _TRISA_RA6              0x40
 #define _TRISA_TRISA7           0x80
+#define _TRISA_RA7              0x80
 
 //==============================================================================
 

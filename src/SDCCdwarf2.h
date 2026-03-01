@@ -284,6 +284,7 @@
 #define DW_CFA_advance_loc (1 << 6)
 #define DW_CFA_offset (2 << 6)
 #define DW_CFA_restore (3 << 6)
+#define DW_CFA_nop 0x00
 #define DW_CFA_set_loc 0x01
 #define DW_CFA_advance_loc1 0x02
 #define DW_CFA_advance_loc2 0x03
@@ -298,7 +299,6 @@
 #define DW_CFA_def_cfa 0x0c
 #define DW_CFA_def_cfa_register 0x0d
 #define DW_CFA_def_cfa_offset 0x0e
-#define DW_CFA_nop 0x0f
 #define DW_CFA_lo_user 0x1c
 #define DW_CFA_hi_user 0x3f
 
@@ -309,7 +309,7 @@ typedef struct dwloc
   struct
   {
     symbol * sym;
-    const char * label;
+    const char *label;
     int offset;
   } operand;
   struct dwloc * next;
@@ -330,6 +330,15 @@ typedef struct dwloclist
   struct dwloclist * next;
 } dwloclist;
 
+typedef struct dwcfilist
+{
+  char * startLabel;
+  char * endLabel;
+  int callsize;
+  dwlocregion * region;
+  struct dwcfilist * next;
+} dwcfilist;
+
 struct dwtag;
 
 typedef struct dwattr
@@ -340,7 +349,7 @@ typedef struct dwattr
   {
     struct
     {
-      char * label;
+      const char *label;
       int offset;
     } symaddr;
     struct
@@ -371,7 +380,7 @@ typedef struct dwtag
 
 typedef struct dwfile
 {
-  char * name;
+  const char *name;
   int dirIndex;
   int timestamp;
   int length;
@@ -379,7 +388,7 @@ typedef struct dwfile
 
 typedef struct dwline
 {
-  char * label;
+  const char *label;
   int offset;
   int fileIndex;
   int line;
@@ -390,7 +399,6 @@ typedef struct dwline
   struct dwline * next;
 } dwline;
 
-#if 0
 typedef struct dwblock
 {
   unsigned char * data;
@@ -401,7 +409,7 @@ typedef struct dwblock
 typedef struct dwcfop
 {
   int opcode;
-  char * label;
+  const char *label;
   int operand1;
   int operand2;
   struct dwcfop * next;
@@ -419,7 +427,6 @@ typedef struct dwfde
   char * endLabel;
   dwcfins * ins;
 } dwfde;
-#endif
-
 
 #endif
+

@@ -1,5 +1,5 @@
 /* resres.c: read_res_file and write_res_file implementation for windres.
-   Copyright (C) 1998-2014 Free Software Foundation, Inc.
+   Copyright (C) 1998-2022 Free Software Foundation, Inc.
    Written by Anders Norlander <anorland@hem2.passagen.se>.
    Rewritten by Kai Tietz, Onevision.
 
@@ -142,7 +142,7 @@ write_res_file (const char *fn,const rc_res_directory *resdir)
   sec_length = write_res_directory ((windres_bfd *) NULL, 0x20UL, resdir,
 				    (const rc_res_id *) NULL,
 				    (const rc_res_id *) NULL, &language, 1);
-  if (! bfd_set_section_size (abfd, sec, (sec_length + 3) & ~3))
+  if (!bfd_set_section_size (sec, (sec_length + 3) & ~3))
     bfd_fatal ("bfd_set_section_size");
   if ((sec_length & 3) != 0)
     set_windres_bfd_content (&wrbfd, sign, sec_length, 4-(sec_length & 3));
@@ -386,8 +386,7 @@ write_res_bin (windres_bfd *wrbfd, rc_uint_type off, const rc_res_resource *res,
 
 /* Get number of bytes needed to store an id in binary format */
 static unsigned long
-get_id_size (id)
-     const rc_res_id *id;
+get_id_size (const rc_res_id *id)
 {
   if (id->named)
     return sizeof (unichar) * (id->u.n.length + 1);
@@ -499,7 +498,7 @@ write_res_info (windres_bfd *wrbfd, rc_uint_type off, const rc_res_res_info *inf
   if (wrbfd)
     {
       struct bin_res_info l;
-      
+
       windres_put_32 (wrbfd, l.version, info->version);
       windres_put_16 (wrbfd, l.memflags, info->memflags);
       windres_put_16 (wrbfd, l.language, info->language);
@@ -620,7 +619,7 @@ skip_null_resource (windres_bfd *wrbfd, rc_uint_type *off, rc_uint_type omax)
 
   return;
 
-skip_err:
+ skip_err:
   fprintf (stderr, "%s: %s: Not a valid WIN32 resource file\n", program_name,
 	   filename);
   xexit (1);

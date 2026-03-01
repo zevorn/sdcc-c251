@@ -24,6 +24,7 @@
 
 #ifdef _WIN32
 #include <io.h>
+#include <fcntl.h>
 #else
 #include <unistd.h>
 #include <libgen.h>
@@ -42,6 +43,7 @@
 #else
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/resource.h>
 #endif
 
 /* REMOVE ME!!! */
@@ -62,10 +64,10 @@ int BitBankUsed;                /* MB: overlayable bit bank */
 struct optimize optimize;
 struct options options;
 int preProcOnly = 0;
-int noAssemble = 0;
 set *preArgvSet = NULL;         /* pre-processor arguments  */
 set *asmOptionsSet = NULL;      /* set of assembler options */
 set *linkOptionsSet = NULL;     /* set of linker options */
+set *linkOptionsSet2 = NULL;    /* set of linker options that must be passed on command line */
 set *libFilesSet = NULL;
 set *libPathsSet = NULL;
 set *relFilesSet = NULL;
@@ -74,6 +76,15 @@ set *includeDirsSet = NULL;     /* list of include search directories */
 set *userIncDirsSet = NULL;     /* list of user include directories */
 set *libDirsSet = NULL;         /* list of lib search directories */
 bool regalloc_dry_run = FALSE;
+
+/* language override constants and variable for handling -x during command line parsing */
+enum
+{
+  LANG_OVERRIDE_NONE,
+  LANG_OVERRIDE_C,
+  LANG_OVERRIDE_C_HEADER
+};
+int langOverride = LANG_OVERRIDE_NONE;
 
 static const char *dstPath = "";          /* path for the output files; */
                                           /* "" is equivalent with cwd */
@@ -96,10 +107,6 @@ char buffer[PATH_MAX * 2];
 #define OPTION_HELP                 "--help"
 #define OPTION_OUT_FMT_IHX          "--out-fmt-ihx"
 #define OPTION_OUT_FMT_S19          "--out-fmt-s19"
-#define OPTION_HUGE_MODEL           "--model-huge"
-#define OPTION_LARGE_MODEL          "--model-large"
-#define OPTION_MEDIUM_MODEL         "--model-medium"
-#define OPTION_SMALL_MODEL          "--model-small"
 #define OPTION_PEEP_FILE            "--peep-file"
 #define OPTION_LIB_PATH             "--lib-path"
 #define OPTION_CALLEE_SAVES         "--callee-saves"
@@ -121,7 +128,6 @@ char buffer[PATH_MAX * 2];
 #define OPTION_WERROR               "--Werror"
 #define OPTION_DEBUG                "--debug"
 #define OPTION_NO_GCSE              "--nogcse"
-#define OPTION_SHORT_IS_8BITS       "--short-is-8bits"
 #define OPTION_NO_XINIT_OPT         "--no-xinit-opt"
 #define OPTION_NO_CCODE_IN_ASM      "--no-c-code-in-asm"
 #define OPTION_ICODE_IN_ASM         "--i-code-in-asm"
@@ -132,15 +138,12 @@ char buffer[PATH_MAX * 2];
 #define OPTION_VERBOSE_ASM          "--fverbose-asm"
 #define OPTION_OPT_CODE_SPEED       "--opt-code-speed"
 #define OPTION_OPT_CODE_SIZE        "--opt-code-size"
-#define OPTION_STD_C89              "--std-c89"
-#define OPTION_STD_C99              "--std-c99"
-#define OPTION_STD_C11              "--std-c11"
-#define OPTION_STD_SDCC89           "--std-sdcc89"
-#define OPTION_STD_SDCC99           "--std-sdcc99"
+#define OPTION_STD                  "--std"
 #define OPTION_CODE_SEG             "--codeseg"
 #define OPTION_CONST_SEG            "--constseg"
+#define OPTION_DATA_SEG             "--dataseg"
 #define OPTION_DOLLARS_IN_IDENT     "--fdollars-in-identifiers"
-#define OPTION_UNSIGNED_CHAR        "--funsigned-char"
+#define OPTION_SIGNED_CHAR          "--fsigned-char"
 #define OPTION_USE_NON_FREE         "--use-non-free"
 #define OPTION_PEEP_RETURN          "--peep-return"
 #define OPTION_NO_PEEP_RETURN       "--no-peep-return"
@@ -151,6 +154,14 @@ char buffer[PATH_MAX * 2];
 #define OPTION_DUMP_AST             "--dump-ast"
 #define OPTION_DUMP_I_CODE          "--dump-i-code"
 #define OPTION_DUMP_GRAPHS          "--dump-graphs"
+#define OPTION_INCLUDE              "--include"
+#define OPTION_NO_GENCONSTPROP      "--nogenconstprop"
+#define OPTION_NO_PURITY            "--nopurity"
+
+#define OPTION_SMALL_MODEL          "--model-small"
+#define OPTION_MEDIUM_MODEL         "--model-medium"
+#define OPTION_LARGE_MODEL          "--model-large"
+#define OPTION_HUGE_MODEL           "--model-huge"
 
 static const OPTION optionsTable[] = {
   {0,   NULL, NULL, "General options"},
@@ -158,18 +169,21 @@ static const OPTION optionsTable[] = {
   {'v', OPTION_VERSION, NULL, "Display sdcc's version"},
   {0,   "--verbose", &options.verbose, "Trace calls to the preprocessor, assembler, and linker"},
   {'V', NULL, &options.verboseExec, "Execute verbosely. Show sub commands as they are run"},
-  {'d', NULL, NULL, NULL},
+  {'d', NULL, NULL, "Output list of macro definitions in effect. Use with -E"},
   {'D', NULL, NULL, "Define macro as in -Dmacro"},
   {'I', NULL, NULL, "Add to the include (*.h) path, as in -Ipath"},
   {'A', NULL, NULL, NULL},
-  {'U', NULL, NULL, NULL},
+  {'U', NULL, NULL, "Undefine macro as in -Umacro"},
   {'M', NULL, NULL, "Preprocessor option"},
   {'W', NULL, NULL, "Pass through options to the pre-processor (p), assembler (a) or linker (l)"},
-  {'S', NULL, &noAssemble, "Compile only; do not assemble or link"},
-  {'c', "--compile-only", &options.cc_only, "Compile and assemble, but do not link"},
+  {0,   OPTION_INCLUDE, NULL, "Pre-include a file during pre-processing"},
   {'E', "--preprocessonly", &preProcOnly, "Preprocess only, do not compile"},
+  {0,   "--syntax-only", &options.syntax_only, "Parse and verify syntax only, do not compile"},
+  {'S', NULL, &options.no_assemble, "Compile only; do not assemble or link"},
+  {'c', "--compile-only", &options.cc_only, "Compile and assemble, but do not link"},
   {0,   "--c1mode", &options.c1mode, "Act in c1 mode.  The standard input is preprocessed code, the output is assembly code."},
   {'o', NULL, NULL, "Place the output into the given path resp. file"},
+  {'x', NULL, NULL, "Optional file type override (c, c-header or none), valid until the next -x"},
   {0,   OPTION_PRINT_SEARCH_DIRS, &options.printSearchDirs, "display the directories in the compiler's search path"},
   {0,   OPTION_MSVC_ERROR_STYLE, &options.vc_err_style, "messages are compatible with Micro$oft visual studio"},
   {0,   OPTION_USE_STDOUT, NULL, "send errors to stdout instead of stderr"},
@@ -180,57 +194,50 @@ static const OPTION optionsTable[] = {
   {0,   OPTION_WERROR, NULL, "Treat the warnings as errors"},
   {0,   OPTION_DEBUG, NULL, "Enable debugging symbol output"},
   {0,   "--cyclomatic", &options.cyclomatic, "Display complexity of compiled functions"},
-  {0,   OPTION_STD_C89, NULL, "Use C89 standard (slightly incomplete)"},
-  {0,   OPTION_STD_SDCC89, NULL, "Use C89 standard with SDCC extensions (default)"},
-  {0,   OPTION_STD_C99, NULL, "Use C99 standard (incomplete)"},
-  {0,   OPTION_STD_SDCC99, NULL, "Use C99 standard with SDCC extensions"},
-  {0,   OPTION_STD_C11, NULL, "Use C11 standard (very incomplete)"},
+  {0,   OPTION_STD, NULL, "Determine the language standard (c90, c99, c11, c23, c2y, sdcc89 etc.)"},
   {0,   OPTION_DOLLARS_IN_IDENT, &options.dollars_in_ident, "Permit '$' as an identifier character"},
-  {0,   OPTION_UNSIGNED_CHAR, &options.unsigned_char, "Make \"char\" unsigned by default"},
+  {0,   OPTION_SIGNED_CHAR, &options.signed_char, "Make \"char\" signed by default"},
   {0,   OPTION_USE_NON_FREE, &options.use_non_free, "Search / include non-free licensed libraries and header files"},
 
   {0,   NULL, NULL, "Code generation options"},
   {'m', NULL, NULL, "Set the port to use e.g. -mz80."},
   {'p', NULL, NULL, "Select port specific processor e.g. -mpic14 -p16f84"},
-  {0,   OPTION_SMALL_MODEL, NULL, "internal data space is used (default)"},
-  {0,   OPTION_MEDIUM_MODEL, NULL, "external paged data space is used"},
-  {0,   OPTION_LARGE_MODEL, NULL, "external data space is used"},
-  {0,   OPTION_HUGE_MODEL, NULL, "functions are banked, data in external space"},
   {0,   "--stack-auto", &options.stackAuto, "Stack automatic variables"},
   {0,   "--xstack", &options.useXstack, "Use external stack"},
   {0,   "--int-long-reent", &options.intlong_rent, "Use reentrant calls on the int and long support functions"},
   {0,   "--float-reent", &options.float_rent, "Use reentrant calls on the float support functions"},
   {0,   "--xram-movc", &options.xram_movc, "Use movc instead of movx to read xram (xdata)"},
   {0,   OPTION_CALLEE_SAVES, &options.calleeSavesSet, "<func[,func,...]> Cause the called function to save registers instead of the caller", CLAT_SET},
-  {0,   "--profile", &options.profile, "On supported ports, generate extra profiling information"},
   {0,   "--fomit-frame-pointer", &options.omitFramePtr, "Leave out the frame pointer."},
   {0,   "--all-callee-saves", &options.all_callee_saves, "callee will always save registers used"},
   {0,   "--stack-probe", &options.stack_probe, "insert call to function __stack_probe at each function prologue"},
   {0,   OPTION_NO_XINIT_OPT, &options.noXinitOpt, "don't memcpy initialized xram from code"},
   {0,   OPTION_NO_CCODE_IN_ASM, &options.noCcodeInAsm, "don't include c-code as comments in the asm file"},
   {0,   OPTION_NO_PEEP_COMMENTS, &options.noPeepComments, "don't include peephole optimizer comments"},
-  {0,   OPTION_SHORT_IS_8BITS, NULL, "Make short 8 bits (for old times sake)"},
   {0,   OPTION_CODE_SEG, NULL, "<name> use this name for the code segment"},
   {0,   OPTION_CONST_SEG, NULL, "<name> use this name for the const segment"},
+  {0,   OPTION_DATA_SEG, NULL, "<name> use this name for the data segment"},
 
   {0,   NULL, NULL, "Optimization options"},
+  {0,   OPTION_OPT_CODE_SPEED, NULL, "Optimize for code speed rather than size"},
+  {0,   OPTION_OPT_CODE_SIZE, NULL, "Optimize for code size rather than speed"},
+  {0,   OPTION_MAX_ALLOCS_PER_NODE, &options.max_allocs_per_node, "Maximum number of register assignments considered at each node of the tree decomposition", CLAT_INTEGER},
+  {0,   "--no-reg-params", &options.noRegParams, "On some ports, disable passing some parameters in registers"},
+  {0,   "--nostdlibcall", &optimize.noStdLibCall, "Disable optimization of calls to standard library"},
   {0,   "--nooverlay", &options.noOverlay, "Disable overlaying leaf function auto variables"},
+  {0,   OPTION_NO_PURITY, NULL, "Disable optimizations of pure functions"},
   {0,   OPTION_NO_GCSE, NULL, "Disable the GCSE optimisation"},
+  {0,   OPTION_NO_LOSPRE, NULL, "Disable lospre"},
+  {0,   OPTION_NO_GENCONSTPROP, NULL, "Disable generalized constant propagation"},
   {0,   OPTION_NO_LABEL_OPT, NULL, "Disable label optimisation"},
   {0,   OPTION_NO_LOOP_INV, NULL, "Disable optimisation of invariants"},
   {0,   OPTION_NO_LOOP_IND, NULL, "Disable loop variable induction"},
-  {0,   "--nojtbound", &optimize.noJTabBoundary, "Don't generate boundary check for jump tables"},
   {0,   "--noloopreverse", &optimize.noLoopReverse, "Disable the loop reverse optimisation"},
   {0,   "--no-peep", &options.nopeep, "Disable the peephole assembly file optimisation"},
-  {0,   "--no-reg-params", &options.noRegParams, "On some ports, disable passing some parameters in registers"},
   {0,   "--peep-asm", &options.asmpeep, "Enable peephole optimization on inline assembly"},
   {0,   OPTION_PEEP_RETURN, NULL, "Enable peephole optimization for return instructions"},
   {0,   OPTION_NO_PEEP_RETURN, NULL, "Disable peephole optimization for return instructions"},
   {0,   OPTION_PEEP_FILE, &options.peep_file, "<file> use this extra peephole file", CLAT_STRING},
-  {0,   OPTION_OPT_CODE_SPEED, NULL, "Optimize for code speed rather than size"},
-  {0,   OPTION_OPT_CODE_SIZE, NULL, "Optimize for code size rather than speed"},
-  {0,   OPTION_MAX_ALLOCS_PER_NODE, &options.max_allocs_per_node, "Maximum number of register assignments considered at each node of the tree decomposition", CLAT_INTEGER},
-  {0,   OPTION_NO_LOSPRE, NULL, "Disable lospre"},
   {0,   OPTION_ALLOW_UNSAFE_READ, NULL, "Allow optimizations to read any memory location anytime"},
 
   {0,   NULL, NULL, "Internal debugging options"},
@@ -277,10 +284,7 @@ typedef struct
 
 static const UNSUPPORTEDOPT unsupportedOptTable[] = {
   {'X', NULL, "use --xstack-loc instead"},
-  {'x', NULL, "use --xstack instead"},
-  {'i', NULL, "use --idata-loc instead"},
   {'r', NULL, "use --xdata-loc instead"},
-  {'s', NULL, "use --code-loc instead"},
   {'Y', NULL, "use -I instead"},
   {0, "--fommit-frame-pointer", "use --fomit-frame-pointer instead"},
 };
@@ -290,12 +294,12 @@ static const UNSUPPORTEDOPT unsupportedOptTable[] = {
 static const char *_baseValues[] = {
   "cpp", "sdcpp",
   "cppextraopts", "",
-  /* Path seperator character */
+  /* Path separator character */
   "sep", DIR_SEPARATOR_STRING,
   NULL
 };
 
-static const char *_preCmd = "{cpp} -nostdinc -Wall {cppstd}{cppextraopts} {fullsrcfilename} {cppoutfilename}";
+static const char *_preCmd = "{cpp} -nostdinc -Wall {cppstd}{cppextraopts} -xc {fullsrcfilename} {cppoutfilename}";
 
 PORT *port;
 
@@ -312,17 +316,35 @@ static PORT *_ports[] = {
 #if !OPT_DISABLE_R2K
   &r2k_port,
 #endif
+#if !OPT_DISABLE_R2KA
+  &r2ka_port,
+#endif
 #if !OPT_DISABLE_R3KA
   &r3ka_port,
 #endif
-#if !OPT_DISABLE_GBZ80
-  &gbz80_port,
+#if !OPT_DISABLE_R4K
+  &r4k_port,
+#endif
+#if !OPT_DISABLE_R5K
+  &r5k_port,
+#endif
+#if !OPT_DISABLE_R6K
+  &r6k_port,
+#endif
+#if !OPT_DISABLE_SM83
+  &sm83_port,
 #endif
 #if !OPT_DISABLE_TLCS90
   &tlcs90_port,
 #endif
-#if !OPT_DISABLE_AVR
-  &avr_port,
+#if !OPT_DISABLE_EZ80
+  &ez80_port,
+#endif
+#if !OPT_DISABLE_Z80N
+  &z80n_port,
+#endif
+#if !OPT_DISABLE_R800
+  &r800_port,
 #endif
 #if !OPT_DISABLE_DS390
   &ds390_port,
@@ -336,9 +358,6 @@ static PORT *_ports[] = {
 #if !OPT_DISABLE_TININative
   &tininative_port,
 #endif
-#if !OPT_DISABLE_XA51
-  &xa51_port,
-#endif
 #if !OPT_DISABLE_DS400
   &ds400_port,
 #endif
@@ -351,6 +370,27 @@ static PORT *_ports[] = {
 #if !OPT_DISABLE_STM8
   &stm8_port,
 #endif
+#if !OPT_DISABLE_PDK13
+  &pdk13_port,
+#endif
+#if !OPT_DISABLE_PDK14
+  &pdk14_port,
+#endif
+#if !OPT_DISABLE_PDK15
+  &pdk15_port,
+#endif
+#if !OPT_DISABLE_MOS6502
+  &mos6502_port,
+#endif
+#if !OPT_DISABLE_MOS65C02
+  &mos65c02_port,
+#endif
+#if !OPT_DISABLE_F8
+  &f8_port,
+#endif
+#if !OPT_DISABLE_F8L
+  &f8l_port,
+#endif
 };
 
 #define NUM_PORTS (sizeof(_ports)/sizeof(_ports[0]))
@@ -362,17 +402,25 @@ static PORT *_ports[] = {
 static void
 _setPort (const char *name)
 {
-  int i;
-  for (i = 0; i < NUM_PORTS; i++)
+  size_t maxnamelen = 0;
+  for (int i = 0; i < NUM_PORTS; i++)
     {
       if (!strcmp (_ports[i]->target, name))
         {
           port = _ports[i];
           return;
         }
+      size_t namelen = strlen (_ports[i]->target_name);
+      maxnamelen = namelen > maxnamelen ? namelen: maxnamelen;
     }
   /* Error - didnt find */
   werror (E_UNKNOWN_TARGET, name);
+
+  fprintf (stderr, "Supported ports and corresponding port selection options:\n");
+  wassert (maxnamelen <= INT_MAX);
+  for (int i = 0; i < NUM_PORTS; i++)
+    fprintf (stderr, "%-*s-m%s\n", (int)(maxnamelen + 4), _ports[i]->target_name, _ports[i]->target);
+
   exit (EXIT_FAILURE);
 }
 
@@ -488,7 +536,13 @@ printVersionInfo (FILE * stream)
   for (i = 0; i < NUM_PORTS; i++)
     fprintf (stream, "%s%s", i == 0 ? "" : "/", _ports[i]->target);
 
-  fprintf (stream, " " SDCC_VERSION_STR
+  fprintf (stream,
+#if HAVE_TREEDEC_COMBINATIONS_HPP
+           " "
+#else
+           " TD- "
+#endif
+           SDCC_VERSION_STR
 #ifdef SDCC_SUB_VERSION_STR
            "/" SDCC_SUB_VERSION_STR
 #endif
@@ -521,10 +575,10 @@ printOptions (const OPTION * optionsTable, FILE * stream)
 /* printUsage - prints command line syntax         */
 /*-----------------------------------------------------------------*/
 static void
-printUsage (void)
+printUsage (bool err)
 {
   int i;
-  FILE *stream = stderr;
+  FILE *stream = err ? stderr : stdout;
 
   printVersionInfo (stream);
   fprintf (stream,
@@ -576,6 +630,18 @@ setParseWithComma (set ** dest, const char *src)
     }
 }
 
+/*-------------------------------------------------------------*/
+/* setStackSize - set the stack size of a running sdcc process */
+/*-------------------------------------------------------------*/
+static void
+setStackSize (void)
+{
+#if defined (HAVE_SETRLIMIT) && defined (RLIMIT_STACK)
+  struct rlimit rl = {8 * 1024 * 1024, 8 * 1024 * 1024};
+  setrlimit (RLIMIT_STACK, &rl);
+#endif
+}
+
 /*-----------------------------------------------------------------*/
 /* setDefaultOptions - sets the default options                    */
 /*-----------------------------------------------------------------*/
@@ -594,15 +660,20 @@ setDefaultOptions (void)
   options.nostdlib = 0;
   options.nostdinc = 0;
   options.verbose = 0;
-  options.shortis8bits = 0;
   options.std_sdcc = 1;         /* enable SDCC language extensions */
-  options.std_c99 = 1;          /* default to C99, to enable inlining of standard functions */
-  options.std_c11 = 0;          /* default to C99 until more C11 support */
+  options.std_c95 = 1;
+  options.std_c99 = 1;
+  options.std_c11 = 1;          /* default to C11 (we want inline by default, so we need at least C99, and support for C11 is more complete than C99) */
+  options.std_c23 = 0;
+  options.std_c2y = 0;
   options.code_seg = CODE_NAME ? Safe_strdup (CODE_NAME) : NULL;        /* default to CSEG for generated code */
   options.const_seg = CONST_NAME ? Safe_strdup (CONST_NAME) : NULL;     /* default to CONST for generated code */
+  options.data_seg = DATA_NAME ? Safe_strdup (DATA_NAME) : NULL;        /* default to DATA for non-initialized data */
   options.stack10bit = 0;
   options.out_fmt = 0;
   options.dump_graphs = 0;
+  options.dependencyFileOpt = 0;
+  options.sdcccall = port->sdcccall;
 
   /* now for the optimizations */
   /* turn on the everything */
@@ -614,8 +685,10 @@ setDefaultOptions (void)
   optimize.loopInvariant = 1;
   optimize.loopInduction = 1;
   options.max_allocs_per_node = 3000;
+  optimize.purity = true;
   optimize.lospre = 1;
   optimize.allow_unsafe_read = 0;
+  optimize.genconstprop = 1;
 
   /* now for the ports */
   port->setDefaultOptions ();
@@ -636,10 +709,10 @@ processFile (char *s)
 
   /* get the file extension.
      If no '.' then we don't know what the file type is
-     so give a warning and return */
-  if (!dbuf_splitFile (s, &path, &ext))
+     so give an error and return */
+  if (!dbuf_splitFile (s, &path, &ext) && langOverride == LANG_OVERRIDE_NONE)
     {
-      werror (W_UNKNOWN_FEXT, s);
+      werror (E_UNKNOWN_FEXT, s);
 
       dbuf_destroy (&ext);
       dbuf_destroy (&path);
@@ -649,7 +722,8 @@ processFile (char *s)
 
   /* otherwise depending on the file type */
   extp = dbuf_c_str (&ext);
-  if (STRCASECMP (extp, ".c") == 0)
+  if (STRCASECMP (extp, ".c") == 0 || langOverride == LANG_OVERRIDE_C
+      || STRCASECMP (extp, ".h") == 0 || langOverride == LANG_OVERRIDE_C_HEADER)
     {
       char *p, *m;
 
@@ -670,7 +744,7 @@ processFile (char *s)
       fullSrcFileName = s;
       if (!(srcFile = fopen (fullSrcFileName, "r")))
         {
-          werror (E_FILE_OPEN_ERR, s);
+          werror (E_INPUT_FILE_OPEN_ERR, fullSrcFileName, strerror (errno));
 
           dbuf_destroy (&path);
 
@@ -718,7 +792,7 @@ processFile (char *s)
   dbuf_destroy (&ext);
   dbuf_destroy (&path);
 
-  werror (W_UNKNOWN_FEXT, s);
+  werror (E_UNKNOWN_FEXT, s);
 }
 
 static void
@@ -730,15 +804,66 @@ _setModel (int model, const char *sz)
     werror (W_UNSUPPORTED_MODEL, sz, port->target);
 }
 
+/** Behaves like strcmp, but also returns 0 if s1 is longer, provided that
+    the first excess char is contained in 'delimiters'.
+    In case of a match, also sets charsConsumed to the number of chars
+    consumed, including delimiter.
+    If both first chars of s2 are dashes, but only the first of s1 is,
+    allowSingleDashLong causes the first char of s2 to be ignored.
+*/
+int
+optstrcmp (const char *s1, const char *s2, const char *delimiters, bool allowSingleDashLong, size_t *charsConsumed)
+{
+  /* special handling for single-dash long options */
+  bool isSingleDash = false;
+  if (allowSingleDashLong && s2 && s2[0] == '-' && s2[1] == '-' && s1 && s1[0] == '-' && s1[1] != '-')
+    {
+      s2++;
+      isSingleDash = true;
+    }
+
+  int l2 = strlen (s2);
+  int result = strncmp (s1, s2, l2);
+
+  /* already different? */
+  if (result != 0)
+    return result;
+
+  /* strings identical? */
+  if (s1[l2] == '\0')
+    {
+      if (charsConsumed)
+        *charsConsumed = l2;
+      if (isSingleDash)
+        werror (W_SINGLE_DASH_LONG_OPT, s2);
+      return 0;
+    }
+
+  /* count as matching if first excess char is in delimiters */
+  if (strspn (s1 + l2, delimiters))
+    {
+      if (charsConsumed)
+        *charsConsumed = l2 + 1;
+      if (isSingleDash)
+        werror (W_SINGLE_DASH_LONG_OPT, s2);
+      return 0;
+    }
+
+  /* first excess char was not in delimiters */
+  return 1;
+}
+
 /** Gets the string argument to this option.  If the option is '--opt'
-    then for input of '--optxyz' or '--opt xyz' returns xyz.
+    then for input of '--optxyz' or '--opt xyz' returns xyz, provided that
+    skipChars equals the length of the option.  The skipChars parameter
+    simplifies the handling of option variants.
 */
 char *
-getStringArg (const char *szStart, char **argv, int *pi, int argc)
+getStringArgEx (const char *szStart, size_t skipChars, char **argv, int *pi, int argc)
 {
-  if (argv[*pi][strlen (szStart)])
+  if (argv[*pi][skipChars])
     {
-      return &argv[*pi][strlen (szStart)];
+      return &argv[*pi][skipChars];
     }
   else
     {
@@ -756,15 +881,24 @@ getStringArg (const char *szStart, char **argv, int *pi, int argc)
     }
 }
 
-/** Gets the integer argument to this option using the same rules as
-    getStringArg.
+/** Gets the string argument to this option.  If the option is '--opt'
+    then for input of '--optxyz' or '--opt xyz' returns xyz.
 */
-int
-getIntArg (const char *szStart, char **argv, int *pi, int argc)
+char *
+getStringArg (const char *szStart, char **argv, int *pi, int argc)
+{
+  return getStringArgEx (szStart, strlen (szStart), argv, pi, argc);
+}
+
+/** Gets the integer argument to this option using the same rules as
+    getStringArgEx.
+*/
+long
+getIntArgEx (const char *szStart, size_t skipChars, char **argv, int *pi, int argc)
 {
   char *p;
   int val;
-  char *str = getStringArg (szStart, argv, pi, argc);
+  char *str = getStringArgEx (szStart, skipChars, argv, pi, argc);
 
   val = strtol (str, &p, 0);
   if (p == str || *p != '\0')
@@ -774,6 +908,15 @@ getIntArg (const char *szStart, char **argv, int *pi, int argc)
       exit (EXIT_FAILURE);
     }
   return val;
+}
+
+/** Gets the integer argument to this option using the same rules as
+    getStringArg.
+*/
+long
+getIntArg (const char *szStart, char **argv, int *pi, int argc)
+{
+  return getIntArgEx (szStart, strlen (szStart), argv, pi, argc);
 }
 
 static void
@@ -948,7 +1091,7 @@ parseCmdLine (int argc, char **argv)
 {
   int i;
 
-  /* go thru all whole command line */
+  /* go thru whole command line */
   for (i = 1; i < argc; i++)
     {
       if (i >= argc)
@@ -971,8 +1114,11 @@ parseCmdLine (int argc, char **argv)
         }
 
       /* options */
-      if (argv[i][0] == '-' && argv[i][1] == '-')
+      if (argv[i][0] == '-')
         {
+          /* handle (usually double-dash) long options, first */
+          size_t charsConsumed = 0;
+
           if (strcmp (argv[i], OPTION_USE_STDOUT) == 0)
             {
               if (options.use_stdout == 0)
@@ -984,7 +1130,7 @@ parseCmdLine (int argc, char **argv)
             }
           if (strcmp (argv[i], OPTION_HELP) == 0)
             {
-              printUsage ();
+              printUsage (FALSE);
               exit (EXIT_SUCCESS);
             }
 
@@ -1031,18 +1177,18 @@ parseCmdLine (int argc, char **argv)
               continue;
             }
 
-          if (strcmp (argv[i], OPTION_XRAM_LOC) == 0)
+          if (optstrcmp (argv[i], OPTION_XRAM_LOC, "=", false, &charsConsumed) == 0)
             {
-              int val = getIntArg (OPTION_XRAM_LOC, argv, &i, argc);
+              int val = getIntArgEx (OPTION_XRAM_LOC, charsConsumed, argv, &i, argc);
               if (options.xdata_loc == options.xstack_loc)
                 options.xstack_loc = val;
               options.xdata_loc = val;
               continue;
             }
 
-          if (strcmp (argv[i], OPTION_XRAM_SIZE) == 0)
+          if (optstrcmp (argv[i], OPTION_XRAM_SIZE, "=", false, &charsConsumed) == 0)
             {
-              options.xram_size = getIntArg (OPTION_XRAM_SIZE, argv, &i, argc);
+              options.xram_size = getIntArgEx (OPTION_XRAM_SIZE, charsConsumed, argv, &i, argc);
               options.xram_size_set = TRUE;
               continue;
             }
@@ -1050,6 +1196,12 @@ parseCmdLine (int argc, char **argv)
           if (strcmp (argv[i], OPTION_NO_GCSE) == 0)
             {
               optimize.global_cse = 0;
+              continue;
+            }
+
+          if (strcmp (argv[i], OPTION_NO_GENCONSTPROP) == 0)
+            {
+              optimize.genconstprop = 0;
               continue;
             }
 
@@ -1086,6 +1238,12 @@ parseCmdLine (int argc, char **argv)
               continue;
             }
 
+          if (strcmp (argv[i], OPTION_NO_PURITY) == 0)
+            {
+              optimize.purity = 0;
+              continue;
+            }
+
           if (strcmp (argv[i], OPTION_NO_LOSPRE) == 0)
             {
               optimize.lospre = 0;
@@ -1105,9 +1263,9 @@ parseCmdLine (int argc, char **argv)
               continue;
             }
 
-          if (strcmp (argv[i], OPTION_DISABLE_WARNING) == 0)
+          if (optstrcmp (argv[i], OPTION_DISABLE_WARNING, "=", false, &charsConsumed) == 0)
             {
-              int w = getIntArg (OPTION_DISABLE_WARNING, argv, &i, argc);
+              int w = getIntArgEx (OPTION_DISABLE_WARNING, charsConsumed, argv, &i, argc);
               setWarningDisabled (w);
               continue;
             }
@@ -1119,70 +1277,170 @@ parseCmdLine (int argc, char **argv)
               continue;
             }
 
-          if (strcmp (argv[i], OPTION_SHORT_IS_8BITS) == 0)
+          if (optstrcmp (argv[i], OPTION_STD, "=-", true, &charsConsumed) == 0)
             {
-              printf ("Option %s is deprecated and will be removed in the future.\n", OPTION_SHORT_IS_8BITS);
-              options.shortis8bits = 1;
-              continue;
+              char *langVer = getStringArgEx (OPTION_CODE_SEG, charsConsumed, argv, &i, argc);
+
+              if (strcmp (langVer, "c90") == 0 || strcmp (langVer, "iso9899:1990") == 0 || strcmp (langVer, "c89") == 0)
+                {
+                  options.std_c95 = 0;
+                  options.std_c99 = 0;
+                  options.std_c11 = 0;
+                  options.std_c23 = 0;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 0;
+                  continue;
+                }
+
+              if (strcmp (langVer, "c94") == 0 || strcmp (langVer, "iso9899:199409") == 0 || strcmp (langVer, "c95") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 0;
+                  options.std_c11 = 0;
+                  options.std_c23 = 0;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 0;
+                  continue;
+                }
+
+              if (strcmp (langVer, "c99") == 0 || strcmp (langVer, "iso9899:1999") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 0;
+                  options.std_c23 = 0;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 0;
+                  continue;
+                }
+
+              if (strcmp (langVer, "c11") == 0 || strcmp (langVer, "iso9899:2011") == 0 || strcmp (langVer, "c17") == 0 ||
+                  strcmp (langVer, "iso9899:2017") == 0 || strcmp (langVer, "c18") == 0 || strcmp (langVer, "iso9899:2018") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 1;
+                  options.std_c23 = 0;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 0;
+                  continue;
+                }
+
+              if (strcmp (langVer, "c23") == 0 || strcmp (langVer, "c2x") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 1;
+                  options.std_c23 = 1;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 0;
+                  continue;
+                }
+
+              if (strcmp (langVer, "c2y") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 1;
+                  options.std_c23 = 1;
+                  options.std_c2y = 1;
+                  options.std_sdcc = 0;
+                  continue;
+                }
+
+              if (strcmp (langVer, "sdcc90") == 0 || strcmp (langVer, "sdcc89") == 0)
+                {
+                  options.std_c95 = 0;
+                  options.std_c99 = 0;
+                  options.std_c11 = 0;
+                  options.std_c23 = 0;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 1;
+                  continue;
+                }
+
+              if (strcmp (langVer, "sdcc99") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 0;
+                  options.std_c23 = 0;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 1;
+                  continue;
+                }
+
+              if (strcmp (langVer, "sdcc11") == 0 || strcmp (langVer, "sdcc17") == 0 || strcmp (langVer, "sdcc18") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 1;
+                  options.std_c23 = 0;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 1;
+                  continue;
+                }
+
+              if (strcmp (langVer, "sdcc23") == 0 || strcmp (langVer, "sdcc2x") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 1;
+                  options.std_c23 = 1;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 1;
+                  continue;
+                }
+
+              if (strcmp (langVer, "sdcc2y") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 1;
+                  options.std_c23 = 1;
+                  options.std_c2y = 1;
+                  options.std_sdcc = 1;
+                  continue;
+                }
+
+              /* if we reach this point, the requested language standard is not supported */
+              werror (E_UNKNOWN_LANGUAGE_STANDARD, langVer);
+              exit (EXIT_FAILURE);
             }
 
-          if (strcmp (argv[i], OPTION_STD_C89) == 0)
-            {
-              options.std_c99 = 0;
-              options.std_sdcc = 0;
-              continue;
-            }
-
-          if (strcmp (argv[i], OPTION_STD_C99) == 0)
-            {
-              options.std_c99 = 1;
-              options.std_sdcc = 0;
-              continue;
-            }
-
-          if (strcmp (argv[i], OPTION_STD_C11) == 0)
-            {
-              options.std_c99 = 1;
-              options.std_c11 = 1;
-              options.std_sdcc = 0;
-              continue;
-            }
-
-          if (strcmp (argv[i], OPTION_STD_SDCC89) == 0)
-            {
-              options.std_c99 = 0;
-              options.std_sdcc = 1;
-              continue;
-            }
-
-          if (strcmp (argv[i], OPTION_STD_SDCC99) == 0)
-            {
-              options.std_c99 = 1;
-              options.std_sdcc = 1;
-              continue;
-            }
-
-          if (strcmp (argv[i], OPTION_CODE_SEG) == 0)
+          if (optstrcmp (argv[i], OPTION_CODE_SEG, "=", false, &charsConsumed) == 0)
             {
               struct dbuf_s segname;
 
               dbuf_init (&segname, 16);
-              dbuf_printf (&segname, "%-8s(CODE)", getStringArg (OPTION_CODE_SEG, argv, &i, argc));
+              dbuf_printf (&segname, "%-8s(CODE)", getStringArgEx (OPTION_CODE_SEG, charsConsumed, argv, &i, argc));
               if (options.code_seg)
                 Safe_free (options.code_seg);
               options.code_seg = dbuf_detach (&segname);
               continue;
             }
 
-          if (strcmp (argv[i], OPTION_CONST_SEG) == 0)
+          if (optstrcmp (argv[i], OPTION_CONST_SEG, "=", false, &charsConsumed) == 0)
             {
               struct dbuf_s segname;
 
               dbuf_init (&segname, 16);
-              dbuf_printf (&segname, "%-8s(CODE)", getStringArg (OPTION_CONST_SEG, argv, &i, argc));
+              dbuf_printf (&segname, "%-8s(CODE)", getStringArgEx (OPTION_CONST_SEG, charsConsumed, argv, &i, argc));
               if (options.const_seg)
                 Safe_free (options.const_seg);
               options.const_seg = dbuf_detach (&segname);
+              continue;
+            }
+
+          if (optstrcmp (argv[i], OPTION_DATA_SEG, "=", false, &charsConsumed) == 0)
+            {
+              struct dbuf_s segname;
+
+              dbuf_init (&segname, 16);
+              dbuf_printf (&segname, "%-8s(DATA)", getStringArgEx (OPTION_DATA_SEG, charsConsumed, argv, &i, argc));
+              if (options.data_seg)
+                Safe_free (options.data_seg);
+              options.data_seg = dbuf_detach (&segname);
               continue;
             }
 
@@ -1206,19 +1464,29 @@ parseCmdLine (int argc, char **argv)
               continue;
             }
 
-          werror (W_UNKNOWN_OPTION, argv[i]);
-          continue;
-        }
+          if (optstrcmp (argv[i], OPTION_INCLUDE, "=", true, &charsConsumed) == 0)
+            {
+              addSet (&preArgvSet, Safe_strdup ("-include"));
+              addSet (&preArgvSet, getStringArgEx (OPTION_INCLUDE, charsConsumed, argv, &i, argc));
+              continue;
+            }
 
-      /* if preceded by  '-' then option */
-      if (*argv[i] == '-')
-        {
+          /* if it is a long option, but none of the above, it is unknown */
+
+          if (argv[i][0] == '-' && argv[i][1] == '-')
+            {
+              werror (W_UNKNOWN_OPTION, argv[i]);
+              continue;
+            }
+
+          /* single-dash short options */
+
           switch (argv[i][1])
             {
             case 'h':
               verifyShortOption (argv[i]);
 
-              printUsage ();
+              printUsage (FALSE);
               exit (EXIT_SUCCESS);
               break;
 
@@ -1229,12 +1497,6 @@ parseCmdLine (int argc, char **argv)
             case 'p':
               /* Used to select the processor in port. But this has
                * already been done. */
-              break;
-
-            case 'c':
-              verifyShortOption (argv[i]);
-
-              options.cc_only = 1;
               break;
 
             case 'L':
@@ -1279,6 +1541,21 @@ parseCmdLine (int argc, char **argv)
                 break;
               }
 
+            case 'x':
+              {
+                char *langName = getStringArg ("-x", argv, &i, argc);
+
+                if (strcmp (langName, "none") == 0)
+                  langOverride = LANG_OVERRIDE_NONE;
+                else if (strcmp (langName, "c") == 0)
+                  langOverride = LANG_OVERRIDE_C;
+                else if (strcmp (langName, "c-header") == 0)
+                  langOverride = LANG_OVERRIDE_C_HEADER;
+                else
+                  werror (E_INVALID_LANG_OVERRIDE);
+                break;
+              }
+
             case 'W':
               /* pre-processer options */
               if (argv[i][2] == 'p')
@@ -1288,7 +1565,13 @@ parseCmdLine (int argc, char **argv)
               /* linker options */
               else if (argv[i][2] == 'l')
                 {
-                  setParseWithComma (&linkOptionsSet, getStringArg ("-Wl", argv, &i, argc));
+                  char *arg = getStringArg ("-Wl", argv, &i, argc);
+                  while (*arg == ' ')
+                    arg++;
+                  if (arg[0] == '-' && arg[1] == 'f')
+                    setParseWithComma (&linkOptionsSet2, arg);
+                  else
+                    setParseWithComma (&linkOptionsSet, arg);
                 }
               /* assembler options */
               else if (argv[i][2] == 'a')
@@ -1311,11 +1594,30 @@ parseCmdLine (int argc, char **argv)
               /* preprocessor options */
             case 'M':
               {
-                preProcOnly = 1;
                 if (argv[i][2] == 'M')
-                  addSet (&preArgvSet, Safe_strdup ("-MM"));
+                  {
+                    if (argv[i][3] == 'D')
+                      {
+                        options.dependencyFileOpt = USER_DEPENDENCY_FILE_OPT;
+                      }
+                    else
+                      {
+                        addSet (&preArgvSet, Safe_strdup ("-MM"));
+                        preProcOnly = 1;
+                      }
+                  }
                 else
-                  addSet (&preArgvSet, Safe_strdup ("-M"));
+                  {
+                    if (argv[i][2] == 'D')
+                      {
+                        options.dependencyFileOpt = SYSTEM_DEPENDENCY_FILE_OPT;
+                      }
+                    else
+                      {
+                        addSet (&preArgvSet, Safe_strdup ("-M"));
+                        preProcOnly = 1;
+                      }
+                  }
                 break;
               }
 
@@ -1401,11 +1703,11 @@ parseCmdLine (int argc, char **argv)
       deleteSet (&relFilesSet);
       deleteSet (&libFilesSet);
 
-      if (options.cc_only || noAssemble || preProcOnly)
+      if (options.cc_only || options.no_assemble || options.syntax_only || preProcOnly)
         {
           werror (W_ILLEGAL_OPT_COMBINATION);
         }
-      options.cc_only = noAssemble = preProcOnly = 0;
+      options.cc_only = options.no_assemble = options.syntax_only = preProcOnly = 0;
       if (!dstFileName)
         {
           werror (E_NEED_OPT_O_IN_C1);
@@ -1492,7 +1794,7 @@ parseCmdLine (int argc, char **argv)
       if (debugFile->openFile (dbuf_c_str (&adbFile)))
         debugFile->writeModule (moduleName);
       else
-        werror (E_FILE_OPEN_ERR, dbuf_c_str (&adbFile));
+        werror (E_OUTPUT_FILE_OPEN_ERR, dbuf_c_str (&adbFile), strerror (errno));
 
       dbuf_destroy (&adbFile);
     }
@@ -1563,11 +1865,11 @@ linkEdit (char **envp)
       dbuf_printf (&linkerScriptFileName, "%s.lk", dstFileName);
       if (!(lnkfile = fopen (dbuf_c_str (&linkerScriptFileName), "w")))
         {
-          werror (E_FILE_OPEN_ERR, dbuf_c_str (&linkerScriptFileName));
+          werror (E_OUTPUT_FILE_OPEN_ERR, dbuf_c_str (&linkerScriptFileName), strerror (errno));
           exit (EXIT_FAILURE);
         }
 
-      if (TARGET_Z80_LIKE)
+      if (TARGET_Z80_LIKE||TARGET_MOS6502_LIKE)
         {
           fprintf (lnkfile, "-mjwx\n-%c %s\n", out_fmt, dbuf_c_str (&binFileName));
         }
@@ -1576,13 +1878,9 @@ linkEdit (char **envp)
           fprintf (lnkfile, "-muwx\n-%c %s\n", out_fmt, dbuf_c_str (&binFileName));
           if (TARGET_MCS51_LIKE)
             fprintf (lnkfile, "-M\n");
-          if (!options.no_pack_iram)
-            fprintf (lnkfile, "-Y\n");
-          else
-            werror (W_DEPRECATED_OPTION, "--no-pack-iram");
         }
 
-      if (!TARGET_Z80_LIKE)   /* Not for the z80, gbz80 */
+      if (!TARGET_Z80_LIKE)   /* Not for the z80 and related */
         {
           /* if iram size specified */
           if (options.iram_size)
@@ -1614,7 +1912,7 @@ linkEdit (char **envp)
     if (segName) { Safe_free (segName); } \
   }
 
-      if (!TARGET_Z80_LIKE)   /* Not for the z80, z180, gbz80 */
+      if (!TARGET_Z80_LIKE)   /* Not for the z80 and related */
         {
 
           /* code segment start */
@@ -1631,7 +1929,14 @@ linkEdit (char **envp)
              the best place for xdata */
           if (options.xdata_loc)
             {
-              WRITE_SEG_LOC (XDATA_NAME, options.xdata_loc);
+              if (!TARGET_MOS6502_LIKE)
+                {
+                  WRITE_SEG_LOC (XDATA_NAME, options.xdata_loc);
+                }
+              else
+                {
+                  WRITE_SEG_LOC ("_DATA", options.xdata_loc);
+                }
             }
 
           /* pdata/xstack segment start. If zero, the linker
@@ -1651,15 +1956,19 @@ linkEdit (char **envp)
           WRITE_SEG_LOC (BIT_NAME, 0);
 
           /* stack start */
-          if ((options.stack_loc) && (options.stack_loc < 0x100) && !TARGET_HC08_LIKE)
+          if ((options.stack_loc) && (options.stack_loc < 0x100) && TARGET_MCS51_LIKE && !TARGET_MOS6502_LIKE)
             {
               WRITE_SEG_LOC ("SSEG", options.stack_loc);
+              /* with the disappearance of --no-pack-iram I don't think this is ever valid anymore */
+              werror (W_DEPRECATED_OPTION, "--stack-loc");
             }
         }
-      else                      /* For the z80, z180, gbz80 */
+      else                      /* For the z80 and related */
         {
           WRITE_SEG_LOC ("_CODE", options.code_loc);
           WRITE_SEG_LOC ("_DATA", options.data_loc);
+          if (TARGET_RABBIT_LIKE)
+            WRITE_SEG_LOC ("_XDATA", options.xdata_loc);
         }
 
       /* If the port has any special linker area declarations, get 'em */
@@ -1724,8 +2033,8 @@ linkEdit (char **envp)
               for (p = port->linker.crt; NULL != *p; ++p)
                 {
                   /* Try to find where C runtime files are ...
-                     It is very important for this file to be first on the linking proccess
-                     so the areas are set in the correct order, expecially _GSINIT */
+                     It is very important for this file to be first on the linking process
+                     so the areas are set in the correct order, especially _GSINIT */
                   for (s = setFirstItem (libDirsSet); s != NULL; s = setNextItem (libDirsSet))
                     {
                       dbuf_set_length (&crtpath, 0);
@@ -1740,8 +2049,8 @@ linkEdit (char **envp)
                     }
                   if (NULL == s)
                     {
-                      /* not found in standard library directories, serch in user defined library paths */
-                      /* TODO: sould be crt searched here at all? */
+                      /* not found in standard library directories, search in user defined library paths */
+                      /* TODO: should crt be searched here at all? */
                       for (s = setFirstItem (libPathsSet); s != NULL; s = setNextItem (libPathsSet))
                         {
                           dbuf_set_length (&crtpath, 0);
@@ -1779,7 +2088,7 @@ linkEdit (char **envp)
       char *b3 = shell_escape (dbuf_c_str (&linkerScriptFileName));
       char *bfn = shell_escape (dbuf_c_str (&binFileName));
 
-      buf = buildCmdLine (port->linker.cmd, b3, bfn, NULL, linkOptionsSet);
+      buf = buildCmdLine (port->linker.cmd, b3, bfn, NULL, linkOptionsSet, linkOptionsSet2);
       Safe_free (b3);
       Safe_free (bfn);
     }
@@ -1855,7 +2164,8 @@ assemble (char **envp)
           char *asmn = shell_escape (dbuf_c_str (&asmName));
 
           buf = buildCmdLine (port->assembler.cmd, dfn, asmn,
-                    options.debug ? port->assembler.debug_opts : port->assembler.plain_opts, asmOptionsSet);
+                              options.debug ? port->assembler.debug_opts : port->assembler.plain_opts,
+                              asmOptionsSet, NULL);
           Safe_free (dfn);
           Safe_free (asmn);
         }
@@ -1922,7 +2232,32 @@ preProcess (char **envp)
           struct dbuf_s dbuf;
 
           dbuf_init (&dbuf, 256);
-          dbuf_printf (&dbuf, "-obj-ext=%s", port->linker.rel_ext);
+          dbuf_printf (&dbuf, "--obj-ext=%s", port->linker.rel_ext);
+          addSet (&preArgvSet, dbuf_detach_c_str (&dbuf));
+        }
+
+      if (options.dependencyFileOpt)
+        {
+          struct dbuf_s dbuf;
+
+          dbuf_init (&dbuf, PATH_MAX);
+          if (options.dependencyFileOpt == SYSTEM_DEPENDENCY_FILE_OPT)
+            dbuf_append_str (&dbuf, "-MD ");
+          else
+            dbuf_append_str (&dbuf, "-MMD ");
+          dbuf_append_str (&dbuf, "-MF ");
+          if (fullDstFileName)
+            dbuf_splitFile (fullDstFileName, &dbuf, NULL);
+          else
+            dbuf_append_str (&dbuf, dstFileName);
+          dbuf_append_str (&dbuf, ".d");
+          addSet (&preArgvSet, dbuf_detach_c_str (&dbuf));
+
+          dbuf_init (&dbuf, PATH_MAX);
+          if (fullDstFileName)
+            dbuf_printf (&dbuf, "-MT %s", fullDstFileName);
+          else
+            dbuf_printf (&dbuf, "-MT %s%s", dstFileName, port->linker.rel_ext);
           addSet (&preArgvSet, dbuf_detach_c_str (&dbuf));
         }
 
@@ -1947,7 +2282,9 @@ preProcess (char **envp)
         addSet (&preArgvSet, Safe_strdup ("-D__SDCC_NOOVERLAY"));
 
       /* set the macro for unsigned char  */
-      if (options.unsigned_char)
+      if (options.signed_char)
+        addSet (&preArgvSet, Safe_strdup ("-D__SDCC_CHAR_SIGNED"));
+      else
         addSet (&preArgvSet, Safe_strdup ("-D__SDCC_CHAR_UNSIGNED"));
 
       /* set the macro for non-free  */
@@ -1989,6 +2326,12 @@ preProcess (char **envp)
           break;
         }
 
+      /* set macro for optimization level */
+      if (optimize.codeSpeed)
+        addSet (&preArgvSet, Safe_strdup ("-D__SDCC_OPTIMIZE_SPEED"));
+      if (optimize.codeSize)
+        addSet (&preArgvSet, Safe_strdup ("-D__SDCC_OPTIMIZE_SIZE"));
+
       /* set macro corresponding to compiler option */
       if (options.intlong_rent)
         addSet (&preArgvSet, Safe_strdup ("-D__SDCC_INT_LONG_REENT"));
@@ -1999,6 +2342,16 @@ preProcess (char **envp)
 
       if (options.all_callee_saves)
         addSet(&preArgvSet, Safe_strdup("-D__SDCC_ALL_CALLEE_SAVES"));
+
+
+      /* set macro for ABI (calling convention) version */
+      {
+        struct dbuf_s dbuf;
+
+        dbuf_init (&dbuf, 32);
+        dbuf_printf (&dbuf, "-D__SDCCCALL=%d", options.sdcccall);
+        addSet (&preArgvSet, dbuf_detach_c_str (&dbuf));
+      }
 
       /* add SDCC version number */
       {
@@ -2030,7 +2383,12 @@ preProcess (char **envp)
         addSet (&preArgvSet, dbuf_detach_c_str (&dbuf));
       }
 
-      if (options.std_sdcc)
+      /* A macro that has been deprecated since 3.2.0,
+        since its name makes it non-compliant.
+        It got removed a few times, but keeps coming back.
+        This time it got added back for the 3.7.0 release
+        to support the old SiLabs IDE */
+      if (TARGET_IS_MCS51 && options.std_sdcc)
         {
           struct dbuf_s dbuf;
 
@@ -2043,19 +2401,38 @@ preProcess (char **envp)
       {
         struct dbuf_s dbuf;
 
-        dbuf_init (&dbuf, 20);        
+        dbuf_init (&dbuf, 20);
         dbuf_printf (&dbuf, "-D__SDCC_REVISION=%s", getBuildNumber ());
         addSet (&preArgvSet, dbuf_detach_c_str (&dbuf));
       }
 
+      /* WORKARDOUND */
+//      addSet (&preArgvSet, Safe_strdup ("-D__func__=\\\"unknown_func\\\""));
+
       /* add port (processor information to processor */
       addSet (&preArgvSet, Safe_strdup ("-D__SDCC_{port}"));
 
-      /* Optinal C features not (yet) supported by sdcc */
-      addSet (&preArgvSet, Safe_strdup ("-D__STDC_NO_COMPLEX__"));
-      addSet (&preArgvSet, Safe_strdup ("-D__STDC_NO_THREADS__"));
-      addSet (&preArgvSet, Safe_strdup ("-D__STDC_NO_ATOMICS__"));
-      addSet (&preArgvSet, Safe_strdup ("-D__STDC_NO_VLA__"));
+      /* Optional C features not (yet) supported by SDCC */
+      addSet (&preArgvSet, Safe_strdup ("-D__STDC_NO_COMPLEX__=1"));
+      addSet (&preArgvSet, Safe_strdup ("-D__STDC_NO_THREADS__=1"));
+      addSet (&preArgvSet, Safe_strdup ("-D__STDC_NO_ATOMICS__=1"));
+      addSet (&preArgvSet, Safe_strdup ("-D__STDC_NO_VLA__=1"));
+
+      /* Character encoding  - these need to be set in device/lib/Makefile.in for $CPP, too */
+      addSet (&preArgvSet, Safe_strdup ("-D__STDC_ISO_10646__=201409L")); // wchar_t is UTF-32
+
+      /* set __SIZEOF_x__ macros for internal use by the library */
+      addSet (&preArgvSet, Safe_strdup ("-D__SIZEOF_FLOAT__=4"));
+      addSet (&preArgvSet, Safe_strdup ("-D__SIZEOF_DOUBLE__=4"));
+
+      /* set macro for BITINT_MAXWIDTH  - an implementation detail, users should only use BITINT_MAXWIDTH from limits.h */
+      {
+        struct dbuf_s dbuf;
+
+        dbuf_init (&dbuf, 48);
+        dbuf_printf (&dbuf, "-D__SDCC_BITINT_MAXWIDTH=%u", port->s.bitint_maxwidth);
+        addSet (&preArgvSet, dbuf_detach_c_str (&dbuf));
+      }
 
       /* standard include path */
       if (!options.nostdinc)
@@ -2172,7 +2549,10 @@ setIncludePath (void)
 
       tempSet = processStrSet (dataDirsSet, NULL, INCLUDE_DIR_SUFFIX, NULL);
       includeDirsSet = processStrSet (tempSet, NULL, DIR_SEPARATOR_STRING, NULL);
-      includeDirsSet = processStrSet (includeDirsSet, NULL, port->target, NULL);
+      if (TARGET_RABBIT_LIKE) // Rabbits have a shared include directory.
+        includeDirsSet = processStrSet (includeDirsSet, NULL, "rab", NULL);
+      else
+        includeDirsSet = processStrSet (includeDirsSet, NULL, port->target, NULL);
       mergeSets (&includeDirsSet, tempSet);
 
       if (options.use_non_free)
@@ -2337,8 +2717,12 @@ initValues (void)
    * Make sure the preprocessor is called with the "-std" option
    * corresponding to the --std used to start sdcc
    */
-  if (!options.std_sdcc)
-    setMainValue ("cppstd", options.std_c11 ? "-std=c11 " : (options.std_c99 ? "-std=c99 " : "-std=c89 "));
+  setMainValue ("cppstd",
+    options.std_c23 ? "-std=c23 " :
+    (options.std_c11 ? "-std=c11 " :
+    (options.std_c99 ? "-std=c99 " :
+    (options.std_c95 ? "-std=iso9899:199409 " :
+    "-std=c89 "))));
 }
 
 static void
@@ -2367,7 +2751,7 @@ doPrintSearchDirs (void)
 static void
 sig_handler (int signal)
 {
-  char *sig_string;
+  const char *sig_string;
 
   switch (signal)
     {
@@ -2403,7 +2787,11 @@ sig_handler (int signal)
 int
 main (int argc, char **argv, char **envp)
 {
+  /* get the prefix and the suffix of the sdcc command */
   getPrefixSuffix (argv[0]);
+
+  /* set a larger stack size of a running sdcc process to 4MB */
+  setStackSize ();
 
   /* turn all optimizations off by default */
   memset (&optimize, 0, sizeof (struct optimize));
@@ -2443,7 +2831,7 @@ main (int argc, char **argv, char **envp)
 
   _findProcessor (argc, argv);
 
-  /* Initalise the port. */
+  /* Initialise the port. */
   if (port->init)
     port->init ();
 
@@ -2477,7 +2865,7 @@ main (int argc, char **argv, char **envp)
     {
       if (options.printSearchDirs)
         exit (EXIT_SUCCESS);
-      printUsage ();
+      printUsage (TRUE);
       exit (EXIT_FAILURE);
     }
 
@@ -2493,27 +2881,90 @@ main (int argc, char **argv, char **envp)
   /* finalize common options */
   finalizeOptions ();
 
+  /* When a non-default calling convention is requested, the default stdlib and crt0 can't be used */
+  /* This is a warning, not an error, since some users like to compile their own stdlib, and use it in the stdlib location. */
+  if (options.sdcccall != port->sdcccall &&
+  	(TARGET_IS_STM8 && !options.nostdlib ||
+  	TARGET_Z80_LIKE && (!options.nostdlib || !options.no_std_crt0)))
+  	werror (W_SDCCCALL_STD_LIB_CRT0);
+
   if (fullSrcFileName || options.c1mode)
     {
-      preProcess (envp);
-
       initSymt ();
       initiCode ();
       initCSupport ();
       initBuiltIns ();
       initPeepHole ();
 
+      // Emit preamble for declarations for port-specific built-in functions.
+      unsigned L;
+      if (port->c_preamble && (L = strlen (port->c_preamble))!=0)
+        {
+          int p[2];
+          FILE *preamble;
+#ifdef _WIN32
+          wassert (!_pipe (p, L+1, _O_BINARY));
+#else
+          wassert (!pipe (p));
+#endif
+          preamble = fdopen (p[1], "w");
+          wassert (preamble);
+          fprintf (preamble, port->c_preamble);
+          fclose (preamble);
+          yyin = fdopen (p[0], "r");
+          wassert (yyin);
+          yyparse ();
+          fclose (yyin);
+        }
+
+      preProcess (envp); // Sets yyin to pipe from preprocessor
+
       if (options.verbose)
         printf ("sdcc: Generating code...\n");
 
       yyparse ();
 
+      if (options.syntax_only)
+        exit (fatalError ? EXIT_FAILURE : EXIT_SUCCESS);
+
       if (!options.c1mode)
-        if (sdcc_pclose (yyin))
-          fatalError = 1;
+        {
+          int cl = sdcc_pclose (yyin);
+          if (cl)
+            {
+              fprintf(stderr, "subprocess error %d\n", cl);
+              fatalError = 1;
+            }
+        }
 
       if (fatalError)
         exit (EXIT_FAILURE);
+
+      for (int i = 0; i < HASHTAB_SIZE; i++)
+        {
+          for (bucket *chain = SymbolTab[i]; chain; chain = chain->next)
+            {
+              symbol *sym = (symbol *)chain->sym;
+              if (sym->level)
+                continue;
+              // Check for arrays of unknown size that get size 1 due to an implicit initializer.
+              if (IS_ARRAY (sym->type) && DCL_ARRAY_LENGTH_TYPE (sym->type) == ARRAY_LENGTH_UNKNOWN)
+                {
+                  wassert (!DCL_ELEM (sym->type));
+                  werrorfl (sym->fileDef, sym->lineDef, W_INCOMPLETE_ARRAY_IMPLICIT_1, sym->name);
+                  DCL_ARRAY_LENGTH_TYPE (sym->type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (sym->type) = 1;
+                }
+              // Check for extern inline function for which no non-inline definition has been emitted yet.
+              if (IS_FUNC (sym->type) && IS_EXTERN (sym->etype) && IS_INLINE (sym->etype) && !sym->generated)
+                {
+                  if (!sym->funcTree)
+                    werrorfl (sym->fileDef, sym->lineDef, E_EXTERN_INLINE_NO_DEF, sym->name);
+                  else
+                    fprintf (stderr, "Internal issue for function %s: todo: implement emission of definition for inline function after extern declaration.\n", sym->name);
+                }
+            }
+        }
 
       if (port->general.do_glue != NULL)
         (*port->general.do_glue) ();
@@ -2528,7 +2979,7 @@ main (int argc, char **argv, char **envp)
       if (fatalError)
         exit (EXIT_FAILURE);
 
-      if (!options.c1mode && !noAssemble)
+      if (!options.c1mode && !options.no_assemble)
         {
           if (options.verbose)
             printf ("sdcc: Calling assembler...\n");
@@ -2540,7 +2991,8 @@ main (int argc, char **argv, char **envp)
   if (options.debug && debugFile)
     debugFile->closeFile ();
 
-  if (!options.cc_only && !fatalError && !noAssemble && !options.c1mode && (fullSrcFileName || peekSet (relFilesSet) != NULL))
+  if (!options.cc_only && !fatalError && !options.no_assemble && !options.c1mode &&
+      (fullSrcFileName || peekSet (relFilesSet) != NULL))
     {
       if (options.verbose)
         printf ("sdcc: Calling linker...\n");
@@ -2553,3 +3005,4 @@ main (int argc, char **argv, char **envp)
 
   return 0;
 }
+

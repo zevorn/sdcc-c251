@@ -68,11 +68,11 @@ DEFSETFUNC (ifKilledInBlock)
                    cdp->diCode->key);
   if (bitVectBitsInCommon (outs, OP_DEFS (cdp->sym)))
     {
-      setToNull ((void *) &outs);
+      freeBitVect (outs);
       return 1;
     }
 
-  setToNull ((void *) &outs);
+  freeBitVect (outs);
 
   /* if the operands of this one was changed in the block */
   /* then delete it */
@@ -117,8 +117,8 @@ DEFSETFUNC (mergeInExprs)
           dest->inExprs = intersectSets (dest->inExprs,
                                          ebp->outExprs,
                                          THROW_DEST);
-          dest->inPtrsSet = bitVectUnion (dest->inPtrsSet, ebp->ptrsSet);
-          dest->ndompset = bitVectUnion (dest->ndompset, ebp->ndompset);
+          dest->inPtrsSet = bitVectInplaceUnion (dest->inPtrsSet, ebp->ptrsSet);
+          dest->ndompset = bitVectInplaceUnion (dest->ndompset, ebp->ndompset);
         }
     }
   else
@@ -129,7 +129,7 @@ DEFSETFUNC (mergeInExprs)
       /* delete only if killed in this block*/
       deleteItemIf (&dest->inExprs, ifKilledInBlock, ebp);
       /* union the ndompset with pointers set in this block */
-      dest->ndompset = bitVectUnion (dest->ndompset, ebp->ptrsSet);
+      dest->ndompset = bitVectInplaceUnion (dest->ndompset, ebp->ptrsSet);
     }
   *firstTime = 0;
 
@@ -151,7 +151,7 @@ DEFSETFUNC (mergeInDefs)
   if (!dest->inDefs && *firstTime)
     dest->inDefs = bitVectCopy (ebp->outDefs);
   else
-    dest->inDefs = bitVectUnion (dest->inDefs, ebp->outDefs);
+    dest->inDefs = bitVectInplaceUnion (dest->inDefs, ebp->outDefs);
 
   *firstTime = 0;
 
@@ -160,7 +160,7 @@ DEFSETFUNC (mergeInDefs)
 
 
 /*------------------------------------------------------------------*/
-/* computeDataFlow - does computations for data flow accross blocks */
+/* computeDataFlow - does computations for data flow across blocks */
 /*------------------------------------------------------------------*/
 void
 computeDataFlow (ebbIndex * ebbi)
@@ -171,7 +171,7 @@ computeDataFlow (ebbIndex * ebbi)
   int change;
 
   for (i = 0; i < count; i++)
-    ebbs[i]->killedExprs = NULL;
+    deleteSet (&ebbs[i]->killedExprs);
 
   do
     {
@@ -203,7 +203,7 @@ computeDataFlow (ebbIndex * ebbi)
               oldKilledExprs = setFromSet (ebbs[i]->killedExprs);
             }
           oldOutDefs = bitVectCopy (ebbs[i]->outDefs);
-          setToNull ((void *) &ebbs[i]->inDefs);
+          freeBitVect(ebbs[i]->inDefs); ebbs[i]->inDefs = NULL;
 
           /* indefitions are easy just merge them by union */
           /* these are the definitions that can possibly   */
@@ -231,7 +231,8 @@ computeDataFlow (ebbIndex * ebbi)
 
           /* figure out the incoming expressions */
           /* this is a little more complex       */
-          setToNull ((void *) &ebbs[i]->inExprs);
+          //setToNull ((void *) &ebbs[i]->inExprs);
+          deleteSet (&ebbs[i]->inExprs);
           if (optimize.global_cse)
             {
               firstTime = 1;
@@ -250,6 +251,9 @@ computeDataFlow (ebbIndex * ebbi)
               change += !isSetsEqualWith (ebbs[i]->killedExprs, oldKilledExprs, isCseDefEqual);
             }
           change += !bitVectEqual (ebbs[i]->outDefs, oldOutDefs);
+          freeBitVect (oldOutDefs);
+          deleteSet (&oldOutExprs);
+          deleteSet (&oldKilledExprs);
         }
     }
   while (change);      /* iterate till no change */
@@ -289,15 +293,6 @@ usedBetweenPoints (operand * op, iCode * start, iCode * end)
       if (SKIP_IC2 (lic))
         continue;
 
-      /* if ifx then check the condition */
-      if (lic->op == IFX &&
-          IC_COND (lic)->key == op->key)
-        return 1;
-
-      if (lic->op == JUMPTABLE &&
-          IC_JTCOND (lic)->key == op->key)
-        return 1;
-
       if (IC_RIGHT (lic) &&
           IC_RIGHT (lic)->key == op->key)
         return 1;
@@ -322,14 +317,12 @@ usedBetweenPoints (operand * op, iCode * start, iCode * end)
 /* usedInRemaining - returns point of usage for an operand if found */
 /*------------------------------------------------------------------*/
 iCode *
-usedInRemaining (operand * op, iCode * ic)
+usedInRemaining (operand *op, iCode *ic)
 {
-  iCode *lic = ic;
-
   if (!IS_SYMOP (op))
     return 0;
 
-  for (; lic; lic = lic->next)
+  for (iCode *lic = ic; lic; lic = lic->next)
     {
       /* if the operand is a parameter */
       /* then check for calls and return */
@@ -355,13 +348,6 @@ usedInRemaining (operand * op, iCode * ic)
       if (SKIP_IC1 (lic))
         continue;
 
-      /* if ifx then check the condition */
-      if (lic->op == IFX && isOperandEqual (IC_COND (lic), op))
-        return lic;
-
-      if (lic->op == JUMPTABLE && isOperandEqual (IC_JTCOND (lic), op))
-        return lic;
-
       if (IC_RIGHT (lic) && isOperandEqual (IC_RIGHT (lic), op))
         return lic;
 
@@ -381,7 +367,7 @@ usedInRemaining (operand * op, iCode * ic)
 
 
 /*-------------------------------------------------------------------*/
-/* isDefAlive - will return true if definiton reaches a block & used */
+/* isDefAlive - will return true if definition reaches a block & used */
 /*-------------------------------------------------------------------*/
 DEFSETFUNC (isDefAlive)
 {

@@ -12,6 +12,7 @@ testFloatOp(void)
 
     a = 2.04e-38;
     b = 0.01;
+
     result = a * b;
     ASSERT( result < a );
     ASSERT( result >= 0.0 );
@@ -21,3 +22,4 @@ testFloatOp(void)
     ASSERT( result < a );
     ASSERT( result >= 0.0 );
 }
+

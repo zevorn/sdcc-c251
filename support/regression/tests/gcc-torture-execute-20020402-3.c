@@ -8,8 +8,9 @@
 #pragma std_c99
 #endif
 
-// Todo: Enable when long long comes to these ports!
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
+#define NULL ((void *) 0)
+
+#if !defined(__SDCC_pic14) && !defined(__SDCC_pic16) && !defined(__SDCC_pdk14) // Lack of memory
 
 /* extracted from gdb sources */
 
@@ -82,7 +83,9 @@ struct blockvector *blockvector_for_pc_sect(register CORE_ADDR pc,
 
 void testTortureExecute(void)
 {
-#if 0 // Broken
+#if !(defined (__SDCC_mcs51) && defined (__SDCC_MODEL_SMALL)) && !defined(__SDCC_pdk14) // Not enough memory
+#if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
+#if !defined(__SDCC_pic14) && !defined(__SDCC_pic16) // No long long
   struct block a = { 0, 0x10000, 0, 0, 1, 20 };
   struct block b = { 0x10000, 0x20000, 0, 0, 1, 20 };
   struct blockvector bv = { 2, { &a, &b } };
@@ -92,6 +95,12 @@ void testTortureExecute(void)
 
   ret = blockvector_for_pc_sect(0x500, &s);
 
+  ASSERT (ret != NULL && ret->nblocks == 2);
+  ASSERT (ret->block[0] != NULL && ret->block[0]->startaddr == 0LL && ret->block[0]->endaddr == 65536LL);
+  ASSERT (ret->block[1] != NULL && ret->block[1]->startaddr == 65536LL && ret->block[1]->endaddr == 131072LL);
+
   return;
+#endif
+#endif
 #endif
 }

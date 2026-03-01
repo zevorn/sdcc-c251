@@ -13,7 +13,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -35,13 +35,8 @@
 #define _STATMEM
 
 #define _SDCC_MANGLES_SUPPORT_FUNS	1
-#define _SDCC_Z80_STYLE_LIB_OPT		1
 
-#define _SDCC_PORT_PROVIDES_MEMCPY	0
-#define _SDCC_PORT_PROVIDES_STRCMP	0
-#define _SDCC_PORT_PROVIDES_STRCPY	0
-
-#define _SDCC_MALLOC_TYPE_MLH		1
+#define __SDCC_NONBANKED
 
 #endif
 

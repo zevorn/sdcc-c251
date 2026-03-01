@@ -13,7 +13,7 @@
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ;  GNU General Public License for more details.
 ;
-;  You should have received a copy of the GNU General Public License 
+;  You should have received a copy of the GNU General Public License
 ;  along with this library; see the file COPYING. If not, write to the
 ;  Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
 ;   MA 02110-1301, USA.
@@ -27,6 +27,7 @@
 ;--------------------------------------------------------------------------
 
 	.module crt0
+	.optsdcc -mz80 sdcccall(1)
 	.globl	_main
 
 	.area	_HEADER (ABS)
@@ -35,18 +36,25 @@
 	jp	init
 
 	.org	0x08
+	ei
 	reti
 	.org	0x10
+	ei
 	reti
 	.org	0x18
+	ei
 	reti
 	.org	0x20
+	ei
 	reti
 	.org	0x28
+	ei
 	reti
 	.org	0x30
+	ei
 	reti
 	.org	0x38
+	ei
 	reti
 
 	.org	0x100
@@ -54,8 +62,13 @@ init:
 	;; Set stack pointer directly above top of memory.
 	ld	sp,#0x0000
 
-	;; Initialise global variables
-	call	gsinit
+	call	___sdcc_external_startup
+
+	;; Initialise global variables. Skip if __sdcc_external_startup returned
+	;; non-zero value. Note: calling convention version 1 only.
+	or	a, a
+	call	Z, gsinit
+
 	call	_main
 	jp	_exit
 
@@ -88,6 +101,25 @@ _exit::
 
 	.area   _GSINIT
 gsinit::
+
+	; Default-initialized global variables.
+        ld      bc, #l__DATA
+        ld      a, b
+        or      a, c
+        jr      Z, zeroed_data
+        ld      hl, #s__DATA
+        ld      (hl), #0x00
+        dec     bc
+        ld      a, b
+        or      a, c
+        jr      Z, zeroed_data
+        ld      e, l
+        ld      d, h
+        inc     de
+        ldir
+zeroed_data:
+
+	; Explicitly initialized global variables.
 	ld	bc, #l__INITIALIZER
 	ld	a, b
 	or	a, c
@@ -95,6 +127,7 @@ gsinit::
 	ld	de, #s__INITIALIZED
 	ld	hl, #s__INITIALIZER
 	ldir
+
 gsinit_next:
 
 	.area   _GSFINAL

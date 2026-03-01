@@ -183,7 +183,18 @@ eBBSuccessors (ebbIndex * ebbi)
 		{
 		case GOTO:	/* goto has edge to label */
 		  succ = eBBWithEntryLabel (ebbi, ic->label);
-		  break;
+
+                  /* Sometimes a block has a GOTO added after the original */
+                  /* final IFX (due to loop optimizations). If IFX found,  */
+                  /* fall through to handle the IFX too. */
+                  if (ic->prev && ic->prev->op == IFX)
+                    {
+                      if (succ)
+                        addSuccessor (ebbs[i], succ); /* add the GOTO target */
+                      ic = ic->prev;       /* get ready to handle IFX too. */
+                    }
+                  else
+                    break;
 
 		case IFX:	/* conditional jump */
 		  /* if true label is present */
@@ -258,7 +269,7 @@ computeDominance (ebbIndex * ebbi)
 	       pred;
 	       pred = setNextItem (ebbs[i]->predList))
 	    {
-	      cDomVect = bitVectIntersect (cDomVect, pred->domVect);
+	      cDomVect = bitVectInplaceIntersect (cDomVect, pred->domVect);
 	    }
 	  if (!cDomVect)
 	    cDomVect = newBitVect (count);
@@ -268,6 +279,7 @@ computeDominance (ebbIndex * ebbi)
 
 	  if (!bitVectEqual (cDomVect, ebbs[i]->domVect))
 	    {
+        freeBitVect (ebbs[i]->domVect);
 	      ebbs[i]->domVect = cDomVect;
 	      change = 1;
 	    }
@@ -399,10 +411,10 @@ computeControlFlow (ebbIndex * ebbi)
 
   for (i = 0; i < ebbi->count; i++)
     {
-      setToNull ((void *) &ebbs[i]->predList);
-      setToNull ((void *) &ebbs[i]->domVect);
-      setToNull ((void *) &ebbs[i]->succList);
-      setToNull ((void *) &ebbs[i]->succVect);
+      deleteSet (&ebbs[i]->predList);
+      freeBitVect (ebbs[i]->domVect); ebbs[i]->domVect = NULL;
+      deleteSet (&ebbs[i]->succList);
+      freeBitVect (ebbs[i]->succVect); ebbs[i]->succVect = NULL;
       ebbs[i]->visited = 0;
       ebbs[i]->dfnum = 0;
     }
@@ -444,7 +456,7 @@ computeControlFlow (ebbIndex * ebbi)
 int returnAtEnd (eBBlock *ebp)
 {
     /* case 1.
-       This basic block ends in a return statment 
+       This basic block ends in a return statement 
     */
     if (ebp->ech && ebp->ech->op == RETURN) return 1;
 

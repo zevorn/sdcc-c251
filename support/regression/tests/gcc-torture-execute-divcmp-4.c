@@ -29,7 +29,7 @@ int test4(int x)
 {
   return x/-10 != 0;
 }
-
+#if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
 int test5(int x)
 {
   return x/-10 < 2;
@@ -44,7 +44,7 @@ int test7(int x)
 {
   return x/-10  <= 2;
 }
-
+#ifndef __SDCC_pdk14 // Lack of memory
 int test8(int x)
 {
   return x/-10 <= 0;
@@ -69,6 +69,8 @@ int test12(int x)
 {
   return x/-10 >= 0;
 }
+#endif
+#endif
 
 void
 testTortureExecute (void)
@@ -116,7 +118,7 @@ testTortureExecute (void)
     ASSERT (0);
   if (test4(-10) != 1)
     ASSERT (0);
-
+#if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
   if (test5(-30) != 0)
     ASSERT (0);
   if (test5(-29) != 0)
@@ -147,7 +149,7 @@ testTortureExecute (void)
     ASSERT (0);
   if (test7(-19) != 1)
     ASSERT (0);
-
+#ifndef __SDCC_pdk14 // Lack of memory
   if (test8(0) != 1)
     ASSERT (0);
   if (test8(9) != 1)
@@ -204,7 +206,8 @@ testTortureExecute (void)
     ASSERT (0);
   if (test12(-10) != 1)
     ASSERT (0);
-
+#endif
+#endif
   return;
 }
 

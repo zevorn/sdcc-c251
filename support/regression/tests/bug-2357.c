@@ -9,7 +9,7 @@
 #pragma std_c99
 #endif
 
-#if defined (__SDCC) && (!defined (__SDCC_mcs51) || (!defined (__SDCC_MODEL_SMALL) && !defined (__SDCC_MODEL_MEDIUM) && !defined (__SDCC_STACK_AUTO)))
+#if defined (__SDCC) && !defined (__SDCC_pdk14) && !defined (__SDCC_pdk15) && !defined (__SDCC_pic14) && (!defined (__SDCC_mcs51) || (!defined (__SDCC_MODEL_SMALL) && !defined (__SDCC_MODEL_MEDIUM) && !defined (__SDCC_STACK_AUTO)))
 
 short i = -1;
 union {
@@ -48,7 +48,7 @@ foo5(void)
 void
 testBug (void)
 {
-#if defined (__SDCC) && (!defined (__SDCC_mcs51) || (!defined (__SDCC_MODEL_SMALL) && !defined (__SDCC_MODEL_MEDIUM) && !defined (__SDCC_STACK_AUTO)))
+#if defined (__SDCC) && !defined (__SDCC_pdk14) && !defined (__SDCC_pdk15) && !defined (__SDCC_pic14) && (!defined (__SDCC_mcs51) || (!defined (__SDCC_MODEL_SMALL) && !defined (__SDCC_MODEL_MEDIUM) && !defined (__SDCC_STACK_AUTO)))
 
   memset(&uv, 0x33, 128);
   memset((char *) &uv + 128, 0x55, 136);
@@ -56,10 +56,8 @@ testBug (void)
   ASSERT (foo2() == 0x5555);
   ASSERT (foo3() == 0x55555555L);
 
-#if !defined (__SDCC_hc08) && !defined (__SDCC_s08)
   ASSERT (foo4() == 0x5555);
   ASSERT (foo5() == 0x55555555L);
-#endif
 
 #endif
 }

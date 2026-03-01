@@ -14,7 +14,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -27,26 +27,20 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#ifndef __SDC51_SDCC_LIB_H
-#define __SDC51_SDCC_LIB_H	1
+#ifndef __SDCC_SDCC_LIB_H
+#define __SDCC_SDCC_LIB_H	1
 
-#if defined(__SDCC_z80)
+#if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_ez80) || defined(__SDCC_z80n) || defined(__SDCC_r800)
 #include <asm/z80/features.h>
 
-#elif defined(__SDCC_z180)
-#include <asm/z180/features.h>
-
-#elif defined(__SDCC_r2k)
-#include <asm/r2k/features.h>
-
-#elif defined(__SDCC_r3ka)
-#include <asm/r3ka/features.h>
+#elif defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k)
+#include <asm/rab/features.h>
 
 #elif defined(__SDCC_tlcs90)
 #include <asm/tlcs90/features.h>
 
-#elif defined(__SDCC_gbz80)
-#include <asm/gbz80/features.h>
+#elif defined(__SDCC_sm83)
+#include <asm/sm83/features.h>
 
 #elif defined(__SDCC_mcs51)
 #include <asm/mcs51/features.h>
@@ -56,6 +50,12 @@
 
 #elif defined(__SDCC_stm8)
 #include <asm/stm8/features.h>
+
+#elif defined(__SDCC_pic16)
+#include <asm/pic16/features.h>
+
+#elif defined(__SDCC_f8) || defined(__SDCC_f8l)
+#include <asm/f8/features.h>
 
 #else
 /* PENDING */

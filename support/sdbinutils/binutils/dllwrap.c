@@ -1,5 +1,5 @@
 /* dllwrap.c -- wrapper for DLLTOOL and GCC to generate PE style DLLs
-   Copyright (C) 1998-2014 Free Software Foundation, Inc.
+   Copyright (C) 1998-2022 Free Software Foundation, Inc.
    Contributed by Mumit Khan (khan@xraylith.wisc.edu).
 
    This file is part of GNU Binutils.
@@ -364,7 +364,7 @@ run (const char *what, char *args)
     if (*s == ' ')
       i++;
   i++;
-  argv = alloca (sizeof (char *) * (i + 3));
+  argv = xmalloc (sizeof (char *) * (i + 3));
   i = 0;
   argv[i++] = what;
   s = args;
@@ -392,6 +392,7 @@ run (const char *what, char *args)
 
   pid = pexecute (argv[0], (char * const *) argv, prog_name, temp_base,
 		  &errmsg_fmt, &errmsg_arg, PEXECUTE_ONE | PEXECUTE_SEARCH);
+  free (argv);
 
   if (pid == -1)
     {
@@ -475,7 +476,7 @@ usage (FILE *file, int status)
 {
   fprintf (file, _("Usage %s <option(s)> <object-file(s)>\n"), prog_name);
   fprintf (file, _("  Generic options:\n"));
-  fprintf (file, _("   @<file>                Read options from <file>\n"));    
+  fprintf (file, _("   @<file>                Read options from <file>\n"));
   fprintf (file, _("   --quiet, -q            Work quietly\n"));
   fprintf (file, _("   --verbose, -v          Verbose\n"));
   fprintf (file, _("   --version              Print dllwrap version\n"));
@@ -629,14 +630,15 @@ main (int argc, char **argv)
 
   prog_name = argv[0];
 
-#if defined (HAVE_SETLOCALE) && defined (HAVE_LC_MESSAGES)
+#ifdef HAVE_LC_MESSAGES
   setlocale (LC_MESSAGES, "");
 #endif
-#if defined (HAVE_SETLOCALE)
   setlocale (LC_CTYPE, "");
-#endif
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
+
+  warn (_("WARNING: %s is deprecated, use gcc -shared or ld -shared instead\n"),
+	prog_name);
 
   expandargv (&argc, &argv);
 
@@ -836,11 +838,11 @@ Creating one, but that may not be what you want"));
   else
     which_target = UNKNOWN_TARGET;
 
-  if (! strncmp (target, "arm", 3))
+  if (startswith (target, "arm"))
     which_cpu = ARM_CPU;
-  else if (!strncmp (target, "x86_64", 6)
-	   || !strncmp (target, "athlon64", 8)
-	   || !strncmp (target, "amd64", 5))
+  else if (startswith (target, "x86_64")
+	   || startswith (target, "athlon64")
+	   || startswith (target, "amd64"))
     which_cpu = X64_CPU;
   else if (target[0] == 'i' && (target[1] >= '3' && target[1] <= '6')
 	   && target[2] == '8' && target[3] == '6')
@@ -1021,9 +1023,9 @@ Creating one, but that may not be what you want"));
 
   /* Step 1. Call GCC/LD to create base relocation file. If using GCC, the
      driver command line will look like the following:
-    
+
         % gcc -Wl,--dll --Wl,--base-file,foo.base [rest of command line]
-    
+
      If the user does not specify a base name, create temporary one that
      is deleted at exit.  */
 
@@ -1065,9 +1067,9 @@ Creating one, but that may not be what you want"));
 
   /* Step 2. generate the exp file by running dlltool.
      dlltool command line will look like the following:
-    
+
         % dlltool -Wl,--dll --Wl,--base-file,foo.base [rest of command line]
-    
+
      If the user does not specify a base name, create temporary one that
      is deleted at exit.  */
 

@@ -22,6 +22,7 @@ libdir          = @libdir@
 datadir         = @datadir@
 datarootdir     = @datarootdir@
 includedir      = @includedir@
+inclibdir       = @inclibdir@
 mandir          = @mandir@
 man1dir         = $(mandir)/man1
 man2dir         = $(mandir)/man2
@@ -30,8 +31,10 @@ VPATH           = @srcdir@
 srcdir          = @srcdir@
 
 include_dir_suffix = @include_dir_suffix@
+inclib_dir_suffix = @inclib_dir_suffix@
 
 sdcc_includedir = $(DESTDIR)$(datadir)/$(include_dir_suffix)
+sdcc_inclibdir = $(DESTDIR)$(datadir)/$(inclib_dir_suffix)
 
 CPPFLAGS        = @CPPFLAGS@ -I$(top_builddir)
 
@@ -57,10 +60,10 @@ install: all installdirs
 	    done; \
 	  fi; \
 	done;
-	# z80 family: z180, r2k, r3ka, gbz80, and tlcs90
+	# z80 family: z180, r2k, r2ka, r3ka, etc
 	if [ "`grep z80 $(top_builddir)/ports.build`" = "z80" ]; \
 	then \
-	  for target in z180 r2k gbz80 r3ka tlcs90; \
+	  for target in z180 rab; \
 	  do \
 	    for mask in '*.h' '*.inc' '*.txt'; \
 	    do \
@@ -108,6 +111,7 @@ install: all installdirs
 # --------------------------------
 uninstall:
 	rm -rf $(sdcc_includedir)
+	rm -rf $(sdcc_inclibdir)
 
 
 # Performing self-test
@@ -124,7 +128,7 @@ installcheck:
 # ---------------------------------
 installdirs:
 	mkdir -p $(sdcc_includedir)
-	for target in mcs51 ds390 ds400 pic14 pic16 z80 z180 gbz80 hc08; \
+	for target in mcs51 ds390 ds400 pic14 pic16 z180 rab hc08 mos6502; \
 	do \
 	  if [ -d $(srcdir)/$${target} ]; \
 	  then \

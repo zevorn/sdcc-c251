@@ -43,7 +43,7 @@ void T2_isr(void) __interrupt(5) __using(1)
 
 void testBug(void)
 {
-#ifdef __SDCC_mcs51
+#if 0 //defined(__SDCC_mcs51) && defined(__SDCC_STACK_AUTO) // TODO:remove STACK_AUTO CONDITION when division support routine becomes reentrant or sdcc optimizes out the call.
 	TF2 = 0;				//clear timer 2 interrupt
 	ET2 = 1;				//enable timer 2 interrupt
 	EA = 1;					//enable interrupts

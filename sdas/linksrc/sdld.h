@@ -26,10 +26,16 @@ enum sdld_target_e {
   TARGET_ID_8051,
   TARGET_ID_6808,
   TARGET_ID_STM8,
+  TARGET_ID_PDK,
+  TARGET_ID_PDK13,
+  TARGET_ID_PDK14,
+  TARGET_ID_PDK15,
+  TARGET_ID_F8,
 };
 
 void sdld_init (char *path);
 int is_sdld(void);
+void set_sdld_target(enum sdld_target_e trgt);
 enum sdld_target_e get_sdld_target(void);
 int is_sdld_target_z80_like(void);
 int is_sdld_target_8051_like(void);
@@ -40,5 +46,10 @@ int is_sdld_target_8051_like(void);
 #define TARGET_IS_8051  (get_sdld_target() == TARGET_ID_8051)
 #define TARGET_IS_6808  (get_sdld_target() == TARGET_ID_6808)
 #define TARGET_IS_STM8  (get_sdld_target() == TARGET_ID_STM8)
-
+#define TARGET_IS_PDK                      \
+  (get_sdld_target() == TARGET_ID_PDK ||   \
+   get_sdld_target() == TARGET_ID_PDK13 || \
+   get_sdld_target() == TARGET_ID_PDK14 || \
+   get_sdld_target() == TARGET_ID_PDK15)
+#define TARGET_IS_F8  (get_sdld_target() == TARGET_ID_F8)
 #endif  /* __SDLD_H */

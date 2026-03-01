@@ -6,10 +6,8 @@
 
 #ifdef __SDCC
 #pragma std_c99
-#pragma disable_warning 93
 #endif
 
-#ifndef SDCC_mcs51
 #include <string.h>
 
 /* PR tree-optimization/47538 */
@@ -20,6 +18,7 @@ struct S
   unsigned long d;
 };
 
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
 void
 foo (struct S *x, const struct S *y)
 {
@@ -57,7 +56,7 @@ foo (struct S *x, const struct S *y)
 void
 testTortureExecute (void)
 {
-#if !(defined __SDCC_mcs51)
+#if !(defined(__SDCC_mcs51) && defined(__SDCC_MODEL_SMALL)) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
   struct S x, y;
   double c[4] = { 10, 20, 30, 40 }, d[4], e[4] = { 118, 118, 118, 118 };
 

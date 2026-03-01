@@ -3,10 +3,12 @@
 VPATH  = @srcdir@
 srcdir = @srcdir@
 top_builddir = @top_builddir@
+abs_top_builddir = @abs_top_builddir@
 
 LIB_TYPE     = @LIB_TYPE@
 
 CC = $(top_builddir)/bin/sdcc
+SDAR = $(abs_top_builddir)/bin/sdar
 
 # override PORTDIR defined by super (parent) makefile
 override PORTDIR = ../build/ds400
@@ -18,7 +20,7 @@ OBJECTS = tinibios.rel memcpyx.rel ds400rom.rel
 SOURCES = $(patsubst %.rel,%.c,$(OBJECTS))
 
 CPPFLAGS = -I$(srcdir)/../../include -I$(srcdir)/../../include/ds400
-CFLAGS = -mds400 $(CPPFLAGS) $(VERBOSE) --std-c99
+CFLAGS = -mds400 $(CPPFLAGS) $(VERBOSE) --std-c23
 
 all: $(OBJECTS) $(PORTDIR)/libds400.lib
 
@@ -35,10 +37,10 @@ ifeq ($(LIB_TYPE), SDCCLIB)
 	$(top_builddir)/bin/sdcclib -a $@ $(OBJECTS)
 else
   ifeq ($(LIB_TYPE), AR)
-	$(top_builddir)/bin/sdar -rcS $@ $(OBJECTS)
+	$(SDAR) -rcSD $@ $(OBJECTS)
   else
     ifeq ($(LIB_TYPE), RANLIB)
-	$(top_builddir)/bin/sdar -rc $@ $(OBJECTS)
+	$(SDAR) -rcD $@ $(OBJECTS)
     else
 	rm -f $@;
 	for libfile in $(basename $(OBJECTS)); do echo $$libfile >>$@; done
@@ -65,3 +67,6 @@ Makefile.dep: $(SOURCES)
 ifeq "$(findstring $(MAKECMDGOALS),clean distclean)" ""
   -include Makefile.dep
 endif
+
+Makefile: $(srcdir)/Makefile.in
+	cd $(top_builddir); ./config.status device/lib/ds400/Makefile

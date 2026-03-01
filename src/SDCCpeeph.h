@@ -22,6 +22,8 @@
 #ifndef  SDCCPEEPH_H
 #define SDCCPEEPH_H 1
 
+#include <ctype.h>
+
 #include "SDCCgen.h"
 
 #define MAX_PATTERN_LEN 256
@@ -59,4 +61,53 @@ void peepHole (lineNode **);
 
 const char * StrStr (const char * str1, const char * str2);
 
+// Check if asm line pl is instruction inst (i.e. the first non-whitespace is inst).
+static inline bool lineIsInst (const lineNode *pl, const char *inst)
+{
+  return (!STRNCASECMP(pl->line, inst, strlen(inst)) && (!pl->line[strlen(inst)] || isspace((unsigned char)(pl->line[strlen(inst)]))));
+}
+
+// Get a pointer pointing just beyond the argument starting at arg (in an asxxxx syntax line).
+static inline const char *argEnd (const char *arg)
+{
+  if (!arg)
+    return (NULL);
+
+  for(unsigned int parens = 0; *arg; arg++)
+    {
+      if (*arg == '(' || *arg == '[')
+        parens++;
+      if (*arg == ')' || *arg == ']')
+        parens--;
+      if ((isspace (*arg) || *arg == ',') && !parens)
+        break;
+    }
+
+  return (arg);
+}
+
+// Get a pointer pointing to the start of argument i (in an asxxxx syntax line, numbered starting at 0).
+static inline const char *lineArg (const lineNode *pl, int i)
+{
+  const char *arg = i ? argEnd (lineArg (pl, i - 1)) : pl->line;
+
+  if (!arg)
+    return (NULL);
+
+  // Skip instruction menmonic (for argument 0) or the comma (for further arguments), and any whitespace beside it.
+   while (isspace (*arg))
+    arg++;
+  while (*arg && !isspace (*arg) && *arg != ',')
+    arg++;
+  while (isspace (*arg) || *arg == ',')
+    arg++;
+
+  // Check for comment
+  if (*arg == ';')
+    return (NULL);
+
+  return (arg);
+}
+
 #endif
+

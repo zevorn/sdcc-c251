@@ -57,8 +57,8 @@ typedef struct eBBlock
   set *inExprs;                 /* in coming common expressions    */
   set *outExprs;                /* out going common expressions    */
   set *killedExprs;             /* killed common expressions       */
-  bitVect *inDefs;              /* in coming defintions            */
-  bitVect *outDefs;             /* out going defintions            */
+  bitVect *inDefs;              /* in coming definitions           */
+  bitVect *outDefs;             /* out going definitions           */
   bitVect *defSet;              /* symbols defined in block        */
   bitVect *ldefs;               /* local definitions only          */
   bitVect *usesDefs;            /* which definitions are used in this block */
@@ -95,7 +95,7 @@ extern set *graphEdges;
 DEFSETFUNC (printEntryLabel);
 eBBlock *neweBBlock ();
 edge *newEdge (eBBlock *, eBBlock *);
-eBBlock *eBBWithEntryLabel (ebbIndex *, symbol *);
+eBBlock *eBBWithEntryLabel (ebbIndex *, const symbol *);
 DEFSETFUNC (ifFromIs);
 set *edgesTo (eBBlock *);
 void remiCodeFromeBBlock (eBBlock *, iCode *);
@@ -108,5 +108,6 @@ void replaceLabel (eBBlock *, symbol *, symbol *);
 void dumpEbbsToFileExt (int, ebbIndex *);
 void dumpLiveRanges (int, hTab * liveRanges);
 void closeDumpFiles ();
+void freeeBBlockData(ebbIndex *);
 
 #endif

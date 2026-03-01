@@ -36,6 +36,8 @@ symbol *interrupts[INTNO_MAX + 1];
 void printIval (symbol *, sym_link *, initList *, struct dbuf_s *, bool check);
 set *publics = NULL;            /* public variables */
 set *externs = NULL;            /* Variables that are declared as extern */
+set *strSym = NULL;             /* string initializers */
+set *ccpStr = NULL;             /* char * const pointers with a string literal initializer */
 
 unsigned maxInterrupts = 0;
 int allocInfo = 1;
@@ -44,7 +46,7 @@ int noInit = 0;                 /* no initialization */
 
 
 char *
-aopLiteralGptr (const char * name, value * val)
+aopLiteralGptr (const char *name, const value *val)
 {
   unsigned long v = ulFromVal (val);
   struct dbuf_s dbuf;
@@ -63,8 +65,8 @@ aopLiteralGptr (const char * name, value * val)
   return dbuf_detach_c_str (&dbuf);
 }
 
-char *
-aopLiteralLong (value * val, int offset, int size)
+const char *
+aopLiteralLong (value *val, int offset, int size)
 {
   unsigned long v;
   struct dbuf_s dbuf;
@@ -105,8 +107,8 @@ aopLiteralLong (value * val, int offset, int size)
 /*-----------------------------------------------------------------*/
 /* aopLiteral - string from a literal value                        */
 /*-----------------------------------------------------------------*/
-char *
-aopLiteral (value * val, int offset)
+const char *
+aopLiteral (value *val, int offset)
 {
   return aopLiteralLong (val, offset, 1);
 }
@@ -129,14 +131,14 @@ emitDebugSym (struct dbuf_s *oBuf, symbol * sym)
     {
       dbuf_printf (oBuf, "G$");
     }
-  dbuf_printf (oBuf, "%s$%d$%d", sym->name, sym->level, sym->block);
+  dbuf_printf (oBuf, "%s$%ld_%ld$%d", sym->name, sym->level / LEVEL_UNIT, sym->level % LEVEL_UNIT, sym->block);
 }
 
 /*-----------------------------------------------------------------*/
 /* emitRegularMap - emit code for maps with no special cases       */
 /*-----------------------------------------------------------------*/
 static void
-emitRegularMap (memmap * map, bool addPublics, bool arFlag)
+emitRegularMap (memmap *map, bool addPublics, bool arFlag)
 {
   symbol *sym;
   ast *ival = NULL;
@@ -148,9 +150,19 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
     {
       /* PENDING: special case here - should remove */
       if (!strcmp (map->sname, CODE_NAME))
-        dbuf_tprintf (&map->oBuf, "\t!areacode\n", map->sname);
+        {
+          if (options.code_seg && strcmp (CODE_NAME, options.code_seg))
+            dbuf_tprintf (&map->oBuf, "\t!areacode\n", options.code_seg);
+          else
+            dbuf_tprintf (&map->oBuf, "\t!areacode\n", map->sname);
+        }
       else if (!strcmp (map->sname, DATA_NAME))
-        dbuf_tprintf (&map->oBuf, "\t!areadata\n", map->sname);
+        {
+          if (options.data_seg && strcmp (DATA_NAME, options.data_seg))
+            dbuf_tprintf (&map->oBuf, "\t!areadata\n", options.data_seg);
+          else
+            dbuf_tprintf (&map->oBuf, "\t!areadata\n", map->sname);
+        }
       else if (!strcmp (map->sname, HOME_NAME))
         dbuf_tprintf (&map->oBuf, "\t!areahome\n", map->sname);
       else
@@ -167,7 +179,6 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
       /* if allocation required check is needed
          then check if the symbol really requires
          allocation only for local variables */
-
       if (arFlag && !IS_AGGREGATE (sym->type) && !(sym->_isparm && !IS_REGPARM (sym->etype)) && !sym->allocreq && sym->level)
         continue;
 
@@ -208,6 +219,36 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
           if ((SPEC_OCLS (sym->etype) == xidata || SPEC_OCLS (sym->etype) == initialized) && !SPEC_ABSA (sym->etype) && !SPEC_ADDRSPACE (sym->etype))
             {
               sym_link *t;
+              ast *ival = NULL;
+              symbol *tsym = copySymbol (sym);
+
+              // check for constant
+              if (IS_AGGREGATE (tsym->type))
+                {
+                  ival = initAggregates (tsym, tsym->ival, NULL);
+                }
+              else
+                {
+                  checkScalariList (sym, sym->type, sym->ival, false);
+                  ival = newNode ('=', newAst_VALUE (symbolVal (tsym)),
+                                  decorateType (resolveSymbols (list2expr (tsym->ival)), RESULT_TYPE_NONE, true));
+                }
+              if (ival)
+                {
+                  // No point trying to initialize by something that doesn't even make sense.
+                  if (astErrors (ival))
+                    continue;
+                  
+                  // set ival's lineno to where the symbol was defined
+                  setAstFileLine (ival, filename = tsym->fileDef, lineno = tsym->lineDef);
+                  // check if this is not a constant expression
+                  if (!constExprTree (ival))
+                    {
+                      werrorfl (ival->filename, ival->lineno, E_CONST_EXPECTED, "found expression");
+                      continue; // Don't even try to do it anyway to avoid segfaults later.
+                    }
+                }
+
               /* create a new "XINIT (CODE)" symbol, that will be emitted later
                  in the static seg */
               newSym = copySymbol (sym);
@@ -225,8 +266,10 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
                 DCL_PTR_CONST (t) = 1;
               SPEC_STAT (newSym->etype) = 1;
 
-              /* This results in unencessary calls to stringToSymbol() through decorateType(), which make strings take twice as much  space as they should */
+              strSym = NULL;
+              ++noAlloc;
               resolveIvalSym (newSym->ival, newSym->type);
+              --noAlloc;
 
               // add it to the "XINIT (CODE)" segment
               addSet ((SPEC_OCLS (sym->etype) == xidata) ? &xinit->syms : &initializer->syms, newSym);
@@ -234,8 +277,10 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
               if (!SPEC_ABSA (sym->etype))
                 {
                   struct dbuf_s tmpBuf;
+                  symbol *ps = NULL;
+                  set *tmpSym = NULL;
 
-                  dbuf_init (&tmpBuf, 4096);
+                  wassert(dbuf_init (&tmpBuf, 4096));
                   // before allocation we must parse the sym->ival tree
                   // but without actually generating initialization code
                   ++noAlloc;
@@ -244,8 +289,20 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
                   printIval (sym, sym->type, sym->ival, &tmpBuf, TRUE);
                   --noInit;
                   --noAlloc;
+
+                  // delete redundant __str_%d symbols (initializer for char arrays)
+                  for (ps = setFirstItem (statsg->syms); ps; ps = setNextItem (statsg->syms))
+                    if (!strstr (tmpBuf.buf, ps->name) && isinSet (strSym, ps))
+                      addSet (&tmpSym, ps);
+                  for (ps = setFirstItem (tmpSym); ps; ps = setNextItem (tmpSym))
+                    deleteSetItem (&statsg->syms, ps);
+
+                  deleteSet (&tmpSym);
                   dbuf_destroy (&tmpBuf);
                 }
+
+              if (strSym)
+                deleteSet (&strSym);
             }
           else
             {
@@ -255,16 +312,13 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
                 }
               else
                 {
-                  if (getNelements (sym->type, sym->ival) > 1)
-                    {
-                      werrorfl (sym->fileDef, sym->lineDef, W_EXCESS_INITIALIZERS, "scalar", sym->name);
-                    }
+                  checkScalariList (sym, sym->type, sym->ival, false);
                   ival = newNode ('=', newAst_VALUE (symbolVal (sym)),
-                                  decorateType (resolveSymbols (list2expr (sym->ival)), RESULT_TYPE_NONE));
+                                  decorateType (resolveSymbols (list2expr (sym->ival)), RESULT_TYPE_NONE, true));
                 }
               codeOutBuf = &statsg->oBuf;
 
-              if (ival)
+              if (ival && !astErrors (ival)) // No point trying to initialize by something that doesn't even make sense.
                 {
                   // set ival's lineno to where the symbol was defined
                   setAstFileLine (ival, filename = sym->fileDef, lineno = sym->lineDef);
@@ -272,12 +326,15 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
                   if (!constExprTree (ival))
                     {
                       werrorfl (ival->filename, ival->lineno, E_CONST_EXPECTED, "found expression");
-                      // but try to do it anyway
+                      // Don't try to do it anyway, as this is likely to result in a segfault in codegen later, especially if the expression contains function calls.
                     }
-                  allocInfo = 0;
-                  if (!astErrors (ival))
-                    eBBlockFromiCode (iCodeFromAst (ival));
-                  allocInfo = 1;
+                  else
+                    {
+                      allocInfo = 0;
+                      if (!astErrors (ival))
+                        eBBlockFromiCode (iCodeFromAst (ival));
+                      allocInfo = 1;
+                    }
                 }
             }
         }
@@ -286,24 +343,13 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
          an equate for this no need to allocate space */
       if (SPEC_ABSA (sym->etype) && !sym->ival)
         {
-          char *equ = "=";
+          const char *equ = "=";
 
           /* print extra debug info if required */
           if (options.debug)
             {
               emitDebugSym (&map->oBuf, sym);
               dbuf_printf (&map->oBuf, " == 0x%04x\n", SPEC_ADDR (sym->etype));
-            }
-          if (TARGET_IS_XA51)
-            {
-              if (map == sfr)
-                {
-                  equ = "sfr";
-                }
-              else if (map == bit || map == sfrbit)
-                {
-                  equ = "bit";
-                }
             }
           dbuf_printf (&map->oBuf, "%s\t%s\t0x%04x\n", sym->rname, equ, SPEC_ADDR (sym->etype));
         }
@@ -340,7 +386,7 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
 /* initValPointer - pointer initialization code massaging          */
 /*-----------------------------------------------------------------*/
 value *
-initValPointer (ast * expr)
+initValPointer (ast *expr)
 {
   value *val;
 
@@ -478,7 +524,13 @@ initValPointer (ast * expr)
       while (t->left != NULL && t->opval.op != '[')
         t = t->left;
 
-      return valForStructElem (t, expr->right); 
+      return valForStructElem (t, expr->right);
+    }
+
+  /* case 7. function name */
+  if (IS_AST_SYM_VALUE (expr) && IS_FUNC (expr->ftype))
+    {
+      return AST_VALUE (expr);
     }
 
   return NULL;
@@ -488,7 +540,7 @@ initValPointer (ast * expr)
 /* initPointer - pointer initialization code massaging             */
 /*-----------------------------------------------------------------*/
 value *
-initPointer (initList * ilist, sym_link * toType, int showError)
+initPointer (initList *ilist, sym_link *toType, int showError)
 {
   value *val;
   ast *expr;
@@ -501,7 +553,11 @@ initPointer (initList * ilist, sym_link * toType, int showError)
   expr = list2expr (ilist);
 
   if (!expr)
-    goto wrong;
+    {
+      if (showError)
+        werror (E_CONST_EXPECTED);
+      return 0;
+    }
 
   /* try it the old way first */
   if ((val = constExprValue (expr, FALSE)))
@@ -512,7 +568,7 @@ initPointer (initList * ilist, sym_link * toType, int showError)
       (expr->opval.op == '+' || expr->opval.op == '-') &&
       IS_AST_SYM_VALUE (expr->left) &&
       (IS_ARRAY (expr->left->ftype) || IS_PTR (expr->left->ftype)) &&
-      compareType (toType, expr->left->ftype) && IS_AST_LIT_VALUE (expr->right))
+      compareType (toType, expr->left->ftype, false) && IS_AST_LIT_VALUE (expr->right))
     {
       return valForCastAggr (expr->left, expr->left->ftype, expr->right, expr->opval.op);
     }
@@ -520,7 +576,7 @@ initPointer (initList * ilist, sym_link * toType, int showError)
   /* (char *)(expr1) */
   if (IS_CAST_OP (expr))
     {
-      if (compareType (toType, expr->left->ftype) == 0)
+      if (compareType (toType, expr->left->ftype, false) == 0 && showError)
         {
           werror (W_INIT_WRONG);
           printFromToType (expr->left->ftype, toType);
@@ -543,33 +599,43 @@ initPointer (initList * ilist, sym_link * toType, int showError)
   if (val)
     return val;
 
-wrong:
   if (showError)
-    if (expr)
-      werrorfl (expr->filename, expr->lineno, E_INCOMPAT_PTYPES);
-    else
-      werror (E_INCOMPAT_PTYPES);
-  return NULL;
+    {
+      if (expr)
+        werrorfl (expr->filename, expr->lineno, E_CONST_EXPECTED);
+      else
+        werror (E_CONST_EXPECTED);
+    }
+  return 0;
 }
 
 /*-----------------------------------------------------------------*/
-/* printChar - formats and prints a characater string with DB      */
+/* printChar - formats and prints a UTF-8 character string with DB */
 /*-----------------------------------------------------------------*/
 void
 printChar (struct dbuf_s *oBuf, const char *s, int plen)
 {
   int i;
-  int len = plen;
   int pplen = 0;
   char buf[100];
   char *p = buf;
-  int strEnd = plen - 1;
 
-  if (s)
-    while (s[strEnd] != 0)
-      strEnd--;
+  if (TARGET_PDK_LIKE && !TARGET_IS_PDK16) // Assembler does not support .ascii
+    {
+      while (pplen < plen)
+        {
+          if (isprint((unsigned char) *s))
+            dbuf_tprintf (oBuf, "\t!db !constbyte\t; %c\n", (unsigned char) *s, (unsigned char) *s);
+          else
+            dbuf_tprintf (oBuf, "\t!db !constbyte\n", (unsigned char) *s);
 
-  while (len && pplen < plen)
+          s++;
+          pplen++;
+        }
+      return;
+    }
+
+  while (pplen < plen)
     {
       i = 60;
       while (i && pplen < plen)
@@ -579,29 +645,83 @@ printChar (struct dbuf_s *oBuf, const char *s, int plen)
               *p = '\0';
               if (p != buf)
                 dbuf_tprintf (oBuf, "\t!ascii\n", buf);
-              dbuf_tprintf (oBuf, "\t!db !constbyte\n", pplen < strEnd ? ((unsigned char) *s) : 0x00);
+              dbuf_tprintf (oBuf, "\t!db !constbyte\n", (unsigned char) *s);
               p = buf;
+              i = 60;
             }
           else
             {
               *p = *s;
               p++;
+              i--;
             }
           s++;
           pplen++;
-          i--;
         }
       if (p != buf)
         {
           *p = '\0';
           dbuf_tprintf (oBuf, "\t!ascii\n", buf);
           p = buf;
+          i = 60;
         }
+    }
+}
 
-      if (len > 60)
-        len -= 60;
+/*-----------------------------------------------------------------*/
+/* printChar16 - formats and prints a UTF-16 character string with DB*/
+/*-----------------------------------------------------------------*/
+void
+printChar16 (struct dbuf_s *oBuf, const TYPE_TARGET_UINT *s, int plen)
+{
+  int pplen = 0;
+
+  while (pplen < plen)
+    {
+      if (TARGET_PDK_LIKE && !TARGET_IS_PDK16)
+        {
+          dbuf_tprintf (oBuf, "\t!db !constbyte\n", (*s >> 0) & 0xff);
+          dbuf_tprintf (oBuf, "\t!db !constbyte\n", (*s >> 8) & 0xff);
+        }
+      else if (port->little_endian)
+        dbuf_printf (oBuf, "\t.byte %d,%d\n", (*s >> 0) & 0xff, (*s >> 8) & 0xff);
       else
-        len = 0;
+        dbuf_printf (oBuf, "\t.byte %d,%d\n", (*s >> 8) & 0xff, (*s >> 0) & 0xff);
+
+      s++;
+      pplen++;
+    }
+  while (pplen < plen)
+    {
+      dbuf_tprintf (oBuf, "\t!db !constbyte\n", 0);
+      pplen++;
+    }
+}
+
+/*-----------------------------------------------------------------*/
+/* printChar32 - formats and prints a UTF-32 character string with DB*/
+/*-----------------------------------------------------------------*/
+void
+printChar32 (struct dbuf_s *oBuf, const TYPE_TARGET_ULONG *s, int plen)
+{
+  int pplen = 0;
+
+  while (pplen < plen)
+    {
+      if (TARGET_PDK_LIKE && !TARGET_IS_PDK16)
+        {
+          dbuf_tprintf (oBuf, "\t!db !constbyte\n", (*s >> 0) & 0xff);
+          dbuf_tprintf (oBuf, "\t!db !constbyte\n", (*s >> 8) & 0xff);
+          dbuf_tprintf (oBuf, "\t!db !constbyte\n", (*s >> 16) & 0xff);
+          dbuf_tprintf (oBuf, "\t!db !constbyte\n", (*s >> 24) & 0xff);
+        }
+      else if (port->little_endian)
+        dbuf_printf (oBuf, "\t.byte %d,%d,%d,%d\n", (*s >> 0) & 0xff, (*s >> 8) & 0xff, (*s >> 16) & 0xff, (*s >> 24) & 0xff);
+      else
+        dbuf_printf (oBuf, "\t.byte %d,%d,%d,%d\n", (*s >> 24) & 0xff, (*s >> 16) & 0xff, (*s >> 8) & 0xff,(*s >> 0) & 0xff);
+
+      s++;
+      pplen++;
     }
   while (pplen < plen)
     {
@@ -638,6 +758,35 @@ pointerTypeToGPByte (const int p_type, const char *iname, const char *oname)
   return -1;
 }
 
+/*-----------------------------------------------------------------*/
+/* printIvalVal - generate ival according from value               */
+/*-----------------------------------------------------------------*/
+static void printIvalVal(struct dbuf_s *oBuf, value *val, int size, bool newline)
+{
+  if (size == 2 && port->use_dw_for_init)
+    {
+      dbuf_tprintf (oBuf, "\t!dws\n", aopLiteralLong (val, 0, 2));
+      return;
+    }
+
+  const bool use_ret = TARGET_PDK_LIKE && !TARGET_IS_PDK16;
+
+  if (!use_ret)
+    dbuf_printf (oBuf, "\t.byte ");
+
+  for (int i = 0; i < size; i++)
+    {
+      const char *inst;
+      const char *byte = aopLiteral (val, port->little_endian ? i : size - 1 - i);
+      if (use_ret)
+        inst = i != size - 1 ? "\tret %s\n" : "\tret %s";
+      else
+        inst = i != size - 1 ? "%s, " : "%s";
+      dbuf_printf (oBuf, inst, byte);
+    }
+  if (newline)
+    dbuf_printf (oBuf, "\n");
+}
 
 /*-----------------------------------------------------------------*/
 /* _printPointerType - generates ival for pointer type             */
@@ -645,6 +794,8 @@ pointerTypeToGPByte (const int p_type, const char *iname, const char *oname)
 static void
 _printPointerType (struct dbuf_s *oBuf, const char *name, int size)
 {
+  wassert (!TARGET_PDK_LIKE);
+
   if (size == 4)
     {
       if (port->little_endian)
@@ -715,7 +866,7 @@ printIvalType (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
     {
       if (!!(val = initPointer (ilist, type, 0)))
         {
-          int i, size = getSize (type), le = port->little_endian, top = (options.model == MODEL_FLAT24) ? 3 : 2;;         
+          int i, size = getSize (type), le = port->little_endian, top = (options.model == MODEL_FLAT24) ? 3 : 2;;
           dbuf_printf (oBuf, "\t.byte ");
           for (i = (le ? 0 : size - 1); le ? (i < size) : (i > -1); i += (le ? 1 : -1))
             {
@@ -728,7 +879,7 @@ printIvalType (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
 			    if (val->name && strlen (val->name) > 0)
                   dbuf_printf (oBuf, "(%s >> %d)", val->name, i * 8);
 				else
-                  dbuf_printf (oBuf, "#0x00");				
+                  dbuf_printf (oBuf, "#0x00");
               else
                 dbuf_printf (oBuf, "#0x00");
               if (i == (le ? (size - 1) : 0))
@@ -759,7 +910,7 @@ printIvalType (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
 
   if (val->type != type)
     {
-      val = valCastLiteral (type, floatFromVal (val), ullFromVal (val));
+      val = valCastLiteral (type, floatFromVal (val), (TYPE_TARGET_ULONGLONG) ullFromVal (val));
     }
 
   if (IS_INTEGRAL (val->type))
@@ -790,19 +941,10 @@ printIvalType (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
     case 2:
       if (port->use_dw_for_init)
         {
-          dbuf_tprintf (oBuf, "\t!dws\n", aopLiteralLong (val, 0, 2));
+          printIvalVal (oBuf, val, 2, true);
           break;
         }
-      else if (port->little_endian)
-        {
-          dbuf_printf (oBuf, "\t.byte %s,%s",
-                       aopLiteral (val, 0), aopLiteral (val, 1));
-        }
-      else
-        {
-          dbuf_printf (oBuf, "\t.byte %s,%s",
-                       aopLiteral (val, 1), aopLiteral (val, 0));
-        }
+      printIvalVal (oBuf, val, 2, false);
       if (IS_UNSIGNED (val->type))
         dbuf_printf (oBuf, "\t; %u\n", (unsigned int) ulVal);
       else
@@ -817,16 +959,8 @@ printIvalType (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
         }
       else
         {
-          if (port->little_endian)
-            {
-              dbuf_printf (oBuf, "\t.byte %s,%s,%s,%s",
-                           aopLiteral (val, 0), aopLiteral (val, 1), aopLiteral (val, 2), aopLiteral (val, 3));
-            }
-          else
-            {
-              dbuf_printf (oBuf, "\t.byte %s,%s,%s,%s",
-                           aopLiteral (val, 3), aopLiteral (val, 2), aopLiteral (val, 1), aopLiteral (val, 0));
-            }
+          printIvalVal (oBuf, val, 4, false);
+
           if (IS_FLOAT (val->type))
             {
               dbuf_printf (oBuf, "\t; % e\n", floatFromVal (val));
@@ -840,36 +974,25 @@ printIvalType (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
             }
         }
       break;
-    case 8:
-      if (port->little_endian)
-        {
-          dbuf_printf (oBuf, "\t.byte %s,%s,%s,%s,%s,%s,%s,%s",
-            aopLiteral (val, 0), aopLiteral (val, 1), aopLiteral (val, 2), aopLiteral (val, 3), aopLiteral (val, 4), aopLiteral (val, 5), aopLiteral (val, 6), aopLiteral (val, 7));
-        }
-      else
-        {
-          dbuf_printf (oBuf, "\t.byte %s,%s,%s,%s,%s,%s,%s,%s",
-            aopLiteral (val, 7), aopLiteral (val, 6), aopLiteral (val, 5), aopLiteral (val, 4), aopLiteral (val, 3), aopLiteral (val, 2), aopLiteral (val, 1), aopLiteral (val, 0));
-        }
-      // TODO: Print value as comment. Does dbuf_printf support long long even on MSVC?
-      dbuf_printf (oBuf, "\n");
-      break;
     default:
-      wassertl (0, "Attempting to initialize integer of non-handled size.");
+      printIvalVal (oBuf, val, getSize (type), true);
+      break;
     }
 }
 
 /*-----------------------------------------------------------------*/
 /* printIvalBitFields - generate initializer for bitfields         */
+/* return the number of bytes written                              */
 /*-----------------------------------------------------------------*/
-static void
+static unsigned int
 printIvalBitFields (symbol ** sym, initList ** ilist, struct dbuf_s *oBuf)
 {
   symbol *lsym = *sym;
   initList *lilist = *ilist;
-  unsigned long ival = 0;
+  unsigned long long ival = 0;
   unsigned size = 0;
   unsigned bit_start = 0;
+  unsigned long int bytes_written = 0;
 
   while (lsym && IS_BITFIELD (lsym->type))
     {
@@ -904,7 +1027,7 @@ printIvalBitFields (symbol ** sym, initList ** ilist, struct dbuf_s *oBuf)
               werror (W_LIT_OVERFLOW);
             }
 
-          ival |= (ulFromVal (val) & ((1ul << bit_length) - 1ul)) << bit_start;
+          ival |= (ullFromVal (val) & (0xffffffffffffffffull >> (64 - bit_length))) << bit_start;
           lilist = lilist ? lilist->next : NULL;
         }
       bit_start += bit_length;
@@ -916,33 +1039,30 @@ printIvalBitFields (symbol ** sym, initList ** ilist, struct dbuf_s *oBuf)
         }
     }
 
-  switch (size)
+  for (unsigned int i = 0; i < size ; i++)
     {
-    case 1:
-      dbuf_tprintf (oBuf, "\t!db !constbyte\n", ival);
-      break;
-
-    case 2:
-      dbuf_tprintf (oBuf, "\t!db !constbyte, !constbyte\n", (ival & 0xff), (ival >> 8) & 0xff);
-      break;
-
-    case 4:
-      dbuf_tprintf (oBuf, "\t!db !constbyte, !constbyte, !constbyte, !constbyte\n",
-                    (ival & 0xff), (ival >> 8) & 0xff, (ival >> 16) & 0xff, (ival >> 24) & 0xff);
-      break;
+      if (TARGET_PDK_LIKE && !TARGET_IS_PDK16)
+        dbuf_tprintf (oBuf, "\tret !constbyte\n", (unsigned)(((unsigned long long)ival >> i * 8) & 0xff));
+      else
+        dbuf_tprintf (oBuf, "\t!db !constbyte\n", (unsigned)(((unsigned long long)ival >> i * 8) & 0xff));
+      bytes_written++;
     }
+
   *sym = lsym;
   *ilist = lilist;
+
+  return (bytes_written);
 }
 
 /*-----------------------------------------------------------------*/
 /* printIvalStruct - generates initial value for structures        */
 /*-----------------------------------------------------------------*/
 static void
-printIvalStruct (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf)
+printIvalStruct (symbol *sym, sym_link *type, initList *ilist, struct dbuf_s *oBuf)
 {
   symbol *sflds;
   initList *iloop = NULL;
+  unsigned int skip_holes = 0;
 
   sflds = SPEC_STRUCT (type)->fields;
 
@@ -950,7 +1070,10 @@ printIvalStruct (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s 
     {
       if (ilist->type != INIT_DEEP)
         {
-          werrorfl (sym->fileDef, sym->lineDef, E_INIT_STRUCT, sym->name);
+          if (SPEC_CONSTEXPR (type))
+            printIvalStruct (sym, type, ilist->init.node->opval.val->sym->ival, oBuf);
+          else
+            werrorfl (sym->fileDef, sym->lineDef, E_INIT_STRUCT, sym->name);
           return;
         }
 
@@ -983,8 +1106,14 @@ printIvalStruct (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s 
     }
   else
     {
+      // Hack to avoid the hack below (the one that fixed bug #2643) breaking zero-length bit-fields as first member of a struct (bug #3542).
+      if(IS_BITFIELD (sflds->type) && !SPEC_BLEN (sflds->etype))
+        sflds = sflds->next;
+
       while (sflds)
         {
+          unsigned int oldoffset = sflds->offset;
+
           if (IS_BITFIELD (sflds->type))
             printIvalBitFields (&sflds, &iloop, oBuf);
           else
@@ -993,6 +1122,19 @@ printIvalStruct (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s 
               sflds = sflds->next;
               iloop = iloop ? iloop->next : NULL;
             }
+
+          // Handle members from anonymous unions. Just a hack to fix bug #2643.
+          while (sflds && sflds->offset == oldoffset)
+            {
+              sflds = sflds->next;
+              skip_holes++;
+            }
+        }
+
+      while (skip_holes && iloop && iloop->type == INIT_HOLE)
+        {
+          skip_holes--;
+          iloop = iloop ? iloop->next : NULL;
         }
     }
 
@@ -1007,7 +1149,9 @@ int
 printIvalChar (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf, const char *s, bool check)
 {
   value *val;
-  unsigned int size = DCL_ELEM (type);
+  size_t size = DCL_ELEM(type);
+  char *p;
+  size_t asz;
 
   if (!s)
     {
@@ -1023,13 +1167,24 @@ printIvalChar (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
               if (sym && IS_STRUCT (sym->type))
                 sym->flexArrayLength = size;
               else
-                DCL_ELEM (type) = size;
+                {
+                  DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (type) = size;
+                }
             }
 
           if (check && DCL_ELEM (val->type) > size)
             werror (W_EXCESS_INITIALIZERS, "array of chars", sym->name, sym->lineDef);
 
-          printChar (oBuf, SPEC_CVAL (val->etype).v_char, size);
+          if (size > (asz = DCL_ELEM (val->type)) && !!(p = malloc (size)))
+            {
+              memcpy (p, SPEC_CVAL (val->etype).v_char, asz);
+              memset (p + asz, 0x00, size - asz);
+              printChar (oBuf, p, size);
+              free (p);
+            }
+          else
+            printChar (oBuf, SPEC_CVAL (val->etype).v_char, size);
 
           return 1;
         }
@@ -1038,6 +1193,131 @@ printIvalChar (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
     }
   else
     printChar (oBuf, s, strlen (s) + 1);
+  return 1;
+}
+
+static size_t strLen16(const TYPE_TARGET_UINT *s)
+{
+  size_t l = 0;
+  while(*s++)
+    l++;
+
+  return l;
+}
+
+/*-----------------------------------------------------------------*/
+/* printIvalChar16 - generates initital value for character array  */
+/*-----------------------------------------------------------------*/
+int
+printIvalChar16 (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf, const TYPE_TARGET_UINT *s, bool check)
+{
+  value *val;
+  size_t size = DCL_ELEM(type);
+  TYPE_TARGET_UINT *p;
+  size_t asz;
+
+  if (!s)
+    {
+      val = list2val (ilist, TRUE);
+      /* if the value is a character string  */
+      if (IS_ARRAY (val->type) && IS_INT (val->etype) && IS_UNSIGNED (val->etype) && !IS_LONG (val->etype))
+        {
+          if (!size)
+            {
+              /* we have not been given a size, but now we know it */
+              size = strLen16 (SPEC_CVAL (val->etype).v_char16) + 1;
+              /* but first check, if it's a flexible array */
+              if (sym && IS_STRUCT (sym->type))
+                sym->flexArrayLength = size;
+              else
+                {
+                  DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (type) = size;
+                }
+            }
+
+          if (check && DCL_ELEM (val->type) > size)
+            werror (W_EXCESS_INITIALIZERS, "array of chars", sym->name, sym->lineDef);
+
+          if (size > (asz = DCL_ELEM (val->type)) && !!(p = malloc (size * 2)))
+            {
+              memcpy (p, SPEC_CVAL (val->etype).v_char16, asz * 2);
+              memset (p + asz, 0x00, size * 2 - asz * 2);
+              printChar16 (oBuf, p, size);
+              free (p);
+            }
+          else
+            printChar16 (oBuf, SPEC_CVAL (val->etype).v_char16, size);
+
+          return 1;
+        }
+      else
+        return 0;
+    }
+  else
+    printChar16 (oBuf, s, strLen16 (s) + 1);
+  return 1;
+}
+
+static size_t strLen32(const TYPE_TARGET_ULONG *s)
+{
+  size_t l = 0;
+  while(*s++)
+    l++;
+  return l;
+}
+
+/*-----------------------------------------------------------------*/
+/* printIvalChar32 - generates initital value for character array  */
+/*-----------------------------------------------------------------*/
+int
+printIvalChar32 (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf, const TYPE_TARGET_ULONG *s, bool check)
+{
+  value *val;
+  size_t size = DCL_ELEM(type);
+  TYPE_TARGET_ULONG *p;
+  size_t asz;
+
+  if (!s)
+    {
+      val = list2val (ilist, TRUE);
+      /* if the value is a character string  */
+      if (IS_ARRAY (val->type) && IS_INT (val->etype) && IS_UNSIGNED (val->etype) && IS_LONG (val->etype))
+        {
+          if (!size)
+            {
+              /* we have not been given a size, but now we know it */
+              size = strLen32 (SPEC_CVAL (val->etype).v_char32) + 1;
+              /* but first check, if it's a flexible array */
+              if (sym && IS_STRUCT (sym->type))
+                sym->flexArrayLength = size;
+              else
+                {
+                  DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (type) = size;
+                }
+            }
+
+          if (check && DCL_ELEM (val->type) > size)
+            werror (W_EXCESS_INITIALIZERS, "array of chars", sym->name, sym->lineDef);
+
+          if (size > (asz = DCL_ELEM (val->type)) && !!(p = malloc (size * 4)))
+            {
+              memcpy (p, SPEC_CVAL (val->etype).v_char32, asz * 4);
+              memset (p + asz, 0x00, size * 4 - asz * 4);
+              printChar32 (oBuf, p, size);
+              free (p);
+            }
+          else
+            printChar32 (oBuf, SPEC_CVAL (val->etype).v_char32, size);
+
+          return 1;
+        }
+      else
+        return 0;
+    }
+  else
+    printChar32 (oBuf, s, strLen32 (s) + 1);
   return 1;
 }
 
@@ -1057,7 +1337,7 @@ printIvalArray (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *
       /* array of characters can be init  */
       /* by a string                      */
       /* char *p = "abc";                 */
-      if (IS_CHAR (type->next) && ilist->type == INIT_NODE)
+      if ((IS_CHAR (type->next) || IS_INT (type->next)) && ilist->type == INIT_NODE)
         {
           val = list2val (ilist, TRUE);
           if (!val)
@@ -1070,12 +1350,18 @@ printIvalArray (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *
               werrorfl (ilist->filename, ilist->lineno, E_CONST_EXPECTED);
               return;
             }
-          if (printIvalChar (sym, type,
-                             ilist, oBuf, SPEC_CVAL (sym->etype).v_char, check))
+          if (IS_CHAR (type->next) && printIvalChar (sym, type, ilist, oBuf, SPEC_CVAL (sym->etype).v_char, check))
             return;
+          if (IS_INT (type->next) && IS_UNSIGNED (type->next))
+            {
+              if (!IS_LONG (type->next) && printIvalChar16 (sym, type, ilist, oBuf, SPEC_CVAL (sym->etype).v_char16, check))
+                return;
+              if (IS_LONG (type->next) && printIvalChar32 (sym, type, ilist, oBuf, SPEC_CVAL (sym->etype).v_char32, check))
+                return;
+            }
         }
       /* char *p = {"abc"}; */
-      if (IS_CHAR (type->next) && ilist->type == INIT_DEEP && ilist->init.deep && ilist->init.deep->type == INIT_NODE)
+      if ((IS_CHAR (type->next) || IS_INT (type->next)) && ilist->type == INIT_DEEP && ilist->init.deep && ilist->init.deep->type == INIT_NODE)
         {
           val = list2val (ilist->init.deep, TRUE);
           if (!val)
@@ -1088,9 +1374,15 @@ printIvalArray (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *
               werrorfl (ilist->init.deep->filename, ilist->init.deep->lineno, E_CONST_EXPECTED);
               return;
             }
-          if (printIvalChar (sym, type,
-                             ilist->init.deep, oBuf, SPEC_CVAL (sym->etype).v_char, check))
+          if (IS_CHAR (type->next) && printIvalChar (sym, type, ilist->init.deep, oBuf, SPEC_CVAL (sym->etype).v_char, check))
             return;
+          if (IS_INT (type->next) && IS_UNSIGNED (type->next))
+            {
+              if (!IS_LONG (type->next) && printIvalChar16 (sym, type, ilist->init.deep, oBuf, SPEC_CVAL (sym->etype).v_char16, check))
+                return;
+              if (IS_LONG (type->next) && printIvalChar32 (sym, type, ilist->init.deep, oBuf, SPEC_CVAL (sym->etype).v_char32, check))
+                return;
+            }
         }
 
       /* not the special case             */
@@ -1130,7 +1422,10 @@ printIvalArray (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *
       if (IS_STRUCT (sym->type))
         sym->flexArrayLength = size * getSize (type->next);
       else
-        DCL_ELEM (type) = size;
+        {
+          DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+          DCL_ELEM (type) = size;
+        }
     }
 
   return;
@@ -1159,7 +1454,7 @@ printIvalFuncPtr (sym_link * type, initList * ilist, struct dbuf_s *oBuf)
 
   if (IS_LITERAL (val->etype))
     {
-      if (compareType (type, val->type) == 0)
+      if (compareType (type, val->type, false) == 0)
         {
           if (ilist)
             werrorfl (ilist->filename, ilist->lineno, E_INCOMPAT_TYPES);
@@ -1179,9 +1474,19 @@ printIvalFuncPtr (sym_link * type, initList * ilist, struct dbuf_s *oBuf)
 
   size = getSize (type);
 
-  if (size == FPTRSIZE)
+  if (size == FUNCPTRSIZE)
     {
-      if (port->use_dw_for_init)
+      if (TARGET_PDK_LIKE)
+        {
+          dbuf_printf (oBuf, "\tret #<%s\n", name);
+          dbuf_printf (oBuf, "\tret #>%s\n", name);
+        }
+      else if (TARGET_IS_STM8 && FUNCPTRSIZE == 3)
+        {
+          _printPointerType (oBuf, name, size);
+          dbuf_printf (oBuf, "\n");
+        }
+      else if (port->use_dw_for_init)
         {
           dbuf_tprintf (oBuf, "\t!dws\n", name);
         }
@@ -1190,14 +1495,14 @@ printIvalFuncPtr (sym_link * type, initList * ilist, struct dbuf_s *oBuf)
           printPointerType (oBuf, name);
         }
     }
-  else if (size == GPTRSIZE)
+  else if (size == BFUNCPTRSIZE)
     {
       _printPointerType (oBuf, name, size);
       dbuf_printf (oBuf, "\n");
     }
   else
     {
-      assert (0);
+      wassertl (0, "Invalid function pointer size.");
     }
 
   return;
@@ -1207,9 +1512,16 @@ printIvalFuncPtr (sym_link * type, initList * ilist, struct dbuf_s *oBuf)
 /* printIvalCharPtr - generates initial values for character pointers */
 /*--------------------------------------------------------------------*/
 int
-printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s *oBuf)
+printIvalCharPtr (symbol *sym, sym_link *type, value *val, struct dbuf_s *oBuf)
 {
   int size = 0;
+  char *p;
+
+  if (val && !!(p = (char *) malloc (strlen (val->name) + 1)))
+    {
+      strcpy (p, val->name);
+      addSet (&ccpStr, p);
+    }
 
   /* PENDING: this is _very_ mcs51 specific, including a magic
      number...
@@ -1223,16 +1535,22 @@ printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s *oBu
         {
           dbuf_tprintf (oBuf, "\t!dbs\n", val->name);
         }
-      else if (size == FPTRSIZE)
+      else if (size == FARPTRSIZE || TARGET_Z80_LIKE /* An ugly hack, but so is everything else in this file. Lots of MCS-51 assumptions everywhere. */)
         {
-          if (port->use_dw_for_init)
+          if (TARGET_PDK_LIKE && !TARGET_IS_PDK16)
             {
-              dbuf_tprintf (oBuf, "\t!dws\n", val->name);
+              dbuf_printf (oBuf, "\tret #<%s\n", val->name);
+              dbuf_printf (oBuf, IN_CODESPACE (SPEC_OCLS (val->etype)) ? "\tret #>(%s + 0x8000)\n" : "\tret #0\n", val->name);
             }
+          else if ((TARGET_IS_EZ80 || TARGET_RABBIT_LIKE || TARGET_IS_TLCS90) && IS_FARPTR(type))
+            {
+              _printPointerType (oBuf, val->name, FARPTRSIZE);
+              dbuf_printf (oBuf, "\n");
+            }
+          else if (port->use_dw_for_init)
+            dbuf_tprintf (oBuf, "\t!dws\n", val->name);
           else
-            {
-              printPointerType (oBuf, val->name);
-            }
+            printPointerType (oBuf, val->name);
         }
       else if (size == GPTRSIZE)
         {
@@ -1266,7 +1584,12 @@ printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s *oBu
           dbuf_tprintf (oBuf, "\t!dbs\n", aopLiteral (val, 0));
           break;
         case 2:
-          if (port->use_dw_for_init)
+          if (TARGET_PDK_LIKE && !TARGET_IS_PDK16)
+            {
+              dbuf_tprintf (oBuf, "\tret %s\n", aopLiteral (val, 0));
+              dbuf_tprintf (oBuf, "\tret %s\n", aopLiteral (val, 1));
+            }
+          else if (port->use_dw_for_init)
             dbuf_tprintf (oBuf, "\t!dws\n", aopLiteralLong (val, 0, size));
           else if (port->little_endian)
             dbuf_tprintf (oBuf, "\t.byte %s,%s\n", aopLiteral (val, 0), aopLiteral (val, 1));
@@ -1274,7 +1597,7 @@ printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s *oBu
             dbuf_tprintf (oBuf, "\t.byte %s,%s\n", aopLiteral (val, 1), aopLiteral (val, 0));
           break;
         case 3:
-          if (IS_GENPTR (type) && GPTRSIZE > FPTRSIZE && floatFromVal (val) != 0)
+          if (IS_GENPTR (type) && GPTRSIZE > FARPTRSIZE && floatFromVal (val) != 0)
             {
               if (!IS_PTR (val->type) && !IS_FUNC (val->type))
                 {
@@ -1295,7 +1618,7 @@ printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s *oBu
             }
           break;
         case 4:
-          if (IS_GENPTR (type) && GPTRSIZE > FPTRSIZE && floatFromVal (val) != 0)
+          if (IS_GENPTR (type) && GPTRSIZE > FARPTRSIZE && floatFromVal (val) != 0)
             {
               if (!IS_PTR (val->type) && !IS_FUNC (val->type))
                 {
@@ -1350,7 +1673,7 @@ printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s *oBu
 /* printIvalPtr - generates initial value for pointers             */
 /*-----------------------------------------------------------------*/
 void
-printIvalPtr (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf)
+printIvalPtr (symbol *sym, sym_link *type, initList *ilist, struct dbuf_s *oBuf)
 {
   value *val;
   int size;
@@ -1370,17 +1693,19 @@ printIvalPtr (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oB
     return;
 
   /* if character pointer */
-  if (IS_CHAR (type->next))
+  if (IS_CHAR (type->next) || IS_INT (type->next) && IS_UNSIGNED (type->next))
     if (printIvalCharPtr (sym, type, val, oBuf))
       return;
 
   /* check the type      */
-  if (compareType (type, val->type) == 0)
+  if (compareType (type, val->type, false) == 0)
     {
       assert (ilist != NULL);
       werrorfl (ilist->filename, ilist->lineno, W_INIT_WRONG);
       printFromToType (val->type, type);
     }
+
+  const bool use_ret = TARGET_PDK_LIKE && !TARGET_IS_PDK16;
 
   /* if val is literal */
   if (IS_LITERAL (val->etype))
@@ -1394,11 +1719,16 @@ printIvalPtr (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oB
           if (port->use_dw_for_init)
             dbuf_tprintf (oBuf, "\t!dws\n", aopLiteralLong (val, 0, 2));
           else if (port->little_endian)
-            dbuf_tprintf (oBuf, "\t.byte %s,%s\n", aopLiteral (val, 0), aopLiteral (val, 1));
+            {
+              if (use_ret)
+                dbuf_tprintf (oBuf, "\tret %s\n\tret %s\n", aopLiteral (val, 0), aopLiteral (val, 1));
+              else
+                dbuf_tprintf (oBuf, "\t.byte %s,%s\n", aopLiteral (val, 0), aopLiteral (val, 1));
+            }
           else
             dbuf_tprintf (oBuf, "\t.byte %s,%s\n", aopLiteral (val, 1), aopLiteral (val, 0));
           break;
-        case 3:                // how about '390??
+        case 3:
           dbuf_printf (oBuf, "; generic printIvalPtr\n");
           if (port->little_endian)
             dbuf_printf (oBuf, "\t.byte %s,%s", aopLiteral (val, 0), aopLiteral (val, 1));
@@ -1410,19 +1740,47 @@ printIvalPtr (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oB
             dbuf_tprintf (oBuf, ",!immedbyte\n", pointerTypeToGPByte (DCL_TYPE (val->type), val->name, sym->name));
           else
             dbuf_printf (oBuf, ",%s\n", aopLiteral (val, 2));
+          break;
+        case 4:
+          if (TARGET_IS_DS390 || TARGET_IS_DS400)
+            dbuf_printf (oBuf, "\t.byte %s,%s,%s,%s\n", aopLiteral (val, 0), aopLiteral (val, 1), aopLiteral (val, 2), aopLiteral (val, 3));
+          else
+            wassertl(0, "Printing pointer of invalid size");
+          break;
+       default:
+          wassertl(0, "Printing pointer of invalid size");
+          break;
         }
       return;
     }
 
   size = getSize (type);
 
-  if (size == 1)                /* Z80 specific?? */
+  if (use_ret && size == 2)
+    {
+      if (IN_CODESPACE (SPEC_OCLS (val->etype)))
+        {
+          dbuf_printf (oBuf, "\tret #<%s\n", val->name);
+          dbuf_printf (oBuf, "\tret #>(%s + 0x8000)\n", val->name);
+        }
+      else
+        {
+          dbuf_printf (oBuf, "\tret #%s\n", val->name);
+          dbuf_printf (oBuf, "\tret #0\n");
+        }
+    }
+  else if (size == 1)                /* Z80 specific?? */
     {
       dbuf_tprintf (oBuf, "\t!dbs\n", val->name);
     }
-  else if (size == FPTRSIZE)
+  else if (size == FARPTRSIZE || TARGET_Z80_LIKE /* An ugly hack, but so is everything else in this file. Lots of MCS-51 assumptions everywhere. Like the assumtion that __far pointers are 2 bytes, and generic ones are 3 bytes. For Rabbits it's the opposite. */)
     {
-      if (port->use_dw_for_init)
+      if ((TARGET_IS_EZ80 || TARGET_RABBIT_LIKE || TARGET_IS_TLCS90) && IS_FARPTR(type))
+        {
+          _printPointerType (oBuf, val->name, FARPTRSIZE);
+          dbuf_printf (oBuf, "\n");
+        }
+      else if (port->use_dw_for_init)
         dbuf_tprintf (oBuf, "\t!dws\n", val->name);
       else
         printPointerType (oBuf, val->name);
@@ -1442,8 +1800,6 @@ printIvalPtr (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oB
 void
 printIval (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf, bool check)
 {
-  sym_link *itype;
-
   /* Handle designated initializers */
   if (ilist && ilist->type==INIT_DEEP)
     ilist = reorderIlist (type, ilist);
@@ -1458,7 +1814,7 @@ printIval (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf,
       else
         {
           ast *ast = newAst_VALUE (constVal("0"));
-          ast = decorateType (ast, RESULT_TYPE_NONE);
+          ast = decorateType (ast, RESULT_TYPE_NONE, true);
           ilist = newiList(INIT_NODE, ast);
         }
     }
@@ -1478,48 +1834,7 @@ printIval (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf,
     }
 
   if (ilist)
-    {
-      // not an aggregate, ilist must be a node
-      if (ilist->type != INIT_NODE)
-        {
-          // or a 1-element list
-          if (ilist->init.deep->next)
-            {
-              werrorfl (sym->fileDef, sym->lineDef, W_EXCESS_INITIALIZERS, "scalar", sym->name);
-            }
-          else
-            {
-              ilist = ilist->init.deep;
-            }
-        }
-
-      // and the type must match
-      itype = ilist->init.node->ftype;
-
-      if (compareType (type, itype) == 0)
-        {
-          // special case for literal strings
-          if (IS_ARRAY (itype) && IS_CHAR (getSpec (itype)) &&
-              // which are really code pointers
-              IS_CODEPTR (type))
-            {
-              // no sweat
-            }
-          else if (IS_CODEPTR (type) && IS_FUNC (type->next))   /* function pointer */
-            {
-              if (ilist)
-                werrorfl (ilist->filename, ilist->lineno, E_INCOMPAT_TYPES);
-              else
-                werror (E_INCOMPAT_TYPES);
-              printFromToType (itype, type->next);
-            }
-          else
-            {
-              werrorfl (ilist->filename, ilist->lineno, E_TYPE_MISMATCH, "assignment", " ");
-              printFromToType (itype, type);
-            }
-        }
-    }
+    ilist = checkScalariList (sym, type, ilist, true);
 
   /* if this is a pointer */
   if (IS_PTR (type))
@@ -1543,15 +1858,33 @@ void
 emitStaticSeg (memmap *map, struct dbuf_s *oBuf)
 {
   symbol *sym;
+  set *tmpSet = NULL;
 
   /* fprintf(out, "\t.area\t%s\n", map->sname); */
+//printf("emitStaticSeg %s\n", map->sname);
+  /* eliminate redundant __str_%d (generated in stringToSymbol(), SDCCast.c) */
+  for (sym = setFirstItem (map->syms); sym; sym = setNextItem (map->syms))
+    addSet (&tmpSet, sym);
 
   /* for all variables in this segment do */
   for (sym = setFirstItem (map->syms); sym; sym = setNextItem (map->syms))
-    {
+    {//printf("emit symbol %s\n", sym->name);
       /* if it is "extern" then do nothing */
       if (IS_EXTERN (sym->etype) && !sym->ival)
         continue;
+
+      /* eliminate redundant __str_%d (generated in stringToSymbol(), SDCCast.c) */
+      if (!isinSet (tmpSet, sym))
+        {
+          const char *p;
+          if (!ccpStr)
+            continue;
+          for (p = setFirstItem (ccpStr); p; p = setNextItem (ccpStr))
+            if (strcmp (p, sym->name) == 0)
+              break;
+          if (!p)
+            continue;
+        }
 
       /* if it is not static add it to the public table */
       if (!IS_STATIC (sym->etype))
@@ -1579,11 +1912,13 @@ emitStaticSeg (memmap *map, struct dbuf_s *oBuf)
             }
           /* if it has an initial value */
           if (sym->ival)
-            {
+            {//printf("ival.\n");
               if (SPEC_ABSA (sym->etype))
                 {
                   dbuf_tprintf (oBuf, "\t!org\n", SPEC_ADDR (sym->etype));
                 }
+              else if (options.const_seg && map != xinit && map != initializer)
+                dbuf_tprintf(&code->oBuf, "\t!area\n", options.const_seg);
               if (options.debug)
                 {
                   emitDebugSym (oBuf, sym);
@@ -1601,27 +1936,55 @@ emitStaticSeg (memmap *map, struct dbuf_s *oBuf)
                 {
                   freeStringSymbol (list2val (sym->ival, TRUE)->sym);
                 }
+              if (!SPEC_ABSA (sym->etype) && options.const_seg && map != xinit && map != initializer)
+                dbuf_tprintf(oBuf, "\t!areacode\n", options.code_seg);
             }
           else
-            {
+            {//printf("no ival.\n");
               /* allocate space */
               if (options.debug)
                 {
                   emitDebugSym (oBuf, sym);
                   dbuf_printf (oBuf, " == .\n");
                 }
-              dbuf_printf (oBuf, "%s:\n", sym->rname);
               /* special case for character strings */
-              if (IS_ARRAY (sym->type) && IS_CHAR (sym->type->next) && SPEC_CVAL (sym->etype).v_char)
+              if (IS_ARRAY (sym->type) &&
+                (IS_CHAR (sym->type->next) && SPEC_CVAL (sym->etype).v_char ||
+                 IS_INT (sym->type->next) && !IS_LONG (sym->type->next) && SPEC_CVAL (sym->etype).v_char16 ||
+                 IS_INT (sym->type->next) && IS_LONG (sym->type->next) && SPEC_CVAL (sym->etype).v_char32))
                 {
-                  printChar (oBuf, SPEC_CVAL (sym->etype).v_char, size);
+                  if (options.const_seg)
+                    dbuf_tprintf(&code->oBuf, "\t!area\n", options.const_seg);
+                  dbuf_printf (oBuf, "%s:\n", sym->rname);
+                  if (IS_CHAR (sym->type->next))
+                    printChar (oBuf, SPEC_CVAL (sym->etype).v_char, size);
+                  else if (IS_INT (sym->type->next) && !IS_LONG (sym->type->next))
+                    printChar16 (oBuf, SPEC_CVAL (sym->etype).v_char16, size / 2);
+                  else if (IS_INT (sym->type->next) && IS_LONG (sym->type->next))
+                    printChar32 (oBuf, SPEC_CVAL (sym->etype).v_char32, size / 4);
+                  else
+                    wassert (0);
+                  if (options.const_seg)
+                    dbuf_tprintf(oBuf, "\t!areacode\n", options.code_seg);
                 }
               else
                 {
+                  dbuf_printf (oBuf, "%s:\n", sym->rname);
                   dbuf_tprintf (oBuf, "\t!ds\n", (unsigned int) size & 0xffff);
                 }
             }
         }
+    }
+
+  if (tmpSet)
+    deleteSet (&tmpSet);
+  if (ccpStr)
+    {
+      char *p;
+      for (p = setFirstItem (ccpStr); p; p = setNextItem (ccpStr))
+        if (p)
+          free (p);
+      deleteSet (&ccpStr);
     }
 }
 
@@ -1632,8 +1995,8 @@ void
 emitMaps (void)
 {
   namedspacemap *nm;
-  int publicsfr = TARGET_IS_MCS51;      /* Ideally, this should be true for all  */
-                                        /* ports but let's be conservative - EEP */
+  int publicsfr = TARGET_IS_MCS51 || TARGET_PDK_LIKE;      /* Ideally, this should be true for all  */
+                                                           /* ports but let's be conservative - EEP */
 
   inInitMode++;
   /* no special considerations for the following
@@ -1659,16 +2022,20 @@ emitMaps (void)
     {
       emitRegularMap (xidata, TRUE, TRUE);
     }
+  if (xconst)
+    {
+      dbuf_tprintf (&xconst->oBuf, "\t!areacode\n", xconst->sname);
+      emitStaticSeg (xconst, &xconst->oBuf);
+    }
   emitRegularMap (sfr, publicsfr, FALSE);
   emitRegularMap (sfrbit, publicsfr, FALSE);
   emitRegularMap (home, TRUE, FALSE);
   emitRegularMap (code, TRUE, FALSE);
 
   if (options.const_seg)
-    {
-      dbuf_tprintf (&code->oBuf, "\t!area\n", options.const_seg);
-    }
+    dbuf_tprintf (&code->oBuf, "\t!area\n", options.const_seg);
   emitStaticSeg (statsg, &code->oBuf);
+
   if (port->genXINIT)
     {
       dbuf_tprintf (&code->oBuf, "\t!area\n", xinit->sname);
@@ -1691,8 +2058,17 @@ emitMaps (void)
 void
 flushStatics (void)
 {
+  if (!setFirstItem (statsg->syms))
+    return;
+
+  if (options.const_seg)
+    dbuf_tprintf (&code->oBuf, "\t!area\n", options.const_seg);
+
   emitStaticSeg (statsg, codeOutBuf);
-  statsg->syms = NULL;
+  statsg->syms = 0;
+
+  if (options.const_seg)
+    dbuf_tprintf (&code->oBuf, "\t!area\n", options.code_seg);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1707,7 +2083,7 @@ createInterruptVect (struct dbuf_s *vBuf)
   /* only if the main function exists */
   if (!(mainf = findSymWithLevel (SymbolTab, mainf)))
     {
-      if (!options.cc_only && !noAssemble && !options.c1mode)
+      if (!options.cc_only && !options.no_assemble && !options.c1mode)
         werror (E_NO_MAIN);
       return;
     }
@@ -1716,7 +2092,7 @@ createInterruptVect (struct dbuf_s *vBuf)
   if (!IFFUNC_HASBODY (mainf->type))
     {
       /* if ! compile only then main function should be present */
-      if (!options.cc_only && !noAssemble)
+      if (!options.cc_only && !options.no_assemble)
         werror (E_NO_MAIN);
       return;
     }
@@ -1732,12 +2108,12 @@ createInterruptVect (struct dbuf_s *vBuf)
     }
 }
 
-char *iComments1 = {
+const char *iComments1 = {
   ";--------------------------------------------------------\n"
-  "; File Created by SDCC : free open source ANSI-C Compiler\n"
+  "; File Created by SDCC : free open source ISO C Compiler\n"
 };
 
-char *iComments2 = {
+const char *iComments2 = {
   ";--------------------------------------------------------\n"
 };
 
@@ -1746,13 +2122,10 @@ char *iComments2 = {
 /* initialComments - puts in some initial comments                 */
 /*-----------------------------------------------------------------*/
 void
-initialComments (FILE * afile)
+initialComments (FILE *afile)
 {
-  time_t t;
-  time (&t);
   fprintf (afile, "%s", iComments1);
   fprintf (afile, "; Version " SDCC_VERSION_STR " #%s (%s)\n", getBuildNumber (), getBuildEnvironment ());
-  fprintf (afile, "; This file was generated %s", asctime (localtime (&t)));
   fprintf (afile, "%s", iComments2);
 }
 
@@ -1769,7 +2142,15 @@ printPublics (FILE * afile)
   fprintf (afile, "%s", iComments2);
 
   for (sym = setFirstItem (publics); sym; sym = setNextItem (publics))
-    tfprintf (afile, "\t!global\n", sym->rname);
+    {
+      if (TARGET_Z80_LIKE && IFFUNC_BANKED(sym->type))
+        {
+          /* TODO: use template for bank symbol generation */
+          sprintf (buffer, "b%s", sym->rname);
+          tfprintf (afile, "\t!global\n", buffer);
+        }
+      tfprintf (afile, "\t!global\n", sym->rname);
+    }
 }
 
 /*-----------------------------------------------------------------*/
@@ -1883,7 +2264,7 @@ glue (void)
   dbuf_init (&ovrBuf, 4096);
 
   mcs51_like = (port->general.glue_up_main &&
-                (TARGET_IS_MCS51 || TARGET_IS_DS390 || TARGET_IS_XA51 || TARGET_IS_DS400));
+                (TARGET_IS_MCS51 || TARGET_IS_DS390 || TARGET_IS_DS400));
 
   /* print the global struct definitions */
   if (options.debug)
@@ -1908,7 +2289,7 @@ glue (void)
 
   /* -o option overrides default name? */
   dbuf_init (&asmFileName, PATH_MAX);
-  if ((noAssemble || options.c1mode) && fullDstFileName)
+  if ((options.no_assemble || options.c1mode) && fullDstFileName)
     {
       dbuf_append_str (&asmFileName, fullDstFileName);
     }
@@ -1920,7 +2301,7 @@ glue (void)
 
   if (!(asmFile = fopen (dbuf_c_str (&asmFileName), "w")))
     {
-      werror (E_FILE_OPEN_ERR, dbuf_c_str (&asmFileName));
+      werror (E_OUTPUT_FILE_OPEN_ERR, dbuf_c_str (&asmFileName), strerror (errno));
       dbuf_destroy (&asmFileName);
       exit (EXIT_FAILURE);
     }
@@ -1929,67 +2310,19 @@ glue (void)
   /* initial comments */
   initialComments (asmFile);
 
-  if (TARGET_IS_S08)
-    fprintf (asmFile, "\t.cs08\n");
-  else if (TARGET_IS_Z180)
-    fprintf (asmFile, "\t.hd64\n");
-  else if (TARGET_IS_R3KA)
-    fprintf (asmFile, "\t.r3k\n");
-
   /* print module name */
   tfprintf (asmFile, "\t!module\n", moduleName);
-  if (mcs51_like)
-    {
-      if(!options.noOptsdccInAsm)
-        fprintf (asmFile, "\t.optsdcc -m%s", port->target);
 
-      switch (options.model)
-        {
-        case MODEL_SMALL:
-          fprintf (asmFile, " --model-small");
-          break;
-        case MODEL_COMPACT:
-          fprintf (asmFile, " --model-compact");
-          break;
-        case MODEL_MEDIUM:
-          fprintf (asmFile, " --model-medium");
-          break;
-        case MODEL_LARGE:
-          fprintf (asmFile, " --model-large");
-          break;
-        case MODEL_FLAT24:
-          fprintf (asmFile, " --model-flat24");
-          break;
-        case MODEL_HUGE:
-          fprintf (asmFile, " --model-huge");
-          break;
-        default:
-          break;
-        }
-      /*if(options.stackAuto)      fprintf (asmFile, " --stack-auto"); */
-      if (options.useXstack)
-        fprintf (asmFile, " --xstack");
-      /*if(options.intlong_rent)   fprintf (asmFile, " --int-long-rent"); */
-      /*if(options.float_rent)     fprintf (asmFile, " --float-rent"); */
-      if (options.noRegParams)
-        fprintf (asmFile, " --no-reg-params");
-      if (options.parms_in_bank1)
-        fprintf (asmFile, " --parms-in-bank1");
-      if (options.all_callee_saves)
-        fprintf (asmFile, " --all-callee-saves");
-      fprintf (asmFile, "\n");
-    }
-  else if (!TARGET_PIC_LIKE && !options.noOptsdccInAsm)
-    {
-      fprintf (asmFile, "\t.optsdcc -m%s\n", port->target);
-    }
+  // TODO: Move this from here to port-specific genAssemblerStart (like we did for the z80-related ports already)?
+  if (TARGET_IS_S08)
+    fprintf (asmFile, "\t.cs08\n");
 
   tfprintf (asmFile, "\t!fileprelude\n");
 
   /* Let the port generate any global directives, etc. */
-  if (port->genAssemblerPreamble)
+  if (port->genAssemblerStart)
     {
-      port->genAssemblerPreamble (asmFile);
+      port->genAssemblerStart (asmFile);
     }
 
   /* print the global variables in this module */
@@ -1997,7 +2330,7 @@ glue (void)
   if (port->assembler.externGlobal)
     printExterns (asmFile);
 
-  if ((mcs51_like) || (TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_RABBIT))  /*.p.t.20030924 need to output SFR table for Z80 as well */
+  if ((mcs51_like) || (TARGET_Z80_LIKE && !TARGET_IS_TLCS90) || TARGET_PDK_LIKE)  /*.p.t.20030924 need to output SFR table for Z80 as well */
     {
       /* copy the sfr segment */
       fprintf (asmFile, "%s", iComments2);
@@ -2049,7 +2382,8 @@ glue (void)
 
   /* copy the data segment */
   fprintf (asmFile, "%s", iComments2);
-  fprintf (asmFile, ";%s ram data\n", mcs51_like ? " internal" : "");
+  if(!TARGET_MOS6502_LIKE)  fprintf (asmFile, ";%s ram data\n", mcs51_like ? " internal" : "");
+  else fprintf (asmFile, "; ZP ram data\n");
   fprintf (asmFile, "%s", iComments2);
   dbuf_write_and_destroy (&data->oBuf, asmFile);
 
@@ -2075,7 +2409,7 @@ glue (void)
   if (overlay)
     {
       fprintf (asmFile, "%s", iComments2);
-      fprintf (asmFile, "; overlayable items in%s ram \n", mcs51_like ? " internal" : "");
+      fprintf (asmFile, "; overlayable items in%s ram\n", mcs51_like ? " internal" : "");
       fprintf (asmFile, "%s", iComments2);
       dbuf_write_and_destroy (&ovrBuf, asmFile);
     }
@@ -2084,9 +2418,9 @@ glue (void)
   if (mainf && IFFUNC_HASBODY (mainf->type))
     {
       fprintf (asmFile, "%s", iComments2);
-      fprintf (asmFile, "; Stack segment in internal ram \n");
+      fprintf (asmFile, "; Stack segment in internal ram\n");
       fprintf (asmFile, "%s", iComments2);
-      fprintf (asmFile, "\t.area\tSSEG\n" "__start__stack:\n\t.ds\t1\n\n");
+      tfprintf (asmFile, "\t!area\n" "__start__stack:\n\t.ds\t1\n\n", "SSEG");
     }
 
   /* create the idata segment */
@@ -2132,16 +2466,16 @@ glue (void)
   if (mainf && IFFUNC_HASBODY (mainf->type) && options.useXstack)
     {
       fprintf (asmFile, "%s", iComments2);
-      fprintf (asmFile, "; external stack \n");
+      fprintf (asmFile, "; external stack\n");
       fprintf (asmFile, "%s", iComments2);
       fprintf (asmFile, "\t.area XSTK (PAG,XDATA)\n" "__start__xstack:\n\t.ds\t1\n\n");
     }
 
   /* copy external ram data */
-  if (xdata && mcs51_like)
+  if (xdata && (mcs51_like || TARGET_MOS6502_LIKE || TARGET_IS_EZ80 || TARGET_RABBIT_LIKE || TARGET_IS_TLCS90))
     {
       fprintf (asmFile, "%s", iComments2);
-      fprintf (asmFile, "; external ram data\n");
+      fprintf (asmFile, "; uninitialized external ram data\n");
       fprintf (asmFile, "%s", iComments2);
       dbuf_write_and_destroy (&xdata->oBuf, asmFile);
     }
@@ -2159,7 +2493,7 @@ glue (void)
   if (xidata)
     {
       fprintf (asmFile, "%s", iComments2);
-      fprintf (asmFile, "; external initialized ram data\n");
+      fprintf (asmFile, "; initialized external ram data\n");
       fprintf (asmFile, "%s", iComments2);
       dbuf_write_and_destroy (&xidata->oBuf, asmFile);
     }
@@ -2174,7 +2508,7 @@ glue (void)
   if (mainf && IFFUNC_HASBODY (mainf->type))
     {
       fprintf (asmFile, "%s", iComments2);
-      fprintf (asmFile, "; interrupt vector \n");
+      fprintf (asmFile, "; interrupt vector\n");
       fprintf (asmFile, "%s", iComments2);
       dbuf_write_and_destroy (&vBuf, asmFile);
     }
@@ -2203,14 +2537,16 @@ glue (void)
         }
       else
         {
-          assert (0);
+          assert (TARGET_RABBIT_LIKE); // Only the Rabbits use a combination of crt0-based startup code with a compiler-generated interrupt table.
         }
     }
   dbuf_write_and_destroy (&statsg->oBuf, asmFile);
+  if (xconst)
+    dbuf_write_and_destroy (&xconst->oBuf, asmFile);
 
-  /* STM8 note: there are no such instructions supported.
+  /* STM8 / PDK14 note: there are no such instructions supported.
      Also, we don't need this logic as well. */
-  if (port->general.glue_up_main && mainf && IFFUNC_HASBODY (mainf->type))
+  if (port->general.glue_up_main && mainf && IFFUNC_HASBODY (mainf->type) && !TARGET_RABBIT_LIKE)
     {
       /* This code is generated in the post-static area.
        * This area is guaranteed to follow the static area
@@ -2218,7 +2554,11 @@ glue (void)
        */
       tfprintf (asmFile, "\t!area\n", port->mem.post_static_name);
       if(TARGET_IS_STM8)
-        fprintf (asmFile, "\tjp\t__sdcc_program_startup\n");
+        fprintf (asmFile, options.model == MODEL_LARGE ? "\tjpf\t__sdcc_program_startup\n" : "\tjp\t__sdcc_program_startup\n");
+      else if (TARGET_F8_LIKE)
+        fprintf (asmFile, "\tjp\t#__sdcc_program_startup\n");
+      else if(TARGET_PDK_LIKE)
+        fprintf (asmFile, "\tgoto\t__sdcc_program_startup\n");
       else
         fprintf (asmFile, "\t%cjmp\t__sdcc_program_startup\n", options.acall_ajmp ? 'a' : 'l');
     }
@@ -2227,10 +2567,10 @@ glue (void)
   tfprintf (asmFile, "\t!areahome\n", HOME_NAME);
   dbuf_write_and_destroy (&home->oBuf, asmFile);
 
-  if (mainf && IFFUNC_HASBODY (mainf->type))
+  if (mainf && IFFUNC_HASBODY (mainf->type) && !TARGET_RABBIT_LIKE)
     {
       /* STM8 note: there is no need to call main().
-         Instead of that, it's address is specified in the 
+         Instead of that, it's address is specified in the
          interrupts table and always equals to 0x8080.
        */
 
@@ -2239,7 +2579,11 @@ glue (void)
 
       /* put in jump or call to main */
       if(TARGET_IS_STM8)
-        fprintf (asmFile, "\tjp\t_main\n");
+        fprintf (asmFile, options.model == MODEL_LARGE ? "\tjpf\t_main\n" : "\tjp\t_main\n");
+      else if(TARGET_F8_LIKE)
+        fprintf (asmFile, "\tjp\t#_main\n");
+      else if(TARGET_PDK_LIKE)
+        fprintf (asmFile, "\tgoto\t_main\n");
       else
         fprintf (asmFile, "\t%cjmp\t_main\n", options.acall_ajmp ? 'a' : 'l');        /* needed? */
       fprintf (asmFile, ";\treturn from main will return to caller\n");
@@ -2257,3 +2601,39 @@ glue (void)
     }
   fclose (asmFile);
 }
+
+/* will return 1 if the string is a part
+   of a target specific keyword */
+int
+isTargetKeyword (const char *s)
+{
+  int i;
+
+  if (port->keywords == NULL)
+    return 0;
+
+  if (s[0] == '_' && s[1] == '_')
+    {
+      /* Keywords in the port's array have either 0 or 1 underscore, */
+      /* so skip over the appropriate number of chars when comparing */
+      for (i = 0 ; port->keywords[i] ; i++ )
+        {
+          if (port->keywords[i][0] == '_' &&
+              strcmp(port->keywords[i],s+1) == 0)
+            return 1;
+          else if (strcmp(port->keywords[i],s+2) == 0)
+            return 1;
+        }
+    }
+  else
+    {
+      for (i = 0 ; port->keywords[i] ; i++ )
+        {
+          if (strcmp(port->keywords[i],s) == 0)
+            return 1;
+        }
+    }
+
+  return 0;
+}
+

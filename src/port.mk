@@ -13,10 +13,10 @@ INCLUDEFLAGS = -I$(srcdir)/.. -I..
 
 # If the sources aren't specified, assume all in this directory.
 ifndef SOURCES
-SOURCES = $(notdir $(wildcard $(srcdir)/*.c))
+SOURCES = $(sort $(notdir $(wildcard $(srcdir)/*.c)))
 endif
 ifndef CXXSOURCES
-CXXSOURCES = $(notdir $(wildcard $(srcdir)/*.cc))
+CXXSOURCES = $(sort $(notdir $(wildcard $(srcdir)/*.cc)))
 endif
 
 # If the peephole rules aren't specified, assume all.
@@ -38,15 +38,5 @@ $(LIB): $(OBJ)
 
 %.rul: %.def
 	$(AWK) -f $(srcdir)/../SDCCpeeph.awk $< > $@
-
-dep: Makefile.dep
-
-Makefile.dep: $(PREBUILD) Makefile $(SOURCES) $(CXXSOURCES) $(SPECIAL)
-	$(MAKEDEP) $(CPPFLAGS) $(filter %.c %.cc,$^) >Makefile.dep
-
-# don't include Makefile.dep for the listed targets:
-ifeq "$(findstring $(MAKECMDGOALS),clean distclean)" ""
-  -include Makefile.dep
-endif
 
 include $(srcdir)/../port-clean.mk

@@ -8,22 +8,24 @@ License:       GPL
 Group:         Applications/Engineering
 Summary:       Small Device C Compiler
 Requires:      sdcc-common
-Version:       3.5.0
-Release:       2
+Version:       4.5.0
+Release:       1
 Source:        %{name}-src-%{version}.tar.gz
 URL:           http://sdcc.sourceforge.net/
-Packager:      Maarten Brock <sourceforge.brock AT dse.nl>
+Packager:      Philipp Klaus Krause <philipp@colecovision.eu>
 BuildRoot:     %{_tmppath}/%{name}-%{version}-build
 
 %description
-SDCC is a free open source, retargettable, optimizing ANSI C compiler
+SDCC is a free open source, retargettable, optimizing Standard C compiler
 suite that targets a growing list of processors including the Intel
 MCS51 based microprocessors (8031, 8032, 8051, 8052, etc.), Maxim
-(formerly Dallas) DS80C390 variants, Freescale (formerly Motorola)
-HC08 based (hc08, s08) and Zilog Z80 based MCUs (z80, z180, gbz80,
-Rabbit 2000/3000, Rabbit 3000A). Work is in progress on supporting
-the Microchip PIC16 and PIC18 targets. It can be retargeted for other
-microprocessors.
+(formerly Dallas) DS80C390 variants, NXP (formerly Freescale/Motorola)
+HC08 based (hc08, s08), Zilog Z80 based MCUs (Z80, Z180, SM83,
+Rabbit 2000 / 2000A / 3000A, TLCS-90, eZ80 in Z80 mode, Z80N), the STM8
+and the Padauk PDK14 and PDK15.
+Work is in progress on supporting the Padauk PDK13 and MOS 6502 targets.
+There is unmaintained support for the Microchip PIC16 and PIC18.
+SDCC can be retargeted for other microprocessors.
 
 %package common
 License:       GPL, LGPL
@@ -32,14 +34,16 @@ Summary:       Libraries and Header Files for the SDCC C compiler
 Requires:      sdcc
 
 %description common
-SDCC is a free open source, retargettable, optimizing ANSI C compiler
+SDCC is a free open source, retargettable, optimizing Standard C compiler
 suite that targets a growing list of processors including the Intel
 MCS51 based microprocessors (8031, 8032, 8051, 8052, etc.), Maxim
-(formerly Dallas) DS80C390 variants, Freescale (formerly Motorola)
-HC08 based (hc08, s08) and Zilog Z80 based MCUs (z80, z180, gbz80,
-Rabbit 2000/3000, Rabbit 3000A). Work is in progress on supporting
-the Microchip PIC16 and PIC18 targets. It can be retargeted for other
-microprocessors.
+(formerly Dallas) DS80C390 variants, NXP (formerly Freescale/Motorola)
+HC08 based (hc08, s08), Zilog Z80 based MCUs (Z80, Z180, SM83,
+Rabbit 2000 / 2000A / 3000A, TLCS-90, eZ80 in Z80 mode, Z80N), the STM8
+and the Padauk PDK14 and PDK15.
+Work is in progress on supportine the Padauk PDK13 and MOS 6502 targets.
+There is unmaintained support for the Microchip PIC16 and PIC18.
+SDCC can be retargeted for other microprocessors.
 
 %package doc
 License:       GPL
@@ -47,14 +51,16 @@ Group:         Applications/Engineering
 Summary:       Documentation for the SDCC C compiler
 
 %description doc
-SDCC is a free open source, retargettable, optimizing ANSI C compiler
+SDCC is a free open source, retargettable, optimizing Standard C compiler
 suite that targets a growing list of processors including the Intel
 MCS51 based microprocessors (8031, 8032, 8051, 8052, etc.), Maxim
-(formerly Dallas) DS80C390 variants, Freescale (formerly Motorola)
-HC08 based (hc08, s08) and Zilog Z80 based MCUs (z80, z180, gbz80,
-Rabbit 2000/3000, Rabbit 3000A). Work is in progress on supporting
-the Microchip PIC16 and PIC18 targets. It can be retargeted for other
-microprocessors.
+(formerly Dallas) DS80C390 variants, NXP (formerly Freescale/Motorola)
+HC08 based (hc08, s08), Zilog Z80 based MCUs (Z80, Z180, SM83,
+Rabbit 2000 / 2000A / 3000A, TLCS-90, eZ80 in Z80 mode, Z80N), the STM8
+and the Padauk PDK14 and PDK15.
+Work is in progress on supportine the Padauk PDK13 and MOS 6502 targets.
+There is unmaintained support for the Microchip PIC16 and PIC18.
+SDCC can be retargeted for other microprocessors.
 
 %prep
 %setup -n sdcc
@@ -92,6 +98,22 @@ rm -rf $RPM_BUILD_ROOT
 %doc %{_defaultdocdir}
 
 %changelog
+* Mon Feb 14 2022 - philipp AT colecovision.eu
+- version updated to 4.4.0
+* Mon Feb 14 2022 - krauseph AT informatik.uni-freiburg.de
+- version updated to 4.2.0
+* Sat Feb 20 2021 - pkk AT spth.de
+- version updated to 4.0.0
+* Sat Jan 18 2020 - pkk AT spth.de
+- version updated to 4.0.0
+* Fri Apr 05 2019 - krauseph AT informatik.uni-freiburg.de
+- version updated to 3.9.0
+* Sun Sep 16 2018 - pkk AT spth.de
+- version updated to 3.8.0
+* Wed Feb 07 2018 - pkk AT spth.de
+- version updated to 3.7.0
+* Sun May 29 2016 - sourceforge.brock AT dse.nl
+- version updated to 3.6.0
 * Fri Jun 06 2015 - sourceforge.brock AT dse.nl
 - version updated to 3.5.0
 * Fri Feb 28 2014 - sourceforge.brock AT dse.nl

@@ -26,33 +26,42 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-/* the return value is expected to be in (FSR0H, PRODH, PRODL, WREG),
- * therefore we choose return type void here. Generic pointer is expected
- * to be in (WREG, PRODL, FSR0L), so function arguments are void, too */
+extern int EEADR;
+extern int EEADRH;
+extern int EECON1;
+extern int EEDATA;
+extern int FSR0H;
+extern int FSR0L;
+extern int INTCON;
+extern int PRODH;
+extern int PRODL;
+extern int TBLPTRL;
+extern int TBLPTRH;
+extern int TABLAT;
 
-extern EEADR;
-extern EEADRH;
-extern EECON1;
-extern EEDATA;
-extern FSR0H;
-extern FSR0L;
-extern INTCON;
-extern PRODH;
-extern PRODL;
-extern TBLPTRL;
+/* Load 16-bit EEPROM address from generic pointer.  Generic pointer is in
+ * PCLATH:TBLPTRH:TBLPTRL. */
+void
+__eeprom16_gptrload(void) __naked
+{
+    __asm
+        MOVFF   _TBLPTRL, _EEADR
+        MOVFF   _TBLPTRH, _EEADRH
+        BCF     _EECON1, 7, 0       ; EEPGD = 0: access EEPROM, not program memory
+        BCF     _EECON1, 6, 0       ; CFGS = 0: access EEPROM, not config words
+        RETURN
+    __endasm;
+}
 
+/* Read 4 bytes from 16-bit EEPROM address, increment EEPROM address by 4 for
+ * next read.  Result in TABLAT:PRODH:PRODL:WREG. */
 void
 __eeprom16_gptrget4(void) __naked
 {
     __asm
-        MOVFF   _INTCON, _TBLPTRL   ; save previous interupt state
+        MOVFF   _INTCON, _TBLPTRL   ; save previous interrupt state
         BCF     _INTCON, 7, 0       ; GIE = 0: disable interrupts
 
-        BCF     _EECON1, 7, 0       ; EEPGD = 0: access EEPROM, not program memory
-        BCF     _EECON1, 6, 0       ; CFGS = 0: access EEPROM, not config words
-
-        MOVFF   _FSR0L, _EEADR      ; address first byte
-        MOVFF   _PRODL, _EEADRH     ; high address bits
         BSF     _EECON1, 0, 0       ; RD = 1: read EEPROM
         MOVF    _EEDATA, 0, 0       ; W = EEPROM[adr]
 
@@ -69,7 +78,12 @@ __eeprom16_gptrget4(void) __naked
         INFSNZ  _EEADR, 1, 0        ; address fourth byte
         INCF    _EEADRH, 1, 0       ; high address bits
         BSF     _EECON1, 0, 0       ; RD = 1: read EEPROM
-        MOVFF   _EEDATA, _FSR0H     ; FSR0H = EEPROM[adr+3]
+        MOVFF   _EEDATA, _TABLAT    ; TABLAT = EEPROM[adr+3]
+
+        ; Advance to next byte in case another read is needed (code/RAM get this
+        ; for free, EEPROM must do it explicitly)
+        INFSNZ  _EEADR, 1, 0
+        INCF    _EEADRH, 1, 0
 
         BTFSC   _TBLPTRL, 7, 0      ; check previous interrupt state
         BSF     _INTCON, 7, 0       ; conditionally re-enable interrupts

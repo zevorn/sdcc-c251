@@ -34,14 +34,14 @@ _modschar (signed char x, signed char y)
 }
 
 signed int
-_moduschar (unsigned char x, unsigned char y)
+_moduschar (unsigned char x, signed char y)
 {
-  return ((int)((signed char)x) % (int)y);
+  return ((int)x % (int)y);
 }
 
-unsigned int
-_modsuchar (signed char x, signed char y)
+signed int
+_modsuchar (signed char x, unsigned char y)
 {
-  return ((int)((unsigned char)x) % (int)y);
+  return ((int)x % (int)y);
 }
 

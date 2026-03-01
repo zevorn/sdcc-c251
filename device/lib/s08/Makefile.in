@@ -3,10 +3,11 @@
 VPATH  = @srcdir@
 srcdir = @srcdir@
 top_builddir = @top_builddir@
+abs_top_builddir = @abs_top_builddir@
 
 LIB_TYPE     = @LIB_TYPE@
 
-SCC = $(top_builddir)/bin/sdcc -ms08
+EXTRA_CFLAGS = -ms08 --max-allocs-per-node 25000
 SAS = $(top_builddir)/bin/sdas6808
 
 # override PORTDIR defined by super (parent) makefile
@@ -17,17 +18,21 @@ include $(srcdir)/../incl.mk
 HC08_FLOAT = $(COMMON_FLOAT)
 
 HC08_INT = $(COMMON_INT) \
+  _mulint.c \
   _divsint.c \
+  _divuint.c \
   _modsint.c \
   _moduint.c
 
-HC08_LONG = $(COMMON_LONG)
+HC08_LONG = $(COMMON_LONG) \
+  _mullong.c \
+  _divulong.c
 
 HC08_LONGLONG = $(COMMON_LONGLONG) \
-  _rrulonglong.c \
-  _rrslonglong.c \
-  _rlulonglong.c \
-  _rlslonglong.c \
+  _srulonglong.c \
+  _srslonglong.c \
+  _slulonglong.c \
+  _slslonglong.c \
   _mullonglong.c \
   _divslonglong.c \
   _divulonglong.c \
@@ -35,57 +40,59 @@ HC08_LONGLONG = $(COMMON_LONGLONG) \
   _modulonglong.c
 
 HC08_SDCC = $(COMMON_SDCC) \
-  _itoa.c \
-  _ltoa.c \
+  __itoa.c \
+  __ltoa.c \
   _spx.c \
   _startup.c \
-  _strlen.c \
+  strlen.c \
+  strnlen.c \
+  _strcmp.c \
   _strcpy.c \
+  __memcpy.c \
+  div.c \
+  ldiv.c \
+  memcpy.c \
   _memmove.c \
   _heap.c \
   sprintf.c \
-  vprintf.c
+  vprintf.c \
+  atomic_flag_clear.c
 
 HC08SOURCES = $(addprefix ../,$(HC08_FLOAT) $(HC08_INT) $(HC08_LONG) $(HC08_LONGLONG) $(HC08_SDCC))
 HC08OBJECTS = $(patsubst %.c,%.rel,$(HC08_FLOAT) $(HC08_INT) $(HC08_LONG) $(HC08_LONGLONG) $(HC08_SDCC))
 
-OBJ = _ret.rel _divuint.rel _divulong.rel _mulint.rel _mullong.rel
+OBJ = _ret.rel _setjmp.rel atomic_flag_test_and_set.rel
 
 LIB = s08.lib
-CC = $(SCC)
 AS = $(SAS)
 ASFLAGS = -plosgff
 
-CFLAGS = -I$(srcdir)/../../include -I. --std-c99
+CFLAGS = -I$(srcdir)/../../include -I. --std-c23
 
 all: $(PORTDIR)/$(LIB)
 
 $(PORTDIR)/$(LIB): $(OBJ) $(HC08OBJECTS) Makefile
+	rm -f $@
 ifeq ($(LIB_TYPE), SDCCLIB)
-	rm -f $@; \
 	$(top_builddir)/bin/sdcclib -a $@ $(OBJ) $(HC08OBJECTS)
 else
   ifeq ($(LIB_TYPE), AR)
-	$(top_builddir)/bin/sdar -rcS $@ $(OBJ) $(HC08OBJECTS)
+	$(SDAR) -rcSD $@ $(OBJ) $(HC08OBJECTS)
   else
     ifeq ($(LIB_TYPE), RANLIB)
-	$(top_builddir)/bin/sdar -rc $@ $(OBJ) $(HC08OBJECTS)
+	$(SDAR) -rcD $@ $(OBJ) $(HC08OBJECTS)
     else
-	rm -f $@
 	for i in $(basename $(OBJ) $(HC08OBJECTS)); do echo $$i >>$@; done
 	cp $(OBJ) $(HC08OBJECTS) $(PORTDIR)
     endif
   endif
 endif
 
-%.rel: %.c
-	$(CC) $(CFLAGS) -c $<
-
-%.rel: ../%.c
-	$(CC) $(CFLAGS) -c $<
-
 clean:
 	rm -f *.rel *.sym *.lst *~ $(CLEANSPEC) *.dump* *.asm *.lib
 
 distclean: clean
 	rm -f Makefile
+
+Makefile: $(srcdir)/Makefile.in
+	cd $(top_builddir); ./config.status device/lib/s08/Makefile

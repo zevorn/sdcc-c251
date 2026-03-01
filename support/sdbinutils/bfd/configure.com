@@ -7,18 +7,18 @@ $!
 $! Written by Klaus K"ampf (kkaempf@rmi.de)
 $! Rewritten by Tristan Gingold (gingold@adacore.com)
 $!
-$!   Copyright (C) 2012-2014 Free Software Foundation, Inc.
+$!   Copyright (C) 2012-2022 Free Software Foundation, Inc.
 $!
 $! This file is free software; you can redistribute it and/or modify
 $! it under the terms of the GNU General Public License as published by
 $! the Free Software Foundation; either version 3 of the License, or
 $! (at your option) any later version.
-$! 
+$!
 $! This program is distributed in the hope that it will be useful,
 $! but WITHOUT ANY WARRANTY; without even the implied warranty of
 $! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 $! GNU General Public License for more details.
-$! 
+$!
 $! You should have received a copy of the GNU General Public License
 $! along with this program; see the file COPYING3.  If not see
 $! <http://www.gnu.org/licenses/>.
@@ -232,18 +232,11 @@ $DECK
    IF match_pos <> 0 THEN;
       POSITION(BEGINNING_OF(match_pos));
       ERASE(match_pos);
-      COPY_TEXT('"<http://www.sourceware.org/bugzilla/>"');
+      COPY_TEXT('"<https://www.sourceware.org/bugzilla/>"');
    ENDIF;
    WRITE_FILE(file, GET_INFO(COMMAND_LINE, "output_file"));
    QUIT
 $  EOD
-$!
-$!
-$! create bfd_stdint.h
-$!
-$ write sys$output "Generate `bfd_stdint.h'"
-$ create []bfd_stdint.h
-#include <inttypes.h>
 $!
 $!
 $! create targmatch.h

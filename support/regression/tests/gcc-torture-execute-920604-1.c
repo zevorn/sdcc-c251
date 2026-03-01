@@ -8,11 +8,9 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc supports long long mod!
-#if 0
+#if !defined(__SDCC_pic14) && !defined(__SDCC_pic16) && !defined(__SDCC_pdk14)
 long long
-mod (a, b)
-     long long a, b;
+mod (long long a, long long b)
 {
   return a % b;
 }
@@ -21,9 +19,8 @@ mod (a, b)
 void
 testTortureExecute (void)
 {
-#if 0
-  mod (1LL, 2LL);
-  exit (0);
+#if !defined(__SDCC_pic14) && !defined(__SDCC_pic16) && !defined(__SDCC_pdk14)
+  ASSERT (mod (1LL, 2LL) == 1);
 #endif
 }
 

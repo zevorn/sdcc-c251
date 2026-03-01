@@ -40,7 +40,12 @@ value;
 
 typedef struct literalList
 {
-  double literalValue;
+  bool isFloat;
+  union {
+    unsigned long long ull;
+    double f64;
+  }
+  value;
   unsigned count;
   struct literalList *next;
 } literalList;
@@ -57,7 +62,8 @@ typedef struct initList
 {
   int type;
   int lineno;
-  char *filename;
+  const char *filename;
+  bool isempty;                         // C23 empty initializer
   struct designation *designation;
   union
   {
@@ -108,19 +114,23 @@ CCR_RESULT;
 /* forward definitions for the symbol table related functions */
 value *newValue (void);
 value *constVal (const char *);
-value *constCharVal (unsigned char);
-value *constBoolVal (bool v);
+value *constIntVal (const char *);
+value *constCharacterVal (unsigned long v, char type);
+value *constCharVal (unsigned char v);
+value *constBoolVal (bool v, bool reduceType);
+value *constNullptrVal (void);
 value *reverseVal (value *);
 value *reverseValWithType (value *);
 value *copyValue (value *);
 value *copyValueChain (value *);
 value *strVal (const char *);
+value *rawStrVal (const char *, size_t size);
 value *charVal (const char *);
 value *symbolVal (symbol *);
 void printVal (value *);
 double floatFromVal (value *);
-unsigned long ulFromVal (value *);
-TYPE_TARGET_ULONGLONG ullFromVal (value *);
+unsigned long ulFromVal (const value *);
+unsigned long long ullFromVal (const value *);
 
 /* convert a fixed16x16 type to double */
 double doubleFromFixed16x16 (TYPE_TARGET_ULONG value);
@@ -130,23 +140,25 @@ TYPE_TARGET_ULONG fixed16x16FromDouble (double value);
 
 CCR_RESULT checkConstantRange (sym_link * var, sym_link * lit, int op, bool exchangeOps);
 value *array2Ptr (value *);
-value *valUnaryPM (value *);
-value *valComplement (value *);
-value *valNot (value *);
-value *valMult (value *, value *);
-value *valDiv (value *, value *);
-value *valMod (value *, value *);
-value *valPlus (value *, value *);
-value *valMinus (value *, value *);
-value *valShift (value *, value *, int);
-value *valCompare (value *, value *, int);
-value *valBitwise (value *, value *, int);
-value *valLogicAndOr (value *, value *, int);
+value *valUnaryPM (value *, bool reduceType);
+value *valComplement (value *, bool reduceType);
+value *valNot (value *, bool reduceType);
+value *valMult (value *, value *, bool reduceType);
+value *valDiv (value *, value *, bool reduceType);
+value *valMod (value *, value *, bool reduceType);
+value *valZeroResultFromOp (sym_link * type1, sym_link * type2, int op, bool reduceType);
+value *valPlus (value *, value *, bool reduceType);
+value *valMinus (value *, value *, bool reduceType);
+value *valShift (value *, value *, int, bool reduceType);
+value *valCompare (value *, value *, int, bool reduceType);
+value *valBitwise (value *, value *, int, bool reduceType);
+value *valLogicAndOr (value *, value *, int, bool reduceType);
 value *valCastLiteral (sym_link *, double, TYPE_TARGET_ULONGLONG);
 value *valueFromLit (double);
 initList *newiList (int, void *);
 initList *revinit (initList *);
 initList *copyIlist (initList *);
+initList *checkScalariList (const symbol *sym, sym_link *type, initList *ilist, bool typecheck);
 double list2int (initList *);
 value *list2val (initList *, int);
 struct ast *list2expr (initList *);
@@ -167,8 +179,11 @@ bool convertIListToConstList (initList * src, literalList ** lList, int size);
 literalList *copyLiteralList (literalList * src);
 unsigned long double2ul (double val);
 unsigned char byteOfVal (value *, int);
+int csdOfVal (int *topbit, int *nonzero, unsigned long long *csd_add, unsigned long long *csd_sub, value *val, unsigned long long mask);
 int isEqualVal (value *, int);
-TYPE_TARGET_ULONGLONG ullFromLit (sym_link * lit);
-value * valRecastLitVal (sym_link * dtype, value * val);
+TYPE_TARGET_ULONGLONG ullFromLit (sym_link *lit);
+value *valRecastLitVal (sym_link * dtype, value *val);
+void checkParameterTypeList (value *forward_declaration, value *parameters);
 
 #endif
+

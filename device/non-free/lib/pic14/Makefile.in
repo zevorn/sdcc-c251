@@ -37,15 +37,19 @@ builddir   = build
 installdir = bin
 export installdir
 
-C_SRC = $(notdir $(wildcard $(srcdir)/*.c))
-S_SRC = $(notdir $(wildcard $(srcdir)/*.S))
+C_SRC = $(sort $(notdir $(wildcard $(srcdir)/*.c)))
+S_SRC = $(sort $(notdir $(wildcard $(srcdir)/*.S)))
 OBJS = $(C_SRC:.c=.o) $(S_SRC:.S=.o)
 
 clean: recurse
 	$(Q)-$(RMDIR) "$(top_builddir)/$(builddir)"
 	-if [ -d bin ]; then $(RMDIR) bin; fi
 
-distclean: clean
+distclean-local:
+	$(Q)-$(RM) a.cod a.hex a.lst pics.supported
+	$(Q)-$(RM) -rf ./.checkdevices
+
+distclean: clean distclean-local
 	$(Q)-$(RM) config.cache config.log config.status Makefile Makefile.common
 	-if [ -d bin ]; then $(RMDIR) bin; fi
 

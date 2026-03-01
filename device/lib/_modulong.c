@@ -32,6 +32,8 @@
      mcs51 small stack-auto
 */
 
+#include <sdcc-lib.h>
+
 #if !defined(__SDCC_USE_XSTACK) && !defined(_SDCC_NO_ASM_LIB_FUNCS)
 #  if defined(__SDCC_mcs51)
 #    if defined(__SDCC_MODEL_SMALL)
@@ -232,7 +234,7 @@ __modulong:
 
 __modlong:			; entry point for __modslong
 				; a in r1, b, dph, dpl
-				; b in r5, r4, r3, r2 
+				; b in r5, r4, r3, r2
 
 	mov	count,#0
 
@@ -337,7 +339,7 @@ div_by_0:
 #define MSB_SET(x) ((x >> (8*sizeof(x)-1)) & 1)
 
 unsigned long
-_modulong (unsigned long a, unsigned long b)
+_modulong (unsigned long a, unsigned long b) __SDCC_NONBANKED
 {
   unsigned char count = 0;
 

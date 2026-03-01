@@ -204,7 +204,7 @@ not_negative:
 #else  // _DIVSINT_ASM_
 
 int
-_divsint (int x, int y)
+_divsint (int x, int y) __SDCC_NONBANKED
 {
   register int r;
 

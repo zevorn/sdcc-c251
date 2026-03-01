@@ -30,6 +30,7 @@ static void testSwap_4(void)
     ASSERT( tt == SWAP_4(TEST_VECT_8));
 }
 
+#ifndef __SDCC_pdk14 // Lack of memory -see RFE #611
 
 #define SWAP_8(x) ((((x)<<8)|((x)>>8)) & 0xffff)
 
@@ -117,26 +118,28 @@ static void testSwap_16_ptr(void)
     {
         unsigned char c;
 
-        /* uglyness += 1 */
+        /* ugliness += 1 */
         c = *(0+(unsigned char _STATMEM *)&tt);
         *(0+(unsigned char _STATMEM *)&tt) = *(2+(unsigned char _STATMEM *)&tt);
         *(2+(unsigned char _STATMEM *)&tt) = c;
         c = *(1+(unsigned char _STATMEM *)&tt);
         *(1+(unsigned char _STATMEM *)&tt) = *(3+(unsigned char _STATMEM *)&tt);
         *(3+(unsigned char _STATMEM *)&tt) = c;
-        /* uglyness -= 1 */
+        /* ugliness -= 1 */
     }
     ASSERT( tt == SWAP_16(TEST_VECT_32));
 #endif
 }
-
+#endif
 
 static void
 testSwap(void)
 {
    testSwap_4();
+#ifndef __SDCC_pdk14 // Lack of memory -see RFE #611
    testSwap_8();
    testSwap_16();
    testSwap_16_ptr();
+#endif
 }
 

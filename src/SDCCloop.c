@@ -349,7 +349,7 @@ isOperandInvariant (operand * op, region * theLoop, set * lInvars)
   int opin = 0;
   /* operand is an invariant if it is a                */
   /*       a. constants .                              */
-  /*       b. that have defintions reaching loop entry */
+  /*       b. that have definitions reaching loop entry */
   /*       c. that are already defined as invariant    */
   /*       d. has no assignments in the loop           */
   if (op)
@@ -419,11 +419,10 @@ DEFSETFUNC (hasNonPtrUse)
 /* loopInvariants - takes loop invariants out of region            */
 /*-----------------------------------------------------------------*/
 static int
-loopInvariants (region * theLoop, ebbIndex * ebbi)
+loopInvariants (region *theLoop, ebbIndex *ebbi)
 {
   eBBlock **ebbs = ebbi->dfOrder;
   int count = ebbi->count;
-  eBBlock *lBlock;
   set *lInvars = NULL;
 
   int change = 0;
@@ -436,11 +435,10 @@ loopInvariants (region * theLoop, ebbIndex * ebbi)
 
   /* we will do the elimination for those blocks       */
   /* in the loop that dominate all exits from the loop */
-  for (lBlock = setFirstItem (theLoop->regBlocks); lBlock; lBlock = setNextItem (theLoop->regBlocks))
+  for (eBBlock *lBlock = setFirstItem (theLoop->regBlocks); lBlock; lBlock = setNextItem (theLoop->regBlocks))
     {
       iCode *ic;
       int domsAllExits;
-      int i;
 
       /* mark the dominates all exits flag */
       domsAllExits = (applyToSet (theLoop->exits, dominatedBy, lBlock) == elementsInSet (theLoop->exits));
@@ -505,6 +503,9 @@ loopInvariants (region * theLoop, ebbIndex * ebbi)
               (IC_RIGHT (ic) && isOperandVolatile (IC_RIGHT (ic), TRUE)))
             continue;
 
+          if (POINTER_GET (ic) && IS_VOLATILE (operandType (IC_LEFT (ic))->next))
+            continue;
+
           lin = rin = 0;
 
           /* special case */
@@ -549,7 +550,7 @@ loopInvariants (region * theLoop, ebbIndex * ebbi)
               set *lSet = setFromSet (theLoop->regBlocks);
 
               /* if this block does not dominate all exits */
-              /* make sure this defintion is not used anywhere else */
+              /* make sure this definition is not used anywhere else */
               if (!domsAllExits)
                 {
                   if (isOperandGlobal (IC_RESULT (ic)))
@@ -557,7 +558,7 @@ loopInvariants (region * theLoop, ebbIndex * ebbi)
                   /* for successors for all exits */
                   for (sBlock = setFirstItem (theLoop->exits); sBlock; sBlock = setNextItem (theLoop->exits))
                     {
-                      for (i = 0; i < count; ebbs[i++]->visited = 0);
+                      for (int i = 0; i < count; ebbs[i++]->visited = 0);
                       lBlock->visited = 1;
                       if (applyToSet (sBlock->succList, isDefAlive, ic))
                         break;
@@ -625,6 +626,10 @@ loopInvariants (region * theLoop, ebbIndex * ebbi)
               if (sBlock)
                 continue;       /* another definition present in the block */
 
+              // Avoid bug #3560 - the address might have been passed elsewehere, so functions called in the loop could change the value (and rely on the changed value).
+              if (OP_SYMBOL (IC_RESULT (ic))->addrtaken && fCallsInBlock)
+                continue;
+
               /* now check if it exists in the in of this block */
               /* if not then it was killed before this instruction */
               if (!bitVectBitValue (lBlock->inDefs, ic->key))
@@ -656,10 +661,9 @@ loopInvariants (region * theLoop, ebbIndex * ebbi)
     {
       eBBlock *preHdr = theLoop->entry->preHeader;
       iCode *icFirst = NULL, *icLast = NULL;
-      cseDef *cdp;
 
       /* create an iCode chain from it */
-      for (cdp = setFirstItem (lInvars); cdp; cdp = setNextItem (lInvars))
+      for (cseDef *cdp = setFirstItem (lInvars); cdp; cdp = setNextItem (lInvars))
         {
           /* maintain data flow .. add it to the */
           /* ldefs defSet & outExprs of the preheader  */
@@ -781,7 +785,7 @@ addPostLoopBlock (region * loopReg, ebbIndex * ebbi, iCode * ic)
 
   /* if the number of exits is greater than one then
      we use another trick: we will create an intersection
-     of succesors of the exits, then take those that are not
+     of successors of the exits, then take those that are not
      part of the loop and have dfNumber greater loop entry (eblock),
      insert a new predecessor postLoopBlk before them and add
      a copy of ic in the new block. The postLoopBlk in between
@@ -905,6 +909,12 @@ addPostLoopBlock (region * loopReg, ebbIndex * ebbi, iCode * ic)
                   /* insert goto to old predecessor of eblock */
                   newic = newiCodeLabelGoto (GOTO, eblock->entryLabel);
                   addiCodeToeBBlock (ebpi, newic, NULL);
+                  /* Make sure the GOTO has a target */
+                  if (eblock->sch->op != LABEL)
+                    {
+                      newic = newiCodeLabelGoto (LABEL, eblock->entryLabel);
+                      addiCodeToeBBlock (eblock, newic, eblock->sch);
+                    }
                   break;        /* got it, only one is possible */
                 }
             }
@@ -1003,7 +1013,7 @@ basicInduction (region * loopReg, ebbIndex * ebbi)
           /* Only consider variables with integral type. */
           /* (2004/12/06 - EEP - ds390 fails regression tests unless */
           /* pointers are also considered for induction (due to some */
-          /* register alloctaion bugs). Remove !IS_PTR clause when */
+          /* register allocation bugs). Remove !IS_PTR clause when */
           /* that gets fixed) */
           optype = operandType (IC_RIGHT (ic));
           if (!IS_INTEGRAL (optype) && !IS_PTR (optype))
@@ -1088,6 +1098,7 @@ basicInduction (region * loopReg, ebbIndex * ebbi)
 
               /* ic will be removed by killDeadCode() too,
                  but it's a nice to see a clean dumploop now. */
+              unsetDefsAndUses (ic);
               remiCodeFromeBBlock (lBlock, ic);
               /* clear the definition */
               bitVectUnSetBit (lBlock->defSet, ic->key);
@@ -1180,8 +1191,7 @@ loopInduction (region * loopReg, ebbIndex * ebbi)
 
           /* ask port for size not worth if native instruction
              exist for multiply & divide */
-          if (getSize (operandType (IC_LEFT (ic))) <= (unsigned long) port->support.muldiv ||
-              getSize (operandType (IC_RIGHT (ic))) <= (unsigned long) port->support.muldiv)
+          if (port->hasNativeMulFor (ic, operandType (IC_LEFT (ic)), operandType (IC_RIGHT (ic))))
             continue;
 
           /* if this is a division then the remainder should be zero
@@ -1210,6 +1220,7 @@ loopInduction (region * loopReg, ebbIndex * ebbi)
           ic->op = '=';
           IC_LEFT (ic) = NULL;
           IC_RIGHT (ic) = IC_RESULT (ic);
+          bitVectUnSetBit (OP_USES (aSym), ic->key);
 
           /* Insert an update of the induction variable just before */
           /* the update of the basic induction variable. */
@@ -1383,7 +1394,6 @@ createLoopRegions (ebbIndex * ebbi)
       applyToSet (lp->regBlocks, addToExitsMarkDepth, lp->regBlocks, &lp->exits, (maxDepth - lp->containsLoops), lp);
 
       hTabAddItem (&orderedLoops, lp->containsLoops, lp);
-
     }
   return orderedLoops;
 }

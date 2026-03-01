@@ -13,7 +13,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -26,13 +26,13 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#pragma std_c99
-
 #include <stdint.h>
+
+#include <sdcc-lib.h>
 
 #ifdef __SDCC_LONGLONG
 
-long long _mullonglong(long long ll, long long lr)
+long long _mullonglong(long long ll, long long lr) __SDCC_NONBANKED
 {
   unsigned long long ret = 0ull;
   unsigned char i, j;

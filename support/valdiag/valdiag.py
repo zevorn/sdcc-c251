@@ -22,13 +22,17 @@
 #   what you give them.   Help stamp out software-hoarding!  
 #---------------------------------------------------------------------------
 
-import sys, string, os, popen2, re
+from __future__ import print_function
+
+import sys, string, os, re, subprocess
+from subprocess import Popen, PIPE, STDOUT
 
 macrodefs = {}
+extramacrodefs = {}
 
 gcc = {
     "CC":"gcc",
-    "CCFLAGS":"-c -Wall -DPORT_HOST=1",
+    "CCFLAGS":"-c -pedantic -Wall -DPORT_HOST=1",
     "CCDEF":"-D",
     "CCOUTPUT":"-o",
     "C89":"-std=c89",
@@ -70,7 +74,13 @@ testmodes = {
     },
     "mcs51":{
         "compiler":sdcc,
-        "port":"mcs51"
+        "port":"mcs51",
+        "extra-defines": {
+            "__has_bit":"1",
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
     },
     "mcs51-large":{
         "compiler":sdcc,
@@ -78,6 +88,12 @@ testmodes = {
         "flags":"--model-large",
         "defined": {
             "SDCC_MODEL_LARGE":"1"
+        },
+        "extra-defines" : {
+            "__has_bit":"1",
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
         }
     },
     "mcs51-stack-auto":{
@@ -86,23 +102,125 @@ testmodes = {
         "flags":"--stack-auto",
         "defined": {
             "SDCC_STACK_AUTO":"1"
+        },
+        "extra-defines": {
+            "__has_bit":"1",
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
         }
     },
     "ds390":{
         "compiler":sdcc,
-        "port":"ds390"
+        "port":"ds390",
+        "extra-defines": {
+            "__has_bit":"1",
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
     },
     "z80":{
         "compiler":sdcc,
-        "port":"z80"
+        "port":"z80",
+        "extra-defines": {
+            "__has_z88dk_fastcall":"1"
+        }
     },
-    "gbz80":{
+    "z180":{
         "compiler":sdcc,
-        "port":"gbz80"
+        "port":"z180",
+        "extra-defines": {
+            "__has_z88dk_fastcall":"1"
+        }
+    },
+    "r2k":{
+        "compiler":sdcc,
+        "port":"r2k",
+        "extra-defines": {
+            "__has_z88dk_fastcall":"1"
+        }
+    },
+    "r4k":{
+        "compiler":sdcc,
+        "port":"r4k",
+        "extra-defines": {
+            "__has_z88dk_fastcall":"1"
+        }
+    },
+    "sm83":{
+        "compiler":sdcc,
+        "port":"sm83",
+        "extra-defines": {
+            "__has_sdcccall":"1"
+        }
+    },
+    "tlcs90":{
+        "compiler":sdcc,
+        "port":"tlcs90",
+        "extra-defines": {
+            "__has_z88dk_fastcall":"1"
+        }
     },
     "hc08":{
         "compiler":sdcc,
-        "port":"hc08"
+        "port":"hc08",
+        "extra-defines": {
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
+    },
+    "s08":{
+        "compiler":sdcc,
+        "port":"s08",
+        "extra-defines": {
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
+    },
+    "mos6502":{
+        "compiler":sdcc,
+        "port":"mos6502",
+        "extra-defines": {
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
+    },
+    "mos65c02":{
+        "compiler":sdcc,
+        "port":"mos65c02",
+        "extra-defines": {
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
+    },
+    "stm8":{
+        "compiler":sdcc,
+        "port":"stm8",
+        "extra-defines": {
+            "__has_raisonance":"1",
+            "__has_sdcccall":"1"
+        }
+    },
+    "f8":{
+        "compiler":sdcc,
+        "port":"f8",
+    },
+    "pdk13":{
+        "compiler":sdcc,
+        "port":"pdk13"
+    },
+    "pdk14":{
+        "compiler":sdcc,
+        "port":"pdk14"
+    },
+    "pdk15":{
+        "compiler":sdcc,
+        "port":"pdk15"
     },
     "pic14":{
         "compiler":sdcc,
@@ -131,10 +249,11 @@ def evalQualifier(expr):
         elif len(token)>0:
             if token[0]=="_" or token[0] in string.ascii_letters:
                 tokens[tokenindex] = "0"
-    expr = string.join(tokens,"")
-    expr = string.replace(expr,"&&"," and ");
-    expr = string.replace(expr,"||"," or ");
-    expr = string.replace(expr,"!"," not ");
+    #expr = string.join(tokens,"")
+    expr = "".join(tokens)
+    expr = expr.replace("&&"," and ");
+    expr = expr.replace("||"," or ");
+    expr = expr.replace("!"," not ");
     return eval(expr)
 
 def expandPyExpr(expr):
@@ -144,13 +263,15 @@ def expandPyExpr(expr):
             tokens[tokenindex]=eval(tokens[tokenindex])
             tokens[tokenindex-1]=""
             tokens[tokenindex+1]=""
-    expandedExpr = string.join(tokens,"")
+    expandedExpr = "".join(tokens)
     return expandedExpr
 
-def addDefines(deflist):
-    for define in deflist.keys():
+def addDefines(deflist, isExtra):
+    for define in list(deflist.keys()):
         expandeddef = expandPyExpr(define)
         macrodefs[expandeddef] = expandPyExpr(deflist[define])
+        if isExtra:
+            extramacrodefs[expandeddef] = macrodefs[expandeddef]
 
 def parseInputfile(inputfilename):
     inputfile = open(inputfilename, "r")
@@ -162,21 +283,21 @@ def parseInputfile(inputfilename):
     for line in inputfile.readlines():
 
         # See if a new testcase is being defined
-        p = string.find(line, "TEST")
+        p = line.find("TEST")
         if p>=0:
-            testname = string.split(line[p:])[0]
-            if not testcases.has_key(testname):
+            testname = line[p:].split()[0]
+            if testname not in testcases:
                 testcases[testname] = {}
 
         # See if a new test is being defined
         for testtype in ["ERROR", "WARNING", "IGNORE"]:
-            p = string.find(line, testtype);
+            p = line.find(testtype);
             if p>=0:
                 # Found a test definition
-                qualifier = string.strip(line[p+len(testtype):])
-                p = string.find(qualifier, "*/")
+                qualifier = line[p+len(testtype):].strip()
+                p = qualifier.find("*/")
                 if p>=0:
-                    qualifier = string.strip(qualifier[:p])
+                    qualifier = qualifier[:p].strip()
                 if len(qualifier)==0:
                     qualifier="1"
                 qualifier = evalQualifier(qualifier)
@@ -193,15 +314,15 @@ def parseInputfile(inputfilename):
 def parseResults(output):
     results = {}
     for line in output:
-        print line,
+        print(line, end=' ')
 
-        if string.count(line, "SIGSEG"):
-            results[0] = ["FAULT", string.strip(line)]
+        if line.count("SIGSEG"):
+            results[0] = ["FAULT", line.strip()]
             continue
 
         # look for something of the form:
         #   filename:line:message
-        msg = string.split(line,":",2)
+        msg = line.split(":",2)
         if len(msg)<3: continue
         if msg[0]!=inputfilename: continue
         if len(msg[1])==0: continue
@@ -210,25 +331,25 @@ def parseResults(output):
         # it's in the right form; parse it
         linenumber = int(msg[1])
         msgtype = "UNKNOWN"
-        uppermsg = string.upper(msg[2])
-        if string.count(uppermsg,"ERROR"):
+        uppermsg = msg[2].upper()
+        if uppermsg.count("ERROR"):
             msgtype = "ERROR"
-        if string.count(uppermsg,"WARNING"):
+        if uppermsg.count("WARNING"):
             msgtype = "WARNING"
-        msgtext = string.strip(msg[2])
+        msgtext = msg[2].strip()
         ignore = 0
         for ignoreExpr in ignoreExprList:
            if re.search(ignoreExpr,msgtext)!=None:
                ignore = 1
         if not ignore:
-            results[linenumber]=[msgtype,string.strip(msg[2])]
+            results[linenumber]=[msgtype,msg[2].strip()]
     return results
 
 def showUsage():
-    print "Usage: test testmode cfile [objectfile]"
-    print "Choices for testmode are:"
-    for testmodename in testmodes.keys():
-        print "   %s" % testmodename
+    print("Usage: test testmode cfile [objectfile]")
+    print("Choices for testmode are:")
+    for testmodename in list(testmodes.keys()):
+        print("   %s" % testmodename)
     sys.exit(1)
 
 # Start here
@@ -237,7 +358,7 @@ if len(sys.argv)<3:
 
 testmodename = sys.argv[1]
 if not testmodename in testmodes:
-    print "Unknown test mode '%s'" % testmodename
+    print("Unknown test mode '%s'" % testmodename)
     showUsage()
 
 testmode = testmodes[testmodename]
@@ -246,17 +367,21 @@ port = expandPyExpr(testmode["port"])
 cc = expandPyExpr(compilermode["CC"])
 ccflags = expandPyExpr(compilermode["CCFLAGS"])
 if "flags" in testmode:
-    ccflags = string.join([ccflags,expandPyExpr(testmode["flags"])])
+    ccflags = " ".join([ccflags,expandPyExpr(testmode["flags"])])
 if len(sys.argv)>=4:
     if "CCOUTPUT" in compilermode:
-        ccflags = string.join([ccflags,expandPyExpr(compilermode["CCOUTPUT"]),sys.argv[3]])
+        ccflags = " ".join([ccflags,expandPyExpr(compilermode["CCOUTPUT"]),sys.argv[3]])
 if len(sys.argv)>=5:
     if "CCINCLUDEDIR" in compilermode:
-        ccflags = string.join([ccflags,expandPyExpr(compilermode["CCINCLUDEDIR"]),sys.argv[4]])
+        ccflags = " ".join([ccflags,expandPyExpr(compilermode["CCINCLUDEDIR"]),sys.argv[4]])
 if "defined" in compilermode:
-    addDefines(compilermode["defined"])
+    addDefines(compilermode["defined"], False)
 if "defined" in testmode:
-    addDefines(testmode["defined"])
+    addDefines(testmode["defined"], False)
+if "extra-defines" in compilermode:
+    addDefines(compilermode["extra-defines"], True)
+if "extra-defines" in testmode:
+    addDefines(testmode["extra-defines"], True)
 if "ignoremsg" in compilermode:
     ignoreExprList = compilermode["ignoremsg"]
 else:
@@ -268,30 +393,34 @@ inputfilenameshort = os.path.basename(inputfilename)
 try:
     testcases = parseInputfile(inputfilename)
 except IOError:
-    print "Unable to read file '%s'" % inputfilename
+    print("Unable to read file '%s'" % inputfilename)
     sys.exit(1)
 
-casecount = len(testcases.keys())
+casecount = len(list(testcases.keys()))
 testcount = 0
 failurecount = 0
 
-print "--- Running: %s " % inputfilenameshort
-for testname in testcases.keys():
-    if string.find(testname,"DISABLED"):
+print("--- Running: %s " % inputfilenameshort)
+for testname in list(testcases.keys()):
+    if testname.find("DISABLED")>=0:
       continue
     ccdef = compilermode["CCDEF"]+testname
+    for extradef in list(extramacrodefs.keys()):
+        ccdef = ccdef + " " + compilermode["CCDEF"] + extradef + "=" + extramacrodefs[extradef]
     if testname[-3:] == "C89":
         ccstd = compilermode["C89"]
     elif testname[-3:] == "C99":
         ccstd = compilermode["C99"]
     else:
         ccstd = ""
-    cmd = string.join([cc,ccflags,ccstd,ccdef,inputfilename])
-    print
-    print cmd
-    spawn = popen2.Popen4(cmd)
-    spawn.wait()
-    output = spawn.fromchild.readlines()
+    cmd = " ".join([cc,ccflags,ccstd,ccdef,inputfilename])
+    print()
+    print(cmd)
+    spawn = Popen(args=cmd.split(), bufsize=-1, stdout = PIPE, stderr = STDOUT, close_fds=True)
+    (stdoutdata,stderrdata) = spawn.communicate()
+    if not isinstance(stdoutdata, str): # python 3 returns bytes so
+      stdoutdata = str(stdoutdata,"utf-8") # convert to str type first
+    output = stdoutdata.splitlines(True)
 
     results = parseResults(output)
 
@@ -300,7 +429,7 @@ for testname in testcases.keys():
 
     # Go through the tests of this case and make sure
     # the compiler gave a diagnostic
-    for checkline in testcases[testname].keys():
+    for checkline in list(testcases[testname].keys()):
         testcount = testcount + 1
         if checkline in results:
             if "IGNORE" in testcases[testname][checkline]:
@@ -309,16 +438,16 @@ for testname in testcases.keys():
         else:
             for wanted in testcases[testname][checkline]:
                 if not wanted=="IGNORE":
-                    print "--- FAIL: expected %s" % wanted,
-                    print "at %s:%d" % (inputfilename, checkline)
+                    print("--- FAIL: expected %s" % wanted, end=' ')
+                    print("at %s:%d" % (inputfilename, checkline))
                     failurecount = failurecount + 1
 
     # Output any unexpected diagnostics    
-    for checkline in results.keys():
-        print '--- FAIL: unexpected message "%s" ' % results[checkline][1],
-        print "at %s:%d" % (inputfilename, checkline)
+    for checkline in list(results.keys()):
+        print('--- FAIL: unexpected message "%s" ' % results[checkline][1], end=' ')
+        print("at %s:%d" % (inputfilename, checkline))
         failurecount = failurecount + 1
 
-print
-print "--- Summary: %d/%d/%d: " % (failurecount, testcount, casecount),
-print "%d failed of %d tests in %d cases." % (failurecount, testcount, casecount)
+print()
+print("--- Summary: %d/%d/%d: " % (failurecount, testcount, casecount), end=' ')
+print("%d failed of %d tests in %d cases." % (failurecount, testcount, casecount))

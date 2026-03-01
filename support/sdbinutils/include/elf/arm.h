@@ -1,5 +1,5 @@
 /* ARM ELF support for BFD.
-   Copyright (C) 1998-2014 Free Software Foundation, Inc.
+   Copyright (C) 1998-2022 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -23,8 +23,9 @@
 #include "elf/reloc-macros.h"
 
 /* Processor specific flags for the ELF header e_flags field.  */
+
+/* Old ABI (ie GNU pre EABI).  These are deprecated.  */
 #define EF_ARM_RELEXEC     0x01
-#define EF_ARM_HASENTRY    0x02
 #define EF_ARM_INTERWORK   0x04
 #define EF_ARM_APCS_26     0x08
 #define EF_ARM_APCS_FLOAT  0x10
@@ -39,13 +40,12 @@
 /* Frame unwind information */
 #define PT_ARM_EXIDX (PT_LOPROC + 1)
 
-/* Other constants defined in the ARM ELF spec. version B-01.  */
+/* Old ARM ELF spec. version B-01.  Mostly deprecated.  */
 #define EF_ARM_SYMSARESORTED 0x04	/* NB conflicts with EF_INTERWORK.  */
 #define EF_ARM_DYNSYMSUSESEGIDX 0x08	/* NB conflicts with EF_APCS26.  */
 #define EF_ARM_MAPSYMSFIRST 0x10	/* NB conflicts with EF_APCS_FLOAT.  */
-#define EF_ARM_EABIMASK      0xFF000000
 
-/* New constants defined in the ARM ELF spec. version XXX.
+/* New constants defined in the ARM ELF spec. version XXX (AAELF).
    Only valid in conjunction with EF_ARM_EABI_VER5. */
 #define EF_ARM_ABI_FLOAT_SOFT 0x200	/* NB conflicts with EF_ARM_SOFT_FLOAT.  */
 #define EF_ARM_ABI_FLOAT_HARD 0x400	/* NB conflicts with EF_ARM_VFP_FLOAT.  */
@@ -54,6 +54,7 @@
 #define EF_ARM_BE8	    0x00800000
 #define EF_ARM_LE8	    0x00400000
 
+#define EF_ARM_EABIMASK      0xFF000000
 #define EF_ARM_EABI_VERSION(flags) ((flags) & EF_ARM_EABIMASK)
 #define EF_ARM_EABI_UNKNOWN  0x00000000
 #define EF_ARM_EABI_VER1     0x01000000
@@ -83,6 +84,7 @@
 
 /* ARM-specific values for sh_flags.  */
 #define SHF_ENTRYSECT      0x10000000   /* Section contains an entry point.  */
+#define SHF_ARM_PURECODE   0x20000000   /* Section contains only code and no data.  */
 #define SHF_COMDEF         0x80000000   /* Section may be multiply defined in the input to a link step.  */
 
 /* ARM-specific program header flags.  */
@@ -106,7 +108,15 @@
 #define TAG_CPU_ARCH_V6S_M	12
 #define TAG_CPU_ARCH_V7E_M	13
 #define TAG_CPU_ARCH_V8		14
-#define MAX_TAG_CPU_ARCH	14
+#define TAG_CPU_ARCH_V8R	15
+#define TAG_CPU_ARCH_V8M_BASE	16
+#define TAG_CPU_ARCH_V8M_MAIN	17
+#define TAG_CPU_ARCH_8_1A       18
+#define TAG_CPU_ARCH_8_2A       19
+#define TAG_CPU_ARCH_8_3A       20
+#define TAG_CPU_ARCH_V8_1M_MAIN 21
+#define TAG_CPU_ARCH_V9         22
+#define MAX_TAG_CPU_ARCH	TAG_CPU_ARCH_V9
 /* Pseudo-architecture to allow objects to be compatible with the subset of
    armv4t and armv6-m.  This value should never be stored in object files.  */
 #define TAG_CPU_ARCH_V4T_PLUS_V6_M (MAX_TAG_CPU_ARCH + 1)
@@ -231,7 +241,22 @@ START_RELOC_NUMBERS (elf_arm_reloc_type)
   RELOC_NUMBER (R_ARM_ME_TOO,	        128)   /* obsolete */
   RELOC_NUMBER (R_ARM_THM_TLS_DESCSEQ  ,129)
 
+  RELOC_NUMBER (R_ARM_THM_ALU_ABS_G0_NC,132)
+  RELOC_NUMBER (R_ARM_THM_ALU_ABS_G1_NC,133)
+  RELOC_NUMBER (R_ARM_THM_ALU_ABS_G2_NC,134)
+  RELOC_NUMBER (R_ARM_THM_ALU_ABS_G3_NC,135)
+  RELOC_NUMBER (R_ARM_THM_BF16,		136)
+  RELOC_NUMBER (R_ARM_THM_BF12,		137)
+  RELOC_NUMBER (R_ARM_THM_BF18,		138)
+
   RELOC_NUMBER (R_ARM_IRELATIVE,      	160)
+  RELOC_NUMBER (R_ARM_GOTFUNCDESC,    	161)
+  RELOC_NUMBER (R_ARM_GOTOFFFUNCDESC, 	162)
+  RELOC_NUMBER (R_ARM_FUNCDESC,       	163)
+  RELOC_NUMBER (R_ARM_FUNCDESC_VALUE, 	164)
+  RELOC_NUMBER (R_ARM_TLS_GD32_FDPIC,   165)
+  RELOC_NUMBER (R_ARM_TLS_LDM32_FDPIC,  166)
+  RELOC_NUMBER (R_ARM_TLS_IE32_FDPIC,   167)
 
   /* Extensions?  R=read-only?  */
   RELOC_NUMBER (R_ARM_RXPC25,         	249)
@@ -304,6 +329,12 @@ enum
   Tag_MPextension_use,
   Tag_undefined_43,
   Tag_DIV_use,
+  Tag_DSP_extension = 46,
+  Tag_MVE_arch = 48,
+  Tag_PAC_extension = 50,
+  Tag_BTI_extension = 52,
+  Tag_BTI_use = 74,
+  Tag_PACRET_use = 76,
   Tag_nodefaults = 64,
   Tag_also_compatible_with,
   Tag_T2EE_use,
@@ -319,6 +350,23 @@ enum
   Tag_VFP_HP_extension = Tag_FP_HP_extension
 };
 
+/* Values for Tag_ABI_FP_number_model.  */
+enum
+{
+  AEABI_FP_number_model_none = 0,
+  AEABI_FP_number_model_ieee754_number = 1,
+  AEABI_FP_number_model_rtabi = 2,
+  AEABI_FP_number_model_ieee754_all = 3
+};
+
+/* Values for Tag_ABI_VFP_args.  */
+enum
+{
+  AEABI_VFP_args_base = 0,
+  AEABI_VFP_args_vfp = 1,
+  AEABI_VFP_args_toolchain = 2,
+  AEABI_VFP_args_compatible = 3
+};
 #endif
 
 /* The name of the note section used to identify arm variants.  */
@@ -334,10 +382,29 @@ enum arm_st_branch_type {
   ST_BRANCH_TO_ARM,
   ST_BRANCH_TO_THUMB,
   ST_BRANCH_LONG,
-  ST_BRANCH_UNKNOWN
+  ST_BRANCH_UNKNOWN,
+  ST_BRANCH_ENUM_SIZE
 };
 
-#define ARM_SYM_BRANCH_TYPE(SYM) \
-  ((enum arm_st_branch_type) (SYM)->st_target_internal)
+#define NUM_ENUM_ARM_ST_BRANCH_TYPE_BITS 2
+#define ENUM_ARM_ST_BRANCH_TYPE_BITMASK	\
+  ((1 << NUM_ENUM_ARM_ST_BRANCH_TYPE_BITS) - 1)
+
+#define ARM_GET_SYM_BRANCH_TYPE(STI) \
+  ((enum arm_st_branch_type) ((STI) & ENUM_ARM_ST_BRANCH_TYPE_BITMASK))
+#ifdef BFD_ASSERT
+#define ARM_SET_SYM_BRANCH_TYPE(STI, TYPE)			\
+  do {								\
+    BFD_ASSERT (TYPE <= ST_BRANCH_ENUM_SIZE);			\
+    BFD_ASSERT ((1 << NUM_ENUM_ARM_ST_BRANCH_TYPE_BITS)		\
+		>= ST_BRANCH_ENUM_SIZE);			\
+    (STI) = (((STI) & ~ENUM_ARM_ST_BRANCH_TYPE_BITMASK)		\
+	     | ((TYPE) & ENUM_ARM_ST_BRANCH_TYPE_BITMASK));	\
+  } while (0)
+#else
+#define ARM_SET_SYM_BRANCH_TYPE(STI, TYPE)			\
+  (STI) = (((STI) & ~ENUM_ARM_ST_BRANCH_TYPE_BITMASK)		\
+	   | ((TYPE) & ENUM_ARM_ST_BRANCH_TYPE_BITMASK))
+#endif
 
 #endif /* _ELF_ARM_H */

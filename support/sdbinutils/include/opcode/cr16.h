@@ -1,5 +1,5 @@
 /* cr16.h -- Header file for CR16 opcode and register tables.
-   Copyright (C) 2007-2014 Free Software Foundation, Inc.
+   Copyright (C) 2007-2022 Free Software Foundation, Inc.
    Contributed by M R Swami Reddy
 
    This file is part of GAS, GDB and the GNU binutils.
@@ -404,9 +404,6 @@ extern const unsigned int cr16_num_cc;
 /* Table of instructions with no operands.  */
 extern const char * cr16_no_op_insn[];
 
-/* Current instruction we're assembling.  */
-extern const inst *instruction;
-
 /* A macro for representing the instruction "constant" opcode, that is,
    the FIXED part of the instruction. The "constant" opcode is represented
    as a 32-bit unsigned long, where OPC is expanded (by a left SHIFT)
@@ -428,7 +425,6 @@ extern const inst *instruction;
 
 /* Utility macros for string comparison.  */
 #define streq(a, b)           (strcmp (a, b) == 0)
-#define strneq(a, b, c)       (strncmp (a, b, c) == 0)
 
 /* Long long type handling.  */
 /* Replace all appearances of 'long long int' with LONGLONG.  */
@@ -438,11 +434,6 @@ typedef unsigned long long ULONGLONG;
 /* Data types for opcode handling.  */
 typedef unsigned long dwordU;
 typedef unsigned short wordU;
-
-/* Globals to store opcode data and build the instruction.  */
-extern wordU cr16_words[3];
-extern ULONGLONG cr16_allWords;
-extern ins cr16_currInsn;
 
 /* Prototypes for function in cr16-dis.c.  */
 extern void cr16_make_instruction (void);

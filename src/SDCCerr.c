@@ -18,6 +18,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "SDCCglobl.h"
+#include "dbuf_string.h"
+#ifdef HAVE_BACKTRACE_SYMBOLS_FD
+#include <unistd.h>
+#include <execinfo.h>
+#endif
 
 #include "SDCCerr.h"
 
@@ -33,7 +41,7 @@
 
 struct SDCCERRG _SDCCERRG; 
 
-extern char *filename;
+extern const char *filename;
 extern int lineno;
 extern int fatalError;
 
@@ -54,7 +62,7 @@ struct
   { E_SYNTAX_ERROR, ERROR_LEVEL_ERROR,
      "Syntax error, declaration ignored at '%s'", 0 },
   { E_CONST_EXPECTED, ERROR_LEVEL_ERROR,
-      "Initializer element is not constant", 0 },
+     "Initializer element is not a constant expression", 0 },
   { E_OUT_OF_MEM, ERROR_LEVEL_ERROR,
      "'malloc' failed file '%s' for size %ld", 0 },
   { E_FILE_OPEN_ERR, ERROR_LEVEL_ERROR,
@@ -64,7 +72,7 @@ struct
   { E_CANNOT_ALLOC, ERROR_LEVEL_ERROR,
      "Cannot allocate variable '%s'.", 0 },
   { E_OLD_STYLE, ERROR_LEVEL_ERROR,
-     "Old style C declaration. IGNORED '%s'", 0 },
+     "K&R-style function '%s' is not permitted in ISO C23 or later", 0 },
   { E_STACK_OUT, ERROR_LEVEL_ERROR,
      "Out of stack Space. '%s' not allocated", 0 },
   { E_INTERNAL_ERROR, ERROR_LEVEL_ERROR,
@@ -111,10 +119,10 @@ struct
      "'unary %c': illegal operand", 0 },
   { E_CONV_ERR, ERROR_LEVEL_ERROR,
      "conversion error: integral promotion failed", 0 },
-  { E_INT_REQD, ERROR_LEVEL_ERROR,
-     "type must be INT for bit field definition", 0 },
+  { E_BITFLD_TYPE, ERROR_LEVEL_ERROR,
+     "invalid type for bit-field", 0 },
   { E_BITFLD_SIZE, ERROR_LEVEL_ERROR,
-     "bit field size cannot be greater than int (%d bits)", 0 },
+     "bit-field size too wide for type (max %d bits)", 0 },
   { W_TRUNCATION, ERROR_LEVEL_WARNING,
      "high order truncation might occur", 0 },
   { E_CODE_WRITE, ERROR_LEVEL_ERROR,
@@ -140,15 +148,15 @@ struct
   { E_SHIFT_OP_INVALID, ERROR_LEVEL_ERROR,
      "invalid operand for shift operator", 0 },
   { E_COMPARE_OP, ERROR_LEVEL_ERROR,
-     "compare operand cannot be struct/union", 0 },
+     "operands are not comparable", 0 },
   { E_BITWISE_OP, ERROR_LEVEL_ERROR,
      "operand invalid for bitwise operation", 0 },
   { E_ANDOR_OP, ERROR_LEVEL_ERROR,
      "Invalid operand for '&&' or '||'", 0 },
   { E_TYPE_MISMATCH, ERROR_LEVEL_ERROR,
      "indirections to different types %s %s ", 0 },
-  { E_AGGR_ASSIGN, ERROR_LEVEL_ERROR,
-     "cannot assign values to aggregates", 0 },
+  { E_ARRAY_ASSIGN, ERROR_LEVEL_ERROR,
+     "cannot assign values to arrays", 0 },
   { E_ARRAY_DIRECT, ERROR_LEVEL_ERROR,
      "bit Arrays can be accessed by literal index only", 0 },
   { E_BIT_ARRAY, ERROR_LEVEL_ERROR,
@@ -238,7 +246,7 @@ struct
   { E_NONRENT_ARGS, ERROR_LEVEL_ERROR,
      "Functions called via pointers must be 'reentrant' to take this many (bytes for) arguments", 0 },
   { W_DOUBLE_UNSUPPORTED, ERROR_LEVEL_WARNING,
-     "type 'double' not supported assuming 'float'", 0 },
+     "types 'double', 'long double' not supported. Assuming 'float'", 0 },
   { W_COMP_RANGE, ERROR_LEVEL_PEDANTIC,
      "comparison is always %s due to limited range of data type", 0 },
   { W_FUNC_NO_RETURN, ERROR_LEVEL_WARNING,
@@ -247,8 +255,8 @@ struct
      "Pre-Processor %s", 0 },
   { E_STRUCT_AS_ARG, ERROR_LEVEL_ERROR,
      "SDCC cannot pass structure '%s' as function argument", 0 },
-  { E_PREV_DEF_CONFLICT, ERROR_LEVEL_ERROR,
-     "conflict with previous definition of '%s' for attribute '%s'", 0 },
+  { E_PREV_DECL_CONFLICT, ERROR_LEVEL_ERROR,
+     "conflict with previous declaration of '%s' for attribute '%s' at %s:%d", 0 },
   { E_CODE_NO_INIT, ERROR_LEVEL_WARNING,
      "variable '%s' declared in code space must have initialiser", 0 },
   { E_OPS_INTEGRAL, ERROR_LEVEL_ERROR,
@@ -289,14 +297,14 @@ struct
      "unknown compiler option '%s' ignored", 0 },
   { W_UNSUPP_OPTION, ERROR_LEVEL_WARNING,
      "option '%s' no longer supported  '%s' ", 0 },
-  { W_UNKNOWN_FEXT, ERROR_LEVEL_WARNING,
+  { E_UNKNOWN_FEXT, ERROR_LEVEL_ERROR,
      "don't know what to do with file '%s'. file extension unsupported", 0 },
   { W_TOO_MANY_SRC, ERROR_LEVEL_WARNING,
      "cannot compile more than one source file. file '%s' ignored", 0 },
   { I_CYCLOMATIC, ERROR_LEVEL_INFO,
      "function '%s', # edges %d , # nodes %d , cyclomatic complexity %d", 0 },
-  { E_DIVIDE_BY_ZERO, ERROR_LEVEL_ERROR,
-     "dividing by ZERO", 0 },
+  { E_DIVIDE_BY_ZERO, ERROR_LEVEL_WARNING,
+     "dividing by 0", 0 },
   { E_FUNC_BIT, ERROR_LEVEL_ERROR,
      "function cannot return 'bit'", 0 },
   { E_CAST_ZERO, ERROR_LEVEL_ERROR,
@@ -329,7 +337,7 @@ struct
   { W_ESC_SEQ_OOR_FOR_CHAR, ERROR_LEVEL_WARNING,
      "escape sequence out of range for char.", 0 },
   { E_INVALID_HEX, ERROR_LEVEL_ERROR,
-     "\\x used with no following hex digits.", 0 },
+     "\\x used without valid hexadecimal digits.", 0 },
   { W_FUNCPTR_IN_USING_ISR, ERROR_LEVEL_WARNING,
      "call via function pointer in ISR using non-zero register bank.\n"
      "            Cannot determine which register bank to save.", 0 },
@@ -396,7 +404,7 @@ struct
   { W_SAVE_RESTORE, ERROR_LEVEL_PEDANTIC,
      "unmatched #pragma save and #pragma restore", 0 },
   { E_INVALID_CRITICAL, ERROR_LEVEL_ERROR,
-     "not allowed in a critical section", 0 },
+     "not allowed in a critical section or critical function", 0 },
   { E_NOT_ALLOWED, ERROR_LEVEL_ERROR,
      "%s not allowed here", 0 },
   { E_BAD_TAG, ERROR_LEVEL_ERROR,
@@ -413,13 +421,13 @@ struct
      "size of void is zero", 0 },
   { W_POSSBUG2, ERROR_LEVEL_WARNING,
      "possible code generation error at %s line %d,\n"
-     " please report problem and send source code at SDCC-USER list on SF.Net"},
+     " please report problem and send source code at sdcc-user list on sourceforge.net"},
   { W_COMPLEMENT, ERROR_LEVEL_WARNING,
      "using ~ on bit/bool/unsigned char variables can give unexpected results due to promotion to int", 0 },
   { E_SHADOWREGS_NO_ISR, ERROR_LEVEL_ERROR,
      "ISR function attribute 'shadowregs' following non-ISR function '%s'", 0 },
   { W_SFR_ABSRANGE, ERROR_LEVEL_WARNING,
-     "absolute address for sfr '%s' probably out of range.", 0 },
+     "absolute address for __sfr '%s' probably out of range.", 0 },
   { E_BANKED_WITH_CALLEESAVES, ERROR_LEVEL_ERROR,
      "Both banked and callee-saves cannot be used together.", 0 },
   { W_INVALID_INT_CONST, ERROR_LEVEL_WARNING,
@@ -434,12 +442,12 @@ struct
      "flexible array member '%s' not at end of struct", 0 },
   { E_FLEXARRAY_INEMPTYSTRCT, ERROR_LEVEL_ERROR,
      "flexible array '%s' in otherwise empty struct", 0 },
-  { W_EMPTY_SOURCE_FILE, ERROR_LEVEL_PEDANTIC,
-     "ISO C forbids an empty source file", 0 },
+  { W_EMPTY_TRANSLATION_UNIT, ERROR_LEVEL_PEDANTIC,
+     "ISO C forbids an empty translation unit", 0 },
   { W_BAD_PRAGMA_ARGUMENTS, ERROR_LEVEL_WARNING,
      "#pragma %s: bad argument(s); pragma ignored", 0 },
   { E_BAD_RESTRICT, ERROR_LEVEL_ERROR,
-     "Only pointers may be qualified with 'restrict'", 0 },
+     "Only object pointers may be qualified with 'restrict'", 0 },
   { E_BAD_INLINE, ERROR_LEVEL_ERROR,
      "Only functions may be qualified with 'inline'", 0 },
   { E_BAD_INT_ARGUMENT, ERROR_LEVEL_ERROR,
@@ -451,7 +459,7 @@ struct
   { W_DEPRECATED_KEYWORD, ERROR_LEVEL_WARNING,
      "keyword '%s' is deprecated, use '%s' instead", 0 },
   { E_STORAGE_CLASS_FOR_PARAMETER, ERROR_LEVEL_ERROR,
-     "storage class specified for parameter '%s'", 0 },
+     "storage class other than register specified for parameter '%s'", 0 },
   { E_OFFSETOF_TYPE, ERROR_LEVEL_ERROR,
      "offsetof can only be applied to structs/unions", 0 },
   { E_INCOMPLETE_FIELD, ERROR_LEVEL_ERROR,
@@ -462,10 +470,10 @@ struct
      "Invalid designator for designated initializer", 0 },
   { W_DUPLICATE_INIT, ERROR_LEVEL_WARNING,
      "Duplicate initializer at position %d; ignoring previous.", 0 },
-  { E_INVALID_UNIVERSAL, ERROR_LEVEL_ERROR,
-     "incomplete universal character name \\%s.", 0 },
-  { W_UNIVERSAL_C99, ERROR_LEVEL_WARNING,
-     "universal character names are only valid in C99", 0 },
+  { W_INVALID_UNIVERSAL, ERROR_LEVEL_WARNING,
+     "invalid universal character name \\%s.", 0 },
+  { W_UNIVERSAL_C95, ERROR_LEVEL_WARNING,
+     "universal character names are only valid in C95 or later", 0 },
   { E_SHORTLONG, ERROR_LEVEL_ERROR,
      "invalid combination of short / long", 0 },
   { E_INTEGERSUFFIX, ERROR_LEVEL_ERROR,
@@ -474,12 +482,12 @@ struct
      "named address space not allowed for automatic var '%s'", 0},
   { W_NORETURNRETURN, ERROR_LEVEL_WARNING,
      "return in _Noreturn function", 0},
-  { E_STRUCT_REDEF, ERROR_LEVEL_ERROR,
-     "struct/union '%s' redefined", 0 },
+  { E_STRUCT_REDEF_INCOMPATIBLE, ERROR_LEVEL_ERROR,
+     "struct/union '%s' redefined to incompatible type", 0 },
   { W_STRING_CANNOT_BE_TERMINATED, ERROR_LEVEL_PEDANTIC,
     "string '%s'cannot be terminated within array", 0 },
   { W_LONGLONG_LITERAL, ERROR_LEVEL_WARNING,
-    "support for large long long literals is incomplete", 0 },
+    "support for large long long literals is incomplete", 1 },
   { S_SYNTAX_ERROR, ERROR_LEVEL_SYNTAX_ERROR,
     "token -> '%s' ; column %d", 0 },
   { E_MIXING_CONFIG, ERROR_LEVEL_ERROR,
@@ -495,8 +503,8 @@ struct
      "%s() failed to parse line node, assuming %d bytes\n'%s'\n", 0 },
   { W_FLEXARRAY_INSTRUCT, ERROR_LEVEL_WARNING,
      "type of variable '%s' is struct with flexible array field", 0},
-  { W_ANONYMOUS_MEMBER, ERROR_LEVEL_WARNING,
-     "anonymous member in struct/union", 0},
+  { E_TYPE_IS_FUNCTION, ERROR_LEVEL_ERROR,
+     "'%s' has function type", 0},
   { W_INLINE_NAKED, ERROR_LEVEL_WARNING,
      "inline function '%s' is __naked", 0},
   { E_Z88DK_FASTCALL_PARAMETERS, ERROR_LEVEL_ERROR,
@@ -505,6 +513,268 @@ struct
     "ivalid parameter type in __z88dk_fastcall", 0 },
   { W_REPEAT_QUALIFIER, ERROR_LEVEL_WARNING,
     "duplicate specifier '%s'", 0 },
+  { W_NO_TYPE_SPECIFIER, ERROR_LEVEL_WARNING,
+    "no type specifier for '%s'", 0 },
+  { E_NO_TYPE_SPECIFIER, ERROR_LEVEL_ERROR,
+    "no type specifier for '%s'", 0 },
+  { E_MULTIPLE_DEFAULT_IN_GENERIC, ERROR_LEVEL_ERROR,
+    "multiple default expressions in generic association", 0 },
+  { E_MULTIPLE_MATCHES_IN_GENERIC, ERROR_LEVEL_ERROR,
+    "multiple matching expressions in generic association", 0 },
+  { E_NO_MATCH_IN_GENERIC, ERROR_LEVEL_ERROR,
+    "no matching expression in generic association", 0 },
+  { W_LABEL_WITHOUT_STATEMENT_C23, ERROR_LEVEL_WARNING,
+    "label without statement requires ISO C23 or later", 0},
+  { E_WCHAR_CONST_C95, ERROR_LEVEL_ERROR,
+    "character constant of type wchar_t requires C95 or later", 0},
+  { E_WCHAR_CONST_C11, ERROR_LEVEL_ERROR,
+    "character constant of type char16_t or char32_t requires C11 or later", 0},
+  { E_WCHAR_STRING_C95, ERROR_LEVEL_ERROR,
+    "wide character string of type L requires C95 or later", 0},
+  { E_WCHAR_STRING_C11, ERROR_LEVEL_ERROR,
+    "wide character string of type u8, u, U requires C11 or later", 0},
+  { W_UNKNOWN_REG, ERROR_LEVEL_WARNING,
+    "unknown register specification %s", 0},
+  { E_HEXFLOAT_C99, ERROR_LEVEL_ERROR,
+    "hexadecimal floating constant requires ISO C99 or later", 0},
+  { E_ANONYMOUS_STRUCT_TAG, ERROR_LEVEL_ERROR,
+    "tagged anonymous struct/union '%s'", 0},
+  { W_INLINE_FUNCATTR, ERROR_LEVEL_WARNING,
+    "inline function '%s' might lose function attributes", 0},
+  { E_FOR_INITAL_DECLARATION_C99, ERROR_LEVEL_ERROR,
+    "initial declaration in for loop requires ISO C99 or later", 0},
+  { E_QUALIFIED_ARRAY_PARAM_C99, ERROR_LEVEL_ERROR,
+    "qualifiers in array parameters require ISO C99 or later", 0},
+  { E_QUALIFIED_ARRAY_NOPARAM, ERROR_LEVEL_ERROR,
+    "qualifier or static in array declarator that is not a parameter", 0},
+  { E_STATIC_ARRAY_PARAM_C99, ERROR_LEVEL_ERROR,
+    "static in array parameters requires ISO C99 or later", 0},
+  { E_INT_MULTIPLE, ERROR_LEVEL_ERROR,
+    "multiple interrupt numbers for '%s'", 0},
+  { W_INCOMPAT_PTYPES, ERROR_LEVEL_WARNING,
+     "pointer types incompatible ", 0 },
+  { E_STATIC_ASSERTION_C23, ERROR_LEVEL_ERROR,
+    "static assertion with one argument requires C23 or later", 0 },
+  { W_STATIC_ASSERTION_2, ERROR_LEVEL_WARNING,
+    "static assertion failed", 0 },
+  { E_DECL_AFTER_STATEMENT_C99, ERROR_LEVEL_ERROR,
+    "declaration after statement requires ISO C99 or later", 0 },
+  { E_SHORTCALL_INVALID_VALUE, ERROR_LEVEL_ERROR,
+    "invalid value for __z88dk_shortcall %s parameter: %x", 0},
+  { E_DUPLICATE_PARAMTER_NAME, ERROR_LEVEL_ERROR,
+    "duplicate parameter name %s for function %s", 0},
+  { E_AUTO_FILE_SCOPE, ERROR_LEVEL_ERROR,
+    "auto in declaration at file scope", 0},
+  { E_U8_CHAR_C23, ERROR_LEVEL_ERROR,
+    "u8 character constant requires ISO C23 or later", 0},
+  { E_U8_CHAR_INVALID, ERROR_LEVEL_ERROR,
+    "invalid u8 character constant", 0},
+  { E_ATTRIBUTE_C23, ERROR_LEVEL_ERROR,
+    "attribute requires C23 or later", 0},
+  { E_COMPOUND_LITERALS_C99, ERROR_LEVEL_ERROR,
+    "compound literals require ISO C99 or later", 0},
+  { E_THREAD_LOCAL, ERROR_LEVEL_ERROR,
+    "thread-local storage is not implemented", 0},
+  { E_ENUM_COMMA_C99,  ERROR_LEVEL_ERROR,
+    "trailing comma after enumerator list requires ISO C99 or later", 0},
+  { E_OUTPUT_FILE_OPEN_ERR, ERROR_LEVEL_ERROR,
+     "Failed to open output file '%s' (%s)", 0 },
+  { E_INPUT_FILE_OPEN_ERR, ERROR_LEVEL_ERROR,
+     "Failed to open input file '%s' (%s)", 0 },
+  { W_SHIFT_NEGATIVE, ERROR_LEVEL_WARNING,
+     "%s shift by negative amount", 0 },
+  { W_INVALID_STACK_LOCATION, ERROR_LEVEL_WARNING,
+     "access to invalid stack location", 0 },
+  { W_BINARY_INTEGER_CONSTANT_C23, ERROR_LEVEL_WARNING,
+     "binary integer constant requires C23 or later", 0 },
+  { E_U8CHAR_STRING_C11, ERROR_LEVEL_ERROR,
+     "unicode string literal requires ISO C 11 or later", 0 },
+  { W_PREFIXED_STRINGS, ERROR_LEVEL_WARNING,
+     "sequence of differently prefixed string literals", 0 },
+  { W_DIGIT_SEPARATOR_C23, ERROR_LEVEL_WARNING,
+     "digit separators require ISO C23 or later", 0 },
+  { E_INVALID_LANG_OVERRIDE, ERROR_LEVEL_ERROR,
+     "argument to option -x is not a valid file type override", 0},
+  { E_RAISONANCE_LARGE_RETURN, ERROR_LEVEL_ERROR,
+     "return values larger than 16 bits are not supported for Raisonance calling convention", 0},
+  { E_IAR_LARGE_RETURN, ERROR_LEVEL_ERROR,
+     "return values larger than 16 bits are not supported for IAR calling convention", 0},
+  { E_IAR_PSEUDOPARM, ERROR_LEVEL_ERROR,
+     "IAR function call with parameter in pseudoregister", 0},
+  { E_COSMIC_LARGE_RETURN, ERROR_LEVEL_ERROR,
+     "return values larger than 16 bits are not supported for Cosmic calling convention", 0},
+  { E_MULTIPLE_CALLINGCONVENTIONS, ERROR_LEVEL_ERROR,
+     "multiple incompatible calling conventions for '%s'", 0},
+  { E_SFR_POINTER, ERROR_LEVEL_ERROR,
+     "unsupported pointer to __sfr", 0},
+  { E_INVALID_BITINTWIDTH, ERROR_LEVEL_ERROR,
+     "invalid width for bit-precise integer type", 0},
+  { W_BITINTCONST_C23, ERROR_LEVEL_WARNING,
+     "bit-precise integer constant requires ISO C23 or later", 0},
+  { E_INVALID_UNIVERSAL_ID, ERROR_LEVEL_ERROR,
+     "universal character name \\%s invalid in identifier", 0 },
+  { E_COMPLEX_UNSUPPORTED, ERROR_LEVEL_ERROR,
+     "complex numbers are not supported", 0 },
+  { E_DECIMAL_FLOAT_UNSUPPORTED, ERROR_LEVEL_ERROR,
+     "decimal floating-point numbers are not supported", 0 },
+  { E_ATOMIC_UNSUPPORTED, ERROR_LEVEL_ERROR,
+     "atomics are not supported", 0 },
+  { W_RETURN_TYPE_OMITTED_INT, ERROR_LEVEL_WARNING,
+     "return type of function omitted, assuming int", 0 },
+  { W_SINGLE_DASH_LONG_OPT, ERROR_LEVEL_WARNING,
+     "use of single-dash long options is discouraged, use '-%s' instead", 0 },
+  { E_UNKNOWN_LANGUAGE_STANDARD, ERROR_LEVEL_ERROR,
+     "unknown language standard '%s'", 0 },
+  { E_CONSTEXPR_C23, ERROR_LEVEL_ERROR,
+     "constexpr requires ISO C23 or later", 0 },
+  { E_TYPEOF, ERROR_LEVEL_ERROR,
+     "typeof and typeof_unqual not implemented for nontrivial expressions", 0 },
+  { W_FUNCDECL_WITH_NO_PROTOTYPE, ERROR_LEVEL_WARNING,
+     "function declarator with no prototype", 0 },
+  { W_UNKNOWN_ATTRIBUTE, ERROR_LEVEL_WARNING,
+     "unknown attribute '%s' ignored", 0 },
+  { W_EMPTY_INIT_C23, ERROR_LEVEL_WARNING,
+     "empty initializer requires ISO C23 or later", 0 },
+  { E_EMPTY_INIT_UNKNOWN_SIZE, ERROR_LEVEL_ERROR,
+     "array of unknown size cannnot be initialized by an empty initializer", 0 },
+  { E_VLA_TYPE_C99, ERROR_LEVEL_ERROR,
+     "variable length array type requires ISO C99 or later", 0 },
+  { E_VLA_OBJECT, ERROR_LEVEL_ERROR,
+     "object of variable length array type not supported", 0 },
+  { E_VLA_SCOPE, ERROR_LEVEL_ERROR,
+     "variable length array declarators must have function prototype scope or block scope", 0 },
+  { E_VLA_INIT, ERROR_LEVEL_ERROR,
+     "variable length arrays can be initialized by empty initalizers only", 0 },
+  { W_ENUM_INT_RANGE_C23, ERROR_LEVEL_WARNING,
+     "enumeration constant outside the range of int requires ISO C23 or later", 0 },
+  { E_Z88DK_CALLEE_VARARG, ERROR_LEVEL_ERROR,
+     "__z88dk_callee with variable arguments not supported", 0 },
+  { W_CODEMEM_WRITE, ERROR_LEVEL_WARNING, // This is a warning, not an error, since writing to a string literal is syntactically correct, but has undefined behaviour. So if the code is never executed, the program is still correct and should work.
+     "attempt to write to read-only-memory", 0},
+  { W__SDCC_EXTERNAL_STARTUP_DEF, ERROR_LEVEL_WARNING,
+     "_sdcc_external_startup function definition - probable deprecated old-style variant of __sdcc_external_startup", 0},
+  { E_NO_SKIP_TARGET, ERROR_LEVEL_ERROR,
+     "target label missing for skip instruction '%s'", 0},
+  { W_SDCCCALL_STD_LIB_CRT0, ERROR_LEVEL_WARNING,
+     "non-default sdcccall specified, but default stdlib or crt0", 0},
+  { W_PEEPHOLE_RULE_LIMIT, ERROR_LEVEL_WARNING,
+     "peephole rule application limit reached", 0},
+  { W_DATA_ABSRANGE, ERROR_LEVEL_WARNING,
+     "absolute address for __data '%s' probably out of range.", 0 },
+  { W_IDATA_ABSRANGE, ERROR_LEVEL_WARNING,
+     "absolute address for __idata '%s' probably out of range.", 0 },
+  { W_CASE_RANGE_EMPTY, ERROR_LEVEL_WARNING,
+     "'case' range empty; case ignored", 0 },
+  { E_CASE_RANGE_C2Y, ERROR_LEVEL_ERROR,
+     "'case' range expressions require C2y or later", 0 },
+  { E_GENERIC_WITH_TYPENAME_C2Y, ERROR_LEVEL_ERROR,
+     "generic selection based on a type name requires C2y or later", 0 },
+  { E_MIXED_FUNCTION_STYLES, ERROR_LEVEL_ERROR,
+     "function '%s' mixes ISO and K&R style", 0 },
+  { E_ENUM_TYPE_SPECIFIER_C23, ERROR_LEVEL_ERROR,
+     "enum type specifiers require C23 or later", 0 },
+  { E_ENUM_UNDERLYING_TYPE, ERROR_LEVEL_ERROR,
+     "enum's underlying type must be an integer type and cannot be bit-precise or an enum", 0 },
+  { E_ENUM_TYPE_RANGE_TOO_SMALL, ERROR_LEVEL_ERROR,
+     "the enum's underlying type cannot represent all enumerator values", 0 },
+  { E_COUNTOF_INVALID_TYPE, ERROR_LEVEL_ERROR,
+     "_Countof applied to an incomplete or non-array type", 0 },
+  { W_PREFIXED_OCTAL_C2Y, ERROR_LEVEL_WARNING,
+     "prefixed octal integer constants require ISO C2y or later", 0 },
+  { W_OCTAL_DEPRECATED_C2Y, ERROR_LEVEL_WARNING,
+     "unprefixed octal integer constants are deprecated as of ISO C2y", 0 },
+  { E_CLOSING_BRACE, ERROR_LEVEL_ERROR,
+     "invalid character or end of string encountered before '}'", 0 },
+  { E_INVALID_OCTAL, ERROR_LEVEL_ERROR,
+     "\\o{...} used without valid octal digits.", 0 },
+  { E_SELECTION_DECLARATION_C2Y, ERROR_LEVEL_ERROR,
+     "declaration within selection header requires ISO C2y or later", 0 },
+  { E_COMPLIT_SCLASS_C23, ERROR_LEVEL_ERROR,
+    "compound literals with storage class specifier require ISO C23 or later", 0 },
+  { W_ENUM_UNDERLYING_BITINT, ERROR_LEVEL_WARNING,
+    "enum's underlying type may not be a bit-precise type in ISO C23", 0 },
+  { W_BITINTWIDTH_1_C2Y, ERROR_LEVEL_WARNING,
+    "signed bit-precise integer type of width 1 requires ISO C2y or later", 0 },
+  { E_ATOMIC_ARRAY, ERROR_LEVEL_ERROR,
+     "_Atomic array", 0 },
+  { E_ATOMIC_FUNCTION, ERROR_LEVEL_ERROR,
+     "_Atomic function", 0 },
+  { E_ATOMIC_SPEC_ATOMIC, ERROR_LEVEL_ERROR,
+     "_Atomic specifier on atomic type", 0 },
+  { E_ATOMIC_SPEC_QUALIFIED, ERROR_LEVEL_ERROR,
+     "_Atomic specifier on qualified type", 0 },
+  { E_BLOCK_SCOPE_EXTERN_INIT, ERROR_LEVEL_ERROR,
+     "block-scope variable'%s' declared extern and intialized", 0},
+  { E_BLOCK_SCOPE_FUNC_SCLASS, ERROR_LEVEL_ERROR,
+     " Function declared at block scope with explicit storage-class specifier other than extern", 0 },
+  { W_PTR2INT_NOREPRESENT, ERROR_LEVEL_WARNING,
+     "Cast of pointer to integer type that cannot represent all values of the pointer type", 0 },
+  { W_MAIN_TYPE, ERROR_LEVEL_WARNING,
+     "Function main should be void main(void) or int main(void)", 0 },
+  { E_VOID_SHALL_BE_LONELY, ERROR_LEVEL_ERROR,
+     "void is allowed as single parameter with no storage class specifiers, no type qualifers, no following ellipsis", 0},
+  { W_ANONYMOUS_STRUCT_C11, ERROR_LEVEL_WARNING,
+     "anonymous struct/union requires ISO C11 or later", 0},
+  { E_UNAMED_STRUCT_MEMBER, ERROR_LEVEL_ERROR,
+     "struct/union members need to have a name, unless they are anonymous struct/union or bit-fields", 0 },
+  { E_NO_LINKAGE_INCOMPLETE_TYPE, ERROR_LEVEL_ERROR,
+     "object %s with no linkage of incomplete type", 0 },
+  { E_EXTERN_INLINE_NO_DEF, ERROR_LEVEL_ERROR,
+     "inline function %s declared with external linkage, but not defined in translation unit", 0 },
+  { E_STRAY_CHARACTER, ERROR_LEVEL_ERROR,
+     "stray character at column %d", 0 },
+  { W_UNICODE_RANGE, ERROR_LEVEL_WARNING,
+     "character out of unicode range", 0 },
+  { E_INCOMPLETE_TYPE_LVALUE, ERROR_LEVEL_ERROR,
+     "lvalue of incomplete type", 0 },
+  { W_REGISTER_EXTERNAL_DECL, ERROR_LEVEL_WARNING,
+     "storage class register on external declaration", 0 },
+  { W_REGISTER_ELEMENT_ACCESS_C2Y, ERROR_LEVEL_WARNING,
+     "access to element of array with storage class specifier register requires ISO C2y or later", 0 },
+  { W_EXCESS_BRACES_INITIALIZER, ERROR_LEVEL_WARNING,
+     "excess braces in initializer", 0 },
+  { E_VLA_UNSPECIFIED_SCOPE, ERROR_LEVEL_ERROR,
+     "[*] variable length array declarators of unspecified length must have function prototype scope", 0 },
+  { W_INCOMPLETE_ARRAY_IMPLICIT_1, ERROR_LEVEL_WARNING,
+     "incomplete array type has length 1 due to implicit initializer", 0 },
+  { E_QUALIFIED_FUNCTION, ERROR_LEVEL_ERROR,
+     "qualified function", 0 },
+  { W_NONASCII_ID_NOUNILIB, ERROR_LEVEL_WARNING,
+     "non-ascii characters in identifier, but SDCC built without libu8ident library; diagnostics on and semantics of identifier names limited to the minimum required by ISO C11", 0 },
+  { E_INVALID_ID, ERROR_LEVEL_ERROR,
+     "invalid identifier '%s'", 0 },
+  { W_ID_NOT_NORMALIZED_NFC, ERROR_LEVEL_WARNING,
+     "identifier '%s' not normalized to unicode normalization form C", 0 },
+  { W_INSECURE_ID, ERROR_LEVEL_WARNING,
+     "insecure identifier '%s' not compliant with UTS #39 (%s)", 0 },
+  { E_CONSTEXPR_WITHOUT_INIT, ERROR_LEVEL_ERROR,
+     "constexpr declaration without initialization", 0 },
+  { E_CONSTEXPR_RANGE_PRECISION, ERROR_LEVEL_ERROR,
+     "type of constexpr declaration has insufficient range or precision", 0 },
+  { E_CONSTEXPR_INVALID_QUAL, ERROR_LEVEL_ERROR,
+     "object of constexpr type cannot be atomic, variably modified, volatile or restrict qualified", 0 },
+  { W_STATIC_ARRAY_PARAM_LENGTH, ERROR_LEVEL_WARNING,
+     "argument for [static] array parameter is not of sufficient length", 0 },
+  { W_INVALID_PTR_DEREF, ERROR_LEVEL_WARNING, 
+     "possibly invalid pointer dereferenced or array index out of bounds", 0 },
+  { W_PARAM_FWD_DECL, ERROR_LEVEL_WARNING,
+     "parameter forward declaration not allowed in ISO C", 0 },
+  { E_PARAM_FWD_DECL_NOPARAM, ERROR_LEVEL_ERROR,
+     "forward-declared parameter '%s' missing from parameter list", 0 },
+  { E_PARAM_FWD_DECL_UNSUPPORTED, ERROR_LEVEL_ERROR,
+     "unsupported parameter forward declaration; only single forward-declared parameters of integer type are supported", 0 },
+  { W_VARARG_ONLY_C23, ERROR_LEVEL_WARNING,
+     "function with variable arguments only requires ISO C23 or later", 0 },
+  { E_BAD_OPTIONAL, ERROR_LEVEL_ERROR,
+     "types other than the referenced type of a pointer type shall not be optional-qualified", 0 },
+  { W_SIZETCONST_C2Y, ERROR_LEVEL_WARNING,
+     "integer literal of type size_t or ptrdiff_t requires C2y", 0 },
+  { W_ARRAY_PARAM_LENGTH, ERROR_LEVEL_WARNING,
+     "argument for array parameter might not be of sufficient length", 0},
+  { W_MAYBE_INVALID_PTR_DEREF, ERROR_LEVEL_WARNING,
+     "maybe invalid pointer dereferenced or array index out of bounds (assuming array parameters are arrays of given size)", 0},
+  { W_OPTIONAL_PTR_DEREF, ERROR_LEVEL_WARNING,
+     "pointer to _Optional could not be proven to be non-null at dereference", 0 },
 };
 
 /* -------------------------------------------------------------------------------
@@ -536,6 +806,10 @@ void setErrorLogLevel (ERROR_LOG_LEVEL level)
 int
 vwerror (int errNum, va_list marker)
 {
+  struct dbuf_s dbuf;
+  char *errmsg;
+  char *oldmsg;
+
   if (_SDCCERRG.out == NULL)
     {
       _SDCCERRG.out = DEFAULT_ERROR_OUT;
@@ -544,15 +818,17 @@ vwerror (int errNum, va_list marker)
   if (errNum > NELEM (ErrTab))
     {
       fprintf (_SDCCERRG.out,
-              "Internal error: bad error number %d.", errNum);
+              "Internal error: bad error number %d.\n", errNum);
       return 0;
     }
   if (NELEM (ErrTab) != NUMBER_OF_ERROR_MESSAGES || ErrTab[errNum].errIndex != errNum)
     {
       fprintf (_SDCCERRG.out,
-              "Internal error: error table entry for %d inconsistent.", errNum);
+              "Internal error: error table entry for %d inconsistent.\n", errNum);
       return 0;
     }
+
+  dbuf_init(&dbuf, 200);
 
   if ((ErrTab[errNum].errType >= _SDCCERRG.logLevel) && (!ErrTab[errNum].disabled))
     {
@@ -562,47 +838,55 @@ vwerror (int errNum, va_list marker)
       if (filename && lineno)
         {
           if (_SDCCERRG.style)
-            fprintf (_SDCCERRG.out, "%s(%d) : ", filename, lineno);
+            dbuf_printf (&dbuf, "%s(%d) : ", filename, lineno);
           else
-            fprintf (_SDCCERRG.out, "%s:%d: ", filename, lineno);
+            dbuf_printf (&dbuf, "%s:%d: ", filename, lineno);
         }
       else if (lineno)
         {
-          fprintf (_SDCCERRG.out, "at %d: ", lineno);
+          dbuf_printf (&dbuf, "at %d: ", lineno);
         }
       else
         {
-          fprintf (_SDCCERRG.out, "-:0: ");
+          dbuf_printf (&dbuf, "-:0: ");
         }
 
       switch (ErrTab[errNum].errType)
         {
         case ERROR_LEVEL_SYNTAX_ERROR:
-          fprintf (_SDCCERRG.out, "syntax error: ");
+          dbuf_printf (&dbuf, "syntax error: ");
           break;
 
         case ERROR_LEVEL_ERROR:
-          fprintf (_SDCCERRG.out, "error %d: ", errNum);
+          dbuf_printf (&dbuf, "error %d: ", errNum);
           break;
 
         case ERROR_LEVEL_WARNING:
         case ERROR_LEVEL_PEDANTIC:
           if (_SDCCERRG.werror)
-            fprintf (_SDCCERRG.out, "error %d: ", errNum);
+            dbuf_printf (&dbuf, "error %d: ", errNum);
           else
-            fprintf (_SDCCERRG.out, "warning %d: ", errNum);
+            dbuf_printf (&dbuf, "warning %d: ", errNum);
           break;
 
         case ERROR_LEVEL_INFO:
-          fprintf (_SDCCERRG.out, "info %d: ", errNum);
+          dbuf_printf (&dbuf, "info %d: ", errNum);
           break;
 
         default:
           break;
         }
 
-      vfprintf (_SDCCERRG.out, ErrTab[errNum].errText, marker);
-      fprintf (_SDCCERRG.out, "\n");
+      dbuf_vprintf (&dbuf, ErrTab[errNum].errText, marker);
+      errmsg = dbuf_detach_c_str (&dbuf);
+      for (oldmsg = setFirstItem (_SDCCERRG.log); oldmsg; oldmsg = setNextItem (_SDCCERRG.log))
+        if (strcmp (errmsg, oldmsg) == 0)
+          {
+            free(errmsg);
+            return 0;
+          }
+      addSetHead (&_SDCCERRG.log, errmsg);
+      fprintf (_SDCCERRG.out, "%s\n", errmsg);
       return 1;
     }
   else
@@ -628,14 +912,37 @@ werror (int errNum, ...)
 }
 
 /* -------------------------------------------------------------------------------
+werror_bt - like werror(), but als provide a backtrace
+ * -------------------------------------------------------------------------------
+ */
+int
+werror_bt (int errNum, ...)
+{
+#ifdef HAVE_BACKTRACE_SYMBOLS_FD
+  void *callstack[16];
+  int frames = backtrace (callstack, 16);
+  fprintf (stderr, "Backtrace:\n");
+  backtrace_symbols_fd (callstack, frames, STDERR_FILENO);
+#endif
+
+  int ret;
+  va_list marker;
+  va_start (marker, errNum);
+  ret = vwerror (errNum, marker);
+  va_end (marker);
+
+  return ret;
+}
+
+/* -------------------------------------------------------------------------------
  * werrorfl - Output a standard error message with variable number of arguments.
  *            Use a specified filename and line number instead of the default.
  * -------------------------------------------------------------------------------
  */
 int
-werrorfl (char *newFilename, int newLineno, int errNum, ...)
+werrorfl (const char *newFilename, int newLineno, int errNum, ...)
 {
-  char *oldFilename = filename;
+  const char *oldFilename = filename;
   int oldLineno = lineno;
   va_list marker;
   int ret;
@@ -688,6 +995,23 @@ setWarningDisabled (int errNum)
   if ((errNum >= 0) && (errNum < NELEM (ErrTab)) && (ErrTab[errNum].errType <= ERROR_LEVEL_WARNING))
     ErrTab[errNum].disabled = 1;
 }
+
+/* -------------------------------------------------------------------------------
+ * disabledState - Enable/Disable output of specified warning
+ * -------------------------------------------------------------------------------
+ */
+int
+setWarningDisabledState (int errNum, int disabled)
+{
+  if ((errNum >= 0) && (errNum < NELEM (ErrTab)) && (ErrTab[errNum].errType <= ERROR_LEVEL_WARNING))
+  {
+    int originalState = ErrTab[errNum].disabled;
+    ErrTab[errNum].disabled = disabled;
+    return originalState;
+  }
+  return 0;
+}
+
 
 /* -------------------------------------------------------------------------------
  * Set the flag to treat warnings as errors

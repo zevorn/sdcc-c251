@@ -51,19 +51,15 @@
 #include <sstream>
 #include <fstream>
 
+#include <boost/version.hpp>
+
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/connected_components.hpp>
+#include <boost/container/flat_set.hpp>
+#include <boost/container/flat_map.hpp>
 
 #include "common.h"
-#include "SDCCtree_dec.hpp"
-
-#ifdef HAVE_STX_BTREE_SET_H
-#include <stx/btree_set.h>
-#endif
-#ifdef HAVE_STX_BTREE_MAP_H
-#include <stx/btree_map.h>
-#endif
 
 extern "C"
 {
@@ -129,28 +125,21 @@ struct i_assignment_t
   }
 };
 
-#ifdef HAVE_STX_BTREE_SET_H
-typedef stx::btree_set<var_t> varset_t; // Faster than std::set
-#else
-typedef std::set<var_t> varset_t;
-#endif
-//typedef std::set<var_t, std::less<var_t>, boost::fast_pool_allocator<var_t> > varset_t; // Slower than ordinary std::set
+typedef std::vector<var_t> varset_t; // Faster than std::set,  std::tr1::unordered_set and stx::btree_set here.
 
-#ifdef HAVE_STX_BTREE_MAP_H
-typedef stx::btree_map<int, float> icosts_t; // Faster than std::map
-#else
-typedef std::map<int, float> icosts_t;
-#endif
-//typedef std::tr1::unordered_set<var_t> varset_t; // Speed about the same as std::set
+typedef boost::container::flat_map<int, float> icosts_t; // Faster than std::map and stx::btree_map here.
+
+typedef std::vector<var_t> cfg_alive_t; // Faster than stx::btree_set here.
+typedef boost::container::flat_set<var_t> cfg_dying_t; // Faster than stx::btree_set and std::set here.
 
 struct assignment
 {
   float s;
 
-  varset_t local;	// Entries: var
-  std::vector<reg_t> global;	// Entries: global[var] = reg (-1 if no reg assigned)
-  icosts_t i_costs;  // Costs for all instructions in bag (needed to avoid double counting costs at join nodes)
-  i_assignment_t i_assignment; // Assignment at the instruction currently being added in an introduce node;
+  varset_t local;               // Entries: var
+  std::vector<reg_t> global;    // Entries: global[var] = reg (-1 if no reg assigned)
+  icosts_t i_costs;             // Costs for all instructions in bag (needed to avoid double counting costs at join nodes)
+  i_assignment_t i_assignment;  // Assignment at the instruction currently being added in an introduce node;
 
   bool marked;
 
@@ -163,6 +152,8 @@ struct assignment
 
     for (i = local.begin(), ai = a.local.begin();; ++i, ++ai)
       {
+        if (i == i_end && ai == ai_end)
+          return(false);
         if (i == i_end)
           return(true);
         if (ai == ai_end)
@@ -192,15 +183,26 @@ struct tree_dec_node
   unsigned weight; // The weight is the number of nodes at which intermediate results need to be remembered. In general, to minimize memory consumption, at join nodes the child with maximum weight should be processed first.
 };
 
-typedef std::multimap<int, var_t> operand_map_t;
-//typedef stx::btree_multimap<int, var_t> operand_map_t; // Slightly slower than std::multimap.
+// The operand map has few entries, and is accessed often. boost::container::flat_multimap is substantially faster than std::multimap here.
+// While we found boost::container::flat_multimap bugs affecting 1.83.0 and 1.85.0, and know there is a fix in 1.86.0, we don't know which is the first broken version.
+// To actually trigger the bug also requires newer GCC / clang optimizations, so not having hit the bug in the past doesn't mean older boost isn't affected.
+// https://sourceforge.net/p/sdcc/bugs/3739/ apparently only affected boost 1.85.0. https://sourceforge.net/p/sdcc/bugs/3697/ affects boost 1.83.0, but might affect more.
+#if BOOST_VERSION / 100000 == 1 && BOOST_VERSION / 100 % 1000 >= 83 && BOOST_VERSION / 100 % 1000 <= 85
+#warning boost::container::flat_multimap is broken in boost 1.85.0 (https://sourceforge.net/p/sdcc/bugs/3739/, https://github.com/boostorg/container/issues/281) and also 1.83.0 (https://sourceforge.net/p/sdcc/bugs/3697/)
+#warning Using std::multimap fallback instead of boost::container::flat_multimap
+typedef std::multimap<int, var_t> operand_map_t; // Faster than std::multimap<int, var_t> and stx::btree_multimap<int, var_t> here.
+#else
+typedef boost::container::flat_multimap<int, var_t> operand_map_t; // Faster than std::multimap<int, var_t> and stx::btree_multimap<int, var_t> here.
+#endif
 
 struct cfg_node
 {
   iCode *ic;
   operand_map_t operands;
-  std::set<var_t> alive;
-  std::set<var_t> dying;
+  cfg_alive_t alive;
+  cfg_dying_t dying;
+
+  std::set<var_t> stack_alive;
 
 #ifdef DEBUG_SEGV
   cfg_node(void);
@@ -229,6 +231,13 @@ typedef boost::adjacency_list<boost::setS, boost::vecS, boost::undirectedS, con_
 typedef boost::adjacency_matrix<boost::undirectedS, con_node> con2_t;
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_node> cfg_t;
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> cfg_sym_t;
+
+#ifdef HAVE_TREEDEC_COMBINATIONS_HPP
+#include <treedec/treedec_traits.hpp>
+TREEDEC_TREEDEC_BAG_TRAITS(tree_dec_t, bag);
+#endif
+
+#include "SDCCtree_dec.hpp"
 
 // Cost function. Port-specific.
 template <class G_t, class I_t>
@@ -260,13 +269,85 @@ add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>,
   if (o && IS_SYMOP(o) && sym_to_index.find(std::pair<int, reg_t>(OP_SYMBOL_CONST(o)->key, 0)) != sym_to_index.end())
     {
       if (n.operands.find(OP_SYMBOL_CONST(o)->key) == n.operands.end())
-        for (k = 0; k < OP_SYMBOL_CONST(o)->nRegs; k++)
-          n.operands.insert(std::pair<const int, var_t>(OP_SYMBOL_CONST(o)->key, sym_to_index[std::pair<int, reg_t>(OP_SYMBOL_CONST(o)->key, k)]));
+        for (k = 0; k < OP_SYMBOL_CONST(o)->nRegs; k++){
+          n.operands.insert(std::pair<int, var_t>(OP_SYMBOL_CONST(o)->key, sym_to_index[std::pair<int, reg_t>(OP_SYMBOL_CONST(o)->key, k)]));}
     }
 }
 
+// Check if the live-range of variable i is connected
+#if 0
+// This check was too expensive - Profiling shows that compiling the Dhrystone benchmark for stm8 with default options, we spent about a quarter of compiler runtime in here!
+// Profiling shows that we spent a significant amount of time on the first call to copy_graph()
+// Todo: Improve efficiency, e.g. using subgraph or filtered_graph to avoid the costly first call to copy_graph()
+// Issues to solve: cfg2 is undirected, cfg is bidirectional; this makes use of subgraph or filtered_graph harder.
+static bool liverange_connected(cfg_t &cfg, var_t i)
+{
+  cfg_sym_t cfg2;
+  boost::copy_graph(cfg, cfg2, boost::vertex_copy(forget_properties()).edge_copy(forget_properties())); // This call to copy_graph is expensive!
+  for (int j = boost::num_vertices(cfg) - 1; j >= 0; j--)
+    {
+      if (std::find(cfg[j].alive.begin(), cfg[j].alive.end(), i) == cfg[j].alive.end())
+        {
+          boost::clear_vertex(j, cfg2);
+          boost::remove_vertex(j, cfg2);
+        }
+    }
+
+  std::vector<boost::graph_traits<cfg_t>::vertices_size_type> component(num_vertices(cfg2));
+
+  return(boost::connected_components(cfg2, &component[0]) <= 1);
+}
+#else
+// A not very elegant, but faster check
+static inline int component_size_impl(const cfg_t &cfg, const std::vector<bool> &life, var_t v, int i, std::vector<bool>& visited)
+{
+  typename boost::graph_traits<cfg_t>::in_edge_iterator in, in_end;
+  typename boost::graph_traits<cfg_t>::out_edge_iterator out, out_end;
+
+  int size = 1;
+  visited[i] = true;
+
+  for(boost::tie(in, in_end) = boost::in_edges(i, cfg); in != in_end; ++in)
+    if(life[boost::source(*in, cfg)] && !visited[boost::source(*in, cfg)])
+      size += component_size_impl(cfg, life, v, boost::source(*in, cfg), visited);
+
+  for(boost::tie(out, out_end) = boost::out_edges(i, cfg); out != out_end; ++out)
+    if(life[boost::target(*out, cfg)] && !visited[boost::target(*out, cfg)])
+      size += component_size_impl(cfg, life, v, boost::target(*out, cfg), visited);
+
+  return(size);
+}
+
+static inline int component_size(const cfg_t &cfg, const std::vector<bool> &life, var_t v, int i)
+{
+  std::vector<bool> visited(boost::num_vertices(cfg));
+
+  return(component_size_impl(cfg, life, v, i, visited));
+}
+
+static bool liverange_connected(const cfg_t &cfg, var_t v)
+{
+  std::vector<bool> life(boost::num_vertices(cfg));
+  int num_life = 0;
+  int last_life;
+
+  for(int i = 0; i < boost::num_vertices (cfg); i++)
+    if(std::find(cfg[i].alive.begin(), cfg[i].alive.end(), v) != cfg[i].alive.end())
+      {
+        life[i] = true;
+        num_life++;
+        last_life = i;
+      }
+
+  if(!num_life)
+    return(true);
+
+  return(component_size(cfg, life, v, last_life) >= num_life);
+}
+#endif
+
 // A quick-and-dirty function to get the CFG from sdcc.
-static inline iCode *
+static iCode *
 create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 {
   eBBlock **ebbs = ebbi->bbOrder;
@@ -276,6 +357,9 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
   std::map<int, unsigned int> key_to_index;
   std::map<std::pair<int, reg_t>, var_t> sym_to_index;
 
+  if(currFunc)
+    currFunc->funcDivFlagSafe = 1;
+
   start_ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbs, ebbi->count));
   {
     int i;
@@ -283,6 +367,11 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
     wassertl (!boost::num_vertices(cfg), "CFG non-empty before creation.");
     for (ic = start_ic, i = 0, j = 0; ic; ic = ic->next, i++)
       {
+        if (currFunc)
+          currFunc->funcDivFlagSafe &= !(ic->op == INLINEASM || ic->op == '/' || ic->op == '%' || ic->op == PCALL ||
+            ic->op == CALL && (IS_OP_LITERAL (IC_LEFT (ic)) || !OP_SYMBOL(IC_LEFT (ic))->funcDivFlagSafe) ||
+            ic->op == RIGHT_OP && IS_OP_LITERAL (IC_RIGHT (ic)) && ulFromVal (OP_VALUE_CONST (IC_RIGHT (ic))) > 2); // stm8 right shift might be implemented using division when shifting by more than 2. See genRightShift in stm8/gen.c.
+
 #ifdef DEBUG_SEGV
         default_constructor_of_cfg_node_called = false;
 #endif
@@ -304,6 +393,8 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
         extra_ic_generated(ic);
 
         cfg[i].ic = ic;
+        ic->rSurv = newBitVect(port->num_regs); // Never freed. Memory leak?
+        ic->rMask = newBitVect(port->num_regs); // Never freed. Memory leak?
 
         if (ic->generated)
           continue;
@@ -385,27 +476,20 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
                   wassert (key_to_index.find(ic->key) != key_to_index.end());
                   wassert (sym_to_index.find(std::pair<int, int>(i, k)) != sym_to_index.end());
                   wassertl (key_to_index[ic->key] < boost::num_vertices(cfg), "Node not in CFG.");
-                  cfg[key_to_index[ic->key]].alive.insert(sym_to_index[std::pair<int, int>(i, k)]);
+                  cfg[key_to_index[ic->key]].alive.push_back(sym_to_index[std::pair<int, int>(i, k)]);
                 }
 
               // TODO: Move this to a place where it also works when using the old allocator!
-              if(isym->block)
-                isym->block = btree_lowest_common_ancestor(isym->block, ic->block);
-              else
-                isym->block = ic->block;
+              isym->block = btree_lowest_common_ancestor(isym->block, ic->block);
+              // If this symbol has a spill location, ensure the spill location is also allocated in a compatible block
+              if (SYM_SPIL_LOC(isym))
+                SYM_SPIL_LOC(isym)->block = btree_lowest_common_ancestor(SYM_SPIL_LOC(isym)->block, isym->block);
             }
         }
 
-      if (ic->op == IFX)
-        add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_COND(ic), sym_to_index);
-      else if (ic->op == JUMPTABLE)
-        add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_JTCOND(ic), sym_to_index);
-      else
-        {
-          add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RESULT(ic), sym_to_index);
-          add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_LEFT(ic), sym_to_index);
-          add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RIGHT(ic), sym_to_index);
-        }
+      add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RESULT(ic), sym_to_index);
+      add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_LEFT(ic), sym_to_index);
+      add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RIGHT(ic), sym_to_index);
 
       // TODO: Extend live-ranges of returns of built-in function calls back to first SEND.
 
@@ -430,54 +514,38 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 #endif
 
   // Check for unconnected live ranges, some might have survived earlier stages.
-  // This check is too expensive - Profiling shows that compiling the Dhrystone benchmark for stm8 with default options, we spend about a quarter of compiler runtime in here!
-  // Profiling shows that we spend a significant amount of time on the first call to copy_graph()
-  // Todo: Improve efficiency, e.g. using subgraph or filtered_graph to avoid the costly first call to copy_graph()
-  for (var_t i = boost::num_vertices(con) - 1; i >= 0; i--)
-    {
-      cfg_sym_t cfg2;
-      boost::copy_graph(cfg, cfg2, boost::vertex_copy(forget_properties()).edge_copy(forget_properties())); // This call to copy_graph is expensive!
-      for (int j = boost::num_vertices(cfg) - 1; j >= 0; j--)
-        {
-          if (cfg[j].alive.find(i) == cfg[j].alive.end())
-            {
-              boost::clear_vertex(j, cfg2);
-              boost::remove_vertex(j, cfg2);
-            }
-        }
-      std::vector<boost::graph_traits<cfg_t>::vertices_size_type> component(num_vertices(cfg2));
-      if (boost::connected_components(cfg2, &component[0]) > 1)
-        {
-          // Non-connected CFGs are created by at least GCSE and lospre. We now have a live-range splitter that fixes them, so this should no longer be necessary, but we leave this code here for now, so in case one gets through, we can still generate correct code.
-          std::cerr << "Warning: Non-connected liverange found and extended to connected component of the CFG:" << con[i].name << ". Please contact sdcc authors with source code to reproduce.\n";
-          
-          cfg_sym_t cfg2;
-          boost::copy_graph(cfg, cfg2, boost::vertex_copy(forget_properties()).edge_copy(forget_properties()));
-          std::vector<boost::graph_traits<cfg_t>::vertices_size_type> component(num_vertices(cfg2));
-          boost::connected_components(cfg2, &component[0]);
+  for (var_t i = (var_t)boost::num_vertices(con) - 1; i >= 0; i--)
+    if (!liverange_connected(cfg, i))
+      {
+        // Non-connected CFGs are created by at least GCSE and lospre. We now have a live-range splitter that fixes them, so this should no longer be necessary, but we leave this code here for now, so in case one gets through, we can still generate correct code.
+        std::cerr << "Warning: Non-connected liverange found and extended to connected component of the CFG:" << con[i].name << ". Please contact sdcc authors with source code to reproduce.\n";
 
-          for (boost::graph_traits<cfg_t>::vertices_size_type j = 0; j < boost::num_vertices(cfg) - 1; j++)
-            {
-              if(cfg[j].alive.find(i) != cfg[j].alive.end())
-                {
-                  for (boost::graph_traits<cfg_t>::vertices_size_type k = 0; k < boost::num_vertices(cfg) - 1; k++)
-                    {
-                      if (component[j] == component[k])
-                        cfg[k].alive.insert(i);
-                    }
-                }
-            }
-        }
-    }
+        cfg_sym_t cfg2;
+        boost::copy_graph(cfg, cfg2, boost::vertex_copy(forget_properties()).edge_copy(forget_properties()));
+        std::vector<boost::graph_traits<cfg_t>::vertices_size_type> component(num_vertices(cfg2));
+        boost::connected_components(cfg2, &component[0]);
 
+        for (boost::graph_traits<cfg_t>::vertices_size_type j = 0; j < boost::num_vertices(cfg) - 1; j++)
+          {
+            if (std::find(cfg[j].alive.begin(), cfg[j].alive.end(), i) == cfg[j].alive.end())
+              continue;
+
+            for (boost::graph_traits<cfg_t>::vertices_size_type k = 0; k < boost::num_vertices(cfg) - 1; k++)
+              if (component[j] == component[k] && std::find(cfg[k].alive.begin(), cfg[k].alive.end(), i) == cfg[k].alive.end())
+                cfg[k].alive.push_back(i);
+          }
+      }
+
+  // Sort alive and setup dying.
   for (boost::graph_traits<cfg_t>::vertices_size_type i = 0; i < num_vertices(cfg); i++)
     {
-      cfg[i].dying = cfg[i].alive;
+      std::sort(cfg[i].alive.begin(), cfg[i].alive.end());
+      cfg[i].dying = cfg_dying_t(cfg[i].alive.begin(), cfg[i].alive.end());;
       typedef boost::graph_traits<cfg_t>::adjacency_iterator adjacency_iter_t;
       adjacency_iter_t j, j_end;
       for (boost::tie(j, j_end) = adjacent_vertices(i, cfg); j != j_end; ++j)
         {
-          std::set<var_t>::const_iterator v, v_end;
+          cfg_alive_t::const_iterator v, v_end;
           for (v = cfg[*j].alive.begin(), v_end = cfg[*j].alive.end(); v != v_end; ++v)
             {
               const symbol *const vsym = (symbol *)(hTabItemWithKey(liveRanges, con[*v].v));
@@ -486,7 +554,7 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
               const operand *const right = IC_RIGHT(cfg[*j].ic);
               const operand *const result = IC_RESULT(cfg[*j].ic);
 
-              if (!POINTER_SET(cfg[*j].ic) && 
+              if (!(POINTER_SET(cfg[*j].ic) || cfg[*j].ic->op == SET_VALUE_AT_ADDRESS) && 
                 (!left || !IS_SYMOP(left) || OP_SYMBOL_CONST(left)->key != vsym->key) &&
                 (!right || !IS_SYMOP(right) || OP_SYMBOL_CONST(right)->key != vsym->key) &&
                 result && IS_SYMOP(result) && OP_SYMBOL_CONST(result)->key == vsym->key)
@@ -500,12 +568,12 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
   // Construct conflict graph
   for (boost::graph_traits<cfg_t>::vertices_size_type i = 0; i < num_vertices(cfg); i++)
     {
-      std::set<var_t>::const_iterator v, v_end;
+      cfg_alive_t::const_iterator v, v_end;
       const iCode *ic = cfg[i].ic;
       
       for (v = cfg[i].alive.begin(), v_end = cfg[i].alive.end(); v != v_end; ++v)
         {
-          std::set<var_t>::const_iterator v2, v2_end;
+          cfg_alive_t::const_iterator v2, v2_end;
           
           // Conflict between operands are handled by add_operand_conflicts_in_node().
           if (cfg[i].dying.find (*v) != cfg[i].dying.end())
@@ -581,21 +649,61 @@ void assignments_introduce_instruction(assignment_list_t &alist, unsigned short 
 {
   assignment_list_t::iterator ai, ai_end;
 
+#if !defined(_MSC_VER) // Efficient code - reduces total SDCC runtime by about 5.5% vs. code below, but doesn't work with MSVC++ (at least up to MSVC++ 2015)
+  struct inserter_t
+    {
+      explicit inserter_t(const std::vector<reg_t>& g, i_assignment_t& a) : global(g), ia(a)
+        {
+	}
+      inserter_t& operator=(var_t v)
+        {
+          if (global[v] >= 0)
+            ia.add_var(v, global[v]);
+          return(*this);
+        }
+      inserter_t& operator*()
+        {
+          return(*this);
+        }
+      inserter_t& operator++()
+        {
+          return(*this);
+        }
+      inserter_t& operator++(int i)
+        {
+          return(*this);
+        }
+      private:
+        const std::vector<reg_t>& global;
+        i_assignment_t& ia;
+    };
+
   for (ai = alist.begin(), ai_end = alist.end(); ai != ai_end; ++ai)
     {
-      std::set<var_t> i_variables;
+      i_assignment_t ia;
+
+      std::set_intersection(ai->local.begin(), ai->local.end(), G[i].alive.begin(), G[i].alive.end(), inserter_t(ai->global, ia));
+
+      ai->i_assignment = ia;
+    }
+#else // Human-readable code
+  for (ai = alist.begin(), ai_end = alist.end(); ai != ai_end; ++ai)
+    {
+      varset_t i_variables;
 
       std::set_intersection(ai->local.begin(), ai->local.end(), G[i].alive.begin(), G[i].alive.end(), std::inserter(i_variables, i_variables.end()));
 
       i_assignment_t ia;
 
-      std::set<var_t>::const_iterator v, v_end;
+      varset_t::const_iterator v, v_end;
+
       for (v = i_variables.begin(), v_end = i_variables.end(); v != v_end; ++v)
         if (ai->global[*v] >= 0)
           ia.add_var(*v, ai->global[*v]);
 
       ai->i_assignment = ia;
     }
+#endif
 }
 
 template <class G_t, class I_t>
@@ -619,7 +727,9 @@ static void assignments_introduce_variable(assignment_list_t &alist, unsigned sh
                   a = *ai;
                   ai->marked = true;
                   a.marked = false;
-                  a.local.insert(v);
+                  varset_t::iterator i = std::lower_bound(a.local.begin(), a.local.end(), v);
+                  if (i == a.local.end() || *i != v)
+                    a.local.insert(i, v);
                 }
               a.global[v] = r;
               a.i_assignment.add_var(v, r);
@@ -643,7 +753,7 @@ struct assignment_rep
 };
 
 template <class I_t>
-float compability_cost(const assignment& a, const assignment& ac, const I_t &I)
+float compatibility_cost(const assignment& a, const assignment& ac, const I_t &I)
 {
   typedef typename boost::graph_traits<I_t>::adjacency_iterator adjacency_iter_t;
   
@@ -691,12 +801,13 @@ static void drop_worst_assignments(assignment_list_t &alist, unsigned short int 
   std::cout << "Too many assignments here (" << i << "):" << alist_size << " > " << options.max_allocs_per_node / port->num_regs << ". Dropping some.\n"; std::cout.flush();
 #endif
 
+#if 0
   assignment_rep *arep = new assignment_rep[alist_size];
 
   for (n = 0, ai = alist.begin(); n < alist_size; ++ai, n++)
     {
       arep[n].i = ai;
-      arep[n].s = ai->s + rough_cost_estimate(*ai, i, G, I) + compability_cost(*ai, ac, I);
+      arep[n].s = ai->s + rough_cost_estimate(*ai, i, G, I) + compatibility_cost(*ai, ac, I);
     }
 
   std::nth_element(arep + 1, arep + options.max_allocs_per_node / port->num_regs, arep + alist_size);
@@ -705,7 +816,61 @@ static void drop_worst_assignments(assignment_list_t &alist, unsigned short int 
 
   for (n = options.max_allocs_per_node / port->num_regs + 1; n < alist_size; n++)
     alist.erase(arep[n].i);
-    
+#else // More efficient, reduces total SDCC runtime by about 1%.
+
+  size_t endsize = options.max_allocs_per_node / port->num_regs + 1;
+  size_t arep_maxsize = std::min(alist_size, endsize * 2) + 1;
+  size_t m, k;
+  float bound = std::numeric_limits<float>::infinity();
+
+  assignment_rep *arep = new assignment_rep[arep_maxsize];
+
+  for(m = 0, n = 1, ai = alist.begin(), ++ai; n < alist_size; n++)
+    {
+      float s = ai->s;
+
+      if(s > bound)
+        {
+          alist.erase(ai++);
+          continue;
+        }
+      s += compatibility_cost(*ai, ac, I);
+      if(s > bound)
+        {
+          alist.erase(ai++);
+          continue;
+        }
+      s += rough_cost_estimate(*ai, i, G, I);
+      if(s > bound)
+        {
+          alist.erase(ai++);
+          continue;
+        }
+
+      if(m >= arep_maxsize - 1)
+      {
+        std::nth_element(arep, arep + (endsize - 1), arep + m);
+        for(k = endsize; k < m; k++)
+          alist.erase(arep[k].i);
+        bound = arep[endsize - 1].s;
+        
+        m = endsize;
+      }
+
+      arep[m].i = ai;
+      arep[m].s = s;
+
+      m++;
+
+      ++ai;       
+    }
+
+  std::nth_element(arep, arep + (endsize - 1), arep + m);
+
+  for (n = endsize; n < m; n++)
+    alist.erase(arep[n].i);
+#endif
+
   delete[] arep;
 }
 
@@ -721,6 +886,7 @@ static void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vert
   assignment_list_t &alist = T[t].assignments;
 
   a.s = 0;
+  a.marked = false;
   a.global.resize(boost::num_vertices(I), -1);
   alist.push_back(a);
   
@@ -828,26 +994,26 @@ static void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::ve
 
   std::set<unsigned short int> old_inst;
   std::set_difference(T[*c].bag.begin(), T[*c].bag.end(), T[t].bag.begin(), T[t].bag.end(), std::inserter(old_inst, old_inst.end()));
+  wassert(old_inst.size() == 1);
   unsigned short int i = *(old_inst.begin());
 
-  std::set<var_t> old_vars;
+  varset_t old_vars;
   std::set_difference(T[*c].alive.begin(), T[*c].alive.end(), T[t].alive.begin(), T[t].alive.end(), std::inserter(old_vars, old_vars.end()));
 
   assignment_list_t::iterator ai, aif;
 
   // Restrict assignments (locally) to current variables.
+  varset_t newlocal;
   for (ai = alist.begin(); ai != alist.end(); ++ai)
     {
-      // Erasing by iterators doesn't work with B-Trees, and erasing by value invalidates iterators.
-      std::set<var_t>::const_iterator oi, oi_end;
-      for (oi = old_vars.begin(), oi_end = old_vars.end(); oi != oi_end; ++oi)
-        ai->local.erase(*oi);
+      newlocal.clear();
+      std::set_difference(ai->local.begin(), ai->local.end(), old_vars.begin(), old_vars.end(), std::inserter(newlocal, newlocal.end()));
+      std::swap(ai->local, newlocal);
 
       ai->i_costs.erase(i);
     }
 
   alist.sort();
-  //std::sort(alist.begin(), alist.end());
 
   // Collapse (locally) identical assignments.
   for (ai = alist.begin(); ai != alist.end();)
@@ -863,11 +1029,7 @@ static void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::ve
               ++ai;
             }
           else
-            {
-              alist.erase(ai);
-              ai = aif;
-              ++ai;
-            }
+            ai = alist.erase(ai);
         }
     }
 
@@ -907,55 +1069,46 @@ static void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vert
   ++c;
   c3 = c;
 
-  assignment_list_t &alist1 = T[t].assignments;
+  assignment_list_t &alist = T[t].assignments;
   assignment_list_t &alist2 = T[*c2].assignments;
-  assignment_list_t &alist3 = T[*c3].assignments;
+  std::swap(alist, T[*c3].assignments);
 
+  alist.sort();
   alist2.sort();
-  //std::sort(alist2.begin(), alist2.end());
-  alist3.sort();
-  //std::sort(alist3.begin(), alist3.end());
 
-  assignment_list_t::iterator ai2, ai3;
-  for (ai2 = alist2.begin(), ai3 = alist3.begin(); ai2 != alist2.end() && ai3 != alist3.end();)
+  assignment_list_t::iterator ai, ai2;
+  for (ai = alist.begin(), ai2 = alist2.begin(); ai != alist.end() && ai2 != alist2.end();)
     {
-      if (assignments_locally_same(*ai2, *ai3))
+      if (assignments_locally_same(*ai, *ai2))
         {
-          ai2->s += ai3->s;
+          ai->s += ai2->s;
           // Avoid double-counting instruction costs.
           std::set<unsigned int>::iterator bi;
           for (bi = T[t].bag.begin(); bi != T[t].bag.end(); ++bi)
-            ai2->s -= ai2->i_costs[*bi];
-          for (size_t i = 0; i < ai2->global.size(); i++)
-            ai2->global[i] = ((ai2->global[i] != -1) ? ai2->global[i] : ai3->global[i]);
-          alist1.push_back(*ai2);
+            ai->s -= ai->i_costs[*bi];
+          for (size_t i = 0; i < ai->global.size(); i++)
+            ai->global[i] = ((ai->global[i] != -1) ? ai->global[i] : ai2->global[i]);
+          ++ai;
           ++ai2;
-          ++ai3;
         }
-      else if (*ai2 < *ai3)
-        {
-          ++ai2;
-          continue;
-        }
-      else if (*ai3 < *ai2)
-        {
-          ++ai3;
-          continue;
-        }
+      else if (*ai < *ai2)
+        ai = alist.erase(ai);
+      else if (*ai2 < *ai)
+        ++ai2;
     }
+  while(ai != alist.end())
+    ai = alist.erase(ai);
 
   alist2.clear();
-  alist3.clear();
 
 #ifdef DEBUG_RALLOC_DEC
-  std::cout << "Remaining assignments: " << alist1.size() << "\n"; std::cout.flush();
+  std::cout << "Remaining assignments: " << alist.size() << "\n"; std::cout.flush();
 #endif
 
 #ifdef DEBUG_RALLOC_DEC_ASS
-  std::list<assignment>::iterator ai;
-  for(ai = alist1.begin(); ai != alist1.end(); ++ai)
+  for(std::list<assignment>::iterator ai = alist.begin(); ai != alist.end(); ++ai)
     {
-  	  print_assignment(*ai);
+      print_assignment(*ai);
       std::cout << "\n";
     }
 #endif
@@ -970,7 +1123,7 @@ void get_best_local_assignment(assignment &a, typename boost::graph_traits<T_t>:
   for(ai = ai_best = alist.begin(), ai_end = alist.end(); ai != ai_end; ++ai)
     if(ai->s < ai_best->s)
       ai_best = ai;
-	
+
   a = *ai_best;
 }
 
@@ -1103,7 +1256,10 @@ static void good_re_root(T_t &T)
 // Dump conflict graph, with numbered nodes, show live variables at each node.
 static void dump_con(const con_t &con)
 {
-  std::ofstream dump_file((std::string(dstFileName) + ".dumpcon" + currFunc->rname + ".dot").c_str());
+  if (!currFunc)
+    return;
+
+  std::ofstream dump_file((std::string(dstFileName) + ".dumpralloccon" + currFunc->rname + ".dot").c_str());
 
   std::string *name = new std::string[num_vertices(con)];
   for (var_t i = 0; static_cast<boost::graph_traits<cfg_t>::vertices_size_type>(i) < boost::num_vertices(con); i++)
@@ -1121,26 +1277,33 @@ static void dump_con(const con_t &con)
 // Dump cfg, with numbered nodes, show live variables at each node.
 static void dump_cfg(const cfg_t &cfg)
 {
-  std::ofstream dump_file((std::string(dstFileName) + ".dumpcfg" + currFunc->rname + ".dot").c_str());
+  if (!currFunc)
+    return;
+
+  std::ofstream dump_file((std::string(dstFileName) + ".dumpralloccfg" + currFunc->rname + ".dot").c_str());
 
   std::string *name = new std::string[num_vertices(cfg)];
   for (unsigned int i = 0; i < boost::num_vertices(cfg); i++)
     {
       std::ostringstream os;
       os << i << ", " << cfg[i].ic->key << ": ";
-      std::set<var_t>::const_iterator v;
+      cfg_alive_t::const_iterator v;
       for (v = cfg[i].alive.begin(); v != cfg[i].alive.end(); ++v)
         os << *v << " ";
       name[i] = os.str();
     }
-  boost::write_graphviz(dump_file, cfg, boost::make_label_writer(name));
+
+  boost::write_graphviz(dump_file, cfg, boost::make_label_writer(name), boost::default_writer(), cfg_titlewriter(currFunc->rname, "register allocator"));
   delete[] name;
 }
 
 // Dump tree decomposition, show bag and live variables at each node.
 static void dump_tree_decomposition(const tree_dec_t &tree_dec)
 {
-  std::ofstream dump_file((std::string(dstFileName) + ".dumpdec" + currFunc->rname + ".dot").c_str());
+  if (!currFunc)
+    return;
+
+  std::ofstream dump_file((std::string(dstFileName) + ".dumprallocdec" + currFunc->rname + ".dot").c_str());
 
   unsigned int w = 0;
 
@@ -1160,7 +1323,8 @@ static void dump_tree_decomposition(const tree_dec_t &tree_dec)
         os << *v2 << " ";
       name[i] = os.str();
     }
-  boost::write_graphviz(dump_file, tree_dec, boost::make_label_writer(name));
+
+  boost::write_graphviz(dump_file, tree_dec, boost::make_label_writer(name), boost::default_writer(), dec_titlewriter(w - 1, currFunc->rname, "register allocator"));
   delete[] name;
 
 #ifdef D_RALLOC_DEC

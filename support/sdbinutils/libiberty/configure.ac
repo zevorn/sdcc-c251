@@ -1,8 +1,8 @@
 dnl Process this file with autoconf to produce a configure script
 
-AC_PREREQ(2.64)
 AC_INIT
 AC_CONFIG_SRCDIR([xmalloc.c])
+AC_CONFIG_MACRO_DIRS([../config])
 
 # This works around the fact that libtool configuration may change LD
 # for this particular configuration, but some shells, instead of
@@ -61,6 +61,11 @@ else
 fi
 AC_SUBST(MAINT)dnl
 AC_SUBST(NOTMAINT)dnl
+
+if test -z "$ETAGS"; then
+  ETAGS=etags
+fi
+AC_SUBST([ETAGS])
 
 # Do we have a single-tree copy of texinfo?  Even if we do, we can't
 # rely on it - libiberty is built before texinfo.
@@ -155,11 +160,44 @@ AC_MSG_NOTICE([target_header_dir = $target_header_dir])
 
 GCC_NO_EXECUTABLES
 AC_PROG_CC
+AC_USE_SYSTEM_EXTENSIONS
 AC_SYS_LARGEFILE
 AC_PROG_CPP_WERROR
 
+# Try CLANG_PLUGIN_FILE first since GCC_PLUGIN_OPTION may return the
+# wrong PLUGIN_OPTION with clang.
+CLANG_PLUGIN_FILE(PLUGIN_FILE)
+if test -n "$PLUGIN_FILE"; then
+  PLUGIN_OPTION="--plugin $PLUGIN_FILE"
+else
+  GCC_PLUGIN_OPTION(PLUGIN_OPTION)
+fi
+if test -n "$PLUGIN_OPTION"; then
+  case "$AR" in
+  *"$PLUGIN_OPTION"*)
+    ;;
+  *)
+    if $AR --help 2>&1 | grep -q "\--plugin"; then
+      AR_PLUGIN_OPTION="$PLUGIN_OPTION"
+      AC_SUBST(AR_PLUGIN_OPTION)
+    fi
+    ;;
+  esac
+  case "$RANLIB" in
+  *"$PLUGIN_OPTION"*)
+    ;;
+  *)
+    if $RANLIB --help 2>&1 | grep -q "\--plugin"; then
+      RANLIB_PLUGIN_OPTION="$PLUGIN_OPTION"
+      AC_SUBST(RANLIB_PLUGIN_OPTION)
+    fi
+    ;;
+  esac
+fi
+
 ACX_PROG_CC_WARNING_OPTS([-W -Wall -Wwrite-strings -Wc++-compat \
-			  -Wstrict-prototypes], [ac_libiberty_warn_cflags])
+			  -Wstrict-prototypes \
+			  -Wshadow=local], [ac_libiberty_warn_cflags])
 ACX_PROG_CC_WARNING_ALMOST_PEDANTIC([], [ac_libiberty_warn_cflags])
 
 AC_PROG_CC_C_O
@@ -186,7 +224,7 @@ dnl AM_PROG_LIBTOOL
 
 dnl When we start using automake:
 dnl AM_CONFIG_HEADER(config.h:config.in)
-AC_CONFIG_HEADER(config.h:config.in)
+AC_CONFIG_HEADERS([config.h:config.in])
 
 dnl When we start using automake:
 dnl AM_MAINTAINER_MODE
@@ -226,8 +264,8 @@ case "${enable_shared}" in
   *) shared=yes ;;
 esac
 
-# ...unless --enable-host-shared was passed from top-level config:
-if [[ "${enable_host_shared}" = "yes" ]]; then
+# ...unless --enable-host-{shared,pie} was passed from top-level config:
+if [[ "${enable_host_shared}" = "yes" ]] || [[ "${enable_host_pie}" = "yes" ]]; then
   shared=yes
 fi
 
@@ -239,8 +277,14 @@ AC_SUBST(PICFLAG)
 NOASANFLAG=
 case " ${CFLAGS} " in
   *\ -fsanitize=address\ *) NOASANFLAG=-fno-sanitize=address ;;
+  *\ -fsanitize=hwaddress\ *) NOASANFLAG=-fno-sanitize=hwaddress ;;
 esac
 AC_SUBST(NOASANFLAG)
+
+GCC_CET_HOST_FLAGS(CET_HOST_FLAGS)
+AC_SUBST(CET_HOST_FLAGS)
+
+GCC_CHECK_ASSEMBLER_HWCAP
 
 echo "# Warning: this fragment is automatically generated" > temp-frag
 
@@ -266,14 +310,21 @@ AC_SUBST_FILE(host_makefile_frag)
 # It's OK to check for header files.  Although the compiler may not be
 # able to link anything, it had better be able to at least compile
 # something.
-AC_CHECK_HEADERS(sys/file.h sys/param.h limits.h stdlib.h malloc.h string.h unistd.h strings.h sys/time.h time.h sys/resource.h sys/stat.h sys/mman.h fcntl.h alloca.h sys/pstat.h sys/sysmp.h sys/sysinfo.h machine/hal_sysinfo.h sys/table.h sys/sysctl.h sys/systemcfg.h stdint.h stdio_ext.h process.h sys/prctl.h)
+AC_CHECK_HEADERS(sys/file.h sys/param.h limits.h stdlib.h malloc.h string.h unistd.h strings.h sys/time.h time.h sys/resource.h sys/stat.h sys/mman.h fcntl.h alloca.h sys/pstat.h sys/sysmp.h sys/sysinfo.h machine/hal_sysinfo.h sys/table.h sys/sysctl.h sys/systemcfg.h stdint.h stdio_ext.h process.h sys/prctl.h spawn.h libgen.h)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 
 libiberty_AC_DECLARE_ERRNO
 
-# Determine the size of an int for struct fibnode.
+# Determine sizes of some types.
 AC_CHECK_SIZEOF([int])
+AC_CHECK_SIZEOF([long])
+AC_CHECK_SIZEOF([size_t])
+
+# Check for presense of long long
+AC_CHECK_TYPE([long long],
+  [AC_DEFINE(HAVE_LONG_LONG, 1, [Define if you have the `long long' type.]) AC_CHECK_SIZEOF([long long])],
+  [])
 
 # Look for a 64-bit type.
 AC_MSG_CHECKING([for a 64-bit type])
@@ -338,6 +389,7 @@ funcs="$funcs gettimeofday"
 funcs="$funcs index"
 funcs="$funcs insque"
 funcs="$funcs memchr"
+funcs="$funcs memrchr"
 funcs="$funcs memcmp"
 funcs="$funcs memcpy"
 funcs="$funcs memmem"
@@ -365,6 +417,8 @@ funcs="$funcs strstr"
 funcs="$funcs strtod"
 funcs="$funcs strtol"
 funcs="$funcs strtoul"
+funcs="$funcs strtoll"
+funcs="$funcs strtoull"
 funcs="$funcs strverscmp"
 funcs="$funcs tmpnam"
 funcs="$funcs vasprintf"
@@ -380,9 +434,17 @@ funcs="$funcs setproctitle"
 vars="sys_errlist sys_nerr sys_siglist"
 
 checkfuncs="__fsetlocking canonicalize_file_name dup3 getrlimit getrusage \
- getsysinfo gettimeofday on_exit psignal pstat_getdynamic pstat_getstatic \
- realpath setrlimit sbrk spawnve spawnvpe strerror strsignal sysconf sysctl \
+ getsysinfo gettimeofday on_exit pipe2 posix_spawn posix_spawnp psignal \
+ pstat_getdynamic pstat_getstatic \
+ realpath setrlimit spawnve spawnvpe strerror strsignal sysconf sysctl \
  sysmp table times wait3 wait4"
+
+# Darwin has sbrk, but it is deprecated and that produces build-time warnings
+# so do not check for it.
+case "${host}" in
+  *-*-darwin*) ;;
+  *) checkfuncs="$checkfuncs sbrk"
+esac
 
 # These are neither executed nor required, but they help keep
 # autoheader happy without adding a bunch of text to acconfig.h.
@@ -394,18 +456,19 @@ if test "x" = "y"; then
     ffs __fsetlocking \
     getcwd getpagesize getrlimit getrusage getsysinfo gettimeofday \
     index insque \
-    memchr memcmp memcpy memmem memmove memset mkstemps \
+    memchr memrchr memcmp memcpy memmem memmove memset mkstemps \
     on_exit \
-    psignal pstat_getdynamic pstat_getstatic putenv \
+    pipe2 posix_spawn posix_spawnp psignal \
+    pstat_getdynamic pstat_getstatic putenv \
     random realpath rename rindex \
     sbrk setenv setproctitle setrlimit sigsetmask snprintf spawnve spawnvpe \
      stpcpy stpncpy strcasecmp strchr strdup \
      strerror strncasecmp strndup strnlen strrchr strsignal strstr strtod \
-     strtol strtoul strverscmp sysconf sysctl sysmp \
+     strtol strtoul strtoll strtoull strverscmp sysconf sysctl sysmp \
     table times tmpnam \
     vasprintf vfprintf vprintf vsprintf \
     wait3 wait4 waitpid)
-  AC_CHECK_DECLS([basename(char *), ffs, asprintf, vasprintf, snprintf, vsnprintf])
+  AC_CHECK_DECLS([basename(char *), ffs, asprintf, vasprintf, snprintf, vsnprintf, strtol, strtoul, strtoll, strtoull, strnlen])
   AC_DEFINE(HAVE_SYS_ERRLIST, 1, [Define if you have the sys_errlist variable.])
   AC_DEFINE(HAVE_SYS_NERR,    1, [Define if you have the sys_nerr variable.])
   AC_DEFINE(HAVE_SYS_SIGLIST, 1, [Define if you have the sys_siglist variable.])
@@ -512,7 +575,7 @@ if test -n "${with_target_subdir}"; then
 
     for f in atexit basename bcmp bcopy bsearch bzero calloc clock ffs \
              getcwd getpagesize getrusage gettimeofday \
-             index insque memchr memcmp memcpy memmove memset psignal \
+             index insque memchr memrchr memcmp memcpy memmove memset psignal \
              putenv random rename rindex sbrk setenv stpcpy strcasecmp \
              strchr strdup strerror strncasecmp strrchr strstr strtod \
              strtol strtoul sysconf times tmpnam vfprintf vprintf \
@@ -591,6 +654,18 @@ if test -z "${setobjs}"; then
 
   case "${host}" in
 
+  *-*-android*)
+    # On android, getpagesize is defined in unistd.h as a static inline
+    # function, which AC_CHECK_FUNCS does not handle properly.
+    ac_cv_func_getpagesize=yes
+    ;;
+
+  hppa*-*-hpux*)
+    # Replace system snprintf and vsnprintf with libiberty implementations.
+    AC_LIBOBJ([snprintf])
+    AC_LIBOBJ([vsnprintf])
+    ;;
+
   *-*-mingw32*)
     # Under mingw32, sys_nerr and sys_errlist exist, but they are
     # macros, so the test below won't find them.
@@ -645,7 +720,7 @@ if test -z "${setobjs}"; then
   for v in $vars; do
     AC_MSG_CHECKING([for $v])
     AC_CACHE_VAL(libiberty_cv_var_$v,
-      [AC_LINK_IFELSE([AC_LANG_PROGRAM([[int *p;]],[[extern int $v []; p = $v;]])],
+      [AC_LINK_IFELSE([AC_LANG_PROGRAM([[extern int $v [];]],[[if ($v [0]) return 1;]])],
 		      [eval "libiberty_cv_var_$v=yes"],
 		      [eval "libiberty_cv_var_$v=no"])])
     if eval "test \"`echo '$libiberty_cv_var_'$v`\" = yes"; then
@@ -668,9 +743,20 @@ if test -z "${setobjs}"; then
     [AC_MSG_RESULT([no])])
 
   AC_CHECK_FUNCS($checkfuncs)
-  AC_CHECK_DECLS([basename(char *), ffs, asprintf, vasprintf, snprintf, vsnprintf])
-  AC_CHECK_DECLS([calloc, getenv, getopt, malloc, realloc, sbrk])
+  AC_CHECK_DECLS([basename(char *)], [], [], [
+AC_INCLUDES_DEFAULT
+#ifdef HAVE_LIBGEN_H
+# include <libgen.h>
+#endif])
+  AC_CHECK_DECLS([ffs, asprintf, vasprintf, snprintf, vsnprintf])
+  AC_CHECK_DECLS([calloc, getenv, getopt, malloc, realloc])
+  case "${host}" in
+      *-*-darwin*) ;; # Darwin's sbrk implementation is deprecated.
+      *) AC_CHECK_DECLS([sbrk]);;
+  esac
+  AC_CHECK_DECLS([strtol, strtoul, strtoll, strtoull])
   AC_CHECK_DECLS([strverscmp])
+  AC_CHECK_DECLS([strnlen])
   libiberty_NEED_DECLARATION(canonicalize_file_name)
 fi
 
@@ -682,6 +768,48 @@ case "${host}" in
      *)				pexecute=pex-unix   ;;
 esac
 AC_SUBST(pexecute)
+
+AC_MSG_CHECKING([for SHA1 HW acceleration support])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <x86intrin.h>
+#include <cpuid.h>
+
+__attribute__((__target__ ("sse4.1,sha")))
+void foo (__m128i *buf, unsigned int e, __m128i msg0, __m128i msg1)
+{
+  __m128i abcd = _mm_loadu_si128 ((const __m128i *) buf);
+  __m128i e0 = _mm_set_epi32 (e, 0, 0, 0);
+  abcd = _mm_shuffle_epi32 (abcd, 0x1b);
+  const __m128i shuf_mask = _mm_set_epi64x (0x0001020304050607ULL, 0x08090a0b0c0d0e0fULL);
+  abcd = _mm_shuffle_epi8 (abcd, shuf_mask);
+  e0 = _mm_sha1nexte_epu32 (e0, msg1);
+  abcd = _mm_sha1rnds4_epu32 (abcd, e0, 0);
+  msg0 = _mm_sha1msg1_epu32 (msg0, msg1);
+  msg0 = _mm_sha1msg2_epu32 (msg0, msg1);
+  msg0 = _mm_xor_si128 (msg0, msg1);
+  e0 = _mm_add_epi32 (e0, msg0);
+  e0 = abcd;
+  _mm_storeu_si128 (buf, abcd);
+  e = _mm_extract_epi32 (e0, 3);
+}
+
+int bar (void)
+{
+  unsigned int eax, ebx, ecx, edx;
+  (void) __get_cpuid;
+  (void) __get_cpuid_count;
+  if (__get_cpuid_count (7, 0, &eax, &ebx, &ecx, &edx)
+      && (ebx & bit_SHA) != 0
+      && __get_cpuid (1, &eax, &ebx, &ecx, &edx)
+      && (ecx & bit_SSE4_1) != 0)
+    return 1;
+  return 0;
+}
+]], [[bar ();]])],
+  [AC_MSG_RESULT([x86 SHA1])
+  AC_DEFINE(HAVE_X86_SHA1_HW_SUPPORT, 1,
+	    [Define if you have x86 SHA1 HW acceleration support.])],
+  [AC_MSG_RESULT([no])])
 
 libiberty_AC_FUNC_STRNCMP
 

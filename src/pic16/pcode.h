@@ -28,7 +28,7 @@ struct reg_info;
 
    The post code generation is an assembler optimizer. The assembly code
    produced by all of the previous steps is fully functional. This step
-   will attempt to analyze the flow of the assembly code and agressively
+   will attempt to analyze the flow of the assembly code and aggressively
    optimize it. The peep hole optimizer attempts to do the same thing.
    As you may recall, the peep hole optimizer replaces blocks of assembly
    with more optimal blocks (e.g. removing redundant register loads).
@@ -558,7 +558,6 @@ typedef struct pCode
 
 typedef struct pCodeComment
 {
-
   pCode  pc;
 
   char *comment;
@@ -572,7 +571,6 @@ typedef struct pCodeComment
 
 typedef struct pCodeCSource
 {
-
   pCode  pc;
 
   int  line_number;
@@ -591,7 +589,7 @@ typedef struct pCodeCSource
 
   The Flow object is used as marker to separate
  the assembly code into contiguous chunks. In other
- words, everytime an instruction cause or potentially
+ words, every time an instruction cause or potentially
  causes a branch, a Flow object will be inserted into
  the pCode chain to mark the beginning of the next
  contiguous chunk.
@@ -601,7 +599,6 @@ struct defmap_s; // defined in pcode.c
 
 typedef struct pCodeFlow
 {
-
   pCode  pc;
 
   pCode *end;   /* Last pCode in this flow. Note that
@@ -670,7 +667,6 @@ typedef struct pCodeFlowLink
 
 typedef struct pCodeInstruction
 {
-
   pCode  pc;
 
   PIC_OPCODE op;        // The opcode of the instruction.
@@ -727,7 +723,6 @@ typedef struct pCodeAsmDir
 
 typedef struct pCodeLabel
 {
-
   pCode  pc;
 
   char *label;
@@ -742,7 +737,6 @@ typedef struct pCodeLabel
 
 typedef struct pCodeFunction
 {
-
   pCode  pc;
 
   char *modname;
@@ -770,7 +764,6 @@ typedef struct pCodeFunction
 
 typedef struct pCodeWild
 {
-
   pCodeInstruction  pci;
 
   int    id;     /* Index into the wild card array of a peepBlock
@@ -791,7 +784,7 @@ typedef struct pCodeWild
 /*************************************************
     pInfo
 
-    Here are stored generic informaton
+    Here are stored generic information
 *************************************************/
 typedef struct pCodeInfo
 {
@@ -1004,11 +997,11 @@ typedef struct peepCommand {
  *-----------------------------------------------------------------*/
 
 pCode *pic16_newpCode (PIC_OPCODE op, pCodeOp *pcop); // Create a new pCode given an operand
-pCode *pic16_newpCodeCharP(char *cP);              // Create a new pCode given a char *
-pCode *pic16_newpCodeInlineP(char *cP);            // Create a new pCode given a char *
+pCode *pic16_newpCodeCharP(const char *cP);              // Create a new pCode given a char *
+pCode *pic16_newpCodeInlineP(const char *cP);            // Create a new pCode given a char *
 pCode *pic16_newpCodeFunction(const char *g, const char *f); // Create a new function
-pCode *pic16_newpCodeLabel(char *name,int key);    // Create a new label given a key
-pCode *pic16_newpCodeLabelFORCE(char *name, int key); // Same as newpCodeLabel but label cannot be optimized out
+pCode *pic16_newpCodeLabel(const char *name,int key);    // Create a new label given a key
+pCode *pic16_newpCodeLabelFORCE(const char *name, int key); // Same as newpCodeLabel but label cannot be optimized out
 pCode *pic16_newpCodeCSource(int ln, const char *f, const char *l); // Create a new symbol line
 pBlock *pic16_newpCodeChain(memmap *cm,char c, pCode *pc); // Create a new pBlock
 void pic16_printpBlock(FILE *of, pBlock *pb);      // Write a pBlock to a file
@@ -1025,44 +1018,44 @@ void pic16_pBlockConvert2ISR(pBlock *pb);
 void pic16_pBlockConvert2Absolute(pBlock *pb);
 void pic16_initDB(void);
 void pic16_emitDB(int c, char ptype, void *p);            // Add DB directives to a pBlock
-void pic16_emitDS(char *s, char ptype, void *p);
+void pic16_emitDS(const char *s, char ptype, void *p);
 void pic16_flushDB(char ptype, void *p);                          // Add pending DB data to a pBlock
 
-pCode *pic16_newpCodeAsmDir(char *asdir, char *argfmt, ...);
+pCode *pic16_newpCodeAsmDir(const char *asdir, const char *argfmt, ...);
 
-pCodeOp *pic16_newpCodeOpLabel(char *name, int key);
-pCodeOp *pic16_newpCodeOpImmd(char *name, int offset, int index, int code_space);
+pCodeOp *pic16_newpCodeOpLabel(const char *name, int key);
+pCodeOp *pic16_newpCodeOpImmd(const char *name, int offset, int index, int code_space);
 pCodeOp *pic16_newpCodeOpLit(int lit);
 pCodeOp *pic16_newpCodeOpLit12(int lit);
 pCodeOp *pic16_newpCodeOpLit2(int lit, pCodeOp *arg2);
-pCodeOp *pic16_newpCodeOpBit(char *name, int bit,int inBitSpace, PIC_OPTYPE subt);
+pCodeOp *pic16_newpCodeOpBit(const char *name, int bit,int inBitSpace, PIC_OPTYPE subt);
 pCodeOp *pic16_newpCodeOpBit_simple (struct asmop *op, int offs, int bit);
-pCodeOp *pic16_newpCodeOpRegFromStr(char *name);
+pCodeOp *pic16_newpCodeOpRegFromStr(const char *name);
 pCodeOp *pic16_newpCodeOpReg(int rIdx);
-pCodeOp *pic16_newpCodeOp(char *name, PIC_OPTYPE p);
+pCodeOp *pic16_newpCodeOp(const char *name, PIC_OPTYPE p);
 pCodeOp *pic16_newpCodeOp2(pCodeOp *src, pCodeOp *dst);
 pCodeOp *pic16_newpCodeOpRegNotVect(bitVect *bv);
 pCodeOp *pic16_pCodeOpCopy(pCodeOp *pcop);
 
 pCode *pic16_newpCodeInfo(INFO_TYPE type, pCodeOp *pcop);
-pCodeOp *pic16_newpCodeOpOpt(OPT_TYPE type, char *key);
+pCodeOp *pic16_newpCodeOpOpt(OPT_TYPE type, const char *key);
 pCodeOp *pic16_newpCodeOpLocalRegs(LR_TYPE type);
 pCodeOp *pic16_newpCodeOpReg(int rIdx);
 
 pCode * pic16_findNextInstruction(pCode *pci);
 pCode * pic16_findNextpCode(pCode *pc, PC_TYPE pct);
-int pic16_isPCinFlow(pCode *pc, pCode *pcflow);
+int pic16_isPCinFlow(const pCode *pc, const pCode *pcflow);
 struct reg_info * pic16_getRegFromInstruction(pCode *pc);
 struct reg_info * pic16_getRegFromInstruction2(pCode *pc);
 char *pic16_get_op(pCodeOp *pcop,char *buffer, size_t size);
 char *pic16_get_op2(pCodeOp *pcop,char *buffer, size_t size);
-char *dumpPicOptype(PIC_OPTYPE type);
+const char *dumpPicOptype(PIC_OPTYPE type);
 
 extern void pic16_pcode_test(void);
 extern int pic16_debug_verbose;
 extern int pic16_pcode_verbose;
 
-extern char *LR_TYPE_STR[];
+extern const char *LR_TYPE_STR[];
 
 
 #ifndef debugf

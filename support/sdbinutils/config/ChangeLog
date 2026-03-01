@@ -1,3 +1,468 @@
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* 2.38 release branch created.
+
+2021-07-03  Nick Clifton  <nickc@redhat.com>
+
+	* 2.37 release branch created.
+
+2021-06-14  Michael Forney  <mforney@mforney.org>
+
+	* gettext.m4 (AM_GNU_GETTEXT): Skip checks for the internal
+	symbols _nl_msg_cat_cntr, _nl_domain_bindings, and
+	_nl_expand_alias, if __GNU_GETTEXT_SUPPORTED_REVISION is defined.
+	Backport of gettext serial 68 patch.
+
+2021-05-18  Mike Frysinger  <vapier@gentoo.org>
+
+	* acinclude.m4 (CYG_AC_PATH_SIM, CYG_AC_PATH_DEVO): Delete.
+
+2021-03-18  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR binutils/27397
+	* cet.m4 (GCC_CET_HOST_FLAGS): Check if host supports multi-byte
+	NOPs.
+
+2021-02-13  Mike Frysinger  <vapier@gentoo.org>
+
+	* debuginfod.m4: Delete m4_include(../config/pkg.m4).
+
+2021-01-12  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR binutils/26792
+	* jobserver.m4: New file.
+
+2021-01-11  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR ld/27173
+	* gcc-plugin.m4 (GCC_PLUGIN_OPTION): Check if AR works with
+	--plugin and rc before enabling --plugin.
+
+2021-01-09  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* gcc-plugin.m4 (GCC_PLUGIN_OPTION): New.
+
+2021-01-09  Nick Clifton  <nickc@redhat.com>
+
+	* 2.36 release branch crated.
+
+2021-01-01  Nicolas Boulenguez  <nicolas@debian.org>
+
+	* override.m4: Correct comment grammar.
+
+2020-09-08  Alan Modra  <amodra@gmail.com>
+
+	Sync from gcc
+	2020-07-15  H.J. Lu  <hjl.tools@gmail.com>
+	PR bootstrap/96202
+	* cet.m4 (GCC_CET_HOST_FLAGS): Don't enable CET without CET
+	support in stage1 nor for build support.
+
+2020-07-30  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	* largefile.m4 (ACX_LARGEFILE) <sparc-*-solaris*|i?86-*-solaris*>:
+	Check for <sys/procfs.h> incompatilibity with large-file support
+	on Solaris.
+	Only disable large-file support and perhaps plugins if needed.
+	Set, substitute LARGEFILE_CPPFLAGS if so.
+
+2020-07-28  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR binutils/26301
+	* pkg.m4 (PKG_CHECK_MODULES): Use AC_TRY_LINK only if
+	$pkg_failed = no.
+
+2020-07-28  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR binutils/26301
+	* pkg.m4 (PKG_CHECK_MODULES): Add AC_TRY_LINK to check if
+	$pkg_cv_[]$1[]_LIBS works.
+
+2020-07-24  Aaron Merey  <amerey@redhat.com>
+
+	* debuginfod.m4: use PKG_CHECK_MODULES.
+	* pkg.m4: New file.
+
+2020-07-04  Nick Clifton  <nickc@redhat.com>
+
+	Binutils 2.35 branch created.
+
+2020-06-24  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2020-05-29  H.J. Lu  <hjl.tools@gmail.com>
+
+	PR bootstrap/95413
+	* cet.m4: Replace save_CFLAGS and save_LDFLAGS with
+	cet_save_CFLAGS and cet_save_LDFLAGS.
+
+2020-05-16  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2020-05-15  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR bootstrap/95147
+	* cet.m4 (GCC_CET_FLAGS): Also check if -fcf-protection works
+	when defaulting to auto.
+
+	2020-05-14  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* cet.m4 (GCC_CET_FLAGS): Change default to auto.
+
+2020-05-12  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2020-05-12  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR bootstrap/94998
+	* cet.m4 (GCC_CET_HOST_FLAGS): Enable CET in cross compiler if
+	possible.
+
+2020-04-29  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2020-04-28  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR bootstrap/94739
+	* cet.m4 (GCC_CET_HOST_FLAGS): Add -fcf-protection=none to
+	-Wl,-z,ibt,-z,shstk.  Check whether -fcf-protection=none
+	-Wl,-z,ibt,-z,shstk works first.
+
+	2020-04-25  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR bootstrap/94739
+	* cet.m4 (GCC_CET_HOST_FLAGS): New.
+
+	2020-04-22  Jakub Jelinek  <jakub@redhat.com>
+
+	PR libfortran/94694
+	PR libfortran/94586
+	* math.m4 (GCC_CHECK_MATH_INLINE_BUILTIN_FALLBACK1,
+	GCC_CHECK_MATH_INLINE_BUILTIN_FALLBACK2): New.
+
+2020-02-19  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* ax_count_cpus.m4: New file, backported from GCC.
+	* bootstrap-Og.mk: New file, backported from GCC.
+	* bootstrap-lto-lean.mk: New file, backported from GCC.
+	* bootstrap-lto.mk: Changes backported from GCC.
+	* futex.m4: Changes backported from GCC.
+	* gthr.m4: Changes backported from GCC.
+	* lib-link.m4: Changes backported from GCC.
+	* mh-mingw: Changes backported from GCC.
+	* no-executables.m4: Changes backported from GCC.
+	* tls.m4: Changes backported from GCC.
+	* toolexeclibdir.m4: New file, backported from GCC.
+
+2020-01-18  Nick Clifton  <nickc@redhat.com>
+
+	Binutils 2.34 branch created.
+
+2019-09-09  Phil Blundell  <pb@pbcl.net>
+
+	binutils 2.33 branch created.
+
+2018-06-24  Nick Clifton  <nickc@redhat.com>
+
+	2.32 branch created.
+
+2018-11-09  Hafiz Abid Qadeer  <abidh@codesourcery.com>
+
+	* iconv.m4 (AM_ICONV_LINK): Don't overwrite CPPFLAGS.
+	Append $INCICONV to it.
+
+2018-10-31  Joseph Myers  <joseph@codesourcery.com>
+
+	Merge from GCC:
+	2018-10-28  Iain Buclaw  <ibuclaw@gdcproject.org>
+
+	* multi.m4: Set GDC.
+
+	2018-07-05  James Clarke  <jrtc27@jrtc27.com>
+
+	* dfp.m4 (enable_decimal_float): Enable for x86_64*-*-gnu* to
+	catch x86_64 kFreeBSD and Hurd.
+
+	Merge from GCC:
+	PR bootstrap/82856
+	* math.m4, tls.m4: Use AC_LANG_SOURCE.
+
+2018-06-19  Simon Marchi  <simon.marchi@ericsson.com>
+
+	* override.m4 (_GCC_AUTOCONF_VERSION): Bump from 2.64 to 2.69.
+
+2018-06-18  Simon Marchi  <simon.marchi@ericsson.com>
+
+	Sync with GCC
+	2018-06-08  Martin Liska  <mliska@suse.cz>
+
+	* bootstrap-mpx.mk: Remove.
+
+	2018-05-10  Martin Liska  <mliska@suse.cz>
+
+	PR bootstrap/64914
+	* bootstrap-ubsan.mk: Define UBSAN_BOOTSTRAP.
+
+	2018-05-09  Joshua Watt <jpewhacker@gmail.com>
+
+        * ax_pthread.m4: Add file.
+
+	2018-05-08  Richard Biener  <rguenther@suse.de>
+
+	PR bootstrap/85571
+	* bootstrap-lto-noplugin.mk: Disable compare.
+	* bootstrap-lto.mk: Supply contrib/compare-lto for do-compare.
+
+	2018-04-24  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR bootstrap/85490
+	* bootstrap-cet.mk (STAGE4_CFLAGS): New.
+
+	2018-04-24  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR target/85485
+	* bootstrap-cet.mk (STAGE2_CFLAGS): Remove -mcet.
+	(STAGE3_CFLAGS): Likewise.
+
+	2018-04-24  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR target/85485
+	* cet.m4 (GCC_CET_FLAGS): Replace -mcet with -mshstk.
+
+	2018-04-19  Jakub Jelinek  <jakub@redhat.com>
+
+	* cet.m4 (GCC_CET_FLAGS): Default to --disable-cet, replace
+	--enable-cet=default with --enable-cet=auto.
+
+	2018-04-18  David Malcolm  <dmalcolm@redhat.com>
+
+	PR jit/85384
+	* acx.m4 (GCC_BASE_VER): Remove \$\$ from sed expression.
+
+2018-04-05  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2018-04-05  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR gas/22318
+	* plugins.m4 (AC_PLUGINS): Use dlsym to check if libdl is needed.
+
+	2018-02-14  Igor Tsimbalist  <igor.v.tsimbalist@intel.com>
+
+	PR target/84148
+	* cet.m4: Check if target support multi-byte NOPS (SSE).
+
+2018-02-06  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* gcc-plugin.m4 (GCC_ENABLE_PLUGINS): Remove -q option passed to grep.
+
+2018-01-10  Nick Clifton  <nickc@redhat.com>
+
+	* Sync with GCC sources:
+
+	2017-11-14 Boris Kolpackov  <boris@codesynthesis.com>
+
+	* gcc-plugin.m4: Add support for MinGW.
+
+	2017-11-17  Igor Tsimbalist  <igor.v.tsimbalist@intel.com>
+
+	* cet.m4: New file.
+
+	2017-11-15  Alexandre Oliva <aoliva@redhat.com>
+
+	* bootstrap-debug-lean.mk (do-compare): Use the
+	contrib/compare-debug script.
+
+	2017-10-24  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* bootstrap-cet.mk: New file.
+
+	2017-06-19  Martin Liska  <mliska@suse.cz>
+
+	* bootstrap-lto-noplugin.mk: Enable -flto in all PGO stages.
+	* bootstrap-lto.mk: Likewise.
+
+	2017-06-03  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* mt-android: New file.
+
+	2017-02-13  Richard Biener  <rguenther@suse.de>
+
+	* isl.m4: Remove support for ISL 0.14.
+
+	2017-01-19  Uros Bizjak  <ubizjak@gmail.com>
+
+	PR target/78478
+	* ax_check_define.m4: New file.
+
+	2017-01-17  Jakub Jelinek  <jakub@redhat.com>
+
+	PR other/79046
+	* acx.m4 (GCC_BASE_VER): New m4 function.
+	(ACX_TOOL_DIRS): Require GCC_BASE_VER, for
+	--with-gcc-major-version-only use just major number from BASE-VER.
+
+	2017-01-06  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	PR go/78978
+	* hwcaps.m4 (GCC_CHECK_ASSEMBLER_HWCAP): New macro.
+
+2017-01-05  Alan Modra  <amodra@gmail.com>
+
+	* picflag.m4: Import from gcc.
+
+2016-12-08  Alan Modra  <amodra@gmail.com>
+
+	* acx.m4: Import from gcc.
+	* bootstrap-asan.mk: Likewise.
+	* multi.m4: Likewise.
+
+2016-01-18  Alan Modra  <amodra@gmail.com>
+
+	PR binutils/19481
+	* override.m4 (AC_PROG_LEX): Define.
+
+2015-10-21  Maxim Ostapenko  <m.ostapenko@partner.samsung.com>
+
+	* bootstrap-asan.mk: Replace ASAN_OPTIONS=detect_leaks with
+	LSAN_OPTIONS=detect_leaks.
+
+2015-08-24  Yaakov Selkowitz  <yselkowi@redhat.com>
+
+	* iconv.m4 (AM_ICONV_LINK): Use in-tree libiconv when present.
+
+2015-07-27  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2015-07-24  Micahel Darling  <darlingm@gmail.com>
+
+	PR other/66259
+	* gettext.m4: Reflects renaming of configure.in to configure.ac
+	* po.m4: Likewise
+	* stdint.m4: Likewise
+	* tcl.m4: Likewise
+
+2015-07-14  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2015-05-13  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* sjlj.m4: New file.
+
+	2015-05-04  Trevor Saunders  <tbsaunde+gcc@tbsaunde.org>
+
+	* bitfields.m4: Change int to long long, and use bitfields of
+	width 1 instead of 0.
+
+	2015-05-01  Trevor Saunders  <tbsaunde+gcc@tbsaunde.org>
+
+	* bitfields.m4: New file.
+
+	2015-04-14  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* bootstrap-mpx.mk: New file.
+
+	2015-03-25  Uros Bizjak  <ubizjak@gmail.com>
+
+	PR bootstrap/65537
+	* bootstrap-lto-noplugin.mk: New build configuration.
+
+	2014-11-13  Kirill Yukhin  <kirill.yukhin@intel.com>
+
+	* target-posix: New file.
+
+	2014-10-27  Tom Tromey  <tromey@redhat.com>
+
+	* gcc-plugin.m4: New file.
+
+2015-07-14  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2015-05-27  Jason Merrill  <jason@redhat.com>
+
+	PR bootstrap/66304
+	* warnings.m4 (ACX_PROG_CXX_WARNING_OPTS)
+	(ACX_PROG_CXX_WARNINGS_ARE_ERRORS)
+	(ACX_PROG_CXX_WARNING_ALMOST_PEDANTIC): New.
+	(ACX_PROG_CC_WARNING_OPTS, ACX_PROG_CC_WARNING_ALMOST_PEDANTIC)
+	(ACX_PROG_CC_WARNINGS_ARE_ERRORS): Push into C language context.
+
+2015-07-14  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	* mh-alpha-linux: Restored.
+
+2015-06-30  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* dfp.m4 (enable_decimal_float): Also set to yes for
+	i?86*-*-elfiamcu target.
+
+2015-04-10  Jakub Jelinek  <jakub@redhat.com>
+	    Iain Sandoe  <iain@codesourcery.com>
+
+	PR target/65351
+	* mh-darwin: Only apply -mdynamic-no-pic for m32 Darwin when the
+	compiler in use supports -mno-dynamic-no-pic.
+	* picflag.m4: Only append -mno-dynamic-no-pic for Darwin when
+	-mdynamic-no-pic is present in CFLAGS.
+
+2015-04-07  Jakub Jelinek  <jakub@redhat.com>
+	    Iain Sandoe  <iain@codesourcery.com>
+
+	PR target/65351
+	* picflag.m4: Append -mno-dynamic-no-pic for Darwin.
+
+2015-04-02  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* zlib.m4 (AM_ZLIB): Set zlibdir to -L\$(top_builddir)/../zlib
+	and set zlibinc to -I\$(top_srcdir)/../zlib.
+
+2015-04-01  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* zlib.m4 (AM_ZLIB): Unset zlibdir and zlibinc only for
+	--with-system-zlib.
+
+2015-03-31  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* zlib.m4 (AM_ZLIB): Replace --with-zlib with --with-system-zlib.
+
+2015-03-16  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* isl.m4: Sync with GCC tree.
+
+2015-03-16  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2015-02-18  Thomas Schwinge  <thomas@codesourcery.com>
+
+	* elf.m4 (ACX_ELF_TARGET_IFELSE): nvptx-*-none isn't ELF.
+
+2015-03-16  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2014-11-17  Bob Dunlop  <bob.dunlop@xyzzy.org.uk>
+
+	* mt-ospace (CFLAGS_FOR_TARGET): Append -g -Os rather than
+	overwriting.
+	(CXXFLAGS_FOR_TARGET): Similarly.
+
+2015-03-16  H.J. Lu  <hongjiu.lu@intel.com>
+
+	Sync with GCC
+	2014-04-25  Marc Glisse  <marc.glisse@inria.fr>
+
+	PR target/43538
+	* mt-gnu: Don't reset CXXFLAGS_FOR_TARGET.
+
+2015-03-16  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* bootstrap-asan.mk: Sync with GCC tree.
+	* bootstrap-lto.mk: Likewise.
+
+2015-03-16  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* cloog.m4: Removed.
+
 2014-08-19  Alan Modra  <amodra@gmail.com>
 
 	* plugins.m4 (AC_PLUGINS): If plugins are enabled, add -ldl to
@@ -130,7 +595,7 @@
 2012-07-02  Richard Guenther  <rguenther@suse.de>
 
 	* isl.m4 (_ISL_CHECK_CT_PROG): Omit main function header/footer.
-	Fix version test. 
+	Fix version test.
 
 2012-07-02  Richard Guenther  <rguenther@suse.de>
 	Michael Matz  <matz@suse.de>
@@ -172,7 +637,7 @@
 
 	* config/mh-interix: Remove as unneeded.
 	* config/picflag.m4 (i[[34567]]86-*-interix3*):
-        Change triplet to i[[34567]]86-*-interix[[3-9]]*.
+	Change triplet to i[[34567]]86-*-interix[[3-9]]*.
 
 2012-01-04  Andreas Krebbel  <Andreas.Krebbel@de.ibm.com>
 
@@ -1857,4 +2322,3 @@ Thu Jan 30 16:17:30 1992  Stu Grossman  (grossman at cygnus.com)
 Tue Dec 10 00:10:55 1991  K. Richard Pixley  (rich at rtl.cygnus.com)
 
 	* ChangeLog: fresh changelog.
-

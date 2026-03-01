@@ -382,11 +382,19 @@ ${Section} "SDCC application files" SEC01
   File "${SDCC_ROOT}\bin\sdas390.exe"
   File "${SDCC_ROOT}\bin\sdasrab.exe"
   File "${SDCC_ROOT}\bin\sdasstm8.exe"
+  File "${SDCC_ROOT}\bin\sdaspdk13.exe"
+  File "${SDCC_ROOT}\bin\sdaspdk14.exe"
+  File "${SDCC_ROOT}\bin\sdaspdk15.exe"
+  File "${SDCC_ROOT}\bin\sdastlcs90.exe"
+  File "${SDCC_ROOT}\bin\sdas6500.exe"
+  File "${SDCC_ROOT}\bin\sdasf8.exe"
   File "${SDCC_ROOT}\bin\sdld.exe"
   File "${SDCC_ROOT}\bin\sdldgb.exe"
   File "${SDCC_ROOT}\bin\sdld6808.exe"
   File "${SDCC_ROOT}\bin\sdldz80.exe"
   File "${SDCC_ROOT}\bin\sdldstm8.exe"
+  File "${SDCC_ROOT}\bin\sdldpdk.exe"
+  File "${SDCC_ROOT}\bin\sdldf8.exe"
   File "${SDCC_ROOT}\bin\sdar.exe"
   File "${SDCC_ROOT}\bin\sdranlib.exe"
   File "${SDCC_ROOT}\bin\sdnm.exe"
@@ -394,13 +402,14 @@ ${Section} "SDCC application files" SEC01
   File "${SDCC_ROOT}\bin\makebin.exe"
   File "${SDCC_ROOT}\bin\packihx.exe"
   File "${SDCC_ROOT}\bin\sdcc.exe"
-  File "${SDCC_ROOT}\bin\sdcclib.exe"
   File "${SDCC_ROOT}\bin\sdcpp.exe"
+  File "${SDCC_ROOT}\libexec\sdcc\cc1"
   File "${SDCC_ROOT}\bin\as2gbmap.cmd"
   File "${SDCC_ROOT}\bin\readline5.dll"
-!ifdef WIN64
   File "${SDCC_ROOT}\bin\libgcc_s_*-1.dll"
   File "${SDCC_ROOT}\bin\libstdc++-6.dll"
+!ifdef WIN64
+  File "${SDCC_ROOT}\bin\libwinpthread-1.dll"
 !endif
 ${SectionEnd}
 
@@ -408,9 +417,15 @@ ${Section} "ucSim application files" SEC02
   SectionIn 1 2 3
   SetOutPath "$INSTDIR\bin"
   File "${SDCC_ROOT}\bin\s51.exe"
-  File "${SDCC_ROOT}\bin\shc08.exe"
-  File "${SDCC_ROOT}\bin\sz80.exe"
-  File "${SDCC_ROOT}\bin\sstm8.exe"
+  File "${SDCC_ROOT}\bin\ucsim_51.exe"
+  File "${SDCC_ROOT}\bin\ucsim_m68hc08.exe"
+  File "${SDCC_ROOT}\bin\ucsim_mos6502.exe"
+  File "${SDCC_ROOT}\bin\ucsim_pdk.exe"
+  File "${SDCC_ROOT}\bin\ucsim_rxk.exe"
+  File "${SDCC_ROOT}\bin\ucsim_stm8.exe"
+  File "${SDCC_ROOT}\bin\ucsim_tlcs.exe"
+  File "${SDCC_ROOT}\bin\ucsim_z80.exe"
+  File "${SDCC_ROOT}\bin\ucsim_f8.exe"
 ${SectionEnd}
 
 ${Section} "SDCDB files" SEC03
@@ -437,8 +452,8 @@ ${Section} "SDCC include files" SEC05
   File "${DEV_ROOT}\include\asm\default\features.h"
   SetOutPath "$INSTDIR\include\asm\ds390"
   File "${DEV_ROOT}\include\asm\ds390\features.h"
-  SetOutPath "$INSTDIR\include\asm\gbz80"
-  File "${DEV_ROOT}\include\asm\gbz80\features.h"
+  SetOutPath "$INSTDIR\include\asm\sm83"
+  File "${DEV_ROOT}\include\asm\sm83\features.h"
   SetOutPath "$INSTDIR\include\asm\mcs51"
   File "${DEV_ROOT}\include\asm\mcs51\features.h"
   SetOutPath "$INSTDIR\include\asm\pic14"
@@ -447,14 +462,12 @@ ${Section} "SDCC include files" SEC05
   File "${DEV_ROOT}\include\asm\pic16\features.h"
   SetOutPath "$INSTDIR\include\asm\z80"
   File "${DEV_ROOT}\include\asm\z80\features.h"
-  SetOutPath "$INSTDIR\include\asm\z180"
-  File "${DEV_ROOT}\include\asm\z180\features.h"
-  SetOutPath "$INSTDIR\include\asm\r2k"
-  File "${DEV_ROOT}\include\asm\r2k\features.h"
-  SetOutPath "$INSTDIR\include\asm\r3ka"
-  File "${DEV_ROOT}\include\asm\r3ka\features.h"
+  SetOutPath "$INSTDIR\include\asm\rab"
+  File "${DEV_ROOT}\include\asm\rab\features.h"
   SetOutPath "$INSTDIR\include\asm\stm8"
   File "${DEV_ROOT}\include\asm\stm8\features.h"
+  SetOutPath "$INSTDIR\include\asm\f8"
+  File "${DEV_ROOT}\include\asm\f8\features.h"
 
   SetOutPath "$INSTDIR\include\ds390"
   File "${DEV_ROOT}\include\ds390\*.h"
@@ -495,10 +508,10 @@ ${Section} "SDCC DS400 library" SEC07
   File "${DEV_ROOT}\lib\ds400\*.*"
 ${SectionEnd}
 
-${Section} "SDCC GBZ80 library" SEC08
+${Section} "SDCC SM83 library" SEC08
   SectionIn 1 2
-  SetOutPath "$INSTDIR\lib\gbz80"
-  File "${DEV_ROOT}\lib\gbz80\*.*"
+  SetOutPath "$INSTDIR\lib\sm83"
+  File "${DEV_ROOT}\lib\sm83\*.*"
 ${SectionEnd}
 
 ${Section} "SDCC Z180 library" SEC09
@@ -519,49 +532,79 @@ ${Section} "SDCC Rabbit 3000A library" SEC11
   File "${DEV_ROOT}\lib\r3ka\*.*"
 ${SectionEnd}
 
-${Section} "SDCC Z80 library" SEC12
+${Section} "SDCC Rabbit 4000 library" SEC12
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\r4k"
+  File "${DEV_ROOT}\lib\r4k\*.*"
+${SectionEnd}
+
+${Section} "SDCC Rabbit 5000 library" SEC13
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\r5k"
+  File "${DEV_ROOT}\lib\r5k\*.*"
+${SectionEnd}
+
+${Section} "SDCC Rabbit 6000 library" SEC14
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\r6k"
+  File "${DEV_ROOT}\lib\r6k\*.*"
+${SectionEnd}
+
+${Section} "SDCC Z80 library" SEC15
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\z80"
   File "${DEV_ROOT}\lib\z80\*.*"
 ${SectionEnd}
 
-${Section} "SDCC small model library" SEC13
+${Section} "SDCC mcs51 small model library" SEC16
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\small"
   File "${DEV_ROOT}\lib\small\*.*"
 ${SectionEnd}
 
-${Section} "SDCC medium model library" SEC14
+${Section} "SDCC mcs51 medium model library" SEC17
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\medium"
   File "${DEV_ROOT}\lib\medium\*.*"
 ${SectionEnd}
 
-${Section} "SDCC large model library" SEC15
+${Section} "SDCC mcs51 large model library" SEC18
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\large"
   File "${DEV_ROOT}\lib\large\*.*"
 ${SectionEnd}
 
-${Section} "SDCC small-stack-auto model library" SEC16
+${Section} "SDCC mcs51 huge model library" SEC19
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\huge"
+  File "${DEV_ROOT}\lib\huge\*.*"
+${SectionEnd}
+
+${Section} "SDCC mcs51 small-stack-auto model library" SEC20
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\small-stack-auto"
   File "${DEV_ROOT}\lib\small-stack-auto\*.*"
 ${SectionEnd}
 
-${Section} "SDCC HC08 library" SEC17
+${Section} "SDCC mcs51 large-stack-auto model library" SEC21
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\large-stack-auto"
+  File "${DEV_ROOT}\lib\large-stack-auto\*.*"
+${SectionEnd}
+
+${Section} "SDCC HC08 library" SEC22
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\hc08"
   File "${DEV_ROOT}\lib\hc08\*.*"
 ${SectionEnd}
 
-${Section} "SDCC S08 library" SEC18
+${Section} "SDCC S08 library" SEC23
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\s08"
   File "${DEV_ROOT}\lib\s08\*.*"
 ${SectionEnd}
 
-${Section} "SDCC PIC16 library" SEC19
+${Section} "SDCC PIC16 library" SEC24
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\pic16"
   File "${DEV_ROOT}\lib\pic16\*.o"
@@ -571,7 +614,7 @@ ${Section} "SDCC PIC16 library" SEC19
   File "${DEV_ROOT}\non-free\lib\pic16\*.lib"
 ${SectionEnd}
 
-${Section} "SDCC PIC14 library" SEC20
+${Section} "SDCC PIC14 library" SEC25
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\pic14"
   File "${DEV_ROOT}\lib\pic14\*.lib"
@@ -580,13 +623,19 @@ ${Section} "SDCC PIC14 library" SEC20
   File "${DEV_ROOT}\non-free\lib\pic14\*.lib"
 ${SectionEnd}
 
-${Section} "SDCC STM8 library" SEC21
+${Section} "SDCC STM8 medium model library" SEC26
   SectionIn 1 2
   SetOutPath "$INSTDIR\lib\stm8"
   File "${DEV_ROOT}\lib\stm8\*.*"
 ${SectionEnd}
 
-${Section} "SDCC library sources" SEC22
+${Section} "SDCC TLCS90 library" SEC27
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\tlcs90"
+  File "${DEV_ROOT}\lib\tlcs90\*.*"
+${SectionEnd}
+
+${Section} "SDCC library sources" SEC28
   SectionIn 1
   SetOutPath "$INSTDIR\lib\src\ds390\examples"
   File "${DEV_ROOT}\lib\src\ds390\examples\MOVED"
@@ -599,13 +648,17 @@ ${Section} "SDCC library sources" SEC22
   File "${DEV_ROOT}\lib\src\ds400\*.c"
 #  File "${DEV_ROOT}\lib\src\ds400\Makefile"
 
-  SetOutPath "$INSTDIR\lib\src\gbz80"
-  File "${DEV_ROOT}\lib\src\gbz80\*.s"
-#  File "${DEV_ROOT}\lib\src\gbz80\Makefile"
+  SetOutPath "$INSTDIR\lib\src\sm83"
+  File "${DEV_ROOT}\lib\src\sm83\*.s"
+#  File "${DEV_ROOT}\lib\src\sm83\Makefile"
 
   SetOutPath "$INSTDIR\lib\src\z80"
   File "${DEV_ROOT}\lib\src\z80\*.s"
 #  File "${DEV_ROOT}\lib\src\z80\Makefile"
+
+  SetOutPath "$INSTDIR\lib\src\z80n"
+  File "${DEV_ROOT}\lib\src\z80n\*.s"
+#  File "${DEV_ROOT}\lib\src\z80n\Makefile"
 
   SetOutPath "$INSTDIR\lib\src\z180"
   File "${DEV_ROOT}\lib\src\z180\*.s"
@@ -619,6 +672,18 @@ ${Section} "SDCC library sources" SEC22
   File "${DEV_ROOT}\lib\src\r3ka\*.s"
 #  File "${DEV_ROOT}\lib\src\r3ka\Makefile"
 
+  SetOutPath "$INSTDIR\lib\src\r4k"
+  File "${DEV_ROOT}\lib\src\r4k\*.s"
+#  File "${DEV_ROOT}\lib\src\r4k\Makefile"
+
+  SetOutPath "$INSTDIR\lib\src\r5k"
+  File "${DEV_ROOT}\lib\src\r5k\*.s"
+#  File "${DEV_ROOT}\lib\src\r5k\Makefile"
+
+  SetOutPath "$INSTDIR\lib\src\r6k"
+  File "${DEV_ROOT}\lib\src\r6k\*.s"
+#  File "${DEV_ROOT}\lib\src\r6k\Makefile"
+
   SetOutPath "$INSTDIR\lib\src\hc08"
   File "${DEV_ROOT}\lib\src\hc08\*.c"
 #  File "${DEV_ROOT}\lib\src\hc08\Makefile"
@@ -629,6 +694,14 @@ ${Section} "SDCC library sources" SEC22
 
   SetOutPath "$INSTDIR\lib\src\stm8"
 #  File "${DEV_ROOT}\lib\src\stm8\Makefile"
+
+  SetOutPath "$INSTDIR\lib\src\tlcs90"
+  File "${DEV_ROOT}\lib\src\tlcs90\*.s"
+#  File "${DEV_ROOT}\lib\src\tlcs90\Makefile"
+
+  SetOutPath "$INSTDIR\lib\src\mos6502"
+  File "${DEV_ROOT}\lib\src\mos6502\*.s"
+#  File "${DEV_ROOT}\lib\src\mos6502\Makefile"
 
   SetOutPath "$INSTDIR\lib\src\mcs51"
   File "${DEV_ROOT}\lib\src\mcs51\*.asm"
@@ -642,6 +715,9 @@ ${Section} "SDCC library sources" SEC22
 
   SetOutPath "$INSTDIR\lib\src\large"
 #  File "${DEV_ROOT}\lib\src\large\Makefile"
+
+  SetOutPath "$INSTDIR\lib\src\huge"
+#  File "${DEV_ROOT}\lib\src\huge\Makefile"
 
   SetOutPath "$INSTDIR\lib\src\pic14"
 #  File "${DEV_ROOT}\lib\src\pic14\configure"
@@ -674,7 +750,7 @@ ${Section} "SDCC library sources" SEC22
 #  File "${DEV_ROOT}\non-free\lib\src\pic14\libdev\Makefile"
 
   SetOutPath "$INSTDIR\lib\src\pic14\libm"
-  File "${DEV_ROOT}\lib\src\pic14\libm\*.c"
+#  File "${DEV_ROOT}\lib\src\pic14\libm\*.c"
 
   SetOutPath "$INSTDIR\lib\src\pic16"
 #  File "${DEV_ROOT}\lib\src\pic16\configure"
@@ -745,7 +821,6 @@ ${Section} "SDCC library sources" SEC22
 #  File "${DEV_ROOT}\lib\src\pic16\libio\usart\Makefile"
 
   SetOutPath "$INSTDIR\lib\src\pic16\libm"
-  File "${DEV_ROOT}\lib\src\pic16\libm\*.c"
 #  File "${DEV_ROOT}\lib\src\pic16\libm\Makefile"
 
   SetOutPath "$INSTDIR\lib\src\pic16\libsdcc"
@@ -759,10 +834,6 @@ ${Section} "SDCC library sources" SEC22
   File "${DEV_ROOT}\lib\src\pic16\libsdcc\fixed16x16\*.c"
   File "${DEV_ROOT}\lib\src\pic16\libsdcc\fixed16x16\*.S"
 #  File "${DEV_ROOT}\lib\src\pic16\libsdcc\fixed16x16\Makefile"
-
-  SetOutPath "$INSTDIR\lib\src\pic16\libsdcc\float"
-  File "${DEV_ROOT}\lib\src\pic16\libsdcc\float\*.c"
-#  File "${DEV_ROOT}\lib\src\pic16\libsdcc\float\Makefile"
 
   SetOutPath "$INSTDIR\lib\src\pic16\libsdcc\gptr"
   File "${DEV_ROOT}\lib\src\pic16\libsdcc\gptr\*.c"
@@ -792,6 +863,96 @@ ${Section} "SDCC library sources" SEC22
   File "${DEV_ROOT}\lib\src\*.c"
 ${SectionEnd}
 
+${Section} "SDCC STM8 large model library" SEC29
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\stm8-large"
+  File "${DEV_ROOT}\lib\stm8-large\*.*"
+${SectionEnd}
+
+${Section} "SDCC eZ80 library" SEC30
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\ez80"
+  File "${DEV_ROOT}\lib\ez80\*.*"
+${SectionEnd}
+
+${Section} "SDCC PDK13 library" SEC31
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\pdk13"
+  File "${DEV_ROOT}\lib\pdk13\*.*"
+${SectionEnd}
+
+${Section} "SDCC PDK14 library" SEC32
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\pdk14"
+  File "${DEV_ROOT}\lib\pdk14\*.*"
+${SectionEnd}
+
+${Section} "SDCC PDK15 library" SEC33
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\pdk15"
+  File "${DEV_ROOT}\lib\pdk15\*.*"
+${SectionEnd}
+
+${Section} "SDCC PDK15 stack-auto library" SEC34
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\pdk15-stack-auto"
+  File "${DEV_ROOT}\lib\pdk15-stack-auto\*.*"
+${SectionEnd}
+
+${Section} "SDCC Z80N library" SEC35
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\z80n"
+  File "${DEV_ROOT}\lib\z80n\*.*"
+${SectionEnd}
+
+${Section} "SDCC Rabbit 2000A library" SEC36
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\r2ka"
+  File "${DEV_ROOT}\lib\r2ka\*.*"
+${SectionEnd}
+
+${Section} "SDCC MOS 6502 library" SEC37
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\mos6502"
+  File "${DEV_ROOT}\lib\mos6502\*.*"
+${SectionEnd}
+
+${Section} "SDCC MOS 6502 stack-auto library" SEC38
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\mos6502-stack-auto"
+  File "${DEV_ROOT}\lib\mos6502-stack-auto\*.*"
+${SectionEnd}
+
+${Section} "SDCC WDC 65C02 library" SEC39
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\mos65c02"
+  File "${DEV_ROOT}\lib\mos65c02\*.*"
+${SectionEnd}
+
+${Section} "SDCC R800 library" SEC40
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\r800"
+  File "${DEV_ROOT}\lib\r800\*.*"
+${SectionEnd}
+
+${Section} "SDCC S08 stack-auto library" SEC41
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\s08-stack-auto"
+  File "${DEV_ROOT}\lib\s08-stack-auto\*.*"
+${SectionEnd}
+
+${Section} "SDCC f8 library" SEC42
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\f8"
+  File "${DEV_ROOT}\lib\f8\*.*"
+${SectionEnd}
+
+${Section} "SDCC f8l library" SEC43
+  SectionIn 1 2
+  SetOutPath "$INSTDIR\lib\f8l"
+  File "${DEV_ROOT}\lib\f8l\*.*"
+${SectionEnd}
+
 ;--------------------------------
 ;Descriptions
 
@@ -803,21 +964,42 @@ LangString DESC_SEC04 ${LANG_ENGLISH} "SDCC documentation"
 LangString DESC_SEC05 ${LANG_ENGLISH} "SDCC include files"
 LangString DESC_SEC06 ${LANG_ENGLISH} "SDCC DS390 library"
 LangString DESC_SEC07 ${LANG_ENGLISH} "SDCC DS400 library"
-LangString DESC_SEC08 ${LANG_ENGLISH} "SDCC GBZ80 library"
+LangString DESC_SEC08 ${LANG_ENGLISH} "SDCC SM83 library"
 LangString DESC_SEC09 ${LANG_ENGLISH} "SDCC Z180 library"
 LangString DESC_SEC10 ${LANG_ENGLISH} "SDCC Rabbit 2000 library"
 LangString DESC_SEC11 ${LANG_ENGLISH} "SDCC Rabbit 3000A library"
-LangString DESC_SEC12 ${LANG_ENGLISH} "SDCC Z80 library"
-LangString DESC_SEC13 ${LANG_ENGLISH} "SDCC small model library"
-LangString DESC_SEC14 ${LANG_ENGLISH} "SDCC medium model library"
-LangString DESC_SEC15 ${LANG_ENGLISH} "SDCC large model library"
-LangString DESC_SEC16 ${LANG_ENGLISH} "SDCC small-stack-auto model library"
-LangString DESC_SEC17 ${LANG_ENGLISH} "SDCC HC08 library"
-LangString DESC_SEC18 ${LANG_ENGLISH} "SDCC S08 library"
-LangString DESC_SEC19 ${LANG_ENGLISH} "SDCC PIC16 library"
-LangString DESC_SEC20 ${LANG_ENGLISH} "SDCC PIC14 library"
-LangString DESC_SEC21 ${LANG_ENGLISH} "SDCC STM8 library"
-LangString DESC_SEC22 ${LANG_ENGLISH} "SDCC library sources"
+LangString DESC_SEC12 ${LANG_ENGLISH} "SDCC Rabbit 4000 library"
+LangString DESC_SEC13 ${LANG_ENGLISH} "SDCC Rabbit 5000 library"
+LangString DESC_SEC14 ${LANG_ENGLISH} "SDCC Rabbit 6000 library"
+LangString DESC_SEC15 ${LANG_ENGLISH} "SDCC Z80 library"
+LangString DESC_SEC16 ${LANG_ENGLISH} "SDCC mcs51 small model library"
+LangString DESC_SEC17 ${LANG_ENGLISH} "SDCC mcs51 medium model library"
+LangString DESC_SEC18 ${LANG_ENGLISH} "SDCC mcs51 large model library"
+LangString DESC_SEC19 ${LANG_ENGLISH} "SDCC mcs51 huge model library"
+LangString DESC_SEC20 ${LANG_ENGLISH} "SDCC mcs51 small-stack-auto model library"
+LangString DESC_SEC21 ${LANG_ENGLISH} "SDCC mcs51 large-stack-auto model library"
+LangString DESC_SEC22 ${LANG_ENGLISH} "SDCC HC08 library"
+LangString DESC_SEC23 ${LANG_ENGLISH} "SDCC S08 library"
+LangString DESC_SEC24 ${LANG_ENGLISH} "SDCC PIC16 library"
+LangString DESC_SEC25 ${LANG_ENGLISH} "SDCC PIC14 library"
+LangString DESC_SEC26 ${LANG_ENGLISH} "SDCC STM8 medium model library"
+LangString DESC_SEC27 ${LANG_ENGLISH} "SDCC TLCS90 library"
+LangString DESC_SEC28 ${LANG_ENGLISH} "SDCC library sources"
+LangString DESC_SEC29 ${LANG_ENGLISH} "SDCC STM8 large model library"
+LangString DESC_SEC30 ${LANG_ENGLISH} "SDCC eZ80 library"
+LangString DESC_SEC31 ${LANG_ENGLISH} "SDCC PDK13 library"
+LangString DESC_SEC32 ${LANG_ENGLISH} "SDCC PDK14 library"
+LangString DESC_SEC33 ${LANG_ENGLISH} "SDCC PDK15 library"
+LangString DESC_SEC34 ${LANG_ENGLISH} "SDCC PDK15 stack-auto library"
+LangString DESC_SEC35 ${LANG_ENGLISH} "SDCC Z80N library"
+LangString DESC_SEC36 ${LANG_ENGLISH} "SDCC Rabbit 2000A library"
+LangString DESC_SEC37 ${LANG_ENGLISH} "SDCC MOS 6502 library"
+LangString DESC_SEC38 ${LANG_ENGLISH} "SDCC MOS 6502 stack-auto library"
+LangString DESC_SEC39 ${LANG_ENGLISH} "SDCC WDC 65C02 library"
+LangString DESC_SEC40 ${LANG_ENGLISH} "SDCC R800 library"
+LangString DESC_SEC41 ${LANG_ENGLISH} "SDCC S08 stack-auto library"
+LangString DESC_SEC42 ${LANG_ENGLISH} "SDCC f8 library"
+LangString DESC_SEC43 ${LANG_ENGLISH} "SDCC f8l library"
 
 ;Assign language strings to sections
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
@@ -833,6 +1015,7 @@ LangString DESC_SEC22 ${LANG_ENGLISH} "SDCC library sources"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC10} $(DESC_SEC10)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC11} $(DESC_SEC11)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC12} $(DESC_SEC12)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC27} $(DESC_SEC27)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC13} $(DESC_SEC13)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC14} $(DESC_SEC14)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC15} $(DESC_SEC15)
@@ -843,6 +1026,28 @@ LangString DESC_SEC22 ${LANG_ENGLISH} "SDCC library sources"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC20} $(DESC_SEC20)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC21} $(DESC_SEC21)
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC22} $(DESC_SEC22)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC23} $(DESC_SEC23)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC26} $(DESC_SEC26)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC24} $(DESC_SEC24)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC25} $(DESC_SEC25)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC16} $(DESC_SEC26)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC17} $(DESC_SEC27)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC18} $(DESC_SEC28)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC19} $(DESC_SEC29)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC20} $(DESC_SEC30)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC31} $(DESC_SEC31)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC32} $(DESC_SEC32)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC33} $(DESC_SEC33)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC34} $(DESC_SEC34)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC35} $(DESC_SEC35)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC36} $(DESC_SEC36)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC37} $(DESC_SEC37)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC38} $(DESC_SEC38)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC39} $(DESC_SEC39)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC40} $(DESC_SEC40)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC41} $(DESC_SEC41)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC42} $(DESC_SEC42)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC43} $(DESC_SEC43)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 ;--------------------------------
 
@@ -920,6 +1125,8 @@ ${Section} Uninstall SECUNINSTALL
 
   RMDir "$SMPROGRAMS\$MUI_STARTMENUPAGE_VARIABLE"
 
+  Delete "$INSTDIR\lib\src\huge\Makefile"
+
   Delete "$INSTDIR\lib\src\large\Makefile"
 
   Delete "$INSTDIR\lib\src\medium\Makefile"
@@ -941,6 +1148,9 @@ ${Section} Uninstall SECUNINSTALL
   Delete "$INSTDIR\lib\src\stm8\stm8.lib"
   Delete "$INSTDIR\lib\src\stm8\Makefile"
 
+  Delete "$INSTDIR\lib\src\stm8-large\stm8.lib"
+  Delete "$INSTDIR\lib\src\stm8-large\Makefile"
+
   Delete "$INSTDIR\lib\src\z80\*.s"
   Delete "$INSTDIR\lib\src\z80\z80.lib"
   Delete "$INSTDIR\lib\src\z80\README"
@@ -951,14 +1161,25 @@ ${Section} Uninstall SECUNINSTALL
   Delete "$INSTDIR\lib\src\z180\README"
   Delete "$INSTDIR\lib\src\z180\Makefile"
 
-  Delete "$INSTDIR\lib\src\gbz80\*.s"
-  Delete "$INSTDIR\lib\src\gbz80\gbz80.lib"
-  Delete "$INSTDIR\lib\src\gbz80\README"
-  Delete "$INSTDIR\lib\src\gbz80\Makefile"
+  Delete "$INSTDIR\lib\src\sm83\*.s"
+  Delete "$INSTDIR\lib\src\sm83\sm83.lib"
+  Delete "$INSTDIR\lib\src\sm83\README"
+  Delete "$INSTDIR\lib\src\sm83\Makefile"
 
   Delete "$INSTDIR\lib\src\r2k\*.s"
 
-  Delete "$INSTDIR\lib\src\r3ka\*.s"
+  Delete "$INSTDIR\lib\src\r2ka\*.s"
+
+  Delete "$INSTDIR\lib\src\r4k\*.s"
+
+  Delete "$INSTDIR\lib\src\r5k\*.s"
+  
+  Delete "$INSTDIR\lib\src\r6k\*.s"
+
+  Delete "$INSTDIR\lib\src\ez80\*.s"
+  Delete "$INSTDIR\lib\src\ez80\ez80.lib"
+  Delete "$INSTDIR\lib\src\ez80\README"
+  Delete "$INSTDIR\lib\src\ez80\Makefile"
 
   Delete "$INSTDIR\lib\src\ds390\*.c"
   Delete "$INSTDIR\lib\src\ds390\libds390.lib"
@@ -970,6 +1191,50 @@ ${Section} Uninstall SECUNINSTALL
   Delete "$INSTDIR\lib\src\ds400\libds400.lib"
   Delete "$INSTDIR\lib\src\ds400\Makefile.dep"
   Delete "$INSTDIR\lib\src\ds400\Makefile"
+
+  Delete "$INSTDIR\lib\src\pdk13\pdk13.lib"
+  Delete "$INSTDIR\lib\src\pdk13\Makefile"
+
+  Delete "$INSTDIR\lib\src\pdk14\pdk14.lib"
+  Delete "$INSTDIR\lib\src\pdk14\Makefile"
+
+  Delete "$INSTDIR\lib\src\pdk15\pdk15.lib"
+  Delete "$INSTDIR\lib\src\pdk15\Makefile"
+
+  Delete "$INSTDIR\lib\src\pdk15-stack-auto\pdk15.lib"
+  Delete "$INSTDIR\lib\src\pdk15-stack-auto\Makefile"
+
+  Delete "$INSTDIR\lib\src\tlcs90\*.s"
+  Delete "$INSTDIR\lib\src\tlcs90\tlcs90.lib"
+  Delete "$INSTDIR\lib\src\tlcs90\README"
+  Delete "$INSTDIR\lib\src\tlcs90\Makefile"
+
+  Delete "$INSTDIR\lib\src\mos6502\*.s"
+  Delete "$INSTDIR\lib\src\mos6502\mos6502.lib"
+  Delete "$INSTDIR\lib\src\mos6502\Makefile"
+
+  Delete "$INSTDIR\lib\src\z80n\*.s"
+  Delete "$INSTDIR\lib\src\z80n\z80n.lib"
+  Delete "$INSTDIR\lib\src\z80n\README"
+  Delete "$INSTDIR\lib\src\z80n\Makefile"
+
+  Delete "$INSTDIR\lib\src\r800n\*.s"
+  Delete "$INSTDIR\lib\src\r800\r800.lib"
+  Delete "$INSTDIR\lib\src\r800\README"
+  Delete "$INSTDIR\lib\src\r800\Makefile"
+
+  Delete "$INSTDIR\lib\src\mos65c02\*.s"
+  Delete "$INSTDIR\lib\src\mos65c02\mos65c02.lib"
+  Delete "$INSTDIR\lib\src\mos65c02\Makefile"
+
+  Delete "$INSTDIR\lib\src\s08-stack-auto\pdk15.lib"
+  Delete "$INSTDIR\lib\src\s08-stack-auto\Makefile"
+
+  Delete "$INSTDIR\lib\src\f8\f8.lib"
+  Delete "$INSTDIR\lib\src\f8\Makefile"
+
+  Delete "$INSTDIR\lib\src\f8l\f8l.lib"
+  Delete "$INSTDIR\lib\src\f8l\Makefile"
 
   Delete "$INSTDIR\lib\src\*.c"
 
@@ -988,6 +1253,8 @@ ${Section} Uninstall SECUNINSTALL
 
   Delete "$INSTDIR\lib\stm8\*.lib"
 
+  Delete "$INSTDIR\lib\stm8-large\*.lib"
+
   Delete "$INSTDIR\lib\z80\*.rel"
   Delete "$INSTDIR\lib\z80\*.lib"
 
@@ -997,8 +1264,23 @@ ${Section} Uninstall SECUNINSTALL
   Delete "$INSTDIR\lib\r2k\*.rel"
   Delete "$INSTDIR\lib\r2k\*.lib"
 
+  Delete "$INSTDIR\lib\r2ka\*.rel"
+  Delete "$INSTDIR\lib\r2ka\*.lib"
+
   Delete "$INSTDIR\lib\r3ka\*.rel"
   Delete "$INSTDIR\lib\r3ka\*.lib"
+
+  Delete "$INSTDIR\lib\r4k\*.rel"
+  Delete "$INSTDIR\lib\r4k\*.lib"
+
+  Delete "$INSTDIR\lib\r5k\*.rel"
+  Delete "$INSTDIR\lib\r5k\*.lib"
+
+  Delete "$INSTDIR\lib\r6k\*.rel"
+  Delete "$INSTDIR\lib\r6k\*.lib"
+
+  Delete "$INSTDIR\lib\ez80\*.rel"
+  Delete "$INSTDIR\lib\ez80\*.lib"
 
   Delete "$INSTDIR\lib\small\*.lib"
 
@@ -1006,23 +1288,52 @@ ${Section} Uninstall SECUNINSTALL
 
   Delete "$INSTDIR\lib\large\*.lib"
 
-  Delete "$INSTDIR\lib\small-stack-auto\*.lib"
+  Delete "$INSTDIR\lib\huge\*.lib"
 
-  Delete "$INSTDIR\lib\gbz80\*.rel"
-  Delete "$INSTDIR\lib\gbz80\*.lib"
+  Delete "$INSTDIR\lib\small-stack-auto\*.lib"
+  Delete "$INSTDIR\lib\large-stack-auto\*.lib"
+
+  Delete "$INSTDIR\lib\sm83\*.rel"
+  Delete "$INSTDIR\lib\sm83\*.lib"
 
   Delete "$INSTDIR\lib\ds390\*.lib"
 
   Delete "$INSTDIR\lib\ds400\*.lib"
 
+  Delete "$INSTDIR\lib\pdk13\*.lib"
+
+  Delete "$INSTDIR\lib\pdk14\*.lib"
+
+  Delete "$INSTDIR\lib\pdk15\*.lib"
+
+  Delete "$INSTDIR\lib\pdk15-stack-auto\*.lib"
+
+  Delete "$INSTDIR\lib\tlcs90\*.rel"
+  Delete "$INSTDIR\lib\tlcs90\*.lib"
+
+  Delete "$INSTDIR\lib\mos6502\*.rel"
+  Delete "$INSTDIR\lib\mos6502\*.lib"
+
+  Delete "$INSTDIR\lib\z80n\*.rel"
+  Delete "$INSTDIR\lib\z80n\*.lib"
+
+  Delete "$INSTDIR\lib\r800\*.rel"
+  Delete "$INSTDIR\lib\r800\*.lib"
+
+  Delete "$INSTDIR\lib\mos65c02\*.rel"
+  Delete "$INSTDIR\lib\mos65c02\*.lib"
+
+  Delete "$INSTDIR\lib\s08-stack-auto\*.lib"
+
+  Delete "$INSTDIR\lib\f8\*.lib"
+  Delete "$INSTDIR\lib\f8l\*.lib"
+
   Delete "$INSTDIR\include\asm\z80\*.h"
-  Delete "$INSTDIR\include\asm\z180\*.h"
-  Delete "$INSTDIR\include\asm\r2k\*.h"
-  Delete "$INSTDIR\include\asm\r3ka\*.h"
+  Delete "$INSTDIR\include\asm\rab\*.h"
   Delete "$INSTDIR\include\asm\pic16\*.h"
   Delete "$INSTDIR\include\asm\pic14\*.h"
   Delete "$INSTDIR\include\asm\mcs51\*.h"
-  Delete "$INSTDIR\include\asm\gbz80\*.h"
+  Delete "$INSTDIR\include\asm\sm83\*.h"
   Delete "$INSTDIR\include\asm\ds390\*.h"
   Delete "$INSTDIR\include\asm\stm8\*.h"
   Delete "$INSTDIR\include\asm\default\*.h"
@@ -1038,6 +1349,7 @@ ${Section} Uninstall SECUNINSTALL
   Delete "$INSTDIR\include\hc08\*.h"
   Delete "$INSTDIR\include\ds400\*.h"
   Delete "$INSTDIR\include\ds390\*.h"
+  Delete "$INSTDIR\include\asm\f8\*.h"
   Delete "$INSTDIR\include\*.h"
 
 !ifndef FULL_DOC
@@ -1052,11 +1364,19 @@ ${Section} Uninstall SECUNINSTALL
   Delete "$INSTDIR\bin\sdas390.exe"
   Delete "$INSTDIR\bin\sdasrab.exe"
   Delete "$INSTDIR\bin\sdasstm8.exe"
+  Delete "$INSTDIR\bin\sdaspdk13.exe"
+  Delete "$INSTDIR\bin\sdaspdk14.exe"
+  Delete "$INSTDIR\bin\sdaspdk15.exe"
+  Delete "$INSTDIR\bin\sdastlcs90.exe"
+  Delete "$INSTDIR\bin\sdas6500.exe"
+  Delete "$INSTDIR\bin\sdasf8.exe"
   Delete "$INSTDIR\bin\sdld.exe"
   Delete "$INSTDIR\bin\sdldgb.exe"
   Delete "$INSTDIR\bin\sdld6808.exe"
   Delete "$INSTDIR\bin\sdldz80.exe"
   Delete "$INSTDIR\bin\sdldstm8.exe"
+  Delete "$INSTDIR\bin\sdldpdk.exe"
+  Delete "$INSTDIR\bin\sdldf8.exe"
   Delete "$INSTDIR\bin\sdar.exe"
   Delete "$INSTDIR\bin\sdranlib.exe"
   Delete "$INSTDIR\bin\sdnm.exe"
@@ -1064,20 +1384,31 @@ ${Section} Uninstall SECUNINSTALL
   Delete "$INSTDIR\bin\makebin.exe"
   Delete "$INSTDIR\bin\packihx.exe"
   Delete "$INSTDIR\bin\sdcc.exe"
-  Delete "$INSTDIR\bin\sdcclib.exe"
   Delete "$INSTDIR\bin\sdcpp.exe"
+  Delete "$INSTDIR\bin\cc1"
   Delete "$INSTDIR\bin\as2gbmap.cmd"
   Delete "$INSTDIR\bin\readline5.dll"
-!ifdef WIN64
-  Delete "$INSTDIR\bin\libgcc_s_sjlj-1.dll"
+  Delete "$INSTDIR\bin\libgcc_s_*-1.dll"
   Delete "$INSTDIR\bin\libstdc++-6.dll"
+!ifdef WIN64
+  Delete "$INSTDIR\bin\libwinpthread-1.dll"
 !endif
 
 
   Delete "$INSTDIR\bin\s51.exe"
-  Delete "$INSTDIR\bin\shc08.exe"
   Delete "$INSTDIR\bin\sz80.exe"
   Delete "$INSTDIR\bin\sstm8.exe"
+  Delete "$INSTDIR\bin\sf8.exe"
+
+  Delete "$INSTDIR\bin\ucsim_51.exe"
+  Delete "$INSTDIR\bin\ucsim_m68hc08.exe"
+  Delete "$INSTDIR\bin\ucsim_mos6502.exe"
+  Delete "$INSTDIR\bin\ucsim_pdk.exe"
+  Delete "$INSTDIR\bin\ucsim_rxk.exe"
+  Delete "$INSTDIR\bin\ucsim_stm8.exe"
+  Delete "$INSTDIR\bin\ucsim_tlcs.exe"
+  Delete "$INSTDIR\bin\ucsim_z80.exe"
+  Delete "$INSTDIR\bin\ucsim_f8.exe"
 
   Delete "$INSTDIR\bin\sdcdb.exe"
   Delete "$INSTDIR\bin\sdcdb.el"
@@ -1095,18 +1426,38 @@ ${Section} Uninstall SECUNINSTALL
   RMDir "$INSTDIR\lib\src\small"
   RMDir "$INSTDIR\lib\src\medium"
   RMDir "$INSTDIR\lib\src\large"
+  RMDir "$INSTDIR\lib\src\huge"
   RMDir "$INSTDIR\lib\src\mcs51"
   RMDir "$INSTDIR\lib\src\z80"
   RMDir "$INSTDIR\lib\src\z180"
-  RMDir "$INSTDIR\lib\src\gbz80"
+  RMDir "$INSTDIR\lib\src\sm83"
   RMDir "$INSTDIR\lib\src\r2k"
+  RMDir "$INSTDIR\lib\src\r2ka"
   RMDir "$INSTDIR\lib\src\r3ka"
+  RMDir "$INSTDIR\lib\src\r4k"
+  RMDir "$INSTDIR\lib\src\r5k"
+  RMDir "$INSTDIR\lib\src\r6k"
+  RMDir "$INSTDIR\lib\src\ez80"
   RMDir "$INSTDIR\lib\src\ds390\examples"
   RMDir "$INSTDIR\lib\src\ds390"
   RMDir "$INSTDIR\lib\src\ds400"
   RMDir "$INSTDIR\lib\src\hc08"
   RMDir "$INSTDIR\lib\src\s08"
   RMDir "$INSTDIR\lib\src\stm8"
+  RMDir "$INSTDIR\lib\src\stm8-large"
+  RMDir "$INSTDIR\lib\src\pdk13"
+  RMDir "$INSTDIR\lib\src\pdk14"
+  RMDir "$INSTDIR\lib\src\pdk15"
+  RMDir "$INSTDIR\lib\src\pdk15-stack-auto"
+  RMDir "$INSTDIR\lib\src\tlcs90"
+  RMDir "$INSTDIR\lib\src\mos6502"
+  RMDir "$INSTDIR\lib\src\mos6502-stack-auto"
+  RMDir "$INSTDIR\lib\src\z80n"
+  RMDir "$INSTDIR\lib\src\r800"
+  RMDir "$INSTDIR\lib\src\mos65c02"
+  RMDir "$INSTDIR\lib\src\s08-stack-auto"
+  RMDir "$INSTDIR\lib\src\f8"
+  RMDir "$INSTDIR\lib\src\f8l"
   RMDir "$INSTDIR\lib\src"
   RMDir "$INSTDIR\non-free\lib\src"
 
@@ -1117,32 +1468,52 @@ ${Section} Uninstall SECUNINSTALL
   RMDir "$INSTDIR\lib\z80"
   RMDir "$INSTDIR\lib\z180"
   RMDir "$INSTDIR\lib\r2k"
+  RMDir "$INSTDIR\lib\r2ka"
   RMDir "$INSTDIR\lib\r3ka"
+  RMDir "$INSTDIR\lib\r4k"
+  RMDir "$INSTDIR\lib\r5k"
+  RMDir "$INSTDIR\lib\r6k"
+  RMDir "$INSTDIR\lib\ez80"
   RMDir "$INSTDIR\lib\small"
   RMDir "$INSTDIR\lib\medium"
   RMDir "$INSTDIR\lib\large"
+  RMDir "$INSTDIR\lib\huge"
   RMDir "$INSTDIR\lib\small-stack-auto"
-  RMDir "$INSTDIR\lib\gbz80"
+  RMDir "$INSTDIR\lib\large-stack-auto"
+  RMDir "$INSTDIR\lib\sm83"
   RMDir "$INSTDIR\lib\ds390"
   RMDir "$INSTDIR\lib\ds400"
   RMDir "$INSTDIR\lib\hc08"
   RMDir "$INSTDIR\lib\s08"
   RMDir "$INSTDIR\lib\stm8"
+  RMDir "$INSTDIR\lib\stm8-large"
+  RMDir "$INSTDIR\lib\pdk13"
+  RMDir "$INSTDIR\lib\pdk14"
+  RMDir "$INSTDIR\lib\pdk15"
+  RMDir "$INSTDIR\lib\pdk15-stack-auto"
+  RMDir "$INSTDIR\lib\tlcs90"
+  RMDir "$INSTDIR\lib\mos6502"
+  RMDir "$INSTDIR\lib\mos6502-stack-auto"
+  RMDir "$INSTDIR\lib\z80n"
+  RMDir "$INSTDIR\lib\r800"
+  RMDir "$INSTDIR\lib\mos65c02"
+  RMDir "$INSTDIR\lib\s08-stack-auto"
+  RMDir "$INSTDIR\lib\f8"
+  RMDir "$INSTDIR\lib\f8l"
   RMDir "$INSTDIR\lib"
   RMDir "$INSTDIR\non-free\lib"
 
   RMDir "$INSTDIR\include\asm\z80"
-  RMDir "$INSTDIR\include\asm\z180"
-  RMDir "$INSTDIR\include\asm\r2k"
-  RMDir "$INSTDIR\include\asm\r3ka"
+  RMDir "$INSTDIR\include\asm\rab"
   RMDir "$INSTDIR\include\asm\pic16"
   RMDir "$INSTDIR\non-free\include\asm\pic16"
   RMDir "$INSTDIR\include\asm\pic14"
   RMDir "$INSTDIR\non-free\include\asm\pic14"
   RMDir "$INSTDIR\include\asm\mcs51"
-  RMDir "$INSTDIR\include\asm\gbz80"
+  RMDir "$INSTDIR\include\asm\sm83"
   RMDir "$INSTDIR\include\asm\ds390"
   RMDir "$INSTDIR\include\asm\stm8"
+  RMDir "$INSTDIR\include\asm\f8"
   RMDir "$INSTDIR\include\asm\default"
   RMDir "$INSTDIR\include\asm"
   RMDir "$INSTDIR\include\z180"

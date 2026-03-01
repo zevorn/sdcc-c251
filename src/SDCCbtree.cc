@@ -16,16 +16,14 @@
 // along with this program; if not, write to the Free Software
 // Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-#include <set>
+#include <list>
+#include <algorithm>
 #include <map>
+#include <iostream>
 
 #include <boost/graph/adjacency_list.hpp>
 
 #include "common.h"
-
-#ifdef HAVE_STX_BTREE_MAP_H
-#include <stx/btree_map.h>
-#endif
 
 extern "C"
 {
@@ -34,14 +32,13 @@ extern "C"
 
 #undef BTREE_DEBUG
 
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, std::pair<std::set<symbol *>, int> > btree_t;
-#ifdef HAVE_STX_BTREE_MAP_H
-typedef stx::btree_map<int, btree_t::vertex_descriptor> bmap_t;
-typedef stx::btree_map<btree_t::vertex_descriptor, int> bmaprev_t;
-#else
+// We used to use an std::set<symbol *> instead of std::list<symbol *>.
+// That was faster, but resulted in non-reproducible compilation result, especially on systems with address space randomizatrion, such as macOS.
+// When performance becomes an issue here, we might want to switch to boost::multi_index.
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, std::pair<std::list<symbol *>, int> > btree_t;
+
 typedef std::map<int, btree_t::vertex_descriptor> bmap_t;
 typedef std::map<btree_t::vertex_descriptor, int> bmaprev_t;
-#endif
 
 static btree_t btree;
 static bmap_t bmap;
@@ -64,7 +61,7 @@ void btree_clear(void)
   btree_clear_subtree(0);
 }
 
-void btree_add_child(short parent, short child)
+void btree_add_child(int parent, int child)
 {
 #ifdef BTREE_DEBUG
   std::cout << "Adding child " << child << " at parent " << parent << "\n"; std::cout.flush();
@@ -98,10 +95,10 @@ static btree_t::vertex_descriptor btree_lowest_common_ancestor_impl(btree_t::ver
   else // (a < b)
     b = boost::source(*boost::in_edges(b, btree).first, btree);
 		
-  return(btree_lowest_common_ancestor(a, b));
+  return(btree_lowest_common_ancestor_impl(a, b));
 }
 
-short btree_lowest_common_ancestor(short a, short b)
+int btree_lowest_common_ancestor(int a, int b)
 {
   return(bmaprev[btree_lowest_common_ancestor_impl(bmap[a], bmap[b])]);
 }
@@ -118,12 +115,13 @@ void btree_add_symbol(struct symbol *s)
 
   wassert(bmap.find(block) != bmap.end());
   wassert(bmap[block] < boost::num_vertices(btree));
-  btree[bmap[block]].first.insert(s);
+  if (std::find(btree[bmap[block]].first.begin(), btree[bmap[block]].first.end(), s) == btree[bmap[block]].first.end())
+  	btree[bmap[block]].first.push_back(s);
 }
 
 static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssize, int *ssize)
 {
-  std::set<symbol *>::iterator s, s_end;
+  std::list<symbol *>::iterator s, s_end;
   wassert(v < boost::num_vertices(btree));
   for(s = btree[v].first.begin(), s_end = btree[v].first.end(); s != s_end; ++s)
     {
@@ -136,7 +134,7 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
 
       if(port->stack.direction > 0)
         {
-          SPEC_STAK (sym->etype) = sym->stack = (sPtr + 1);
+          SPEC_STAK (sym->etype) = sym->stack = (sPtr + !TARGET_PDK_LIKE);
           sPtr += size;
         }
       else
@@ -164,9 +162,14 @@ void btree_alloc(void)
     return;
 
   btree_alloc_subtree(0, 0, 0, &ssize);
-  
+
   if(currFunc)
     {
+#ifdef BTREE_DEBUG
+      std::cout << "btree stack allocation used total of " << ssize << " bytes\n";
+#endif
+      if (TARGET_PDK_LIKE) // Stack pointer needs to be aligned to multiple of 2
+        if (ssize & 1) ssize++;
       currFunc->stack += ssize;
       SPEC_STAK (currFunc->etype) += ssize;
     }

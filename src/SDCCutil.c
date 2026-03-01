@@ -25,6 +25,17 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdint.h>
+
+// Some systems, notably Mac OS, do not have uchar.h.
+// If it is missing, use our own type definitions.
+#ifdef HAVE_UCHAR_H
+#include <uchar.h>
+#else
+#include <stdint.h>
+#define char16_t uint_least16_t
+#define char32_t uint_least32_t
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -35,11 +46,16 @@
 #include "dbuf.h"
 #include "SDCCglobl.h"
 #include "SDCCmacro.h"
+#include "SDCCsymt.h"
 #include "SDCCutil.h"
 #include "newalloc.h"
 #include "dbuf_string.h"
 #ifndef _WIN32
 #include "findme.h"
+#endif
+
+#ifdef HAVE_U8IDENT_H
+#include "u8ident.h"
 #endif
 
 #include "version.h"
@@ -96,7 +112,7 @@ shell_escape (const char *str)
               if (str > begin)
                 dbuf_append (&dbuf, begin, str - begin);
 
-              /* append additional beckslash */
+              /* append additional backslash */
               ++backshl;
 
               /* special handling if last chars before double quote are backslashes */
@@ -117,7 +133,7 @@ shell_escape (const char *str)
             }
           else if ('%' == *str)
             {
-              /* diseble env. variable expansion */
+              /* disable env. variable expansion */
               /* append the remaining characters */
               if (begin && str > begin)
                 dbuf_append (&dbuf, begin, str - begin);
@@ -233,6 +249,42 @@ shell_escape (const char *str)
 #endif
 }
 
+
+/** Escape string for string constants.
+    Returns dynamically allocated string, which should be free-ed.
+    TODO: Maybe handle other non-printable characters.
+*/
+char *
+string_escape (const char *str)
+{
+  struct dbuf_s dbuf;
+
+  dbuf_init (&dbuf, 128);
+
+  while (*str)
+    {
+      switch (*str)
+        {
+        case '\\': case '"':
+          dbuf_append_char (&dbuf, '\\');
+          dbuf_append_char (&dbuf, *str);
+          break;
+
+        case '\n':
+          dbuf_append_str (&dbuf, "\\n");
+          break;
+
+        default:
+          dbuf_append_char (&dbuf, *str);
+          break;
+        }
+      ++str;
+    }
+
+  return dbuf_detach_c_str (&dbuf);
+}
+
+
 /** Prints elements of the set to the file, each element on new line
 */
 void
@@ -283,7 +335,7 @@ processStrSet (set * list, const char *pre, const char *post, char *(*func)(cons
   return new_list;
 }
 
-/** Given a set returns a string containing all of the strings seperated
+/** Given a set returns a string containing all of the strings separated
     by spaces. The returned string is on the heap.
 */
 const char *
@@ -478,7 +530,7 @@ buildMacros (const char *cmd)
 }
 
 char *
-buildCmdLine (const char **cmds, const char *p1, const char *p2, const char *p3, set * list)
+buildCmdLine (const char **cmds, const char *p1, const char *p2, const char *p3, set * list, set * list2)
 {
   int first = 1;
   struct dbuf_s dbuf;
@@ -529,20 +581,33 @@ buildCmdLine (const char **cmds, const char *p1, const char *p2, const char *p3,
                 const char *tmp;
                 par = NULL;
 
-                if (list != NULL && (tmp = (const char *) setFirstItem (list)) != NULL)
+                for (tmp = setFirstItem (list); tmp; tmp = setNextItem (list))
                   {
-                    do
+                    if (*tmp != '\0')
                       {
-                        if (*tmp != '\0')
-                          {
-                            if (sep)
-                              dbuf_append_char (&dbuf, ' ');    /* seperate it */
-                            dbuf_append_str (&dbuf, tmp);
-                            tmp++;
-                            sep = 1;
-                          }
+                        if (sep)
+                          dbuf_append_char (&dbuf, ' ');    /* separate it */
+                        dbuf_append_str (&dbuf, tmp);
+                        sep = 1;
                       }
-                    while ((tmp = (const char *) setNextItem (list)) != NULL);
+                  }
+              }
+              break;
+
+            case 'L':
+              {
+                const char *tmp;
+                par = NULL;
+
+                for (tmp = setFirstItem (list2); tmp; tmp = setNextItem (list2))
+                  {
+                    if (*tmp != '\0')
+                      {
+                        if (sep)
+                          dbuf_append_char (&dbuf, ' ');    /* separate it */
+                        dbuf_append_str (&dbuf, tmp);
+                        sep = 1;
+                      }
                   }
               }
               break;
@@ -555,7 +620,7 @@ buildCmdLine (const char **cmds, const char *p1, const char *p2, const char *p3,
           if (par && *par != '\0')
             {
               if (!first && sep)
-                dbuf_append_char (&dbuf, ' ');  /* seperate it */
+                dbuf_append_char (&dbuf, ' ');  /* separate it */
               dbuf_append_str (&dbuf, par);
               sep = 0;
             }
@@ -565,7 +630,7 @@ buildCmdLine (const char **cmds, const char *p1, const char *p2, const char *p3,
       if (*from != '\0')
         {
           if (!first && sep)
-            dbuf_append_char (&dbuf, ' ');      /* seperate it */
+            dbuf_append_char (&dbuf, ' ');      /* separate it */
           dbuf_append_str (&dbuf, from);
           sep = 0;
         }
@@ -725,7 +790,6 @@ getBuildEnvironment (void)
 #endif
 }
 
-#if defined(HAVE_VSNPRINTF) || defined(HAVE_VSPRINTF)
 size_t
 SDCCsnprintf (char *dst, size_t n, const char *fmt, ...)
 {
@@ -734,12 +798,7 @@ SDCCsnprintf (char *dst, size_t n, const char *fmt, ...)
 
   va_start (args, fmt);
 
-#if defined(HAVE_VSNPRINTF)
   len = vsnprintf (dst, n, fmt, args);
-#else
-  vsprintf (dst, fmt, args);
-  len = strlen (dst) + 1;
-#endif
 
   va_end (args);
 
@@ -754,7 +813,6 @@ SDCCsnprintf (char *dst, size_t n, const char *fmt, ...)
 
   return len;
 }
-#endif
 
 /** Pragma tokenizer
  */
@@ -823,13 +881,20 @@ free_pragma_token (struct pragma_token_s *token)
     /param src Pointer to 'x' from start of hex character value
 */
 
-unsigned char
+unsigned long int
 hexEscape (const char **src)
 {
   char *s;
   unsigned long value;
+  bool delimited = false;
 
   ++*src;                       /* Skip over the 'x' */
+
+  if (options.std_c2y && **src == '{')
+    {
+      delimited = true;
+      ++*src;
+    }
 
   value = strtoul (*src, &s, 16);
 
@@ -838,60 +903,69 @@ hexEscape (const char **src)
       /* no valid hex found */
       werror (E_INVALID_HEX);
     }
-  else
-    {
-      if (value > 255)
-        {
-          werror (W_ESC_SEQ_OOR_FOR_CHAR);
-        }
-    }
+
   *src = s;
 
-  return (unsigned char) value;
+  if (delimited)
+    {
+      if (**src == '}')
+        ++*src;
+      else
+        /* non-hex character or end of string encountered before '}' */
+        werror (E_CLOSING_BRACE);
+    }
+
+  return value;
 }
 
 /*------------------------------------------------------------------*/
 /* universalEscape - process an hex constant of exactly four digits */
-/* return the hex value, throw a warning for illegal octal          */
-/* adjust src to point at the last proccesed char                   */
+/* return the hex value, throw an error warning for invalid hex     */
+/* adjust src to point at the last processed char                   */
 /*------------------------------------------------------------------*/
 
-unsigned char
+unsigned long int
 universalEscape (const char **str, unsigned int n)
 {
   unsigned int digits;
-  unsigned value = 0;
+  unsigned long value = 0;
   const char *s = *str;
 
-  if (!options.std_c99)
+  if (!options.std_c95)
     {
-      werror (W_UNIVERSAL_C99);
+      werror (W_UNIVERSAL_C95);
     }
 
-  ++*str;                       /* Skip over the 'u'  or 'U' */
+  if (options.std_c2y && (*str)[0] == 'u' && (*str)[1] == '{')
+    {
+      value = hexEscape (str);
+      digits = n;
+    }
+  else
+    {
+      ++*str;                   /* Skip over the 'u'  or 'U' */
 
-  for (digits = 0; digits < n; ++digits)
-    {
-      if (**str >= '0' && **str <= '7')
+      for (digits = 0; digits < n; ++digits)
         {
-          value = (value << 4) + (**str - '0');
-          ++*str;
+          if (**str >= '0' && **str <= '9')
+            {
+              value = (value << 4) + (**str - '0');
+              ++*str;
+            }
+          else if (tolower((unsigned char)(**str)) >= 'a' && (tolower((unsigned char)(**str)) <= 'f'))
+            {
+              value = (value << 4) + (tolower((unsigned char)(**str)) - 'a' + 10);
+              ++*str;
+            }
+          else
+            break;
         }
-      else if ((**str | 0x20) >= 'a' && (**str | 0x20) <= 'f')
-        {
-          value = (value << 4) + (**str - ('a' + 10));
-          ++*str;
-        }
-      else
-          break;
     }
-  if (digits != n)
+
+  if (digits != n || (value < 0x00a0 && value != 0x0024 && value != 0x0040 && value != 0x0060) || (value >= 0xd800 && 0xdfff >= value) ||
+    value > 0x10ffff) // Additional diagnostic required in C23, but since it is just a warning, we enable it even for older standards.
     {
-      werror (E_INVALID_UNIVERSAL, s);
-    }
-  else if (value > 255)
-    {
-      werror (W_ESC_SEQ_OOR_FOR_CHAR);
+      werror (W_INVALID_UNIVERSAL, s);
     }
 
   return value;
@@ -900,10 +974,10 @@ universalEscape (const char **str, unsigned int n)
 /*------------------------------------------------------------------*/
 /* octalEscape - process an octal constant of max three digits      */
 /* return the octal value, throw a warning for illegal octal        */
-/* adjust src to point at the last proccesed char                   */
+/* adjust src to point at the last processed char                   */
 /*------------------------------------------------------------------*/
 
-unsigned char
+unsigned long int
 octalEscape (const char **str)
 {
   int digits;
@@ -921,13 +995,35 @@ octalEscape (const char **str)
           break;
         }
     }
-  if (digits)
+
+  return value;
+}
+
+unsigned long int
+delimitedOctalEscape (const char **src)
+{
+  char *s;
+  unsigned long value;
+
+  /* Skip over the "o{" which has already been checked by the caller */
+  *src += 2;
+
+  value = strtoul (*src, &s, 8);
+
+  if (s == *src)
     {
-      if (value > 255 /* || (**str>='0' && **str<='7') */ )
-        {
-          werror (W_ESC_SEQ_OOR_FOR_CHAR);
-        }
+      /* no valid octal found */
+      werror (E_INVALID_OCTAL);
     }
+
+  *src = s;
+
+  if (**src == '}')
+    ++*src;
+  else
+    /* non-hex character or end of string encountered before '}' */
+    werror (E_CLOSING_BRACE);
+
   return value;
 }
 
@@ -937,16 +1033,16 @@ octalEscape (const char **str)
   Copies source string to a dynamically allocated buffer interpreting
   escape sequences and special characters
 
-  /param src  Buffer containing the source string with escape sequecnes
-  /param size Pointer to loction where the resulting buffer length is written
+  /param src  Buffer containing the source string with escape sequences
+  /param size Pointer to location where the resulting buffer length is written
   /return Dynamically allocated resulting buffer
 */
 
 const char *
 copyStr (const char *src, size_t *size)
 {
- const char *begin = NULL;
- struct dbuf_s dbuf;
+  const char *begin = NULL;
+  struct dbuf_s dbuf;
 
   dbuf_init(&dbuf, 128);
 
@@ -964,7 +1060,8 @@ copyStr (const char *src, size_t *size)
         }
       else if (*src == '\\')
         {
-          int c;
+          unsigned long int c;
+          bool universal = FALSE;
 
           if (begin)
             {
@@ -1015,6 +1112,18 @@ copyStr (const char *src, size_t *size)
               --src;
               break;
 
+            case 'o':
+              if (options.std_c2y && src[1] == '{')
+                {
+                  c = delimitedOctalEscape (&src);
+                  --src;
+                }
+              else
+                {
+                  c = *src;
+                }
+              break;
+
             case 'x':
               c = hexEscape (&src);
               --src;
@@ -1022,11 +1131,13 @@ copyStr (const char *src, size_t *size)
 
             case 'u':
               c = universalEscape (&src, 4);
+              universal = TRUE;
               --src;
               break;
 
             case 'U':
               c = universalEscape (&src, 8);
+              universal = TRUE;
               --src;
               break;
 
@@ -1034,11 +1145,61 @@ copyStr (const char *src, size_t *size)
             case '\?':
             case '\'':
             case '\"':
-            default:
+            default: // Just pass it on unmodified. This allows even non-UTF-8 extended ASCII source, which has non-ASCII chharacters in string literals, to pass here.
               c = *src;
               break;
             }
-          dbuf_append_char (&dbuf, c);
+          if (universal) // Encode one utf-32 character to utf-8. If outside of current UTF-8 standard range (UTF-8 up to 4 bytes), emit a warning, and encode according to 1993 UTF-8 standard s(UTF-8 up to 6 bytes).
+            {
+              char s[7] = "\0\0\0\0\0\0";
+              if (c < 0x80)
+                s[0] = (char)c;
+              else if (c < 0x800)
+                {
+                  s[0] = (c >> 6) & 0x1f | 0xc0;
+                  s[1] = (c >> 0) & 0x3f | 0x80;
+                }
+              else if (c < 0x10000)
+                {
+                  s[0] = (c >> 12) & 0x0f | 0xe0;
+                  s[1] = (c >> 6) & 0x3f  | 0x80;
+                  s[2] = (c >> 0) & 0x3f  | 0x80;
+                }
+              else if (c < 0x200000)
+                {
+                  if (c >= 0x110000)
+                    werror (W_UNICODE_RANGE);
+                  s[0] = (c >> 18) & 0x07 | 0xf0;
+                  s[1] = (c >> 12) & 0x3f | 0x80;
+                  s[2] = (c >> 6) & 0x3f  | 0x80;
+                  s[3] = (c >> 0) & 0x3f  | 0x80;
+                }
+              else if (c < 0x200000)
+                {
+                  werror (W_UNICODE_RANGE);
+                  s[0] = (c >> 24) & 0x03 | 0xf8;
+                  s[1] = (c >> 18) & 0x3f | 0x80;
+                  s[2] = (c >> 12) & 0x3f | 0x80;
+                  s[3] = (c >> 6) & 0x3f  | 0x80;
+                  s[4] = (c >> 0) & 0x3f  | 0x80;
+                }
+              else if (c < 0x4000000)
+                {
+                  werror (W_UNICODE_RANGE);
+                  s[0] = (c >> 30) & 0x01 | 0xfc;
+                  s[1] = (c >> 24) & 0x3f | 0x80;
+                  s[2] = (c >> 18) & 0x3f | 0x80;
+                  s[3] = (c >> 12) & 0x3f | 0x80;
+                  s[4] = (c >> 6) & 0x3f  | 0x80;
+                  s[5] = (c >> 0) & 0x3f  | 0x80;
+                }
+              else
+                wassert (0);
+              dbuf_append_str (&dbuf, s);
+            }
+          else
+            dbuf_append_char (&dbuf, (char)c);
+
           ++src;
         }
       else
@@ -1119,3 +1280,225 @@ char *setPrefixSuffix(const char *arg)
 
   return cmd;
 }
+
+char *formatInlineAsm (char *asmStr)
+{
+  char *p, *q;
+
+  if (!asmStr)
+    return NULL;
+  else
+    q = asmStr;
+
+  for (;;)
+    {
+      // omit leading space or tab
+      while (*q == '\t' || *q == ' ')
+        q++;
+      // then record the head of current line
+      p = q;
+      // search for CL or reach the end
+      while (*q != '\n' && *q != '\r' && *q != 0)
+        q++;
+      // omit more CL characters
+      while (*q == '\n' || *q == '\r')
+        q++;
+      // replace the first with tab
+      while (p != q)
+        if (*p == '\t') // '\t' appears first then no need to do
+          {
+            break;
+          }
+        else if (*p == ' ') // find the first space then replace it with tab
+          {
+            *p = '\t';
+            break;
+          }
+        else // go on to search
+          {
+            p++;
+          }
+      // check if end
+      if (*q == 0)
+        return asmStr;
+    }
+}
+
+// Check for valid characters in identifiers according to ISO C11 standard, annex D.
+static bool
+is_UCN_valid_in_identifier (char32_t c, bool is_first)
+{
+  bool result = false;
+
+  // D.1 Ranges of characters allowed
+  if ((c == 0x00A8) || (c == 0x00AA) || (c == 0x00AD) || (c == 0x00AF)
+      || (c >= 0x00B2 && c <= 0x00B5) || (c >= 0x00B7 && c <= 0x00BA)
+      || (c >= 0x00BC && c <= 0x00BE) || (c >= 0x00C0 && c <= 0x00D6)
+      || (c >= 0x00D8 && c <= 0x00F6) || (c >= 0x00F8 && c <= 0x00FF)
+      || (c >= 0x0100 && c <= 0x167F) || (c >= 0x1681 && c <= 0x180D)
+      || (c >= 0x180F && c <= 0x1FFF) || (c >= 0x200B && c <= 0x200D)
+      || (c >= 0x202A && c <= 0x202E) || (c >= 0x203F && c <= 0x2040)
+      || (c == 0x2054) || (c >= 0x2060 && c <= 0x206F)
+      || (c >= 0x2070 && c <= 0x218F) || (c >= 0x2460 && c <= 0x24FF)
+      || (c >= 0x2776 && c <= 0x2793) || (c >= 0x2C00 && c <= 0x2DFF)
+      || (c >= 0x2E80 && c <= 0x2FFF) || (c >= 0x3004 && c <= 0x3007)
+      || (c >= 0x3021 && c <= 0x302F) || (c >= 0x3031 && c <= 0x303F)
+      || (c >= 0x3040 && c <= 0xD7FF) || (c >= 0xF900 && c <= 0xFD3D)
+      || (c >= 0xFD40 && c <= 0xFDCF) || (c >= 0xFDF0 && c <= 0xFE44)
+      || (c >= 0xFE47 && c <= 0xFFFD) || (c >= 0x10000 && c <= 0x1FFFD)
+      || (c >= 0x20000 && c <= 0x2FFFD) || (c >= 0x30000 && c <= 0x3FFFD)
+      || (c >= 0x40000 && c <= 0x4FFFD) || (c >= 0x50000 && c <= 0x5FFFD)
+      || (c >= 0x60000 && c <= 0x6FFFD) || (c >= 0x70000 && c <= 0x7FFFD)
+      || (c >= 0x80000 && c <= 0x8FFFD) || (c >= 0x90000 && c <= 0x9FFFD)
+      || (c >= 0xA0000 && c <= 0xAFFFD) || (c >= 0xB0000 && c <= 0xBFFFD)
+      || (c >= 0xC0000 && c <= 0xCFFFD) || (c >= 0xD0000 && c <= 0xDFFFD)
+      || (c >= 0xE0000 && c <= 0xEFFFD))
+    {
+      result = true;
+      // D.2 Ranges of characters disallowed initially
+      if (is_first && ((c >= 0x0300 && c <= 0x036F) || (c >= 0x1DC0 && c <= 0x1DFF)
+          || (c >= 0x20D0 && c <= 0x20FF) || (c >= 0xFE20 && c <= 0xFE2F)))
+        {
+          result = false;
+        }
+    }
+
+  return result;
+}
+
+void
+decode_UCNs_to_utf8 (char *dest, const char *src, size_t n)
+{
+  bool is_first = true;
+  const char *s = src;
+  size_t chars_left = n - 1;
+
+  while (*src)
+    {
+      if (*src == '\\')
+        {
+          ++src;
+          char32_t c = 0;
+          if (*src == 'u')
+            c = universalEscape (&src, 4);
+          else  // U - the lexer only accepts \u and \U escapes in identifiers
+            c = universalEscape (&src, 8);
+
+#ifndef HAVE_U8IDENT_H  // If we have libu8ident, we do better checks in check_type instead.
+          if (!is_UCN_valid_in_identifier (c, is_first))
+            werror (E_INVALID_UNIVERSAL_ID, s);
+          else if (c > 0x7f)
+            werror (W_NONASCII_ID_NOUNILIB);
+#endif
+
+          if (c >= 0x10000)
+            {
+              if (chars_left < 4)
+                break;
+              *(dest++) = 0xf0 | (c >> 18);
+              *(dest++) = 0x80 | ((c >> 12) & 0x3f);
+              *(dest++) = 0x80 | ((c >> 6) & 0x3f);
+              *(dest++) = 0x80 | (c & 0x3f);
+              chars_left -= 4;
+            }
+          else if (c >= 0x800)
+            {
+              if (chars_left < 3)
+                break;
+              *(dest++) = 0xe0 | (c >> 12);
+              *(dest++) = 0x80 | ((c >> 6) & 0x3f);
+              *(dest++) = 0x80 | (c & 0x3f);
+              chars_left -= 3;
+            }
+          else  // ASCII characters already eliminated by validity check => no further check here
+            {
+              if (chars_left < 2)
+                break;
+              *(dest++) = 0xc0 | (c >> 6);
+              *(dest++) = 0x80 | (c & 0x3f);
+              chars_left -= 2;
+            }
+        }
+      else
+        {
+          if (chars_left < 1)
+            break;
+          *(dest++) = *(src++);
+          chars_left--;
+        }
+      is_first = false;
+    }
+  *dest = '\0';
+}
+
+void
+process_identifier (char *dest, const char *src, size_t n)
+{
+  if (strchr (src, '$') && !options.dollars_in_ident)
+    werror (E_INVALID_ID, src);
+
+  decode_UCNs_to_utf8 (dest, src, n);
+
+#ifdef HAVE_U8IDENT_H
+  // Give an error if the identifier does not comply with UAX #31, a warning if it does not comply with UTS #39.
+
+  // We keep reinitializing, thus we can detect invalid script combinationss only within a single identifier,
+  // not between different identifiers in the same translation unit.
+  // But reinitialization is the only way to change the profile, which we need to do to handle changing C standards
+  // from #pragma within a translation unit.
+  // The choice of the profile and options here was done experimentally. The libu8dient API and docuemtnation are quire confusing when it comes to the combinationsof profiles with options.
+  u8ident_init (options.std_c23 ? U8ID_PROFILE_5 : U8ID_PROFILE_C11_6, U8ID_NFC, options.std_c23 ? U8ID_TR31_C23 : U8ID_TR31_C11);
+
+  if (options.std_c23)
+    {
+      char *normalized = u8ident_normalize (dest, 1/* TODO: Is 1 the right value here? https://github.com/rurban/libu8ident/issues/22*/);
+      strncpy (dest, normalized, n);
+      dest[n - 1] = 0;
+      free (normalized);
+    }
+
+  enum u8id_errors errors_c = u8ident_check (dest, NULL);
+  u8ident_free ();
+  if (errors_c < 0) // Invalid identifier.
+    werror (E_INVALID_ID, dest);
+  else // Only check for subtle errors if there's no obvious ones.
+    {
+      if (errors_c == U8ID_EOK_NORM || errors_c == U8ID_EOK_NORM_WARN_CONFUS) // Only possible for C17 and earlier, from C23 we normalize first.
+        werror (W_ID_NOT_NORMALIZED_NFC, dest);
+      u8ident_init (U8ID_PROFILE_TR39_4, U8ID_NFC, U8ID_TR31_TR39);
+      int errors_tr39 = u8ident_check (dest, NULL);
+      u8ident_free ();
+      const char *errormsg = "no issue";
+      switch(errors_tr39)
+        {
+        case 0:
+          break ;
+        case U8ID_EOK_NORM_WARN_CONFUS:
+        case U8ID_EOK_WARN_CONFUS:
+        case U8ID_ERR_CONFUS:
+          errormsg = "confusion risk";
+          break;
+        case U8ID_ERR_XID:
+          errormsg = "invalid xid";
+          break;
+        case U8ID_ERR_SCRIPT:
+          errormsg = "invalid script";
+          break;
+        case U8ID_ERR_SCRIPTS:
+          errormsg = "invalid combination of scripts";
+          break;
+        case U8ID_ERR_ENCODING:
+          errormsg = "invalid encoding";
+          break;
+        case U8ID_ERR_COMBINE:
+          errormsg = "invalid combination of codepoints";
+          break;
+        default:
+          errormsg = "other issue";
+        }
+      if (errors_tr39)
+        werror (W_INSECURE_ID, dest, errormsg);
+    }
+#endif
+}
+

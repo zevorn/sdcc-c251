@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "SDCCset.h"
 
 /* ERROR Message Definition */
 
@@ -46,18 +47,18 @@ enum {
   E_AUTO_ABSA                   =  17, /* abs addr for auto var*/
   W_INIT_WRONG                  =  18, /* initializer type !=  */
   E_FUNC_REDEF                  =  19, /* func name redefined  */
-  E_ID_UNDEF                    =  20, /* identifer undefined  */
+  E_ID_UNDEF                    =  20, /* Undefined identifier '%s' */
   W_STACK_OVERFLOW              =  21, /* stack overflow       */
   E_NEED_ARRAY_PTR              =  22, /* array or pointer reqd*/
   E_IDX_NOT_INT                 =  23, /* index not an integer */
-  W_IDX_OUT_OF_BOUNDS           =  24, /* array index out of bounds */
+  W_IDX_OUT_OF_BOUNDS           =  24, // array index out of bounds (for cases where we know exact index and bound) - see also W_INVALID_PTR_DEREF for other cases
   E_STRUCT_UNION                =  25, /* struct,union expected*/
   E_NOT_MEMBER                  =  26, /* !struct/union member */
   E_PTR_REQD                    =  27, /* pointer required     */
   E_UNARY_OP                    =  28, /* unary operator bad op*/
   E_CONV_ERR                    =  29, /* conversion error     */
-  E_INT_REQD                    =  30, /* bit field must be int*/
-  E_BITFLD_SIZE                 =  31, /* bit field size > 16  */
+  E_BITFLD_TYPE                 =  30, /* invalid type for bit-field */
+  E_BITFLD_SIZE                 =  31, /* bit-field too wide for type */
   W_TRUNCATION                  =  32, /* high order trucation */
   E_CODE_WRITE                  =  33, /* trying 2 write to code */
   E_LVALUE_CONST                =  34, /* lvalue is a const   */
@@ -74,13 +75,13 @@ enum {
   E_BITWISE_OP                  =  45, /* bit op invalid op   */
   E_ANDOR_OP                    =  46, /* && || op invalid    */
   E_TYPE_MISMATCH               =  47, /* type mismatch       */
-  E_AGGR_ASSIGN                 =  48, /* aggr assign         */
+  E_ARRAY_ASSIGN                =  48, /* array assign        */
   E_ARRAY_DIRECT                =  49, /* array indexing in   */
   E_BIT_ARRAY                   =  50, /* bit array not allowed  */
   E_DUPLICATE_TYPEDEF           =  51, /* typedef name duplicate */
   E_ARG_TYPE                    =  52, /* arg type mismatch   */
   E_RET_VALUE                   =  53, /* return value mismatch */
-  E_FUNC_AGGR                   =  54, /* function returing aggr */
+  E_FUNC_AGGR                   =  54, /* Function cannot return aggregate. Func body ignored */
   E_FUNC_DEF                    =  55, /* ANSI Style def neede */
   E_DUPLICATE_LABEL             =  56, /* duplicate label name */
   E_LABEL_UNDEF                 =  57, /* undefined label used */
@@ -124,7 +125,7 @@ enum {
   W_FUNC_NO_RETURN              =  95, /* no return statement found */
   W_PRE_PROC_WARNING            =  96, /* preprocessor generated warning */
   E_STRUCT_AS_ARG               =  97, /* structure passed as argument */
-  E_PREV_DEF_CONFLICT           =  98, /* previous definition conflicts with current */
+  E_PREV_DECL_CONFLICT          =  98, /* previous declaration conflicts with current */
   E_CODE_NO_INIT                =  99, /* vars in code space must have initializer */
   E_OPS_INTEGRAL                = 100, /* operans must be integral for certain assignments */
   E_TOO_MANY_PARMS              = 101, /* too many parameters */
@@ -140,12 +141,12 @@ enum {
   W_PTR_TYPE_INVALID            = 111, /* invalid type specifier for pointer */
   W_IMPLICIT_FUNC               = 112, /* function declared implicitly */
   W_CONTINUE                    = 113, /* more than one line  */
-  I_EXTENDED_STACK_SPILS        = 114, /* too many spils occured */
+  I_EXTENDED_STACK_SPILS        = 114, /* extended stack by %d bytes for compiler temp(s) :in function  '%s': %s  */
   W_UNKNOWN_PRAGMA              = 115, /* #pragma directive unsupported */
   W_SHIFT_CHANGED               = 116, /* shift changed to zero */
   W_UNKNOWN_OPTION              = 117, /* don't know the option */
   W_UNSUPP_OPTION               = 118, /* processor reset has been redifned */
-  W_UNKNOWN_FEXT                = 119, /* unknown file extension */
+  E_UNKNOWN_FEXT                = 119, /* unknown file extension */
   W_TOO_MANY_SRC                = 120, /* can only compile one .c file at a time */
   I_CYCLOMATIC                  = 121, /* information message */
   E_DIVIDE_BY_ZERO              = 122, /* / 0 */
@@ -166,7 +167,7 @@ enum {
   W_ESC_SEQ_OOR_FOR_CHAR        = 137, /* Escape sequence of of range for char */
   E_INVALID_HEX                 = 138, /* \x used with no following hex digits */
   W_FUNCPTR_IN_USING_ISR        = 139, /* Call via function pointer in ISR with using attribute. */
-  E_NO_SUCH_BANK                = 140, /* 'using' attribute specifies non-existant register bank. */
+  E_NO_SUCH_BANK                = 140, /* called function uses unknown register bank %d. */
   E_TWO_OR_MORE_DATA_TYPES      = 141, /* two or more data types in declaration for '%s' */
   E_LONG_OR_SHORT_INVALID       = 142, /* long or short invalid for .. */
   E_SIGNED_OR_UNSIGNED_INVALID  = 143, /* signed or unsigned invalid for .. */
@@ -208,7 +209,7 @@ enum {
   W_POSSBUG2                    = 179, /* possible bug, new format */
   W_COMPLEMENT                  = 180, /* ~bit can give unexpected results */
   E_SHADOWREGS_NO_ISR           = 181, /* shadowregs keyword following non-ISR function */
-  W_SFR_ABSRANGE                = 182, /* sfr at address out of range */
+  W_SFR_ABSRANGE                = 182, /* __sfr at address out of range */
   E_BANKED_WITH_CALLEESAVES     = 183, /* banked and callee-saves mixed */
   W_INVALID_INT_CONST           = 184, /* invalid integer literal string */
   W_CMP_SU_CHAR                 = 185, /* comparison of 'signed char' with 'unsigned char' requires promotion to int */
@@ -216,9 +217,9 @@ enum {
   W_C89_NO_FLEXARRAY            = 187, /* ISO C90 does not support flexible array members */
   E_FLEXARRAY_NOTATEND          = 188, /* flexible array member not at end of struct */
   E_FLEXARRAY_INEMPTYSTRCT      = 189, /* flexible array in otherwise empty struct */
-  W_EMPTY_SOURCE_FILE           = 190, /* ISO C forbids an empty source file */
+  W_EMPTY_TRANSLATION_UNIT      = 190, /* ISO C forbids an empty translation unit */
   W_BAD_PRAGMA_ARGUMENTS        = 191, /* #pragma %s: bad argument(s); pragma ignored */
-  E_BAD_RESTRICT                = 192, /* Only pointers may be qualified with 'restrict' */
+  E_BAD_RESTRICT                = 192, /* Only object pointers may be qualified with 'restrict' */
   E_BAD_INLINE                  = 193, /* Only functions may be qualified with 'inline' */
   E_BAD_INT_ARGUMENT            = 194, /* Bad integer option argument */
   E_NEGATIVE_ARRAY_SIZE         = 195, /* Size of array '%s' is negative */
@@ -230,13 +231,13 @@ enum {
   W_DEPRECATED_OPTION           = 201, /* deprecated compiler option '%s' */
   E_BAD_DESIGNATOR              = 202, /* Bad designated initializer */
   W_DUPLICATE_INIT              = 203, /* duplicate initializer */
-  E_INVALID_UNIVERSAL           = 204, /* incomplete universal character name %s. */
-  W_UNIVERSAL_C99               = 205, /* universal character names are only valid in C99 */
+  W_INVALID_UNIVERSAL           = 204, /* invalid universal character name %s. */
+  W_UNIVERSAL_C95               = 205, /* universal character names are only valid in C95 or later */
   E_SHORTLONG                   = 206, /* Invalid combination of short / long */
   E_INTEGERSUFFIX               = 207, /* Invalid integer suffix */
   E_AUTO_ADDRSPACE              = 208, /* named address space for auto var */
   W_NORETURNRETURN              = 209, /* return in _noreturn function */
-  E_STRUCT_REDEF                = 210, /* struct or union tag redefined */
+  E_STRUCT_REDEF_INCOMPATIBLE   = 210, /* struct or union tag redefined to incompatible type */
   W_STRING_CANNOT_BE_TERMINATED = 211, /* string cannot be terminated within array */
   W_LONGLONG_LITERAL            = 212, /* long long literal */
   S_SYNTAX_ERROR                = 213, /* syntax error */
@@ -246,11 +247,144 @@ enum {
   W_INTERNAL_ERROR              = 217, /* warning for non-fatal internal errors - things that should not have happened, but can be handled */
   W_UNRECOGNIZED_ASM            = 218, /* unrecognized asm instruction in peephole optimizer */
   W_FLEXARRAY_INSTRUCT          = 219, /* using flexible arrays in a struct */
-  W_ANONYMOUS_MEMBER            = 220, /* anonymous member in struct/union */
+  E_TYPE_IS_FUNCTION            = 220, /* typedef void foo_t(void); foo_t foo; */
   W_INLINE_NAKED                = 221, /* inline function is naked */
   E_Z88DK_FASTCALL_PARAMETERS   = 222, /* invalid number of parameters in __z88dk_fastcall */
   E_Z88DK_FASTCALL_PARAMETER    = 223, /* invalid parameter type in __z88dk_fastcall */
   W_REPEAT_QUALIFIER            = 224, /* the same qualifier appears more than once */
+  W_NO_TYPE_SPECIFIER           = 225, /* type specifier missing in declaration */
+  E_NO_TYPE_SPECIFIER           = 226, /* type specifier missing in declaration */
+  E_MULTIPLE_DEFAULT_IN_GENERIC = 227, /* multiple default expressions in generic association */
+  E_MULTIPLE_MATCHES_IN_GENERIC = 228, /* multiple matching expressions in generic association */
+  E_NO_MATCH_IN_GENERIC         = 229, /* no matching expression in generic association */
+  W_LABEL_WITHOUT_STATEMENT_C23 = 230, /* label without statement requires ISO C23 or later */
+  E_WCHAR_CONST_C95             = 231, /* character constant of type wchar_t requires ISO C 95 or later */
+  E_WCHAR_CONST_C11             = 232, /* character constant of type char16_t or char32_t equires ISO C 11 or later */
+  E_WCHAR_STRING_C95            = 233, /* wide character string literal requires ISO C 95 or later */
+  E_WCHAR_STRING_C11            = 234, /* wide character string literal requires ISO C 11 or later */
+  W_UNKNOWN_REG                 = 235, /* unknown register specified */
+  E_HEXFLOAT_C99                = 236, /* hexadecimal floating constant requires ISO C99 or later */
+  E_ANONYMOUS_STRUCT_TAG        = 237, /* anonymous struct/union should not have a tag */
+  W_INLINE_FUNCATTR             = 238, /* inline functions should not be z88dk_fastcall or z88dk_callee */
+  E_FOR_INITAL_DECLARATION_C99  = 239, /* initial declaration in for loop requires ISO C99 or later */
+  E_QUALIFIED_ARRAY_PARAM_C99   = 240, /* qualifiers in array parameters require ISO C99 or later */
+  E_QUALIFIED_ARRAY_NOPARAM     = 241, /* qualifier or static in array declarator that is not a parameter */
+  E_STATIC_ARRAY_PARAM_C99      = 242, /* static in array parameters requires ISO C99 or later */
+  E_INT_MULTIPLE                = 243, /* multiple interrupt numbers */
+  W_INCOMPAT_PTYPES             = 244, /* incompatible pointer assignment (not allowed by the standard, but allowed in SDCC) */
+  E_STATIC_ASSERTION_C23        = 245, /* static assertion with one argument requires C23 or later */
+  W_STATIC_ASSERTION_2          = 246, /* static assertion failed */
+  E_DECL_AFTER_STATEMENT_C99    = 247, /* declaration after statement requires ISO C99 or later */
+  E_SHORTCALL_INVALID_VALUE     = 248, /* Invalid value for a __z88dk_shortcall specifier */
+  E_DUPLICATE_PARAMTER_NAME     = 249, /* duplicate parameter name */
+  E_AUTO_FILE_SCOPE             = 250, /* auto in declaration at file scope */
+  E_U8_CHAR_C23                 = 251, /* u8 character constant requires ISO C23 or later */
+  E_U8_CHAR_INVALID             = 252, /* invalid u8 character constant */
+  E_ATTRIBUTE_C23               = 253, /* attribute requires ISO C23 or later */
+  E_COMPOUND_LITERALS_C99       = 254, /* compound literals require ISO C99 or later */
+  E_THREAD_LOCAL                = 255, /* thread-local storage is not implemented */
+  E_ENUM_COMMA_C99              = 256, /* trailing comma after enumerator list requires ISO C99 or later */
+  E_OUTPUT_FILE_OPEN_ERR        = 257, /* Failed to open output file for writing (with error message) */
+  E_INPUT_FILE_OPEN_ERR         = 258, /* Failed to open input file for readin (with error message) */
+  W_SHIFT_NEGATIVE              = 259, /* shift by negative amount */
+  W_INVALID_STACK_LOCATION      = 260, /* access to invalid stack location */
+  W_BINARY_INTEGER_CONSTANT_C23 = 261, /* binary integer constant requires ISO C23 or later */
+  E_U8CHAR_STRING_C11           = 262, /* unicode string literal requires ISO C 11 or later */
+  W_PREFIXED_STRINGS            = 263, /* sequence of differently prefixed string literals */
+  W_DIGIT_SEPARATOR_C23         = 264, /* digit separators require ISO C23 or later */
+  E_INVALID_LANG_OVERRIDE       = 265, /* argument to option -x is not a valid file type override */
+  E_RAISONANCE_LARGE_RETURN     = 266, /* large return value not supported for Raisonance calling convention */
+  E_IAR_LARGE_RETURN            = 267, /* large return value not supported for IAR calling convention */
+  E_IAR_PSEUDOPARM              = 268, /* IAR function call with parameter in pseudoregister */
+  E_COSMIC_LARGE_RETURN         = 269, /* large return value not supported for Cosmic calling convention */
+  E_MULTIPLE_CALLINGCONVENTIONS = 270, /* multiple incompatible calling conventions */
+  E_SFR_POINTER                 = 271, /* unsupported pointer to __sfr */
+  E_INVALID_BITINTWIDTH         = 272, /* invalid with for bit-precise integer type */
+  W_BITINTCONST_C23             = 273, /* bit-precise integer constant requires ISO C23 or later */
+  E_INVALID_UNIVERSAL_ID        = 274, /* universal character name %s invalid in identifier */
+  E_COMPLEX_UNSUPPORTED         = 275, /* complex numbers are not supported */
+  E_DECIMAL_FLOAT_UNSUPPORTED   = 276, /* decimal floating-point numbers are not supported */
+  E_ATOMIC_UNSUPPORTED          = 277, /* atomics are not supported */
+  W_RETURN_TYPE_OMITTED_INT     = 278, /* return type of function omitted, assuming int */
+  W_SINGLE_DASH_LONG_OPT        = 279, /* use of single-dash long options is discouraged */
+  E_UNKNOWN_LANGUAGE_STANDARD   = 280, /* unknown language standard */
+  E_CONSTEXPR_C23               = 281, /* constexpr requires ISO C23 or later */
+  E_TYPEOF                      = 282, /* typeof and typeof_unqual not implemented for nontrivial expressions */
+  W_FUNCDECL_WITH_NO_PROTOTYPE  = 283, /* function declarator with no prototype */
+  W_UNKNOWN_ATTRIBUTE           = 284, /* unknown attribute ignored*/
+  W_EMPTY_INIT_C23              = 285, /* empty initializer requires ISO C23 or later */
+  E_EMPTY_INIT_UNKNOWN_SIZE     = 286, /* array of unknown size cannnot be initialized by an empty initializer */
+  E_VLA_TYPE_C99                = 287, /* variable length array type requires ISO C99 or later */
+  E_VLA_OBJECT                  = 288, /* object of variable length array type not supported */
+  E_VLA_SCOPE                   = 289, /* variable length array declarators must have function prototype scope or block scope */
+  E_VLA_INIT                    = 290, /* variable length arrays can be initialized by empty initalizers only */
+  W_ENUM_INT_RANGE_C23          = 291, /* enumeration constant outside the range of int requires ISO C23 or later */
+  E_Z88DK_CALLEE_VARARG         = 292, /* __z88dk_callee with variable arguments not supported */
+  W_CODEMEM_WRITE               = 293, /* attempt to write to read-only-memory */
+  W__SDCC_EXTERNAL_STARTUP_DEF  = 294, /* _sdcc_external_startup function definition - probable deprecated old-style variant of __sdcc_external_startup */
+  E_NO_SKIP_TARGET              = 295, /* target label missing for skip instruction */
+  W_SDCCCALL_STD_LIB_CRT0       = 296, /* non-default sdcccall specified, but default stdlib or crt0 */
+  W_PEEPHOLE_RULE_LIMIT         = 297, /* peephole rule application limit reached */
+  W_DATA_ABSRANGE               = 298, /* __data at address out of range */
+  W_IDATA_ABSRANGE              = 299, /* __idata at address out of range */
+  W_CASE_RANGE_EMPTY            = 300, /* empty case range specified */
+  E_CASE_RANGE_C2Y              = 301, /* case range expressions require C2y or later */
+  E_GENERIC_WITH_TYPENAME_C2Y   = 302, /* generic selection based on a type name requires C2y or later */
+  E_MIXED_FUNCTION_STYLES       = 303, /* function mixes ISO and K&R style */
+  E_ENUM_TYPE_SPECIFIER_C23     = 304, /* enum type specifiers require C23 or later */
+  E_ENUM_UNDERLYING_TYPE        = 305, /* enum's underlying type must be an integer type and cannot be an enum */
+  E_ENUM_TYPE_RANGE_TOO_SMALL   = 306, /* the enum's underlying type cannot represent all enumerator values */
+  E_COUNTOF_INVALID_TYPE        = 307, /* _Countof applied to an incomplete or non-array type */
+  W_PREFIXED_OCTAL_C2Y          = 308, /* prefixed octal integer constants require ISO C2y or later */
+  W_OCTAL_DEPRECATED_C2Y        = 309, /* unprefixed octal integer constants are deprecated as of ISO C2y */
+  E_CLOSING_BRACE               = 310, /* invalid character or end of string encountered before '}' */
+  E_INVALID_OCTAL               = 311, /* \o{...} used without valid octal digits */
+  E_SELECTION_DECLARATION_C2Y   = 312, /* declaration within selection header requires ISO C2y or later */
+  E_COMPLIT_SCLASS_C23          = 313, // compound literals with storage class specifier require ISO C23 or later
+  W_ENUM_UNDERLYING_BITINT      = 314, // enum's underlying type may not be a bit-precise type in ISO C23
+  W_BITINTWIDTH_1_C2Y           = 315, // signed bit-precise integer type of width 1 requires ISO C2y or later
+  E_ATOMIC_ARRAY                = 316, // _Atomic array
+  E_ATOMIC_FUNCTION             = 317, // _Atomic function
+  E_ATOMIC_SPEC_ATOMIC          = 318, // _Atomic specifier on atomic type
+  E_ATOMIC_SPEC_QUALIFIED       = 319, // _Atomic specifier on qualified type
+  E_BLOCK_SCOPE_EXTERN_INIT     = 320, // block scope variable declared extern and intialized
+  E_BLOCK_SCOPE_FUNC_SCLASS     = 321, // Function declared at block scope with explicit storage-class specifier other than extern
+  W_PTR2INT_NOREPRESENT         = 322, // Cast of pointer to integer type that cannot represent all values of the pointer type
+  W_MAIN_TYPE                   = 323, // Function main should be void main(void) or int main(void)
+  E_VOID_SHALL_BE_LONELY        = 324, // void is allowed as single parameter with no storage class specifiers, no type qualifers, no following ellipsis
+  W_ANONYMOUS_STRUCT_C11        = 325, // anonymous struct/union requires ISO C11 or later
+  E_UNAMED_STRUCT_MEMBER        = 326, // struct/union members need to have a name, unless they are anonymous struct/union or bit-fields
+  E_NO_LINKAGE_INCOMPLETE_TYPE  = 327, // object with no linkage of incomplete type
+  E_EXTERN_INLINE_NO_DEF        = 328, // inline function declared with external linkage, but not defined in translation unit
+  E_STRAY_CHARACTER             = 329, // stray character at column %d
+  W_UNICODE_RANGE               = 330, // character out of unicode range
+  E_INCOMPLETE_TYPE_LVALUE      = 331, // lvalue of incomplete type
+  W_REGISTER_EXTERNAL_DECL      = 332, // storage class register on external declaration
+  W_REGISTER_ELEMENT_ACCESS_C2Y = 333, // access to element of array with storage class specifier register requires ISO C2y or later
+  W_EXCESS_BRACES_INITIALIZER   = 334, // excess braces in initializer
+  E_VLA_UNSPECIFIED_SCOPE       = 335, //  "[*] variable length array declarators of unspecified length must have function prototype scope
+  W_INCOMPLETE_ARRAY_IMPLICIT_1 = 336, // incomplete array type has length 1 due to implicit initializer
+  E_QUALIFIED_FUNCTION          = 337, // qualified function
+  W_NONASCII_ID_NOUNILIB        = 338, // non-ascii characters in identifier, but SDCC built without libu8ident library; diagnostics on and semantics of identifier names limited to the minimum required by ISO C11
+  E_INVALID_ID                  = 339, // invalid identifier
+  W_ID_NOT_NORMALIZED_NFC       = 340, // identifier not normalized to unicode normalization form C
+  W_INSECURE_ID                 = 341, // insecure identifier not compliant with UTS #39
+  E_CONSTEXPR_WITHOUT_INIT      = 342, // constexpr declaration without initialization
+  E_CONSTEXPR_RANGE_PRECISION   = 343, // type of constexpr declaration has insufficient range or precision
+  E_CONSTEXPR_INVALID_QUAL      = 344, // object of constexpr type cannot be atomic, variably modified, volatile or restrict qualified
+  W_STATIC_ARRAY_PARAM_LENGTH   = 345, // argument for [static] array parameter is not of sufficient length
+  W_INVALID_PTR_DEREF           = 346, // possibly invalid pointer dereferenced or array index out of bounds - see also W_IDX_OUT_OF_BOUNDS (for cases where we know exact index and bound)
+  W_PARAM_FWD_DECL              = 347, // parameter forward declaration not allowed in ISO C
+  E_PARAM_FWD_DECL_NOPARAM      = 348, // forward-declared parameter '%s' missing from parameter list
+  E_PARAM_FWD_DECL_UNSUPPORTED  = 349, // unsupported parameter forward declaration; only single forward-declared parameters of integer type are supported
+  W_VARARG_ONLY_C23             = 350, // function with variable arguments only requires ISO C23 or later
+  E_BAD_OPTIONAL                = 351, // types other than the referenced type of a pointer type shall not be optional-qualified
+  W_SIZETCONST_C2Y              = 352, // integer literal of type size_t or ptrdiff_t requires C2y
+  W_ARRAY_PARAM_LENGTH          = 353, // argument for array parameter might not be of sufficient length
+  W_MAYBE_INVALID_PTR_DEREF     = 354, // maybe invalid pointer dereferenced or array index out of bounds (assuming array parameters are arrays of given size)
+  W_OPTIONAL_PTR_DEREF          = 355, // pointer to _Optional could not be proven to be non-null at dereference
+
+  // If you get a merge conflict here, some #pragma disable_warning in support/valdiag and support/regression will likely need to be adapted to the resolution. Check there!
 
   /* don't touch this! */
   NUMBER_OF_ERROR_MESSAGES             /* Number of error messages */
@@ -265,6 +399,11 @@ enum {
 #else
 # define assert(expr) ((expr) ? (void)0 : fatal (1, E_INTERNAL_ERROR, __FILE__, __LINE__, #expr))
 #endif
+
+#define wassertl_bt(a,s)   (void)((a) ? 0 : \
+        (werror_bt (E_INTERNAL_ERROR, __FILE__, __LINE__, s), 0))
+
+#define wassert_bt(a) wassertl_bt(a, "code generator internal error")
 
 /** Describes the maximum error level that will be logged.  Any level
  *  includes all of the levels listed after it.
@@ -294,6 +433,7 @@ struct SDCCERRG {
   FILE *out;
   int style;                        /* 1=MSVC */
   int werror;                       /* treat the warnings as errors */
+  set *log;
 };
 
 extern struct SDCCERRG _SDCCERRG;
@@ -314,7 +454,7 @@ FILE * SetErrorOut (FILE *NewErrorOut);
 
 /*
 -------------------------------------------------------------------------------
-vwerror - Output a standard eror message with variable number of arguements
+vwerror - Output a standard error message with variable number of arguments
 
 -------------------------------------------------------------------------------
 */
@@ -323,7 +463,7 @@ int vwerror (int errNum, va_list marker);
 
 /*
 -------------------------------------------------------------------------------
-werror - Output a standard eror message with variable number of arguements
+werror - Output a standard error message with variable number of arguments
 
 -------------------------------------------------------------------------------
 */
@@ -332,17 +472,26 @@ int werror (int errNum, ... );
 
 /*
 -------------------------------------------------------------------------------
-werrorfl - Output a standard eror message with variable number of arguements.
+werror_bt - like werror(), but als provide a backtrace
+
+-------------------------------------------------------------------------------
+*/
+
+int werror_bt (int errNum, ... );
+
+/*
+-------------------------------------------------------------------------------
+werrorfl - Output a standard error message with variable number of arguments.
            Use a specified filename and line number instead of the default.
 
 -------------------------------------------------------------------------------
 */
 
-int werrorfl (char *newFilename, int newLineno, int errNum, ...);
+int werrorfl (const char *newFilename, int newLineno, int errNum, ...);
 
 /*
 -------------------------------------------------------------------------------
-fatal - Output a standard eror message with variable number of arguements and
+fatal - Output a standard error message with variable number of arguments and
         call exit()
 -------------------------------------------------------------------------------
 */
@@ -364,6 +513,14 @@ disabled - Disable output of specified warning
 */
 
 void setWarningDisabled (int errNum);
+
+/*
+-------------------------------------------------------------------------------
+disabledState - Enable/Disable output of specified warning
+-------------------------------------------------------------------------------
+*/
+
+int setWarningDisabledState (int errNum, int disabled);
 
 /*
 -------------------------------------------------------------------------------

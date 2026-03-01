@@ -6,7 +6,6 @@
 
 #ifdef __SDCC
 #pragma std_c99
-#pragma disable_warning 93
 #endif
 
 double
@@ -24,6 +23,8 @@ do_sibcall (void)
 void
 testTortureExecute (void)
 {
+#ifndef __SDCC_pdk14 // Lack of memory
+#if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
    double x;
 
    for (x = 0; x < 20; x++)
@@ -31,5 +32,7 @@ testTortureExecute (void)
    if (!(x >= 10))
       ASSERT (0);
    return;
+#endif
+#endif
 }
 

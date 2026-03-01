@@ -78,7 +78,7 @@ enum tag {	/* ERROR */
 #endif
 
 #ifdef TEST8
-enum tag x;
+enum tag x;  /* IGNORE(GCC) */
 
 enum tag
 {
@@ -87,3 +87,24 @@ enum tag
   third
 };
 #endif
+
+#ifdef TEST9
+enum comma
+{
+  first,
+  second,,	/* ERROR */
+}
+#endif
+
+// C23 allows multiple compatible definitions for enum.
+#ifdef TEST10
+#ifdef __SDCC
+#pragma std_c23
+#endif
+
+enum X {A = 1, B};     /* IGNORE */
+enum X {B = 2, A = 1}; /* IGNORE(GCC) */
+enum X {A = 1, B = 3}; /* ERROR */
+
+#endif
+

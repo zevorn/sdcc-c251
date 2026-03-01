@@ -9,7 +9,7 @@
 #endif
 
 // TODO: Enable when long long comes to these ports!
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
+#if !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
 void t1 (int x)
 {
   if (x != 4100)
@@ -40,7 +40,7 @@ long long t4 (void)
 void
 testTortureExecute (void)
 {
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
+#if !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
   if (t2 () != 4096)
     ASSERT (0);
   if (t4 () != 4096)

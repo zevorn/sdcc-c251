@@ -32,6 +32,8 @@
      mcs51 small stack-auto
 */
 
+#include <sdcc-lib.h>
+
 #if !defined(__SDCC_USE_XSTACK) && !defined(_SDCC_NO_ASM_LIB_FUNCS)
 #  if defined(__SDCC_mcs51)
 #    if defined(__SDCC_MODEL_SMALL)
@@ -170,7 +172,7 @@ div_by_0:
 #define MSB_SET(x) ((x >> (8*sizeof(x)-1)) & 1)
 
 unsigned int
-_moduint (unsigned int a, unsigned int b)
+_moduint (unsigned int a, unsigned int b) __SDCC_NONBANKED
 {
   unsigned char count = 0;
 

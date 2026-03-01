@@ -3,13 +3,14 @@
 clean:
 	rm -f *core *[%~] *.[oa]
 	rm -f .[a-z]*~
-	cd bin && for name in *; do if [ -f $$name -a $$name != README ]; then rm $$name; fi; done
+	make -C bin clean
 
 # Deleting all files created by configuring or building the program
 # -----------------------------------------------------------------
 distclean: clean
+	make -C bin distclean
 	rm -f config.cache config.log config.status Makefile Makefile.common
-	rm -f sdccconf.h main.mk *.dep
+	rm -f sdccconf.h main.mk *.dep *.depcc *.depcxx
 	rm -f ports.all ports.build
 
 # Like clean but some files may still exist

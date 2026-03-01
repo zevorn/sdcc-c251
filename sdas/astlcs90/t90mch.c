@@ -362,7 +362,7 @@ gen_xop_arith(int rf, int op, int t1, int t2, int v1, int v2, struct expr *e1, s
     {
       outab(0xf8 + v1);
       outab(op);
-      outab(v2);
+      outrb(e2, 0);
       return 1;
     }
 
@@ -417,7 +417,7 @@ gen_xop_arith(int rf, int op, int t1, int t2, int v1, int v2, struct expr *e1, s
           outab(0xef);
           outab(v1 & 0xFF);
           outab(op);
-          outab(v2);
+          outrb(e2, 0);
           return 1;
         }
       else
@@ -425,7 +425,7 @@ gen_xop_arith(int rf, int op, int t1, int t2, int v1, int v2, struct expr *e1, s
           outab(0xeb);
           outrw(e1, 0);
           outab(op);
-          outab(v2);
+          outrb(e2, 0);
           return 1;
         }
     }
@@ -442,9 +442,9 @@ gen_xop_arith(int rf, int op, int t1, int t2, int v1, int v2, struct expr *e1, s
 void
 machine(struct mne *mp)
 {
-  int op, t1, t2;
+  int op, t1, t2, t3;
   struct expr e1, e2;
-  int rf, v1, v2;
+  int rf, v1, v2, v3;
 
   clrexpr(&e1);
   clrexpr(&e2);
@@ -473,6 +473,32 @@ machine(struct mne *mp)
       break;
 
       //////////////////////////////////////////////////////////////////////
+
+    case S_LDA:
+      t1 = addr(&e1);
+      v1 = (int) e1.e_addr;
+      comma(1);
+      t2 = addr(&e2);
+      v2 = (int) e2.e_addr;
+      comma(1);
+      t3 = addr(&e2);
+      v3 = (int) e2.e_addr;
+
+      if (t1 == S_R16 && (t2 == S_R16) && (v2==IX || v2==IY || v2==SP) && t3 == S_IMMED)
+        {
+          outab(op + v2 - IX);
+          outrb(&e2, R_SGND);
+          outab(0x38 + (v1 & 0x0F));
+          break;
+        }
+      if (t1 == S_R16 && (t2 == S_R16) && (v2==HL) && t3 == S_R8 && v3 == A)
+        {
+          outab(0xF7);
+          outab(0x38 + (v1 & 0x0F));
+          break;
+        }
+      aerr();
+      break;
 
     case S_INCX:
     case S_DECX:
@@ -1002,6 +1028,7 @@ machine(struct mne *mp)
     case S_BIT:
     case S_RES:
     case S_SET:
+    case S_TSET:
       t1 = addr(&e1);
       v1 = (int) e1.e_addr;
       comma(1);
@@ -1207,7 +1234,7 @@ machine(struct mne *mp)
           if((v1 == A) && (IS_8BIT_IMMED(v2)))
             {
               outab(op + 8);
-              outab(v2 & 0xff);
+              outrb(&e2,0);
               break;
             }
           else
@@ -1315,7 +1342,6 @@ machine(struct mne *mp)
     case S_SRL:
       t1 = addr(&e1);
       v1 = (int) e1.e_addr;
-
       // can have a as first op or not..
       if(more())
         {
@@ -1335,7 +1361,7 @@ machine(struct mne *mp)
             }
         }
 
-      if(IS_DIRECT_MEM(v1))
+      if(IS_DIRECT_MEM(v1) && v1 > 0)
         {
           outab(0xE7);
           outab(v1 & 0xFF);
@@ -1661,7 +1687,7 @@ machine(struct mne *mp)
             {
               outab(0xe8 + r);
               outab(0x37);
-              outab(v2);
+              outrb(&e2,0);
               break;
             }
           else
@@ -1670,14 +1696,14 @@ machine(struct mne *mp)
                 {
                   outab(0xF7);
                   outab(0x37);
-                  outab(v2);
+                  outrb(&e2,0);
                   break;
                 }
 
               outab(0xF0 + r);
               outab(e1.e_addr);
               outab(0x37);
-              outab(v2);
+              outrb(&e2,0);
               break;
             }
         }

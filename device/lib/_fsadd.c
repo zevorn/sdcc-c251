@@ -76,7 +76,7 @@ fsadd_direct_entry:
 00011$:
 	// decide if we need to add or subtract
 	// sign_a and sign_b are stored in the flag bits of psw,
-	// so this little trick checks if the arguements have the
+	// so this little trick checks if the arguments have the
 	// same sign.
 	mov	a, psw
 	swap	a
@@ -167,7 +167,7 @@ union float_long
   };
 
 /* add two floats */
-float __fsadd (float a1, float a2)
+float __fsadd (float a1, float a2) __SDCC_FLOAT_NONBANKED
 {
   long mant1, mant2;
   long _AUTOMEM *pfl1;
@@ -188,7 +188,6 @@ float __fsadd (float a1, float a2)
   exp1 = EXP (*pfl1);
   mant1 = MANT (*pfl1) << 4;
   if (SIGN(*pfl1))
-  if (*pfl1 & 0x80000000)
     mant1 = -mant1;
   /* check for zero args */
   if (!*pfl1)

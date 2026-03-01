@@ -12,11 +12,11 @@
 
 #include <stdarg.h>
 
+#ifndef __SDCC_pdk14 // Lack of memory
 int fails = 0;
 struct S { float a[3]; };
 struct S a[5];
-#if 0
-TODO: Enable once structures can be passed as parameters!
+
 void
 check (int z, ...)
 {
@@ -49,10 +49,11 @@ check (int z, ...)
   va_end (ap);
 }
 #endif
+
 void
 testTortureExecute (void)
 {
-#if 0
+#ifndef __SDCC_pdk14 // Lack of memory
   a[2].a[2] = -49026;
   check (1, a[2], a[2]);
   if (fails)

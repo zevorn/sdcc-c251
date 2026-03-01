@@ -33,6 +33,8 @@
 
 #include <stdbool.h>
 
+#include <sdcc-lib.h>
+
 #if !defined(__SDCC_USE_XSTACK) && !defined(_SDCC_NO_ASM_LIB_FUNCS)
 #  if defined(__SDCC_mcs51)
 #    if defined(__SDCC_MODEL_SMALL)
@@ -328,7 +330,7 @@ exit:	mov	a,x3		; prepare the return value
 #define MSB_SET(x) ((x >> (8*sizeof(x)-1)) & 1)
 
 unsigned long
-_divulong (unsigned long x, unsigned long y)
+_divulong (unsigned long x, unsigned long y) __SDCC_NONBANKED
 {
   unsigned long reste = 0L;
   unsigned char count = 32;

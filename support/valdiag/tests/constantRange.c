@@ -107,111 +107,50 @@ void foo(void)
 {
    s8 = -129;		/* WARNING */
    s8 =  INT8_MIN;
-   s8 = UINT8_MAX;
+   s8 = UINT8_MAX;      /* WARNING */
    s8 =  256;		/* WARNING */
 
    s8 = -129;		/* WARNING */
-   u8 =  INT8_MIN;
+   u8 =  INT8_MIN;      /* WARNING */
    u8 = UINT8_MAX;
    u8 =  256;		/* WARNING */
 
    s16 = -32769L;	/* WARNING */
    s16 =  INT16_MIN;
-   s16 = UINT16_MAX;
+   s16 = UINT16_MAX;    /* WARNING */
    s16 =  65536L;	/* WARNING */
 
    s16 = -32769L;	/* WARNING */
-   u16 =  INT16_MIN;
+   u16 =  INT16_MIN;    /* WARNING */
    u16 = UINT16_MAX;
    u16 =  65536L;	/* WARNING */
 
    /* sdcc can't hold a number (INT32_MIN - 1) or (INT32_MAX + 1),
       there's no 'double' or 'long long' */
    s32 =  INT32_MIN;
-   s32 = UINT32_MAX;
+   s32 = UINT32_MAX;    /* WARNING */
 
-   u32 =  INT32_MIN;
+   u32 =  INT32_MIN;    /* WARNING */
    u32 = UINT32_MAX;
 }
 #endif
 
-/* This test has been disabled. I don't think that signed/unsigned bool */
-/* is a valid type. -- EEP */
 #ifdef TEST3_DISABLED
+
 #include <stdbool.h>
 
-void foo(void)
-{
-#if defined(PORT_HOST)
-   volatile bool sb, ub;
+#ifdef __SDCC_mcs51
+#define btype __bit
 #else
-   volatile   signed bool sb;
-   volatile unsigned bool ub;
+#define btype bool
 #endif
 
-  sb = -2;
-  sb = -1;
-  sb =  0;
-  sb =  1;
+signed btype sbit;              /* ERROR */
+long btype longbit;             /* ERROR */
+short btype shortbit;           /* ERROR */
+volatile   signed bool sb;      /* ERROR */
+volatile unsigned bool ub;      /* ERROR */
 
-  ub = -1;
-  ub =  0;
-  ub =  1;
-  ub =  2;
-
-  ASSERT (! (-2 == sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  (-1 == sb));
-  ASSERT (  ( 0 == sb));
-  ASSERT (! ( 1 == sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-2 != sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  (-1 != sb));
-  ASSERT (  ( 0 != sb));
-  ASSERT (  ( 1 != sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-2 <  sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  (-1 <  sb));
-  ASSERT (! ( 0 <  sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-1 <= sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  ( 0 <= sb));
-  ASSERT (! ( 1 <= sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (! (-1 >  sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  ( 0 >  sb));
-  ASSERT (  ( 1 >  sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (! (-2 >= sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  (-1 >= sb));
-  ASSERT (  ( 0 >= sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-
-  ASSERT (! (-1 == ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 0 == ub));
-  ASSERT (  ( 1 == ub));
-  ASSERT (! ( 2 == ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-1 != ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 0 != ub));
-  ASSERT (  ( 1 != ub));
-  ASSERT (  ( 2 != ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-1 <  ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 0 <  ub));
-  ASSERT (! ( 1 <  ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  ( 0 <= ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 1 <= ub));
-  ASSERT (! ( 2 <= ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (! ( 0 >  ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 1 >  ub));
-  ASSERT (  ( 2 >  ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (! (-1 >= ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 0 >= ub));
-  ASSERT (  ( 1 >= ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-}
 #endif
 
 #ifdef TEST4
@@ -226,21 +165,21 @@ void foo(void)
 
   str.sb1 = -2;			/* WARNING */
   str.sb1 = -1;
-  str.sb1 =  1;
+  str.sb1 =  1;                 /* WARNING */
   str.sb1 =  2;			/* WARNING */
 
   str.ub1 = -2;			/* WARNING */
-  str.ub1 = -1;
+  str.ub1 = -1;                 /* WARNING */
   str.ub1 =  1;
   str.ub1 =  2;			/* WARNING */
 
   str.sb3 = -5;			/* WARNING */
   str.sb3 = -4;
-  str.sb3 =  7;
+  str.sb3 =  7;                 /* WARNING */
   str.sb3 =  8;			/* WARNING */
 
   str.ub3 = -5;			/* WARNING */
-  str.ub3 = -4;
+  str.ub3 = -4;                 /* WARNING */
   str.ub3 =  7;
   str.ub3 =  8;			/* WARNING */
 

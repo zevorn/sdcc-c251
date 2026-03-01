@@ -9,16 +9,25 @@ extern int foo;
 void
 test(void)
 {
+#if !defined(__SDCC_pdk14) // Not enough RAM
   foo = 10;
 
   ASSERT(foo == 10);
+#endif
 }
 
+#if !defined(__SDCC_pdk14) // Not enough RAM
 /* compile time check for compiler defined functions (cdef) */
 
-float __fsmul (float, float);
+#ifndef __SDCC_mcs51
+#define __nonbanked
+#endif
 
-float __fsmul (float a1, float a2) {
-  /* just for tesing... */
+float __fsdiv (float, float) __nonbanked;
+
+float __fsdiv (float a1, float a2) __nonbanked {
+  /* just for testing... */
   return (a1 + a2);
 }
+#endif
+

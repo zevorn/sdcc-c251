@@ -8,6 +8,7 @@
 #pragma std_c99
 #endif
 
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // pdk needs functions called via pointer to be reentrant even for a single argument
 #if !(defined (__GNUC__) && defined (__GNUC_MINOR__) && (__GNUC__ < 5))
 /* derived from PR optimization/11440  */
 
@@ -177,11 +178,13 @@ bool RenderBox_isTableCell (RenderBox *this)
   return false;
 }
 #endif
+#endif
 
 void
 testTortureExecute (void)
 {
 #ifndef __SDCC_pic16
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
 #if !(defined (__GNUC__) && defined (__GNUC_MINOR__) && (__GNUC__ < 5))
   g_this.m_relPositioned = false;
   g_this.m_positioned = false;
@@ -201,6 +204,7 @@ testTortureExecute (void)
     ASSERT (0);
 
   return;
+#endif
 #endif
 #endif
 }

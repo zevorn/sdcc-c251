@@ -10,7 +10,7 @@ TESTS_DIR = $(srcdir)/tests
 RESULTS_DIR = results
 PORTS_DIR = $(srcdir)/ports
 BUILD_DIR = gen
-ALL_PORTS = host mcs51 mcs51-large mcs51-stack-auto ds390 z80 hc08
+ALL_PORTS = mcs51 mcs51-large mcs51-stack-auto ds390 z80 z180 r2k r4k sm83 tlcs90 hc08 s08 mos6502 stm8 f8 pdk13 pdk14 pdk15
 
 ALL_TESTS = $(shell find $(TESTS_DIR) -name "*.c")
 
@@ -25,7 +25,7 @@ test-ports:
 
 test-mcs51:
 	$(MAKE) test-port PORT=mcs51
-        
+
 test-port: port-results
 
 clean: clean-gen
@@ -41,9 +41,10 @@ clean-gen:
 clean-port:
 	rm -rf $(PORT_BUILD_DIR)
 
-$(PORT_RESULTS_DIR)/%.out: $(TESTS_DIR)/%.c
+$(PORT_RESULTS_DIR)/%.out: $(TESTS_DIR)/%.c port-dirs
 	$(PYTHON) $(srcdir)/valdiag.py $(PORT) $< $(PORT_BUILD_DIR)/$* $(srcdir)/../../device/include > $@
-	cat $@ | $(PYTHON) $(srcdir)/../regression/compact-results.py
+	grep FAIL $@ ; true
+	cat $@ | $(PYTHON) $(srcdir)/../regression/compact-results.py $*.c
 
 port-results: port-dirs $(PORT_RESULTS)
 	cat $(PORT_RESULTS) | $(PYTHON) $(srcdir)/../regression/collate-results.py $(PORT)
@@ -51,3 +52,6 @@ port-results: port-dirs $(PORT_RESULTS)
 port-dirs:
 	mkdir -p $(PORT_RESULTS_DIR)
 	mkdir -p $(PORT_BUILD_DIR)
+
+Makefile: $(srcdir)/Makefile.in
+	 cd $(top_builddir); ./config.status support/valdiag/Makefile

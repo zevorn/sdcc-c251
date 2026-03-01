@@ -9,13 +9,15 @@
 #endif
 
 #include <stdio.h>
-g ()
+int
+g (void)
 {
   return '\n';
 }
 
 void f ()
 {
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
   char s[] = "abcedfg012345";
   char *sp = s + 12;
 
@@ -29,8 +31,8 @@ void f ()
     ;
   sprintf (sp + 1, "X");
 
-  if (s[12] != 'X')
-    ASSERT (0);
+  ASSERT(s[12] == 'X');
+#endif
 }
 
 void

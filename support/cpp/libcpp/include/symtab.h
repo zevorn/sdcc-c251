@@ -1,6 +1,5 @@
 /* Hash tables.
-   Copyright (C) 2000, 2001, 2003, 2004, 2007, 2008, 2009, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -19,11 +18,8 @@ along with this program; see the file COPYING3.  If not see
 #ifndef LIBCPP_SYMTAB_H
 #define LIBCPP_SYMTAB_H
 
-#if defined(__APPLE__) && defined(__MACH__)
-#include "libiberty/obstack.h"
-#else
 #include "obstack.h"
-#endif
+
 #ifndef GTY
 #define GTY(x) /* nothing */
 #endif
@@ -41,7 +37,7 @@ struct GTY(()) ht_identifier {
 #define HT_LEN(NODE) ((NODE)->len)
 #define HT_STR(NODE) ((NODE)->str)
 
-typedef struct ht hash_table;
+typedef struct ht cpp_hash_table;
 typedef struct ht_identifier *hashnode;
 
 enum ht_lookup_option {HT_NO_INSERT = 0, HT_ALLOC};
@@ -54,13 +50,13 @@ struct ht
 
   hashnode *entries;
   /* Call back, allocate a node.  */
-  hashnode (*alloc_node) (hash_table *);
-  /* Call back, allocate something that hangs off a node like a cpp_macro.
+  hashnode (*alloc_node) (cpp_hash_table *);
+  /* Call back, allocate something that hangs off a node like a cpp_macro.  
      NULL means use the usual allocator.  */
   void * (*alloc_subobject) (size_t);
 
-  unsigned int nslots;          /* Total slots in the entries array.  */
-  unsigned int nelements;       /* Number of live elements.  */
+  unsigned int nslots;		/* Total slots in the entries array.  */
+  unsigned int nelements;	/* Number of live elements.  */
 
   /* Link to reader, if any.  For the benefit of cpplib.  */
   struct cpp_reader *pfile;
@@ -74,14 +70,14 @@ struct ht
 };
 
 /* Initialize the hashtable with 2 ^ order entries.  */
-extern hash_table *ht_create (unsigned int order);
+extern cpp_hash_table *ht_create (unsigned int order);
 
 /* Frees all memory associated with a hash table.  */
-extern void ht_destroy (hash_table *);
+extern void ht_destroy (cpp_hash_table *);
 
-extern hashnode ht_lookup (hash_table *, const unsigned char *,
-                           size_t, enum ht_lookup_option);
-extern hashnode ht_lookup_with_hash (hash_table *, const unsigned char *,
+extern hashnode ht_lookup (cpp_hash_table *, const unsigned char *,
+			   size_t, enum ht_lookup_option);
+extern hashnode ht_lookup_with_hash (cpp_hash_table *, const unsigned char *,
                                      size_t, unsigned int,
                                      enum ht_lookup_option);
 #define HT_HASHSTEP(r, c) ((r) * 67 + ((c) - 113));
@@ -91,17 +87,17 @@ extern hashnode ht_lookup_with_hash (hash_table *, const unsigned char *,
    TABLE->PFILE, the node, and a PTR, and the callback sequence stops
    if the callback returns zero.  */
 typedef int (*ht_cb) (struct cpp_reader *, hashnode, const void *);
-extern void ht_forall (hash_table *, ht_cb, const void *);
+extern void ht_forall (cpp_hash_table *, ht_cb, const void *);
 
 /* For all nodes in TABLE, call the callback.  If the callback returns
    a nonzero value, the node is removed from the table.  */
-extern void ht_purge (hash_table *, ht_cb, const void *);
+extern void ht_purge (cpp_hash_table *, ht_cb, const void *);
 
 /* Restore the hash table.  */
-extern void ht_load (hash_table *ht, hashnode *entries,
-                     unsigned int nslots, unsigned int nelements, bool own);
+extern void ht_load (cpp_hash_table *ht, hashnode *entries,
+		     unsigned int nslots, unsigned int nelements, bool own);
 
 /* Dump allocation statistics to stderr.  */
-extern void ht_dump_statistics (hash_table *);
+extern void ht_dump_statistics (cpp_hash_table *);
 
 #endif /* LIBCPP_SYMTAB_H */

@@ -36,10 +36,10 @@ char * strchr ( const char * string, char ch )
 char * strchr ( const char * string, int ch )
 #endif
 {
-	while (*string && *string != ch)
+	while (*string && *string != (char)ch)
 		string++;
 
-	if (*string == ch)
-		return(string);
+	if (*string == (char)ch)
+		return((char *)string);
 	return ( NULL );
 }

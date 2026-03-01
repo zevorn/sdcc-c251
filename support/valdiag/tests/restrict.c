@@ -1,5 +1,5 @@
 
-/* The restrict keyword can only qualify pointers */
+/* The restrict keyword can only qualify pointers to objects */
 
 #ifdef TEST1_C99
 restrict a;		/* ERROR */
@@ -37,6 +37,15 @@ void func(restrict int x) {	/* ERROR */
 }
 #endif
 
+#ifdef TEST8_C99
+void func(void (*restrict p)(void)) {	/* ERROR */
+  p();				/* IGNORE */
+}
+#endif
+
+#ifdef TEST9_C99
+void g(restrict int); /* ERROR */
+#endif
 
 #ifdef TEST_GOOD1_C99
 int * restrict a;
@@ -55,3 +64,4 @@ void func(int * restrict x)
   x;				/* IGNORE */
 }
 #endif
+

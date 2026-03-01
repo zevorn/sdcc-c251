@@ -8,10 +8,9 @@
 #pragma std_c99
 #endif
 
-#pragma disable_warning 93 // Using float for double.
-
 #include <stdarg.h>
 
+#if !defined( __SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
 int foo_arg, bar_arg;
 long x;
 double d;
@@ -125,10 +124,12 @@ f8 (int i, ...)
     }
 }
 #endif
+#endif
 
 void
 testTortureExecute (void)
 {
+#if !defined( __SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
 //  struct S1 a1, a3;
 //  struct S2 a2, a4;
 
@@ -177,6 +178,7 @@ testTortureExecute (void)
   f8 (3, a4, a2, a2);
   if (s2.i != 257 || s2.d != 176.0)
     ASSERT (0);
+#endif
 #endif
   return;
 }

@@ -30,13 +30,13 @@
  * based on Microchip MPLAB-C18 startup files
  */
 
-extern stack_end;
-extern TBLPTRU;
+extern int stack_end;
+extern int TBLPTRU;
 
 /* external reference to the user's main routine */
 extern void main (void);
 
-void _entry (void) __naked __interrupt 0;
+void _entry (void) __naked __interrupt (0);
 void _startup (void) __naked;
 
 /* Access bank selector. */
@@ -47,7 +47,7 @@ void _startup (void) __naked;
  * entry function, placed at interrupt vector 0 (RESET)
  */
 void
-_entry (void) __naked __interrupt 0
+_entry (void) __naked __interrupt (0)
 {
   __asm
     goto    __startup

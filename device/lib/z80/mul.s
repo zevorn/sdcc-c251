@@ -1,7 +1,8 @@
 ;--------------------------------------------------------------------------
-;  mulchar.s
+;  mul.s
 ;
 ;  Copyright (C) 2000, Michael Hope
+;  Copyright (C) 2021, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -13,7 +14,7 @@
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ;  GNU General Public License for more details.
 ;
-;  You should have received a copy of the GNU General Public License 
+;  You should have received a copy of the GNU General Public License
 ;  along with this library; see the file COPYING. If not, write to the
 ;  Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
 ;   MA 02110-1301, USA.
@@ -26,24 +27,16 @@
 ;   might be covered by the GNU General Public License.
 ;--------------------------------------------------------------------------
 
+	.module mul
+	.optsdcc -mz80 sdcccall(1)
+
 .area   _CODE
 
 .globl	__mulint
 
 __mulint:
-        pop     af
-        pop     hl
-        pop     de
-        push    de
-        push    hl
-        push    af
-
-        ;; Fall through
-
-	;; Parameters:
-	;;	hl, de (left, right irrelevant)
-	ld	b,h
-	ld	c,l
+        ld	c, l
+        ld	b, h
 
 	;; 16-bit multiplication
 	;;
@@ -52,7 +45,7 @@ __mulint:
 	;; de = multiplier
 	;;
 	;; Exit conditions
-	;; hl = less significant word of product
+	;; de = less significant word of product
 	;;
 	;; Register used: AF,BC,DE,HL
 __mul16::
@@ -77,5 +70,6 @@ __mul16::
         add     hl,de
 3$:
         djnz    1$
+        ex	de, hl
         ret
 

@@ -8,9 +8,6 @@
 #pragma std_c99
 #endif
 
-// sdcc cannot return long long yet.
-#if 0
-
 typedef unsigned long long uint64;
 const uint64 bigconst = 1ULL << 34;
 
@@ -24,16 +21,13 @@ uint64 getmask(void)
     else
       return 0;
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
     uint64 f = getmask();
     if (sizeof (long long) == 8
 	&& f != bigconst) ASSERT (0);
     return;
-#endif
 }
 

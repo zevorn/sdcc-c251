@@ -13,7 +13,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -26,22 +26,23 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
+#define __SDCC_FLOAT_LIB
 #include <float.h>
 
-extern convert_frac;
-extern convert_int;
+extern int convert_frac;
+extern int convert_int;
 
 /* char x_ftoa(float, __data char *, unsigned char, unsigned char); */
 
 
-extern POSTDEC1;
-extern PLUSW2;
-extern FSR0L;
-extern FSR0H;
-extern PREINC1;
-extern PREINC2;
-extern FSR2L;
-extern FSR2H;
+extern int POSTDEC1;
+extern int PLUSW2;
+extern int FSR0L;
+extern int FSR0H;
+extern int PREINC1;
+extern int PREINC2;
+extern int FSR2L;
+extern int FSR2H;
 
 #define _vv0x00	0x00
 #define _vv0x01	0x01
@@ -92,7 +93,7 @@ char x_cnvfrac_wrap(unsigned long num, __data char *buffer, unsigned char prec)
   num;
   buffer;
   prec;
-  
+
   __asm
     movff	_vv0x00, _POSTDEC1
     movff	_vv0x01, _POSTDEC1
@@ -108,7 +109,7 @@ char x_cnvfrac_wrap(unsigned long num, __data char *buffer, unsigned char prec)
     movff	_PLUSW2, _vv0x02
     movlw	5
     movff	_PLUSW2, _vv0x03
-    
+
     movlw	6
     movff	_PLUSW2, _FSR0L
     movlw	7
@@ -116,11 +117,11 @@ char x_cnvfrac_wrap(unsigned long num, __data char *buffer, unsigned char prec)
 
     movlw	8
     movff	_PLUSW2, _vv0x04
-    
+
     call	_convert_frac
 
     /* return value is already in WREG */
-    
+
     movff	_PREINC1, _vv0x04
     movff	_PREINC1, _vv0x03
     movff	_PREINC1, _vv0x02
@@ -139,7 +140,7 @@ union float_long {
 char x_ftoa(float num, __data char *buffer, unsigned char buflen, unsigned char prec)
 {
   char len;
-  char expn;
+  signed char expn;
   unsigned long ll;
   unsigned long li;
 //  volatile
@@ -157,10 +158,10 @@ char x_ftoa(float num, __data char *buffer, unsigned char buflen, unsigned char 
     }
 
     expn = EXCESS - EXP(f_l.l);	// - 24;
-      
+
     ll = MANT(f_l.l);
     li = 0;
-    
+
     while( expn ) {
       if(expn < 0) {
         li <<= 1;
@@ -178,16 +179,16 @@ char x_ftoa(float num, __data char *buffer, unsigned char buflen, unsigned char 
     else {
       *buffer = '0'; len = 1;
     }
-    
+
     buffer += len;
 
     if(prec) {
       *buffer = '.'; len++;
       buffer++;
-    
+
       len += x_cnvfrac_wrap(ll, buffer, 24-prec);
       buffer[ prec ] = '\0';
     }
-    
+
   return (len);
 }

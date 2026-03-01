@@ -49,6 +49,20 @@ dbuf_append_str (struct dbuf_s *dbuf, const char *str)
     return 0;
 }
 
+/*
+ * Prepend string to the beginning of the buffer.
+ * The buffer is null terminated.
+ */
+
+int
+dbuf_prepend_str (struct dbuf_s *dbuf, const char *str)
+{
+  size_t len;
+  assert (str != NULL);
+
+  len = strlen (str);
+  return (dbuf_prepend (dbuf, str, len));
+}
 
 /*
  * Append single character to the end of the buffer.
@@ -71,92 +85,18 @@ dbuf_append_char (struct dbuf_s *dbuf, char chr)
 }
 
 /*
- * Calculate length of the resulting formatted string.
- *
- * Borrowed from vasprintf.c
+ * Prepend single character to the end of the buffer.
+ * The buffer is null terminated.
  */
 
-static int
-calc_result_length (const char *format, va_list args)
+int
+dbuf_prepend_char (struct dbuf_s *dbuf, char chr)
 {
-  const char *p = format;
-  /* Add one to make sure that it is never zero, which might cause malloc
-     to return NULL.  */
-  int total_width = strlen (format) + 1;
-  va_list ap;
-
-#ifdef va_copy
-  va_copy (ap, args);
-#else
-  memcpy (&ap, &args, sizeof (va_list));
-#endif
-
-  while (*p != '\0')
-    {
-      if (*p++ == '%')
-        {
-          while (strchr ("-+ #0", *p))
-            ++p;
-          if (*p == '*')
-            {
-              ++p;
-              total_width += abs (va_arg (ap, int));
-            }
-          else
-            total_width += strtoul (p, (char **) &p, 10);
-          if (*p == '.')
-            {
-              ++p;
-              if (*p == '*')
-                {
-                  ++p;
-                  total_width += abs (va_arg (ap, int));
-                }
-              else
-              total_width += strtoul (p, (char **) &p, 10);
-            }
-          while (strchr ("hlL", *p))
-            ++p;
-          /* Should be big enough for any format specifier except %s and floats.  */
-          total_width += 30;
-          switch (*p)
-            {
-            case 'd':
-            case 'i':
-            case 'o':
-            case 'u':
-            case 'x':
-            case 'X':
-            case 'c':
-              (void) va_arg (ap, int);
-              break;
-            case 'f':
-            case 'e':
-            case 'E':
-            case 'g':
-            case 'G':
-              (void) va_arg (ap, double);
-              /* Since an ieee double can have an exponent of 307, we'll
-                 make the buffer wide enough to cover the gross case. */
-              total_width += 307;
-              break;
-            case 's':
-              total_width += strlen (va_arg (ap, char *));
-              break;
-            case 'p':
-            case 'n':
-              (void) va_arg (ap, char *);
-              break;
-            }
-          p++;
-        }
-    }
-#ifdef va_copy
-  va_end (ap);
-#endif
-  return total_width;
+  char buf[2];
+  buf[0] = chr;
+  buf[1] = '\0';
+  return (dbuf_prepend_str (dbuf, buf));
 }
-
 
 /*
  * Append the formatted string to the end of the buffer.
@@ -166,7 +106,10 @@ calc_result_length (const char *format, va_list args)
 int
 dbuf_vprintf (struct dbuf_s *dbuf, const char *format, va_list args)
 {
-  int size = calc_result_length (format, args);
+  va_list args2;
+  va_copy (args2, args);
+  int size = vsnprintf (0, 0, format, args2) + 1;
+  va_end (args2);
 
   assert (dbuf != NULL);
   assert (dbuf->alloc != 0);
@@ -297,3 +240,4 @@ dbuf_write_and_destroy (struct dbuf_s *dbuf, FILE *dest)
 
   dbuf_destroy (dbuf);
 }
+

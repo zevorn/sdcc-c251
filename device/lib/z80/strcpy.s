@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
 ;  strcpy.s
 ;
-;  Copyright (C) 2012, Philipp Klaus Krause
+;  Copyright (C) 2012-2021, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -13,7 +13,7 @@
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ;  GNU General Public License for more details.
 ;
-;  You should have received a copy of the GNU General Public License 
+;  You should have received a copy of the GNU General Public License
 ;  along with this library; see the file COPYING. If not, write to the
 ;  Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
 ;   MA 02110-1301, USA.
@@ -26,23 +26,21 @@
 ;   might be covered by the GNU General Public License.
 ;--------------------------------------------------------------------------
 
+	.module strcpy
+	.optsdcc -mz80 sdcccall(1)
+
 	.area   _CODE
 
 	.globl _strcpy
 
 _strcpy:
-	pop	bc
-	pop	de
-	pop	hl
-	push	hl
-	push	de
-	push	bc
+	ex	de, hl
 	push	de
 	xor	a, a
 loop:
 	cp	a, (hl)
 	ldi
 	jr	NZ, loop
-	pop	hl
+	pop	de
 	ret
 

@@ -2,9 +2,9 @@
  * This declarations of the PIC16F707 MCU.
  *
  * This file is part of the GNU PIC library for SDCC, originally
- * created by Molnar Karoly <molnarkaroly@users.sf.net> 2014.
+ * created by Molnar Karoly <molnarkaroly@users.sf.net> 2016.
  *
- * This file is generated automatically by the cinc2h.pl, 2014-09-15 14:38:39 UTC.
+ * This file is generated automatically by the cinc2h.pl, 2016-04-13 17:22:57 UTC.
  *
  * SDCC is licensed under the GNU Public license (GPL) v2. Note that
  * this license covers the code to the compiler and other executables,
@@ -742,13 +742,13 @@ typedef union
   struct
     {
     unsigned                    : 6;
-    unsigned TMRCS              : 2;
+    unsigned TMR1CS             : 2;
     };
 
   struct
     {
     unsigned                    : 6;
-    unsigned TMR1CS             : 2;
+    unsigned TMRCS              : 2;
     };
   } __T1CONbits_t;
 
@@ -1763,13 +1763,13 @@ typedef union
 
   struct
     {
-    unsigned TMRAPS             : 3;
+    unsigned TAPS               : 3;
     unsigned                    : 5;
     };
 
   struct
     {
-    unsigned TAPS               : 3;
+    unsigned TMRAPS             : 3;
     unsigned                    : 5;
     };
   } __TACONbits_t;
@@ -1981,13 +1981,13 @@ typedef union
 
   struct
     {
-    unsigned TBPS               : 3;
+    unsigned TMRBPS             : 3;
     unsigned                    : 5;
     };
 
   struct
     {
-    unsigned TMRBPS             : 3;
+    unsigned TBPS               : 3;
     unsigned                    : 5;
     };
   } __TBCONbits_t;

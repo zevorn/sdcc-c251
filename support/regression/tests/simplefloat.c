@@ -16,6 +16,7 @@
 void
 testCmp (void)
 {
+#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
   volatile float left, right;
 
   left = 5;
@@ -25,15 +26,18 @@ testCmp (void)
   ASSERT (left + right >= 18);
   ASSERT (left + right > 17.9);
   ASSERT (left + right < 18.1);
+#endif
 }
 
 void
 testDiv (void)
 {
+#if !defined( __SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
 #if defined (__SDCC_mcs51) && !defined (__SDCC_STACK_AUTO)
-  __idata __at 0xd0
-#endif
+  volatile __idata float __at 0xd0 left;
+#else
   volatile float left;
+#endif
   volatile float right;
 
   left = 17;
@@ -44,11 +48,13 @@ testDiv (void)
 
   right = 17;
   ASSERT (FCOMP (left / right, 1.0));
+#endif
 }
 
 void
 testDivNearOne (void)
 {
+#if !defined( __SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
   volatile float left, right, result;
 
   left = 12392.4;
@@ -79,4 +85,5 @@ testDivNearOne (void)
     {
       FAIL ();
     }
+#endif
 }

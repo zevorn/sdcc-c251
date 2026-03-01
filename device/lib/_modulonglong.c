@@ -15,7 +15,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -30,12 +30,14 @@
 
 #include <stdint.h>
 
+#include <sdcc-lib.h>
+
 #ifdef __SDCC_LONGLONG
 
 #define MSB_SET(x) ((x >> (8*sizeof(x)-1)) & 1)
 
 unsigned long long
-_modulonglong (unsigned long long a, unsigned long long b)
+_modulonglong (unsigned long long a, unsigned long long b) __SDCC_NONBANKED
 {
   unsigned char count = 0;
 

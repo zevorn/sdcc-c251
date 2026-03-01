@@ -16,7 +16,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -32,155 +32,157 @@
 #ifndef AT89x55_H
 #define AT89x55_H
 
+#include <compiler.h>
+
 /* BYTE addressable registers */
-__sfr __at 0x80 P0          ;
-__sfr __at 0x81 SP          ;
-__sfr __at 0x82 DPL         ;
-__sfr __at 0x83 DPH         ;
-__sfr __at 0x87 PCON        ;
-__sfr __at 0x88 TCON        ;
-__sfr __at 0x89 TMOD        ;
-__sfr __at 0x8A TL0         ;
-__sfr __at 0x8B TL1         ;
-__sfr __at 0x8C TH0         ;
-__sfr __at 0x8D TH1         ;
-__sfr __at 0x90 P1          ;
-__sfr __at 0x98 SCON        ;
-__sfr __at 0x99 SBUF        ;
-__sfr __at 0xA0 P2          ;
-__sfr __at 0xA8 IE          ;
-__sfr __at 0xB0 P3          ;
-__sfr __at 0xB8 IP          ;
-__sfr __at 0xC8 T2CON       ;
-__sfr __at 0xC9 T2MOD       ;
-__sfr __at 0xCA RCAP2L      ;
-__sfr __at 0xCB RCAP2H      ;
-__sfr __at 0xCC TL2         ;
-__sfr __at 0xCD TH2         ;
-__sfr __at 0xD0 PSW         ;
-__sfr __at 0xE0 ACC         ;
-__sfr __at 0xE0 A           ;
-__sfr __at 0xF0 B           ;
+SFR(P0,		0x80);
+SFR(SP,		0x81);
+SFR(DPL,	0x82);
+SFR(DPH,	0x83);
+SFR(PCON,	0x87);
+SFR(TCON,	0x88);
+SFR(TMOD,	0x89);
+SFR(TL0,	0x8A);
+SFR(TL1,	0x8B);
+SFR(TH0,	0x8C);
+SFR(TH1,	0x8D);
+SFR(P1,		0x90);
+SFR(SCON,	0x98);
+SFR(SBUF,	0x99);
+SFR(P2,		0xA0);
+SFR(IE,		0xA8);
+SFR(P3,		0xB0);
+SFR(IP,		0xB8);
+SFR(T2CON,	0xC8);
+SFR(T2MOD,	0xC9);
+SFR(RCAP2L,	0xCA);
+SFR(RCAP2H,	0xCB);
+SFR(TL2,	0xCC);
+SFR(TH2,	0xCD);
+SFR(PSW,	0xD0);
+SFR(ACC,	0xE0);
+SFR(A,		0xE0);
+SFR(B,		0xF0);
 
 
 /* BIT addressable registers */
 /* P0 */
-__sbit __at 0x80 P0_0       ;
-__sbit __at 0x81 P0_1       ;
-__sbit __at 0x82 P0_2       ;
-__sbit __at 0x83 P0_3       ;
-__sbit __at 0x84 P0_4       ;
-__sbit __at 0x85 P0_5       ;
-__sbit __at 0x86 P0_6       ;
-__sbit __at 0x87 P0_7       ;
+SBIT(P0_0,		0x80,	0);
+SBIT(P0_1,		0x80,	1);
+SBIT(P0_2,		0x80,	2);
+SBIT(P0_3,		0x80,	3);
+SBIT(P0_4,		0x80,	4);
+SBIT(P0_5,		0x80,	5);
+SBIT(P0_6,		0x80,	6);
+SBIT(P0_7,		0x80,	7);
 
 /* TCON */
-__sbit __at 0x88 IT0        ;
-__sbit __at 0x89 IE0        ;
-__sbit __at 0x8A IT1        ;
-__sbit __at 0x8B IE1        ;
-__sbit __at 0x8C TR0        ;
-__sbit __at 0x8D TF0        ;
-__sbit __at 0x8E TR1        ;
-__sbit __at 0x8F TF1        ;
+SBIT(IT0,		0x88,	0);
+SBIT(IE0,		0x88,	1);
+SBIT(IT1,		0x88,	2);
+SBIT(IE1,		0x88,	3);
+SBIT(TR0,		0x88,	4);
+SBIT(TF0,		0x88,	5);
+SBIT(TR1,		0x88,	6);
+SBIT(TF1,		0x88,	7);
 
 /* P1 */
-__sbit __at 0x90 P1_0       ;
-__sbit __at 0x91 P1_1       ;
-__sbit __at 0x92 P1_2       ;
-__sbit __at 0x93 P1_3       ;
-__sbit __at 0x94 P1_4       ;
-__sbit __at 0x95 P1_5       ;
-__sbit __at 0x96 P1_6       ;
-__sbit __at 0x97 P1_7       ;
+SBIT(P1_0,		0x90,	0);
+SBIT(P1_1,		0x90,	1);
+SBIT(P1_2,		0x90,	2);
+SBIT(P1_3,		0x90,	3);
+SBIT(P1_4,		0x90,	4);
+SBIT(P1_5,		0x90,	5);
+SBIT(P1_6,		0x90,	6);
+SBIT(P1_7,		0x90,	7);
 
-__sbit __at 0x90 T2         ;
-__sbit __at 0x91 T2EX       ;
+SBIT(T2,		0x90,	0);
+SBIT(T2EX,		0x90,	1);
 
 /* SCON */
-__sbit __at 0x98 RI         ;
-__sbit __at 0x99 TI         ;
-__sbit __at 0x9A RB8        ;
-__sbit __at 0x9B TB8        ;
-__sbit __at 0x9C REN        ;
-__sbit __at 0x9D SM2        ;
-__sbit __at 0x9E SM1        ;
-__sbit __at 0x9F SM0        ;
+SBIT(RI,		0x98,	0);
+SBIT(TI,		0x98,	1);
+SBIT(RB8,		0x98,	2);
+SBIT(TB8,		0x98,	3);
+SBIT(REN,		0x98,	4);
+SBIT(SM2,		0x98,	5);
+SBIT(SM1,		0x98,	6);
+SBIT(SM0,		0x98,	7);
 
 /* P2 */
-__sbit __at 0xA0 P2_0       ;
-__sbit __at 0xA1 P2_1       ;
-__sbit __at 0xA2 P2_2       ;
-__sbit __at 0xA3 P2_3       ;
-__sbit __at 0xA4 P2_4       ;
-__sbit __at 0xA5 P2_5       ;
-__sbit __at 0xA6 P2_6       ;
-__sbit __at 0xA7 P2_7       ;
+SBIT(P2_0,		0xA0,	0);
+SBIT(P2_1,		0xA0,	1);
+SBIT(P2_2,		0xA0,	2);
+SBIT(P2_3,		0xA0,	3);
+SBIT(P2_4,		0xA0,	4);
+SBIT(P2_5,		0xA0,	5);
+SBIT(P2_6,		0xA0,	6);
+SBIT(P2_7,		0xA0,	7);
 
 /* IE */
-__sbit __at 0xA8 EX0        ;
-__sbit __at 0xA9 ET0        ;
-__sbit __at 0xAA EX1        ;
-__sbit __at 0xAB ET1        ;
-__sbit __at 0xAC ES         ;
-__sbit __at 0xAD ET2        ;
-__sbit __at 0xAF EA         ;
+SBIT(EX0,		0xA8,	0);
+SBIT(ET0,		0xA8,	1);
+SBIT(EX1,		0xA8,	2);
+SBIT(ET1,		0xA8,	3);
+SBIT(ES,		0xA8,	4);
+SBIT(ET2,		0xA8,	5);
+SBIT(EA,		0xA8,	7);
 
 /* P3 */
-__sbit __at 0xB0 P3_0       ;
-__sbit __at 0xB1 P3_1       ;
-__sbit __at 0xB2 P3_2       ;
-__sbit __at 0xB3 P3_3       ;
-__sbit __at 0xB4 P3_4       ;
-__sbit __at 0xB5 P3_5       ;
-__sbit __at 0xB6 P3_6       ;
-__sbit __at 0xB7 P3_7       ;
+SBIT(P3_0,		0xB0,	0);
+SBIT(P3_1,		0xB0,	1);
+SBIT(P3_2,		0xB0,	2);
+SBIT(P3_3,		0xB0,	3);
+SBIT(P3_4,		0xB0,	4);
+SBIT(P3_5,		0xB0,	5);
+SBIT(P3_6,		0xB0,	6);
+SBIT(P3_7,		0xB0,	7);
 
-__sbit __at 0xB0 RXD        ;
-__sbit __at 0xB1 TXD        ;
-__sbit __at 0xB2 INT0       ;
-__sbit __at 0xB3 INT1       ;
-__sbit __at 0xB4 T0         ;
-__sbit __at 0xB5 T1         ;
-__sbit __at 0xB6 WR         ;
-__sbit __at 0xB7 RD         ;
+SBIT(RXD,		0xB0,	0);
+SBIT(TXD,		0xB0,	1);
+SBIT(INT0,		0xB0,	2);
+SBIT(INT1,		0xB0,	3);
+SBIT(T0,		0xB0,	4);
+SBIT(T1,		0xB0,	5);
+SBIT(WR,		0xB0,	6);
+SBIT(RD,		0xB0,	7);
 
 /* IP */ 
-__sbit __at 0xB8 PX0        ;
-__sbit __at 0xB9 PT0        ;
-__sbit __at 0xBA PX1        ;
-__sbit __at 0xBB PT1        ;
-__sbit __at 0xBC PS         ;
-__sbit __at 0xBD PT2        ;
+SBIT(PX0,		0xB8,	0);
+SBIT(PT0,		0xB8,	1);
+SBIT(PX1,		0xB8,	2);
+SBIT(PT1,		0xB8,	3);
+SBIT(PS,		0xB8,	4);
+SBIT(PT2,		0xB8,	5);
 
 /* T2CON */
-__sbit __at 0xC8 T2CON_0    ;
-__sbit __at 0xC9 T2CON_1    ;
-__sbit __at 0xCA T2CON_2    ;
-__sbit __at 0xCB T2CON_3    ;
-__sbit __at 0xCC T2CON_4    ;
-__sbit __at 0xCD T2CON_5    ;
-__sbit __at 0xCE T2CON_6    ;
-__sbit __at 0xCF T2CON_7    ;
+SBIT(T2CON_0,	0xC8,	0);
+SBIT(T2CON_1,	0xC8,	1);
+SBIT(T2CON_2,	0xC8,	2);
+SBIT(T2CON_3,	0xC8,	3);
+SBIT(T2CON_4,	0xC8,	4);
+SBIT(T2CON_5,	0xC8,	5);
+SBIT(T2CON_6,	0xC8,	6);
+SBIT(T2CON_7,	0xC8,	7);
 
-__sbit __at 0xC8 CP_RL2     ;
-__sbit __at 0xC9 C_T2       ;
-__sbit __at 0xCA TR2        ;
-__sbit __at 0xCB EXEN2      ;
-__sbit __at 0xCC TCLK       ;
-__sbit __at 0xCD RCLK       ;
-__sbit __at 0xCE EXF2       ;
-__sbit __at 0xCF TF2        ;
+SBIT(CP_RL2,	0xC8,	0);
+SBIT(C_T2,		0xC8,	1);
+SBIT(TR2,		0xC8,	2);
+SBIT(EXEN2,		0xC8,	3);
+SBIT(TCLK,		0xC8,	4);
+SBIT(RCLK,		0xC8,	5);
+SBIT(EXF2,		0xC8,	6);
+SBIT(TF2,		0xC8,	7);
 
 /* PSW */
-__sbit __at 0xD0 P          ;
-__sbit __at 0xD1 FL         ;
-__sbit __at 0xD2 OV         ;
-__sbit __at 0xD3 RS0        ;
-__sbit __at 0xD4 RS1        ;
-__sbit __at 0xD5 F0         ;
-__sbit __at 0xD6 AC         ;
-__sbit __at 0xD7 CY         ;
+SBIT(P,			0xD0,	0);
+SBIT(FL,		0xD0,	1);
+SBIT(OV,		0xD0,	2);
+SBIT(RS0,		0xD0,	3);
+SBIT(RS1,		0xD0,	4);
+SBIT(F0,		0xD0,	5);
+SBIT(AC,		0xD0,	6);
+SBIT(CY,		0xD0,	7);
 
 
 /* BIT definitions for bits that are not directly accessible */

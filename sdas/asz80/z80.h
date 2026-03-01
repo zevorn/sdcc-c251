@@ -1,7 +1,7 @@
 /* z80.h */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -69,6 +69,9 @@
 #define I	0107
 #define R	0117
 
+#define X       8       /* for ZXN pop x */
+#define	MB	9	/* for eZ80 */
+
 #define BC	0
 #define DE	1
 #define HL	2
@@ -101,6 +104,7 @@
 #define	S_FLAG	36
 #define S_R8U1  37
 #define S_R8U2  38
+#define	S_R8MB	39
 
 /*
  * Indexing modes
@@ -115,6 +119,13 @@
 #define	S_IDIX	55
 #define	S_IDIY	56
 #define	S_INDM	57
+
+/*
+ * Undocumented instructions
+ */
+
+#define X_UNDOCD 58
+#define S_RL_UNDOCD  59
 
 /*
  * Instruction types
@@ -144,18 +155,21 @@
 #define	S_SBC	82
 
 /*
- * CPU Types
+ * CPU Type Split
  */
-#define	S_CPU	83
-
-#define S_RL_UNDOCD  85
-#define X_UNDOCD 89
+#define	S_CPU	84
 
 /*
- * Processor Types (S_CPU)
+ * 8085 Undocumented Instructions
  */
-#define	X_Z80	0
-#define	X_HD64	1
+#define	X_INH1	85
+#define	X_ADI	86
+#define	X_JP	87
+
+/*
+ * CPU Type Split
+ */
+#define	X_CPU	88
 
 /*
  * HD64180 Instructions
@@ -166,6 +180,63 @@
 #define	X_MLT	93
 #define	X_TST	94
 #define	X_TSTIO	95
+
+/*
+ * Processor Types (S_CPU)
+ */
+#define	X_Z80	0
+#define	X_HD64	1
+#define	X_8080	2
+#define	X_8085	3
+#define	X_8085X	4
+#define	X_ZXN	12
+#define	X_EZ80	13
+#define X_R800  14
+
+/*
+ * Z80-ZX Next Instructions
+ */
+#define X_ZXN_INH2	100
+#define X_ZXN_MUL	101
+#define X_ZXN_MIRROR	102
+#define X_ZXN_NEXTREG   103
+#define X_ZXN_CU_WAIT   104
+#define X_ZXN_CU_MOVE   105
+#define X_ZXN_CU_STOP   106
+#define X_ZXN_CU_NOP    107
+
+/*
+ * eZ80 Instructions
+ */
+#define	X_EZ_ADL	110
+#define	X_EZ_INH2	111
+#define	X_EZ_LEA	112
+#define	X_EZ_PEA	113
+
+/*
+ * R800/Z280 Instructions
+ */
+#define X_Z280_MULTU   120  
+#define X_Z280_MULTUW  121  
+
+/*
+ * eZ80 specific addressing extensions (used in mne m_flag)
+ */
+#define	M_L		0x01
+#define	M_S		0x02
+#define	M_IL		0x04
+#define	M_IS		0x08
+#define M_LIL		(M_L | M_IL)
+#define M_LIS		(M_L | M_IS)
+#define	M_SIL		(M_S | M_IL)
+#define	M_SIS		(M_S | M_IS)
+
+/*
+ * Extended Addressing Modes
+ */
+#define	R_ADL	0x0000		/* 24-Bit Addressing Mode */
+#define	R_Z80	0x0100		/* 16-Bit Addressing Mode */
+#define	R_3BIT	0x0200		/*  3-Bit Addressing Mode */
 
 struct adsym
 {
@@ -180,12 +251,12 @@ extern	struct	adsym	R8U2[];
 
 extern	struct	adsym	R16[];
 extern	struct	adsym	R16X[];
+extern  struct  adsym   R8MB[];
+extern	struct	adsym	RX[];
 extern	struct	adsym	CND[];
 
 	/* machine dependent functions */
 
-#ifdef	OTHERSYSTEM
-	
 	/* z80adr.c */
 extern	int		addr(struct expr *esp);
 extern	int		admode(struct adsym *sp);
@@ -194,22 +265,9 @@ extern	int		srch(char *str);
 	/* z80mch.c */
 extern	int		genop(int pop, int op, struct expr *esp, int f);
 extern	int		gixiy(int v);
-extern	VOID		machine(struct mne *mp);
+extern	void		glilsis(int sfx, struct expr *esp);
+extern	void		machine(struct mne *mp);
 extern	int		mchpcr(struct expr *esp);
-extern	VOID		minit(void);
+extern	int		mchtyp;
+extern	void		minit(void);
 
-#else
-
-	/* z80adr.c */
-extern	int		addr();
-extern	int		admode();
-extern	int		srch();
-
-	/* z80mch.c */
-extern	int		genop();
-extern	int		gixiy();
-extern	VOID		machine();
-extern	int		mchpcr();
-extern	VOID		minit();
-
-#endif

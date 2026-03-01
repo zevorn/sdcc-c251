@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-#ifndef __SDCC_mcs51
-
 #include <string.h>
 
 typedef struct PgHdr PgHdr;
@@ -25,6 +23,8 @@ struct PgHdr {
   unsigned int notUsed;
 };
 
+#if !defined(__SDCC_mcs51) && !defined(__SDCC_pdk14) && !defined (__SDCC_pdk15) // Lack of memory
+#if !defined(SDCC_SMALL_STACK)
 static inline PgHdr *merge_pagelist(PgHdr *pA, PgHdr *pB)
 {
   PgHdr result;
@@ -80,11 +80,13 @@ PgHdr *sort_pagelist(PgHdr *pIn)
   return p;
 }
 #endif
+#endif
 
 void
 testTortureExecute (void)
 {
-#ifndef __SDCC_mcs51
+#if !defined(__SDCC_mcs51) && !defined(__SDCC_pdk14) && !defined (__SDCC_pdk15) // Lack of memory
+#if !defined(SDCC_SMALL_STACK)
   PgHdr a[5];
   PgHdr *p;
   a[0].pgno = 5;
@@ -99,6 +101,7 @@ testTortureExecute (void)
   if (p->pDirty == p)
     ASSERT (0);
   return;
+#endif
 #endif
 }
 

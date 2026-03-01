@@ -303,7 +303,7 @@ void pic16_DumpAop(char *prefix, asmop *aop)
 	if (aop->type == AOP_LIT)
 	{
 		DEBUGpic16_emitcode (";", " %s type:AOP_LIT",prefix);
-		sprintf(s,"%s (aopu.aop_lit)",prefix);
+		SNPRINTF(s, sizeof(s), "%s (aopu.aop_lit)",prefix);
 		pic16_DumpValue(s,aop->aopu.aop_lit);
 	}
 	if (aop->type == AOP_REG)
@@ -330,7 +330,7 @@ void pic16_DumpAop(char *prefix, asmop *aop)
 	if (aop->type == AOP_PCODE)
 	{
 		DEBUGpic16_emitcode (";", " %s type:AOP_PCODE",prefix);
-		sprintf(s,"%s (aopu.pcop)",prefix);
+		SNPRINTF(s, sizeof(s), "%s (aopu.pcop)",prefix);
 		pic16_DumpPcodeOp(s,aop->aopu.pcop);
 	}
 
@@ -397,7 +397,7 @@ void pic16_DumpSymbol(char *prefix, symbol *sym)
 
 	if(sym->aop)
 	{
-		sprintf(s,"%s (aop)",prefix);
+		SNPRINTF(s, sizeof(s), "%s (aop)",prefix);
 		pic16_DumpAop(s,sym->aop);
 	} else {
 		DEBUGpic16_emitcode (";", " %s aop:NULL",prefix);
@@ -425,7 +425,7 @@ void pic16_DumpOp(char *prefix, operand *op)
 	DEBUGpic16_emitcode (";", " %s isLiteral:%d",prefix,op->isLiteral);
 	DEBUGpic16_emitcode (";", " %s key:%d",prefix,op->key);
 	if(IS_SYMOP(op)) {
-		sprintf(s,"%s (symOperand)",prefix);
+		SNPRINTF(s, sizeof(s), "%s (symOperand)",prefix);
 		pic16_DumpSymbol(s, OP_SYMBOL (op));
 	}
 }
@@ -496,13 +496,39 @@ void gpsimDebug_StackDump(char *fname, int line, char *info)
   gpsimio2_lit('\n');
 }
 
-const char *gptr_fns[4][2] = {
+const char *gptr_fns[PIC16_GENPTRRW_MAXSIZE][2] = {
   { "_gptrget1", "_gptrput1" },
   { "_gptrget2", "_gptrput2" },
   { "_gptrget3", "_gptrput3" },
   { "_gptrget4", "_gptrput4" } };
 
 extern set *externs;
+
+/* Add an external symbol */
+void pic16_addExtern(const char *name)
+{
+  symbol *sym;
+
+    sym = newSymbol( name, 0 );
+    sym->used++;
+    strcpy(sym->rname, name);
+    checkAddSym(&externs, sym);
+}
+
+/* generate a call to load a generic pointer, preparing for a generic pointer
+ * read or write */
+void pic16_callGenericPointerLoad(void)
+{
+  char buf[32];
+  symbol *sym;
+
+    strcpy(buf, port->fun_prefix);
+    strcat(buf, "_gptrload");
+
+    pic16_emitpcode (POC_CALL, pic16_popGetWithString (buf));
+
+    pic16_addExtern (buf);
+}
   
 /* generate a call to the generic pointer read/write functions */
 void pic16_callGenericPointerRW(int rw, int size)
@@ -510,7 +536,9 @@ void pic16_callGenericPointerRW(int rw, int size)
   char buf[32];
   symbol *sym;
 
-    if(size>4) {
+    /* Generic pointer read/write functions read or write up to 4 bytes, larger
+     * accesses are broken into multiple calls */
+    if(size>PIC16_GENPTRRW_MAXSIZE) {
       werror(W_POSSBUG2, __FILE__, __LINE__);
       abort();
     }
@@ -520,10 +548,7 @@ void pic16_callGenericPointerRW(int rw, int size)
     
     pic16_emitpcode (POC_CALL, pic16_popGetWithString (buf));
     
-    sym = newSymbol( buf, 0 );
-    sym->used++;
-    strcpy(sym->rname, buf);
-    checkAddSym(&externs, sym);
+    pic16_addExtern (buf);
 }
 
 

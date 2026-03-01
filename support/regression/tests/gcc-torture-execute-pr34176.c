@@ -4,12 +4,13 @@
 
 #include <testfwk.h>
 
-#ifdef __SDCC
-#pragma std_c99
-#pragma disable_warning 85
-#endif
-
 #include <string.h>
+
+#ifdef __SDCC
+#pragma std_c89
+#pragma disable_warning 85
+#pragma disable_warning 225
+#endif
 
 typedef unsigned int index_ty;
 typedef index_ty *index_list_ty;

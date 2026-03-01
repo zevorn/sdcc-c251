@@ -10,8 +10,7 @@
 
 #include <stdarg.h>
 
-// Todo. Enable when sdcc supports struct assignment!
-#if 0
+#if !defined(__SDCC_pdk14) // Lack of memory
 typedef struct{double x,y;}point;
 point pts[]={{1.0,2.0},{3.0,4.0},{5.0,6.0},{7.0,8.0}};
 static int va1(int nargs,...)
@@ -46,7 +45,7 @@ static int va2(int nargs,...)
 void
 testTortureExecute (void)
 {
-#if 0
+#if !defined(__SDCC_pdk14) // Lack of memory
 va1(4,pts[0],pts[1],pts[2],pts[3]);
 va2(4,ipts[0],ipts[1],ipts[2],ipts[3]);
 return;

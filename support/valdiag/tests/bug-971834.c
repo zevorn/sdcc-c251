@@ -12,7 +12,7 @@ unsigned char ttt = 2;
 short foo (void)
 {
   unsigned short a;
-  a |= ttt;		/* WARNING(SDCC) */
+  a |= ttt;		/* WARNING(SDCC || GCC) */
   return a;
 }
 #endif
@@ -26,7 +26,7 @@ char foo (void)
   unsigned char a, i;
   for (i = 0; i < sizeof(ttt); i++)
     a |= ttt[i];	/* WARNING(SDCC) */
-  return a;		/* WARNING(SDCC) */
+  return a;
 }
 #endif
 

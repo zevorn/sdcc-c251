@@ -13,7 +13,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -26,8 +26,8 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#ifndef __SDCC_SETJMP_H
-#define __SDCC_SETJMP_H
+#ifndef __STDC_VERSION_SETJMP_H__
+#define __STDC_VERSION_SETJMP_H__ __STDC_VERSION__
 
 #define SP_SIZE		1
 
@@ -51,18 +51,35 @@
 #define RET_SIZE	2
 #endif
 
-#if defined (__SDCC_z80) || defined (__SDCC_z180) || defined (__SDCC_r2k) || defined (__SDCC_r3ka)
-typedef unsigned char jmp_buf[6]; // 2 for the stack pointer, 2 for the return address, 2 for the frame pointer.
-#elif defined (__SDCC_stm8)
-typedef unsigned char jmp_buf[4]; // 2 for the stack pointer, 2 for the return address.
-#else
+#if defined (__SDCC_z80) || defined (__SDCC_z180) || defined (__SDCC_r2k) || defined (__SDCC_r2ka) || defined (__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k) || defined (__SDCC_tlcs90) || defined (__SDCC_ez80) || defined (__SDCC_z80n) || defined(__SDCC_r800)
+typedef unsigned char jmp_buf[6]; /* 2 for the stack pointer, 2 for the return address, 2 for the frame pointer. */
+#elif defined (__SDCC_ds390) || defined (__SDCC_stm8) && defined (__SDCC_MODEL_LARGE)
+typedef unsigned char jmp_buf[5]; /* 2 for the stack pointer, 3 for the return address. */
+#elif defined (__SDCC_stm8) || defined (__SDCC_sm83) || defined (__SDCC_hc08) || defined (__SDCC_s08) || defined (__SDCC_f8) || defined (__SDCC_f8l)
+typedef unsigned char jmp_buf[4]; /* 2 for the stack pointer, 2 for the return address. */
+#elif defined (__SDCC_pdk13) || defined (__SDCC_pdk14) || defined (__SDCC_pdk15) || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
+typedef unsigned char jmp_buf[3]; /* 1 for the stack pointer, 2 for the return address. */
+#elif defined (__SDCC_pic16)
+/*
+ * return address - 3 (TOS)
+ * return address stack index - 1 (STKPTR)
+ * stack pointer - 1 (small) / 2 (large) (FSR1)
+ * frame pointer - 1 (small) / 2 (large) (FSR2)
+ */
+    #if defined(__SDCC_MODEL_LARGE)
+        #define __SETJMP_H_STACK_PTR_SIZE 2
+    #else
+        #define __SETJMP_H_STACK_PTR_SIZE 1
+    #endif
+typedef unsigned char jmp_buf[2 * __SETJMP_H_STACK_PTR_SIZE + 4];
+#elif defined (__SDCC_mcs51)
 typedef unsigned char jmp_buf[RET_SIZE + SP_SIZE + BP_SIZE + SPX_SIZE + BPX_SIZE];
 #endif
 
 int __setjmp (jmp_buf);
 
-// C99 might require setjmp to be a macro. The standard seems self-contradicting on this issue.
-// However, it is clear that the standards allow setjmp to be a macro.
+/* C99 might require setjmp to be a macro. The standard seems self-contradicting on this issue. */
+/* However, it is clear that the standards allow setjmp to be a macro. */
 #define setjmp(jump_buf) __setjmp(jump_buf)
 
 #ifndef __SDCC_HIDE_LONGJMP

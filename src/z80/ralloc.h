@@ -27,32 +27,30 @@
 #ifndef SDCCRALLOC_H
 #define SDCCRALLOC_H 1
 
-#define DEBUG_FAKE_EXTRA_REGS 	0
+#define USE_OLDSALLOC 0 // Change to 1 to use old stack allocator
 
 enum
 {
-  C_IDX = 0,
+  A_IDX = 0,
+  C_IDX,
   B_IDX,
   E_IDX,
   D_IDX,
   L_IDX,
   H_IDX,
-  IYL_IDX,
+  IYL_IDX, // iy register pair - not for sm83
   IYH_IDX,
-#if DEBUG_FAKE_EXTRA_REGS
-  M_IDX,
-  N_IDX,
-  O_IDX,
-  P_IDX,
-  Q_IDX,
-  R_IDX,
-  S_IDX,
-  T_IDX,
-#endif
-  CND_IDX
-};
+  K_IDX,   // jk register pair - only for r4k, r5k, r6k.
+  J_IDX,
+  CND_IDX,
 
-#define A_IDX (IS_GB ? 4 : (IY_RESERVED ? 6 : 8))
+  // These pairs are for internal use in code generation only.
+  BC_IDX,
+  DE_IDX,
+  HL_IDX,
+  IY_IDX,
+  JK_IDX
+};
 
 enum
 {
@@ -68,7 +66,7 @@ typedef struct reg_info
   short type;                   /* can have value 
                                    REG_GPR, REG_PTR or REG_CND */
   short rIdx;                   /* index into register table */
-  char *name;                   /* name */
+  const char *name;
   unsigned isFree:1;            /* is currently unassigned  */
 } reg_info;
 
@@ -80,7 +78,9 @@ reg_info *regWithIdx (int);
 void z80_assignRegisters (ebbIndex *);
 bitVect *z80_rUmaskForOp (const operand * op);
 
-void spillThis (symbol *);
+void z80SpillThis (symbol *);
 iCode *z80_ralloc2_cc(ebbIndex *ebbi);
 
+void Z80RegFix (eBBlock ** ebbs, int count);
 #endif
+

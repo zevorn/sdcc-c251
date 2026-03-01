@@ -37,7 +37,7 @@ struct reg_info;
 
    The post code generation is an assembler optimizer. The assembly code
    produced by all of the previous steps is fully functional. This step
-   will attempt to analyze the flow of the assembly code and agressively 
+   will attempt to analyze the flow of the assembly code and aggressively 
    optimize it. The peep hole optimizer attempts to do the same thing.
    As you may recall, the peep hole optimizer replaces blocks of assembly
    with more optimal blocks (e.g. removing redundant register loads).
@@ -223,6 +223,30 @@ typedef enum
 	POC_BANKSEL,
 	POC_PAGESEL,
 
+	/* Enhanced instruction set. */
+
+	POC_ADDFSR,
+	POC_ADDWFC,
+	POC_ADDFWC,
+	POC_ASRF,
+	POC_ASRFW,
+	POC_BRA,
+	POC_BRW,
+	POC_CALLW,
+	POC_LSLF,
+	POC_LSLFW,
+	POC_LSRF,
+	POC_LSRFW,
+	POC_MOVIW,
+	POC_MOVIW_K,
+	POC_MOVLB,
+	POC_MOVLP,
+	POC_MOVWI,
+	POC_MOVWI_K,
+	POC_RESET,
+	POC_SUBWFB,
+	POC_SUBWFBW,
+
 	MAX_PIC14MNEMONICS
 } PIC_OPCODE;
 
@@ -404,7 +428,6 @@ typedef struct pCode
 
 typedef struct pCodeComment
 {
-
 	pCode  pc;
 
 	char *comment;
@@ -418,7 +441,6 @@ typedef struct pCodeComment
 
 typedef struct pCodeCSource
 {
-
 	pCode  pc;
 
 	int  line_number;
@@ -433,7 +455,7 @@ typedef struct pCodeCSource
 
   The Flow object is used as marker to separate 
  the assembly code into contiguous chunks. In other
- words, everytime an instruction cause or potentially
+ words, every time an instruction cause or potentially
  causes a branch, a Flow object will be inserted into
  the pCode chain to mark the beginning of the next
  contiguous chunk.
@@ -442,7 +464,6 @@ typedef struct pCodeCSource
 
 typedef struct pCodeFlow
 {
-
 	pCode  pc;
 
 	pCode *end;   /* Last pCode in this flow. Note that
@@ -500,7 +521,6 @@ typedef struct pCodeFlowLink
 
 typedef struct pCodeInstruction
 {
-
 	pCode  pc;
 
 	PIC_OPCODE op;        // The opcode of the instruction.
@@ -548,7 +568,6 @@ typedef struct pCodeAsmDir
 
 typedef struct pCodeLabel
 {
-
 	pCode  pc;
 
 	char *label;
@@ -563,21 +582,21 @@ typedef struct pCodeLabel
 
 typedef struct pCodeFunction
 {
-
 	pCode  pc;
 
 	char *modname;
 	char *fname;     /* If NULL, then this is the end of
 	                    a function. Otherwise, it's the
 	                    start and the name is contained
-	                    here */
+	                    here. */
 
 	pBranch *from;       // pCodes that execute before this one
 	pBranch *to;         // pCodes that execute after
 	pBranch *label;      // pCode instructions that have labels
 
-	int  ncalled;        /* Number of times function is called */
-	unsigned isPublic:1; /* True if the fn is not static and can be called from another module (ie a another c or asm file) */
+	int  ncalled;        /* Number of times function is called. */
+	unsigned isPublic:1; /* True if the fn is not static and can be called from another module (ie a another c or asm file). */
+	unsigned isInterrupt:1; /* True if the fn is interrupt. */
 
 } pCodeFunction;
 
@@ -588,7 +607,6 @@ typedef struct pCodeFunction
 
 typedef struct pCodeWild
 {
-
 	pCodeInstruction  pci;
 
 	int    id;     /* Index into the wild card array of a peepBlock 
@@ -667,7 +685,8 @@ typedef struct pFile
   variables, operands, and opcodes that exist in
   a pBlock.
 **************************************************/
-typedef struct pCodeWildBlock {
+typedef struct pCodeWildBlock
+{
 	pBlock    *pb;
 	struct pCodePeep *pcp;    // pointer back to ... I don't like this...
 
@@ -693,7 +712,8 @@ typedef struct pCodeWildBlock {
   found then the pCode is replaced by the replacement
   pCode chain.
 **************************************************/
-typedef struct pCodePeep {
+typedef struct pCodePeep
+{
 	pCodeWildBlock target;     // code we'd like to optimize
 	pCodeWildBlock replace;    // and this is what we'll optimize it with.
 
@@ -721,7 +741,8 @@ way the peep hole optimizer behaves
 
 **************************************************/
 
-enum peepCommandTypes{
+enum peepCommandTypes
+{
 	NOTBITSKIP = 0,
 	BITSKIP,
 	INVERTBITSKIP,
@@ -733,7 +754,8 @@ enum peepCommandTypes{
 
 **************************************************/
 
-typedef struct peepCommand {
+typedef struct peepCommand
+{
 	int id;
 	char *cmd;
 } peepCommand;
@@ -796,11 +818,11 @@ typedef struct peepCommand {
  * pCode functions.
  *-----------------------------------------------------------------*/
 
-pCode *newpCode (PIC_OPCODE op, pCodeOp *pcop); // Create a new pCode given an operand
-pCode *newpCodeCharP(char *cP);              // Create a new pCode given a char *
-pCode *newpCodeFunction(char *g, char *f,int); // Create a new function
-pCode *newpCodeLabel(char *name,int key);    // Create a new label given a key
-pCode *newpCodeCSource(int ln, char *f, const char *l); // Create a new symbol line 
+pCode *newpCode(PIC_OPCODE op, pCodeOp *pcop); // Create a new pCode given an operand
+pCode *newpCodeCharP(const char *cP);              // Create a new pCode given a char *
+pCode *newpCodeFunction(const char *g, const char *f, int, int); // Create a new function.
+pCode *newpCodeLabel(const char *name,int key);    // Create a new label given a key
+pCode *newpCodeCSource(int ln, const char *f, const char *l); // Create a new symbol line.
 pCode *newpCodeWild(int pCodeID, pCodeOp *optional_operand, pCodeOp *optional_label);
 pCode *findNextInstruction(pCode *pci);
 pCode *findPrevInstruction(pCode *pci);
@@ -827,15 +849,15 @@ void pCodeInsertAfter(pCode *pc1, pCode *pc2);
 void pCodeInsertBefore(pCode *pc1, pCode *pc2);
 void pCodeDeleteChain(pCode *f,pCode *t);
 
-pCode *newpCodeAsmDir(char *asdir, char *argfmt, ...); 
+pCode *newpCodeAsmDir(const char *asdir, const char *argfmt, ...); 
 
-pCodeOp *newpCodeOpLabel(char *name, int key);
-pCodeOp *newpCodeOpImmd(char *name, int offset, int index, int code_space,int is_func);
+pCodeOp *newpCodeOpLabel(const char *name, int key);
+pCodeOp *newpCodeOpImmd(const char *name, int offset, int index, int code_space,int is_func);
 pCodeOp *newpCodeOpLit(int lit);
-pCodeOp *newpCodeOpBit(char *name, int bit,int inBitSpace);
+pCodeOp *newpCodeOpBit(const char *name, int bit,int inBitSpace);
 pCodeOp *newpCodeOpWild(int id, pCodeWildBlock *pcwb, pCodeOp *subtype);
-pCodeOp *newpCodeOpRegFromStr(char *name);
-pCodeOp *newpCodeOp(char *name, PIC_OPTYPE p);
+pCodeOp *newpCodeOpRegFromStr(const char *name);
+pCodeOp *newpCodeOp(const char *name, PIC_OPTYPE p);
 pCodeOp *pCodeOpCopy(pCodeOp *pcop);
 pCodeOp *popCopyGPR2Bit(pCodeOp *pc, int bitval);
 pCodeOp *popCopyReg(pCodeOpReg *pc);
@@ -877,8 +899,8 @@ extern pCodeInstruction *pic14Mnemonics[MAX_PIC14MNEMONICS];
 /*
  * From pcodepeep.h:
  */
-int getpCode(char *mnem, unsigned dest);
-int getpCodePeepCommand(char *cmd);
+int getpCode(const char *mnem, unsigned dest);
+int getpCodePeepCommand(const char *cmd);
 int pCodeSearchCondition(pCode *pc, unsigned int cond, int contIfSkip);
 
 #endif // __PCODE_H__

@@ -6,7 +6,6 @@
 
 #ifdef __SDCC
 #pragma std_c99
-#pragma disable_warning 93
 #endif
 
 int a = 1;
@@ -18,6 +17,7 @@ int d = 0;
 void
 testTortureExecute (void)
 {
+#if !defined(__SDCC_pdk14) // Lack of memory
   double e;
   double f;
   double g;
@@ -28,5 +28,6 @@ testTortureExecute (void)
   if (e)
     ASSERT (0);
   return;
+#endif
 }
 

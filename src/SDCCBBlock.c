@@ -36,14 +36,18 @@ struct _dumpFiles dumpFiles[] = {
   {DUMP_DFLOW, ".dumpdflow", NULL},
   {DUMP_GCSE, ".dumpgcse", NULL},
   {DUMP_DEADCODE, ".dumpdeadcode", NULL},
+  {DUMP_GENCONSTPROP0, ".dumpgenconstprop_0", NULL},
   {DUMP_LOOP, ".dumploop", NULL},
   {DUMP_LOOPG, ".dumploopg", NULL},
   {DUMP_LOOPD, ".dumploopd", NULL},
+  {DUMP_LOSPRE, ".dumplospre", NULL},
+  {DUMP_GENCONSTPROP1, ".dumpgenconstprop_1", NULL},
   {DUMP_RANGE, ".dumprange", NULL},
   {DUMP_PACK, ".dumppack", NULL},
   {DUMP_RASSGN, ".dumprassgn", NULL},
   {DUMP_LRANGE, ".dumplrange", NULL},
-  {DUMP_LOSPRE, ".dumplospre", NULL},
+  {DUMP_CUSTOM0, ".dumpcustom0", NULL},
+  {DUMP_CUSTOM1, ".dumpcustom1", NULL},
   {0, NULL, NULL}
 };
 
@@ -124,7 +128,7 @@ createDumpFile (int id)
       dbuf_append_str (&dumpFileName, dumpFilesPtr->ext);
       if (!(dumpFilesPtr->filePtr = fopen (dbuf_c_str (&dumpFileName), "w")))
         {
-          werror (E_FILE_OPEN_ERR, dbuf_c_str (&dumpFileName));
+          werror (E_OUTPUT_FILE_OPEN_ERR, dbuf_c_str (&dumpFileName), strerror (errno));
           dbuf_destroy (&dumpFileName);
           exit (1);
         }
@@ -223,9 +227,10 @@ dumpEbbsToFileExt (int id, ebbIndex * ebbi)
   for (i = 0; i < count; i++)
     {
       fprintf (of, "\n----------------------------------------------------------------\n");
-      fprintf (of, "Basic Block %s (df:%d bb:%d lvl:%d): loopDepth=%d%s%s%s\n",
+      fprintf (of, "Basic Block %s (df:%d bb:%d lvl:%ld:%ld): loopDepth=%d%s%s%s\n",
                ebbs[i]->entryLabel->name,
-               ebbs[i]->dfnum, ebbs[i]->bbnum, ebbs[i]->entryLabel->level,
+               ebbs[i]->dfnum, ebbs[i]->bbnum,
+               ebbs[i]->entryLabel->level / LEVEL_UNIT, ebbs[i]->entryLabel->level % LEVEL_UNIT,
                ebbs[i]->depth,
                ebbs[i]->noPath ? " noPath" : "",
                ebbs[i]->partOfLoop ? " partOfLoop" : "", ebbs[i]->isLastInLoop ? " isLastInLoop" : "");
@@ -395,7 +400,7 @@ iCode2eBBlock (iCode * ic)
 /* eBBWithEntryLabel - finds the basic block with the entry label  */
 /*-----------------------------------------------------------------*/
 eBBlock *
-eBBWithEntryLabel (ebbIndex * ebbi, symbol * eLabel)
+eBBWithEntryLabel (ebbIndex* ebbi, const symbol *eLabel)
 {
   eBBlock **ebbs = ebbi->bbOrder;
   int count = ebbi->count;
@@ -447,7 +452,7 @@ edgesTo (eBBlock * to)
 /* addiCodeToeBBlock - will add an iCode to the end of a block     */
 /*-----------------------------------------------------------------*/
 void
-addiCodeToeBBlock (eBBlock * ebp, iCode * ic, iCode * ip)
+addiCodeToeBBlock (eBBlock *ebp, iCode *ic, iCode *ip)
 {
   ic->prev = ic->next = NULL;
   /* if the insert point is given */
@@ -460,11 +465,16 @@ addiCodeToeBBlock (eBBlock * ebp, iCode * ic, iCode * ip)
       ip->prev = ic;
       ic->next = ip;
       if (!ic->prev)
-        ebp->sch = ic;
+        {
+          wassert (ebp);
+          ebp->sch = ic;
+        }
       else
         ic->prev->next = ic;
       return;
     }
+
+  wassert (ebp);
 
   /* if the block has no  instructions */
   if (ebp->ech == NULL)
@@ -539,7 +549,7 @@ addiCodeToeBBlock (eBBlock * ebp, iCode * ic, iCode * ip)
 /* remiCodeFromeBBlock - remove an iCode from BBlock               */
 /*-----------------------------------------------------------------*/
 void
-remiCodeFromeBBlock (eBBlock * ebb, iCode * ic)
+remiCodeFromeBBlock (eBBlock *ebb, iCode *ic)
 {
   wassert (ic->seq >= ebb->fSeq && ic->seq <= ebb->lSeq);
   if (ic->prev)
@@ -683,16 +693,6 @@ replaceSymBySym (set * sset, operand * src, operand * dest)
       /* for all instructions in this block do */
       for (ic = rBlock->sch; ic; ic = ic->next)
         {
-
-          /* if we find usage */
-          if (ic->op == IFX && isOperandEqual (src, IC_COND (ic)))
-            {
-              bitVectUnSetBit (OP_USES (IC_COND (ic)), ic->key);
-              IC_COND (ic) = operandFromOperand (dest);
-              OP_USES (dest) = bitVectSetBit (OP_USES (dest), ic->key);
-              continue;
-            }
-
           if (isOperandEqual (IC_RIGHT (ic), src))
             {
               bitVectUnSetBit (OP_USES (IC_RIGHT (ic)), ic->key);
@@ -733,7 +733,7 @@ replaceSymBySym (set * sset, operand * src, operand * dest)
 /* replaceLabel - replace reference to one label by another        */
 /*-----------------------------------------------------------------*/
 void
-replaceLabel (eBBlock * ebp, symbol * fromLbl, symbol * toLbl)
+replaceLabel (eBBlock *ebp, symbol *fromLbl, symbol *toLbl)
 {
   iCode *ic;
 
@@ -756,6 +756,9 @@ replaceLabel (eBBlock * ebp, symbol * fromLbl, symbol * toLbl)
           else if (isSymbolEqual (IC_FALSE (ic), fromLbl))
             IC_FALSE (ic) = toLbl;
           break;
+
+        case JUMPTABLE:
+          replaceSetItem (IC_JTLABELS (ic), fromLbl, toLbl);
         }
     }
 
@@ -798,7 +801,8 @@ iCodeFromeBBlock (eBBlock ** ebbs, int count)
           while (ic);
           if (foundNonlabel && ic)
             {
-              werrorfl (ic->filename, ic->lineno, W_CODE_UNREACH);
+              if (!ic->mergedElsewhere)
+                werrorfl (ic->filename, ic->lineno, W_CODE_UNREACH);
               continue;
             }
         }
@@ -808,7 +812,7 @@ iCodeFromeBBlock (eBBlock ** ebbs, int count)
       lic = ebbs[i]->ech;
 
     }
-
+  
   return ric;
 }
 
@@ -858,3 +862,27 @@ otherPathsPresent (eBBlock ** ebbs, eBBlock * this)
   else
     return 1;
 }
+
+
+/*-----------------------------------------------------------------*/
+/* freeBBlockData - Deallocate data structures associated with     */
+/*      the current blocks. They will all be recomputed if the     */
+/*      iCode chain is divided into blocks again later.            */
+/*-----------------------------------------------------------------*/
+void
+freeeBBlockData(ebbIndex * ebbi)
+{
+  int i;
+  eBBlock ** ebbs = ebbi->bbOrder;
+  
+  for (i=0; i < ebbi->count; i++)
+    {
+      deleteSet (&ebbs[i]->succList);
+      deleteSet (&ebbs[i]->predList);
+      freeBitVect (ebbs[i]->succVect);
+      freeBitVect (ebbs[i]->domVect);
+      
+      freeCSEdata(ebbs[i]);
+    }
+}
+

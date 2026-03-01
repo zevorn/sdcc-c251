@@ -33,15 +33,15 @@
 #include "ralloc.h"
 
 #define FENTRY do {                                                                     \
-        /*fprintf (stderr, "%s:%u:%s: *{*\n", __FILE__, __LINE__, __FUNCTION__);*/      \
+        /*fprintf (stderr, "%s:%u:%s: *{*\n", __FILE__, __LINE__, __func__);*/      \
         if (options.debug || debug_verbose) {                                           \
-                emitpComment ("; %s:%u:%s *{*", __FILE__, __LINE__, __FUNCTION__);      \
+                emitpComment ("; %s:%u:%s *{*", __FILE__, __LINE__, __func__);      \
         }                                                                               \
 } while (0)
 #define FEXIT do {                                                                      \
-        /*fprintf (stderr, "%s:%u:%s: *}*\n", __FILE__, __LINE__, __FUNCTION__);*/      \
+        /*fprintf (stderr, "%s:%u:%s: *}*\n", __FILE__, __LINE__, __func__);*/      \
         if (options.debug || debug.verbose) {                                           \
-                emitpComment ("; %s:%u:%s *}*", __FILE__, __LINE__, __FUNCTION__);      \
+                emitpComment ("; %s:%u:%s *}*", __FILE__, __LINE__, __func__);      \
         }                                                                               \
 } while (0)
 
@@ -136,11 +136,11 @@ extern unsigned fReturnSizePic;
 
 int pic14_getDataSize(operand *op);
 void emitpcode_real(PIC_OPCODE poc, pCodeOp *pcop);
-#define emitpcode(poc,pcop)     do { if (options.debug || debug_verbose) { emitpComment (" >>> %s:%d:%s", __FILE__, __LINE__, __FUNCTION__); } emitpcode_real(poc,pcop); } while(0)
+#define emitpcode(poc,pcop)     do { if (options.debug || debug_verbose) { emitpComment (" >>> %s:%d:%s", __FILE__, __LINE__, __func__); } emitpcode_real(poc,pcop); } while(0)
 void emitpComment (const char *fmt, ...);
 void emitpLabel(int key);
-void pic14_emitcode (char *inst,char *fmt, ...);
-void DEBUGpic14_emitcode (char *inst,char *fmt, ...);
+void pic14_emitcode (const char *inst, const char *fmt, ...);
+void DEBUGpic14_emitcode (const char *inst, const char *fmt, ...);
 void pic14_emitDebuggerSymbol (const char *);
 bool pic14_sameRegs (asmop *aop1, asmop *aop2 );
 char *aopGet (asmop *aop, int offset, bool bit16, bool dname);
@@ -150,16 +150,17 @@ void genpic14Code (iCode *lic);
 
 pCodeOp *popGet (asmop *aop, int offset);//, bool bit16, bool dname);
 pCodeOp *popGetAddr (asmop *aop, int offset, int index);
-pCodeOp *popGetExternal (char *str, int isReg);
+pCodeOp *popGetExternal (const char *str, int isReg);
 pCodeOp *popGetLabel(unsigned int key);
 pCodeOp *popGetLit(unsigned int lit);
 
 
-void aopPut (asmop *aop, char *s, int offset);
+void aopPut (asmop *aop, const char *s, int offset);
 void pic14_outAcc(operand *result);
-void aopOp (operand *op, iCode *ic, bool result);
-void freeAsmop (operand *op, asmop *aaop, iCode *ic, bool pop);
+void pic14AopOp (operand *op, iCode *ic, bool result);
+void pic14FreeAsmop (operand *op, asmop *aaop, iCode *ic, bool pop);
 void mov2w (asmop *aop, int offset);
+void mov2w_op (operand * op, int offset);
 int op_isLitLike (operand *op);
 
 /*
@@ -167,8 +168,9 @@ int op_isLitLike (operand *op);
  */
 const char *AopType(short type);
 const char *pCodeOpType(pCodeOp *pcop);
-void genPlus (iCode *ic);
-void addSign(operand *result, int offset, int sign);
-void genMinus (iCode *ic);
+void pic14GenPlus (iCode *ic);
+void pic14AddSign (operand *result, int offset, int sign);
+void pic14GenMinus (iCode *ic);
 
 #endif
+

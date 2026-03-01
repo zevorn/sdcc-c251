@@ -6,6 +6,7 @@
 
 #ifdef __SDCC
 #pragma disable_warning 88 //no warning about casting LITERAL value to 'generic' pointer
+#pragma disable_warning 346
 #endif
 
 /* causes error 9: FATAL Compiler Internal Error in file 'SDCCicode.c' line number '2939' : code generator internal error

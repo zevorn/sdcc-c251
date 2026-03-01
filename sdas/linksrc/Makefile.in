@@ -46,7 +46,7 @@ ASXXLIBSRC = strcmpi.c
 
 SRC = lk_readnl.c lkaomf51.c lkar.c lkarea.c lkdata.c lkelf.c lkeval.c \
         lkhead.c lklex.c lklib.c lklibr.c lklist.c lkmain.c lkmem.c \
-        lknoice.c lkout.c lkrel.c lkrloc.c lkrloc3.c lks19.c lksdcclib.c \
+        lknoice.c lkout.c lkrel.c lkrloc.c lkrloc3.c lksdcclib.c \
         lksym.c sdld.c lksdcdb.c lkbank.c
 
 LKSOURCES = $(SRC) $(ASXXLIBSRC:%.c=$(ASXXLIB)/%.c)
@@ -63,7 +63,7 @@ transform       = @program_transform_name@
 
 # Compiling entire program or any subproject
 # ------------------------------------------
-all: sdcc-ld8051 sdcc-ldz80 sdcc-ldgb sdcc-ld6808 sdcc-ldstm8
+all: sdcc-ld8051 sdcc-ldz80 sdcc-ldgb sdcc-ld6808 sdcc-ldstm8 sdcc-ldpdk sdcc-ldf8
 
 sdcc-ld8051: checkconf $(ASLINK)
 
@@ -75,7 +75,11 @@ sdcc-ld6808: checkconf $(top_builddir)/bin/sdld6808$(EXEEXT)
 
 sdcc-ldstm8: checkconf $(top_builddir)/bin/sdldstm8$(EXEEXT)
 
-$(top_builddir)/bin/sdldz80$(EXEEXT) $(top_builddir)/bin/sdldgb$(EXEEXT) $(top_builddir)/bin/sdldstm8$(EXEEXT) $(top_builddir)/bin/sdld6808$(EXEEXT): $(ASLINK)
+sdcc-ldf8: checkconf $(top_builddir)/bin/sdldf8$(EXEEXT)
+
+sdcc-ldpdk: checkconf $(top_builddir)/bin/sdldpdk$(EXEEXT)
+
+$(top_builddir)/bin/sdldz80$(EXEEXT) $(top_builddir)/bin/sdldgb$(EXEEXT) $(top_builddir)/bin/sdldstm8$(EXEEXT) $(top_builddir)/bin/sdld6808$(EXEEXT) $(top_builddir)/bin/sdldpdk$(EXEEXT) $(top_builddir)/bin/sdldf8$(EXEEXT): $(ASLINK)
 	cp -p $(ASLINK) $@
 
 $(ASLINK): $(LKOBJECTS)
@@ -96,6 +100,11 @@ install: all installdirs
 	  $(INSTALL) $(top_builddir)/bin/sdld6808$(EXEEXT) $(DESTDIR)$(bindir)/`echo 'sdld6808' | sed '$(transform)'`$(EXEEXT); \
 	  $(STRIP) $(DESTDIR)$(bindir)/`echo 'sdld6808' | sed '$(transform)'`$(EXEEXT); \
 	fi
+	if [ "`grep mos6502 $(top_builddir)/ports.build`" = "mos6502" ]; \
+	then \
+	  $(INSTALL) $(top_builddir)/bin/sdld6808$(EXEEXT) $(DESTDIR)$(bindir)/`echo 'sdld6808' | sed '$(transform)'`$(EXEEXT); \
+	  $(STRIP) $(DESTDIR)$(bindir)/`echo 'sdld6808' | sed '$(transform)'`$(EXEEXT); \
+	fi
 	if [ "`grep z80 $(top_builddir)/ports.build`" = "z80" ]; \
 	then \
 	  $(INSTALL) $(top_builddir)/bin/sdldz80$(EXEEXT) $(DESTDIR)$(bindir)/`echo 'sdldz80' | sed '$(transform)'`$(EXEEXT); \
@@ -103,11 +112,21 @@ install: all installdirs
 	  $(INSTALL) $(top_builddir)/bin/sdldgb$(EXEEXT) $(DESTDIR)$(bindir)/`echo 'sdldgb' | sed '$(transform)'`$(EXEEXT); \
 	  $(STRIP) $(DESTDIR)$(bindir)/`echo 'sdldgb' | sed '$(transform)'`$(EXEEXT); \
 	fi
+	if [ "`grep pdk $(top_builddir)/ports.build`" = "pdk" ]; \
+	then \
+	  $(INSTALL) $(top_builddir)/bin/sdldpdk$(EXEEXT) $(DESTDIR)$(bindir)/`echo 'sdldpdk' | sed '$(transform)'`$(EXEEXT); \
+	  $(STRIP) $(DESTDIR)$(bindir)/`echo 'sdldpdk' | sed '$(transform)'`$(EXEEXT); \
+	fi
+	if [ "`grep f8 $(top_builddir)/ports.build`" = "f8" ]; \
+	then \
+	  $(INSTALL) $(top_builddir)/bin/sdldf8$(EXEEXT) $(DESTDIR)$(bindir)/`echo 'sdldf8' | sed '$(transform)'`$(EXEEXT); \
+	  $(STRIP) $(DESTDIR)$(bindir)/`echo 'sdldf8' | sed '$(transform)'`$(EXEEXT); \
+	fi
 
 # Deleting all the installed files
 # --------------------------------
 uninstall:
-	for ld in $(top_builddir)/bin/sdld $(top_builddir)/bin/sdldz80 $(top_builddir)/bin/sdldgb $(top_builddir)/bin/sdldstm8 $(top_builddir)/bin/sdld6808; \
+	for ld in $(top_builddir)/bin/sdld $(top_builddir)/bin/sdldz80 $(top_builddir)/bin/sdldgb $(top_builddir)/bin/sdldstm8 $(top_builddir)/bin/sdld6808 $(top_builddir)/bin/sdldpdk $(top_builddir)/bin/sdldf8; \
 	do \
 	  rm -f $(DESTDIR)$(bindir)/`echo \`basename $$ld\` | sed '$(transform)'`$(EXEEXT); \
 	done
@@ -131,15 +150,7 @@ installdirs:
 
 # Creating dependencies
 # ---------------------
-dep: Makefile.dep
-
-Makefile.dep: $(LKSOURCES) $(top_builddir)/*.h
-	$(MAKEDEP) $(CPPFLAGS) $(filter %.c,$^) >Makefile.dep
-
-ifeq "$(findstring $(MAKECMDGOALS),uninstall check installcheck installdirs \
-                                   clean distclean mostlyclean realclean)" ""
-  -include Makefile.dep
-endif
+SPECIAL = $(srcdir)/*.h
 include $(srcdir)/clean.mk
 
 # My rules

@@ -58,7 +58,7 @@ typedef struct {
  */
 extern __code struct {
     unsigned	records;    // number of entries in this file
-    cinit_t	entry[];    // intialization descriptor
+    cinit_t	entry[];    // initialization descriptor
 } cinit;
 
 /*
@@ -94,6 +94,7 @@ _sdcc_gsinit_startup(void)
 
     // call main after initialization
     __asm
+        EXTERN _main
 	PAGESEL _main
 	GOTO _main
     __endasm;

@@ -36,7 +36,7 @@
    range since the chip only uses CE3*
 */
 
-__xdata __at (0x310000) static volatile unsigned char rtc;
+__xdata static volatile unsigned char __at (0x310000) rtc;
 
 // this is the 64bit pattern that has to be recognized by the ds1315
 __code unsigned char rtcMagic[8]={0xc5,0x3a,0xa3,0x5c,0xc5,0x3a,0xa3,0x5c};
@@ -95,7 +95,7 @@ void RtcWrite(struct tm *rtcDate) {
   rtcBytes[6]=INTtoBCD(rtcDate->tm_mon)+1;
   rtcBytes[5]=INTtoBCD(rtcDate->tm_mday);
   rtcBytes[4]=(INTtoBCD(rtcDate->tm_wday)+1)&0x07; //set 24h  mode
-  rtcBytes[3]=INTtoBCD(rtcDate->tm_hour)&0x3f; // oscilator on, reset on
+  rtcBytes[3]=INTtoBCD(rtcDate->tm_hour)&0x3f; // oscillator on, reset on
   rtcBytes[2]=INTtoBCD(rtcDate->tm_min);
   rtcBytes[1]=INTtoBCD(rtcDate->tm_sec);
   //rtcBytes[0]=INTtoBCD(rtcDate->hundredth);

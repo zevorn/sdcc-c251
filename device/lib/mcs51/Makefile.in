@@ -9,6 +9,7 @@ top_builddir = @top_builddir@
 LIB_TYPE     = @LIB_TYPE@
 SAS = $(top_builddir)/bin/sdas8051
 SCC = $(top_builddir)/bin/sdcc
+SDAR = $(top_builddir)/bin/sdar
 
 # override PORTDIR defined by super (parent) makefile
 override PORTDIR = ../build/$(PORT)
@@ -16,7 +17,8 @@ override PORTDIR = ../build/$(PORT)
 OBJ = crtstart.rel crtxinit.rel crtxclear.rel crtclear.rel \
       crtpagesfr.rel crtbank.rel crtcall.rel \
       crtxstack.rel crtxpush.rel crtxpushr0.rel crtxpop.rel crtxpopr0.rel \
-      gptr_cmp.rel
+      gptr_cmp.rel \
+      atomic_flag_test_and_set.rel atomic_flag_clear.rel __sdcc_atomic_maybe_rollback.rel
 
 LIB = mcs51.lib
 
@@ -24,7 +26,7 @@ CC = $(SCC)
 AS = $(SAS)
 ASFLAGS = -plosgff
 
-CFLAGS = -I$(top_srcdir)/include --std-c89
+CFLAGS = -I$(top_srcdir)/device/include --std-c23
 
 all: $(PORTDIR)/$(LIB)
 
@@ -34,10 +36,10 @@ ifeq ($(LIB_TYPE), SDCCLIB)
 	$(top_builddir)/bin/sdcclib -a $@ $(OBJ)
 else
   ifeq ($(LIB_TYPE), AR)
-	$(top_builddir)/bin/sdar -rcS $@ $(OBJ)
+	$(SDAR) -rcSD $@ $(OBJ)
   else
     ifeq ($(LIB_TYPE), RANLIB)
-	$(top_builddir)/bin/sdar -rc $@ $(OBJ)
+	$(SDAR) -rcD $@ $(OBJ)
     else
 	rm -f $@
 	for i in $(basename $(OBJ)); do echo $$i >>$@; done
@@ -60,3 +62,6 @@ clean:
 
 distclean: clean
 	rm -r Makefile
+
+Makefile: $(srcdir)/Makefile.in
+	cd $(top_builddir); ./config.status device/lib/mcs51/Makefile

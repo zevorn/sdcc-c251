@@ -1,5 +1,5 @@
 /* windres.c -- a program to manipulate Windows resources
-   Copyright (C) 1997-2014 Free Software Foundation, Inc.
+   Copyright (C) 1997-2022 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Cygnus Support.
    Rewritten by Kai Tietz, Onevision.
 
@@ -48,7 +48,7 @@
 
 int verbose = 0;
 
-int target_is_bigendian = 0;
+bool target_is_bigendian = 0;
 const char *def_target_arch;
 
 static void set_endianness (bfd *, const char *);
@@ -204,6 +204,7 @@ open_file_search (const char *filename, const char *mode, const char *errmsg,
 	      *real_filename = n;
 	      return e;
 	    }
+	  free (n);
 
 	  if (errno != ENOENT)
 	    break;
@@ -526,6 +527,8 @@ extended_menuitems (const rc_menuitem *menuitems)
 		| MENUITEM_HELP
 		| MENUITEM_INACTIVE
 		| MENUITEM_MENUBARBREAK
+		| MENUITEM_BITMAP
+		| MENUITEM_OWNERDRAW
 		| MENUITEM_MENUBREAK))
 	  != 0)
 	return 1;
@@ -700,20 +703,20 @@ quot (const char *string)
   const char *src;
   char *dest;
 
-  if ((buflen < slen * 2 + 2) || ! buf)
+  if ((buflen < slen * 2 + 3) || ! buf)
     {
-      buflen = slen * 2 + 2;
-      if (buf)
-	free (buf);
+      buflen = slen * 2 + 3;
+      free (buf);
       buf = (char *) xmalloc (buflen);
     }
 
-  for (src=string, dest=buf; *src; src++, dest++)
+  for (src = string, dest = buf; *src; src++, dest++)
     {
       if (*src == '(' || *src == ')' || *src == ' ')
 	*dest++ = '\\';
       *dest = *src;
     }
+
   *dest = 0;
   return buf;
 }
@@ -796,21 +799,21 @@ main (int argc, char **argv)
   rc_res_directory *resources;
   int use_temp_file;
 
-#if defined (HAVE_SETLOCALE) && defined (HAVE_LC_MESSAGES)
+#ifdef HAVE_LC_MESSAGES
   setlocale (LC_MESSAGES, "");
 #endif
-#if defined (HAVE_SETLOCALE)
   setlocale (LC_CTYPE, "");
-#endif
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
   program_name = argv[0];
   xmalloc_set_program_name (program_name);
+  bfd_set_error_program_name (program_name);
 
   expandargv (&argc, &argv);
 
-  bfd_init ();
+  if (bfd_init () != BFD_INIT_MAGIC)
+    fatal (_("fatal error: libbfd ABI mismatch"));
   set_default_bfd_target ();
 
   res_init ();
@@ -881,7 +884,13 @@ main (int argc, char **argv)
 	  break;
 
 	case OPTION_PREPROCESSOR:
-	  preprocessor = optarg;
+	  if (strchr (optarg, ' '))
+	    {
+	      if (asprintf (& preprocessor, "\"%s\"", optarg) == -1)
+		preprocessor = optarg;
+	    }
+	  else
+	    preprocessor = optarg;	    
 	  break;
 
 	case OPTION_PREPROCESSOR_ARG:
@@ -937,7 +946,7 @@ main (int argc, char **argv)
 	    {
 	      struct stat statbuf;
 	      char modebuf[11];
-	      
+
 	      if (stat (optarg, & statbuf) == 0
 		  /* Coded this way to avoid importing knowledge of S_ISDIR into this file.  */
 		  && (mode_string (statbuf.st_mode, modebuf), modebuf[0] == 'd'))
@@ -1114,7 +1123,7 @@ windres_open_as_binary (const char *filename, int rdmode)
 
   if (rdmode && ! bfd_check_format (abfd, bfd_object))
     fatal ("can't open `%s' for input.", filename);
-  
+
   return abfd;
 }
 
@@ -1309,7 +1318,7 @@ static rc_uint_type
 target_get_8 (const void *p, rc_uint_type length)
 {
   rc_uint_type ret;
-  
+
   if (length < 1)
     fatal ("Resource too small for getting 8-bit value.");
 
@@ -1322,7 +1331,7 @@ target_get_16 (const void *p, rc_uint_type length)
 {
   if (length < 2)
     fatal ("Resource too small for getting 16-bit value.");
-  
+
   if (target_is_bigendian)
     return bfd_getb16 (p);
   else
@@ -1334,7 +1343,7 @@ target_get_32 (const void *p, rc_uint_type length)
 {
   if (length < 4)
     fatal ("Resource too small for getting 32-bit value.");
-  
+
   if (target_is_bigendian)
     return bfd_getb32 (p);
   else
@@ -1352,7 +1361,7 @@ static void
 target_put_16 (void *p, rc_uint_type value)
 {
   assert (!! p);
-  
+
   if (target_is_bigendian)
     bfd_putb16 (value, p);
   else
@@ -1363,7 +1372,7 @@ static void
 target_put_32 (void *p, rc_uint_type value)
 {
   assert (!! p);
-  
+
   if (target_is_bigendian)
     bfd_putb32 (value, p);
   else
@@ -1402,5 +1411,5 @@ int wr_print (FILE *e, const char *fmt, ...)
   va_start (arg, fmt);
   r += vfprintf (e, fmt, arg);
   va_end (arg);
-  return r;    
+  return r;
 }

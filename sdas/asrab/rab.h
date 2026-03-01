@@ -1,7 +1,7 @@
 /* rab.h */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,55 +37,57 @@
  */
 
 /*)BUILD
-        $(PROGRAM) =    ASRAB
-        $(INCLUDE) = {
-                ASXXXX.H
-                RAB.H
-        }
-        $(FILES) = {
-                RABMCH.C
-                RABADR.C
-                RABPST.C
-                ASMAIN.C
-                ASDBG.C
-                ASLEX.C
-                ASSYM.C
-                ASSUBR.C
-                ASEXPR.C
-                ASDATA.C
-                ASLIST.C
-                ASOUT.C
-        }
-        $(STACK) = 3000
+	$(PROGRAM) =	ASRAB
+	$(INCLUDE) = {
+		ASXXXX.H
+		RAB.H
+	}
+	$(FILES) = {
+		RABMCH.C
+		RABADR.C
+		RABPST.C
+		ASMAIN.C
+		ASDBG.C
+		ASLEX.C
+		ASSYM.C
+		ASSUBR.C
+		ASEXPR.C
+		ASDATA.C
+		ASLIST.C
+		ASOUT.C
+	}
+	$(STACK) = 3000
 */
+
 
 /*
  * Indirect Addressing delimeters
  */
-#define LFIND           '('
-#define RTIND           ')'
+#define	LFIND		'('
+#define RTIND		')'
+
 
 /*
  * Registers
  */
-#define B               0
-#define C               1
-#define D               2
-#define E               3
-#define H               4
-#define L               5
-#define A               7
+#define B		0
+#define C		1
+#define D		2
+#define E		3
+#define H		4
+#define L		5
+#define A		7
 
-#define BC              0
-#define DE              1
-#define HL              2
-#define SP              3
-#define AF              4
-#define IX              5
-#define IY              6
+#define BC		0
+#define DE		1
+#define HL		2
+#define SP		3
+#define AF		4
+#define IX		5
+#define IY		6
 
-#define IIR             0x47
-#define EIR             0x4F
+#define EIR             0x47
+#define IIR             0x4f
 #define IP              0x76
 
 #define BCDE            1
@@ -94,14 +96,14 @@
 /*
  * Conditional definitions
  */
-#define NZ              0
-#define Z               1
-#define NC              2
-#define CS              3
-#define PO              4
-#define PE              5
-#define P               6
-#define M               7
+#define	NZ		0
+#define	Z		1
+#define	NC		2
+#define	CS		3
+#define	PO		4
+#define	PE		5
+#define	P		6
+#define	M		7
 
 /*
  * Alternate set of conditional definitions for some rabbit 4000 instructions
@@ -114,153 +116,177 @@
 #define CC_Z            5
 #define CC_NC           6
 #define CC_C            7
+#define CC_GE         0x8
+#define CC_LEU        0x9
+#define CC_LE         0xa
+
+
+
 
 /*
  * Symbol types
  */
-#define S_IMMED         30
-#define S_R8            31
-#define S_R8X           32
+#define	S_IMMED		30
+#define	S_R8		31
+#define	S_R8X		32
 
-#define S_R16           34
-#define S_R16X          35
-#define S_CND           36
-#define S_FLAG          37
+#define	S_R16		34
+#define S_R16_ALT       35
+#define	S_CND		36
+#define	S_FLAG		37
 
 #define S_R32_BCDE      38
 #define S_R32_JKHL      39
 #define S_RXPC          40
 
+#define S_R16AF         41
+#define S_R16AF_ALT     42
+
+#define S_R8IP	        43
+#define S_R16_JK_OR_ALT	44
+
+#define S_R16SU	        45
+
+
 /*
  * Indexing modes
  */
-#define S_INDB          40
-#define S_IDC           41
-#define S_INDR          50
-#define S_IDBC          50
-#define S_IDDE          51
-#define S_IDHL          52
-#define S_IDSP          53
-#define S_IDIX          55
-#define S_IDIY          56
-#define S_INDM          57
+#define	S_INDR		50
+#define	S_IDBC		50
+#define	S_IDDE		51
+#define	S_IDHL		52
+#define	S_IDSP		53
+#define	S_IDIX		55
+#define	S_IDIY		56
+#define	S_INDM		57
 #define S_IDHL_OFFSET   58
 
 /*
  * Instruction types
  */
-#define S_LD            60
-#define S_CALL          61
-#define S_JP            62
-#define S_JR            63
-#define S_RET           64
-#define S_BIT           65
-#define S_INC           66
-#define S_DEC           67
-#define S_ADD           68
-#define S_ADC           69
-#define S_AND           70
-#define S_EX            71
-#define S_PUSH          72
-#define S_IN            73
-#define S_OUT           74
-#define S_RL            75
-#define S_RST           76
-#define S_IM            77
-#define S_INH1          78
-#define S_INH2          81
-#define S_DJNZ          84
-#define S_SUB           85
-#define S_SBC           86
-#define S_NEG           83
-#define S_CPU           88
+#define	S_LD		60
+#define	S_CALL		61
+#define	S_JP		62
+#define	S_JR		63
+#define	S_RET		64
+#define	S_BIT		65
+#define	S_INCDEC	66
+#define	S_ADD		67
+#define	S_ADC		68
+#define	S_AND		69
+#define	S_EX		70
+#define	S_PUSH		71
+#define	S_RL		72
+#define	S_RST		73
+#define	S_IM		74
+#define	S_INH1		75
+#define	S_ED_0ARGS	76
+#define	S_DJNZ		77
+#define	S_SUB		78
+#define	S_SBC		79
+#define S_NEG           80
+#define	S_CPU		81
+#define	S_MUL		82
+/* Rabbit specific Instructions */
+#define	X_MULU		90
+#define X_LJP           91
+#define X_BOOL          92
+#define X_LDP           93
+#define X_R3K_MODE      94
+#define R3K_INH1        95
+#define R3K_INH2        96
+/* the remaining instructions are Rabbit >= 4000 */
+#define X_R4K_XFIRST    97
+#define X_R4K_MULU	97
+#define X_JRE		98
+#define X_CLR		99
+#define R4K_INH2	100
+#define X_TEST		101
+#define X_CBM		102
+#define X_LDF		103
+#define X_SWAP		104
+#define R6K_1_ALW       105
+#define X_FLAG		106
+#define X_BOX		107
 
-/*
- * Processor Types (S_CPU)
- */
-#define X_R2K           0
-#define X_HD64          1
-#define X_Z80           2
-#define X_R4K           3
 
-/*
- * HD64180 Instructions
- */
-#define HD_INH2         90
-#define HD_IN           91
-#define HD_OUT          92
-#define HD_MLT          93
-#define HD_TST          94
-#define HD_TSTIO        95
 
-/*
- * Rabbit 2000 / Rabbit 4000 specific Instructions
- */
-#define X_LJP                97
-#define X_LCALL              98
-#define X_BOOL               99
-
-#define X_R3K_MODE          101
-#define R3K_INH1            102
-#define R3K_INH2            103
-
-#define X_R4K_MODE          105
-/* the remaining instructions are only on Rabbit 4000: */
-#define X_R4K_MULU          106
-#define X_JRE               107
-#define X_CLR               108
-#define R4K_INH2            109
 
 #define BCDE_PG           0xDD
 #define JKHL_PG           0xFD
 
+#define R_2K       0
+#define R_3KA      3
+#define R_4K       4
+#define R_6K       6
+
+#define R_NOMODE   0
+#define R_MODE00   1
+#define R_MODE01   2
+#define R_MODE10   3
+#define R_MODE11   4
+
+#define IS_MIN_MODE_01(x) ((x.mode)>=R_MODE01)
+#define IS_MODE_10_OR_11(x) ((x.mode)>=R_MODE10)
+#define IS_MODE_10(x) ((x.mode)==R_MODE10)
+#define IS_MODE_11(x) ((x.mode)==R_MODE11)
+#define IS_MIN_3KA(x) ((x.cpu)>=R_3KA)
+#define IS_MIN_4K(x) ((x.cpu)>=R_4K)
+#define IS_ONLY_4K(x) ((x.cpu)==R_4K)
+#define IS_MIN_6K(x) ((x.cpu)>=R_6K)
+
+/*
+ * Processor Types (S_CPU)
+ */
+#define	T_R2K		0
+#define	T_R3KA		1
+#define T_R4K00         2
+#define T_R4K01         3
+#define T_R4K10         4
+#define T_R4K11         5
+#define T_R6K00         6
+#define T_R6K01         7
+#define T_R6K10         8
+#define T_R6K11         9
+
+
 struct adsym
 {
         char    a_str[8];       /* addressing string */
-        int     a_val;          /* addressing mode value */
+	int	a_val;		/* addressing mode value */
 };
 
         /* register names are in rabadr.c: */
-extern  struct  adsym   R8[];
-extern  struct  adsym   R8X[];
+extern	struct	adsym	R8[];
+extern	struct	adsym	R8X[];
 extern  struct  adsym   R8IP[];
-extern  struct  adsym   R16[];
-extern  struct  adsym   R16X[];
+extern	struct	adsym	R16[];
+extern  struct  adsym   R16_ALT[];
+extern	struct	adsym	R16AF[];
+extern  struct  adsym   R16AF_ALT[];
 
 extern  struct  adsym   R32_JKHL[];
 extern  struct  adsym   R32_BCDE[];
 extern  struct  adsym   RXPC[];
 
-extern  struct  adsym   CND[];
+extern	struct	adsym	CND[];
 extern  struct  adsym   ALT_CND[];
+extern  struct  adsym   R6_CND[];
 
-        /* machine dependent functions */
+extern	struct	adsym	R16_JK_OR_ALT[];
 
-#ifdef  OTHERSYSTEM
+extern	struct	adsym	R16SU[];
+
+	/* machine dependent functions */
 
         /* rabadr.c */
-extern  int             addr(struct expr *esp);
-extern  int             admode(struct adsym *sp);
+extern	int		addr(struct expr *esp);
+extern	int		admode(struct adsym *sp);
 extern  int             any(char c, char *str);
-extern  int             srch(char *str);
+extern	int		srch(char *str);
 
-
-        /* rabmch.c */
-extern  int             genop(int pop, int op, struct expr *esp, int f);
-extern  int             gixiy(int v);
+	/* rabmch.c */
+extern	int		genop(int pop, int op, struct expr *esp, int f);
+extern	int		gixiy(int v);
 extern  int             mchpcr(struct expr *esp);
 
-#else
-
-        /* rabadr.c */
-extern  int             addr();
-extern  int             admode();
-extern  int             any();
-extern  int             srch();
-
-        /* rabmch.c */
-extern  int             genop();
-extern  int             gixiy();
-extern  int             mchpcr();
-
-#endif

@@ -13,7 +13,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -88,7 +88,7 @@ ___fsmul:
 00007$:
 	mov	exp_a, a
 
-	// now we need to multipy r4/r3/r2 * r7/r6/r5
+	// now we need to multiply r4/r3/r2 * r7/r6/r5
 	// ------------------------------------------
 	//	                        r2 * r5		<< 0
 	//	            r3 * r5  +  r2 * r6		<< 8
@@ -238,10 +238,11 @@ union float_long
   };
 
 /* multiply two floats */
-float __fsmul (float a1, float a2) {
+float __fsmul (float a1, float a2) __SDCC_FLOAT_NONBANKED
+{
   volatile union float_long fl1, fl2;
-  volatile unsigned long result;
-  volatile int exp;
+  unsigned long result;
+  int exp;
   char sign;
 
   fl1.f = a1;
@@ -258,10 +259,10 @@ float __fsmul (float a1, float a2) {
   fl1.l = MANT (fl1.l);
   fl2.l = MANT (fl2.l);
 
-  /* the multiply is done as one 16x16 multiply and two 16x8 multiples */
-  result = (fl1.l >> 8) * (fl2.l >> 8);
-  result += ((fl1.l & (unsigned long) 0xFF) * (fl2.l >> 8)) >> 8;
-  result += ((fl2.l & (unsigned long) 0xFF) * (fl1.l >> 8)) >> 8;
+  /* the multiply is done as one 16x16 multiply and two 16x8 multiplies */
+  result = (unsigned long)((unsigned short)(fl1.l >> 8)) * (unsigned short)(fl2.l >> 8);
+  result += ((unsigned long)((unsigned short)(fl1.l & 0xff)) * (unsigned short)(fl2.l >> 8)) >> 8;
+  result += ((unsigned long)((unsigned short)(fl2.l & 0xff)) * (unsigned short)(fl1.l >> 8)) >> 8;
 
   /* round, phase 1 */
   result += 0x40;

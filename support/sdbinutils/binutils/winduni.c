@@ -1,5 +1,5 @@
 /* winduni.c -- unicode support for the windres program.
-   Copyright (C) 1997-2014 Free Software Foundation, Inc.
+   Copyright (C) 1997-2022 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Cygnus Support.
    Rewritten by Kai Tietz, Onevision.
 
@@ -57,7 +57,7 @@ static int unichar_isascii (const unichar *, rc_uint_type);
 /* Codepages mapped.  */
 static local_iconv_map codepages[] =
 {
-  { 0, "MS-ANSI" },
+  { 0, "cp1252" },
   { 1, "WINDOWS-1252" },
   { 437, "MS-ANSI" },
   { 737, "MS-GREEK" },
@@ -213,7 +213,7 @@ unicode_from_ascii_len (rc_uint_type *length, unichar **unicode, const char *asc
     }
 
   /* Make sure we have zero terminated string.  */
-  p = tmp = (char *) alloca (a_length + 1);
+  p = tmp = (char *) xmalloc (a_length + 1);
   memcpy (tmp, ascii, a_length);
   tmp[a_length] = 0;
 
@@ -279,6 +279,8 @@ unicode_from_ascii_len (rc_uint_type *length, unichar **unicode, const char *asc
 
   if (length)
     *length = idx;
+
+  free (tmp);
 }
 
 /* Convert an unicode string to an ASCII string.  We just copy it,
@@ -830,7 +832,7 @@ wind_WideCharToMultiByte (rc_uint_type cp, const unichar *u, char *mb, rc_uint_t
 {
   rc_uint_type ret = 0;
 #if defined (_WIN32) || defined (__CYGWIN__)
-  WINBOOL used_def = FALSE;
+  WINBOOL used_def = false;
 
   ret = (rc_uint_type) WideCharToMultiByte (cp, 0, u, -1, mb, mb_len,
 				      	    NULL, & used_def);

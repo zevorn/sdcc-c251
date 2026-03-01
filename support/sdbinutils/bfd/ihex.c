@@ -1,5 +1,5 @@
 /* BFD back-end for Intel Hex objects.
-   Copyright (C) 1995-2014 Free Software Foundation, Inc.
+   Copyright (C) 1995-2022 Free Software Foundation, Inc.
    Written by Ian Lance Taylor of Cygnus Support <ian@cygnus.com>.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -160,44 +160,44 @@ struct ihex_data_struct
 static void
 ihex_init (void)
 {
-  static bfd_boolean inited;
+  static bool inited;
 
   if (! inited)
     {
-      inited = TRUE;
+      inited = true;
       hex_init ();
     }
 }
 
 /* Create an ihex object.  */
 
-static bfd_boolean
+static bool
 ihex_mkobject (bfd *abfd)
 {
   struct ihex_data_struct *tdata;
 
   tdata = (struct ihex_data_struct *) bfd_alloc (abfd, sizeof (* tdata));
   if (tdata == NULL)
-    return FALSE;
+    return false;
 
   abfd->tdata.ihex_data = tdata;
   tdata->head = NULL;
   tdata->tail = NULL;
-  return TRUE;
+  return true;
 }
 
 /* Read a byte from a BFD.  Set *ERRORPTR if an error occurred.
    Return EOF on error or end of file.  */
 
-static INLINE int
-ihex_get_byte (bfd *abfd, bfd_boolean *errorptr)
+static inline int
+ihex_get_byte (bfd *abfd, bool *errorptr)
 {
   bfd_byte c;
 
   if (bfd_bread (&c, (bfd_size_type) 1, abfd) != 1)
     {
       if (bfd_get_error () != bfd_error_file_truncated)
-	*errorptr = TRUE;
+	*errorptr = true;
       return EOF;
     }
 
@@ -207,7 +207,7 @@ ihex_get_byte (bfd *abfd, bfd_boolean *errorptr)
 /* Report a problem in an Intel Hex file.  */
 
 static void
-ihex_bad_byte (bfd *abfd, unsigned int lineno, int c, bfd_boolean error)
+ihex_bad_byte (bfd *abfd, unsigned int lineno, int c, bool error)
 {
   if (c == EOF)
     {
@@ -219,14 +219,15 @@ ihex_bad_byte (bfd *abfd, unsigned int lineno, int c, bfd_boolean error)
       char buf[10];
 
       if (! ISPRINT (c))
-	sprintf (buf, "\\%03o", (unsigned int) c);
+	sprintf (buf, "\\%03o", (unsigned int) c & 0xff);
       else
 	{
 	  buf[0] = c;
 	  buf[1] = '\0';
 	}
-      (*_bfd_error_handler)
-	(_("%B:%d: unexpected character `%s' in Intel Hex file"),
+      _bfd_error_handler
+	/* xgettext:c-format */
+	(_("%pB:%d: unexpected character `%s' in Intel Hex file"),
 	 abfd, lineno, buf);
       bfd_set_error (bfd_error_bad_value);
     }
@@ -235,14 +236,14 @@ ihex_bad_byte (bfd *abfd, unsigned int lineno, int c, bfd_boolean error)
 /* Read an Intel hex file and turn it into sections.  We create a new
    section for each contiguous set of bytes.  */
 
-static bfd_boolean
+static bool
 ihex_scan (bfd *abfd)
 {
   bfd_vma segbase;
   bfd_vma extbase;
   asection *sec;
   unsigned int lineno;
-  bfd_boolean error;
+  bool error;
   bfd_byte *buf = NULL;
   size_t bufsize;
   int c;
@@ -256,7 +257,7 @@ ihex_scan (bfd *abfd)
   extbase = 0;
   sec = NULL;
   lineno = 1;
-  error = FALSE;
+  error = false;
   bufsize = 0;
 
   while ((c = ihex_get_byte (abfd, &error)) != EOF)
@@ -276,7 +277,7 @@ ihex_scan (bfd *abfd)
       else
 	{
 	  file_ptr pos;
-	  char hdr[8];
+	  unsigned char hdr[8];
 	  unsigned int i;
 	  unsigned int len;
 	  bfd_vma addr;
@@ -332,8 +333,9 @@ ihex_scan (bfd *abfd)
 	    chksum += HEX2 (buf + 2 * i);
 	  if (((- chksum) & 0xff) != (unsigned int) HEX2 (buf + 2 * i))
 	    {
-	      (*_bfd_error_handler)
-		(_("%B:%u: bad checksum in Intel Hex file (expected %u, found %u)"),
+	      _bfd_error_handler
+		/* xgettext:c-format */
+		(_("%pB:%u: bad checksum in Intel Hex file (expected %u, found %u)"),
 		 abfd, lineno,
 		 (- chksum) & 0xff, (unsigned int) HEX2 (buf + 2 * i));
 	      bfd_set_error (bfd_error_bad_value);
@@ -348,14 +350,14 @@ ihex_scan (bfd *abfd)
 		  && sec->vma + sec->size == extbase + segbase + addr)
 		{
 		  /* This data goes at the end of the section we are
-                     currently building.  */
+		     currently building.  */
 		  sec->size += len;
 		}
 	      else if (len > 0)
 		{
 		  char secbuf[20];
 		  char *secname;
-		  bfd_size_type amt;
+		  size_t amt;
 		  flagword flags;
 
 		  sprintf (secbuf, ".sec%d", bfd_count_sections (abfd) + 1);
@@ -379,16 +381,16 @@ ihex_scan (bfd *abfd)
 	      /* An end record.  */
 	      if (abfd->start_address == 0)
 		abfd->start_address = addr;
-	      if (buf != NULL)
-		free (buf);
-	      return TRUE;
+	      free (buf);
+	      return true;
 
 	    case 2:
 	      /* An extended address record.  */
 	      if (len != 2)
 		{
-		  (*_bfd_error_handler)
-		    (_("%B:%u: bad extended address record length in Intel Hex file"),
+		  _bfd_error_handler
+		    /* xgettext:c-format */
+		    (_("%pB:%u: bad extended address record length in Intel Hex file"),
 		     abfd, lineno);
 		  bfd_set_error (bfd_error_bad_value);
 		  goto error_return;
@@ -404,8 +406,9 @@ ihex_scan (bfd *abfd)
 	      /* An extended start address record.  */
 	      if (len != 4)
 		{
-		  (*_bfd_error_handler)
-		    (_("%B:%u: bad extended start address length in Intel Hex file"),
+		  _bfd_error_handler
+		    /* xgettext:c-format */
+		    (_("%pB:%u: bad extended start address length in Intel Hex file"),
 		     abfd, lineno);
 		  bfd_set_error (bfd_error_bad_value);
 		  goto error_return;
@@ -421,8 +424,9 @@ ihex_scan (bfd *abfd)
 	      /* An extended linear address record.  */
 	      if (len != 2)
 		{
-		  (*_bfd_error_handler)
-		    (_("%B:%u: bad extended linear address record length in Intel Hex file"),
+		  _bfd_error_handler
+		    /* xgettext:c-format */
+		    (_("%pB:%u: bad extended linear address record length in Intel Hex file"),
 		     abfd, lineno);
 		  bfd_set_error (bfd_error_bad_value);
 		  goto error_return;
@@ -438,8 +442,9 @@ ihex_scan (bfd *abfd)
 	      /* An extended linear start address record.  */
 	      if (len != 2 && len != 4)
 		{
-		  (*_bfd_error_handler)
-		    (_("%B:%u: bad extended linear start address length in Intel Hex file"),
+		  _bfd_error_handler
+		    /* xgettext:c-format */
+		    (_("%pB:%u: bad extended linear start address length in Intel Hex file"),
 		     abfd, lineno);
 		  bfd_set_error (bfd_error_bad_value);
 		  goto error_return;
@@ -455,8 +460,9 @@ ihex_scan (bfd *abfd)
 	      break;
 
 	    default:
-	      (*_bfd_error_handler)
-		(_("%B:%u: unrecognized ihex type %u in Intel Hex file"),
+	      _bfd_error_handler
+		/* xgettext:c-format */
+		(_("%pB:%u: unrecognized ihex type %u in Intel Hex file"),
 		 abfd, lineno, type);
 	      bfd_set_error (bfd_error_bad_value);
 	      goto error_return;
@@ -467,20 +473,17 @@ ihex_scan (bfd *abfd)
   if (error)
     goto error_return;
 
-  if (buf != NULL)
-    free (buf);
-
-  return TRUE;
+  free (buf);
+  return true;
 
  error_return:
-  if (buf != NULL)
-    free (buf);
-  return FALSE;
+  free (buf);
+  return false;
 }
 
 /* Try to recognize an Intel Hex file.  */
 
-static const bfd_target *
+static bfd_cleanup
 ihex_object_p (bfd *abfd)
 {
   void * tdata_save;
@@ -531,29 +534,29 @@ ihex_object_p (bfd *abfd)
       return NULL;
     }
 
-  return abfd->xvec;
+  return _bfd_no_cleanup;
 }
 
 /* Read the contents of a section in an Intel Hex file.  */
 
-static bfd_boolean
+static bool
 ihex_read_section (bfd *abfd, asection *section, bfd_byte *contents)
 {
   int c;
   bfd_byte *p;
   bfd_byte *buf = NULL;
   size_t bufsize;
-  bfd_boolean error;
+  bool error;
 
   if (bfd_seek (abfd, section->filepos, SEEK_SET) != 0)
     goto error_return;
 
   p = contents;
   bufsize = 0;
-  error = FALSE;
+  error = false;
   while ((c = ihex_get_byte (abfd, &error)) != EOF)
     {
-      char hdr[8];
+      unsigned char hdr[8];
       unsigned int len;
       unsigned int type;
       unsigned int i;
@@ -562,7 +565,7 @@ ihex_read_section (bfd *abfd, asection *section, bfd_byte *contents)
 	continue;
 
       /* This is called after ihex_scan has succeeded, so we ought to
-         know the exact format.  */
+	 know the exact format.  */
       BFD_ASSERT (c == ':');
 
       if (bfd_bread (hdr, (bfd_size_type) 8, abfd) != 8)
@@ -574,8 +577,8 @@ ihex_read_section (bfd *abfd, asection *section, bfd_byte *contents)
       /* We should only see type 0 records here.  */
       if (type != 0)
 	{
-	  (*_bfd_error_handler)
-	    (_("%B: internal error in ihex_read_section"), abfd);
+	  _bfd_error_handler
+	    (_("%pB: internal error in ihex_read_section"), abfd);
 	  bfd_set_error (bfd_error_bad_value);
 	  goto error_return;
 	}
@@ -596,9 +599,8 @@ ihex_read_section (bfd *abfd, asection *section, bfd_byte *contents)
       if ((bfd_size_type) (p - contents) >= section->size)
 	{
 	  /* We've read everything in the section.  */
-	  if (buf != NULL)
-	    free (buf);
-	  return TRUE;
+	  free (buf);
+	  return true;
 	}
 
       /* Skip the checksum.  */
@@ -608,26 +610,23 @@ ihex_read_section (bfd *abfd, asection *section, bfd_byte *contents)
 
   if ((bfd_size_type) (p - contents) < section->size)
     {
-      (*_bfd_error_handler)
-	(_("%B: bad section length in ihex_read_section"), abfd);
+      _bfd_error_handler
+	(_("%pB: bad section length in ihex_read_section"), abfd);
       bfd_set_error (bfd_error_bad_value);
       goto error_return;
     }
 
-  if (buf != NULL)
-    free (buf);
-
-  return TRUE;
+  free (buf);
+  return true;
 
  error_return:
-  if (buf != NULL)
-    free (buf);
-  return FALSE;
+  free (buf);
+  return false;
 }
 
 /* Get the contents of a section in an Intel Hex file.  */
 
-static bfd_boolean
+static bool
 ihex_get_section_contents (bfd *abfd,
 			   asection *section,
 			   void * location,
@@ -638,21 +637,21 @@ ihex_get_section_contents (bfd *abfd,
     {
       section->used_by_bfd = bfd_alloc (abfd, section->size);
       if (section->used_by_bfd == NULL)
-	return FALSE;
+	return false;
       if (! ihex_read_section (abfd, section,
-                               (bfd_byte *) section->used_by_bfd))
-	return FALSE;
+			       (bfd_byte *) section->used_by_bfd))
+	return false;
     }
 
   memcpy (location, (bfd_byte *) section->used_by_bfd + offset,
 	  (size_t) count);
 
-  return TRUE;
+  return true;
 }
 
 /* Set the contents of a section in an Intel Hex file.  */
 
-static bfd_boolean
+static bool
 ihex_set_section_contents (bfd *abfd,
 			   asection *section,
 			   const void * location,
@@ -666,15 +665,15 @@ ihex_set_section_contents (bfd *abfd,
   if (count == 0
       || (section->flags & SEC_ALLOC) == 0
       || (section->flags & SEC_LOAD) == 0)
-    return TRUE;
+    return true;
 
   n = (struct ihex_data_list *) bfd_alloc (abfd, sizeof (* n));
   if (n == NULL)
-    return FALSE;
+    return false;
 
   data = (bfd_byte *) bfd_alloc (abfd, count);
   if (data == NULL)
-    return FALSE;
+    return false;
   memcpy (data, location, (size_t) count);
 
   n->data = data;
@@ -705,12 +704,12 @@ ihex_set_section_contents (bfd *abfd,
 	tdata->tail = n;
     }
 
-  return TRUE;
+  return true;
 }
 
 /* Write a record out to an Intel Hex file.  */
 
-static bfd_boolean
+static bool
 ihex_write_record (bfd *abfd,
 		   size_t count,
 		   unsigned int addr,
@@ -747,14 +746,14 @@ ihex_write_record (bfd *abfd,
 
   total = 9 + count * 2 + 4;
   if (bfd_bwrite (buf, (bfd_size_type) total, abfd) != total)
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 /* Write out an Intel Hex file.  */
 
-static bfd_boolean
+static bool
 ihex_write_object_contents (bfd *abfd)
 {
   bfd_vma segbase;
@@ -770,6 +769,28 @@ ihex_write_object_contents (bfd *abfd)
       bfd_size_type count;
 
       where = l->where;
+
+#ifdef BFD64
+      /* IHex only supports 32-bit addresses, and we want to check
+	 that 64-bit addresses are in range.  This isn't quite as
+	 obvious as it may seem, since some targets have 32-bit
+	 addresses that are sign extended to 64 bits.  So complain
+	 only if addresses overflow both unsigned and signed 32-bit
+	 integers.  */
+      if (where > 0xffffffff
+	  && where + 0x80000000 > 0xffffffff)
+	{
+	  _bfd_error_handler
+	    /* xgettext:c-format */
+	    (_("%pB 64-bit address %#" PRIx64
+	       " out of range for Intel Hex file"),
+	     abfd, (uint64_t) where);
+	  bfd_set_error (bfd_error_bad_value);
+	  return false;
+	}
+      where &= 0xffffffff;
+#endif
+
       p = l->data;
       count = l->size;
 
@@ -782,66 +803,64 @@ ihex_write_object_contents (bfd *abfd)
 	  if (count > CHUNK)
 	    now = CHUNK;
 
-	  if (where > segbase + extbase + 0xffff)
+	  if (where < extbase
+	      || where - extbase < segbase
+	      || where - extbase - segbase > 0xffff)
 	    {
 	      bfd_byte addr[2];
 
 	      /* We need a new base address.  */
-	      if (where <= 0xfffff)
+	      if (extbase == 0 && where <= 0xfffff)
 		{
-		  /* The addresses should be sorted.  */
-		  BFD_ASSERT (extbase == 0);
-
 		  segbase = where & 0xf0000;
 		  addr[0] = (bfd_byte)(segbase >> 12) & 0xff;
 		  addr[1] = (bfd_byte)(segbase >> 4) & 0xff;
 		  if (! ihex_write_record (abfd, 2, 0, 2, addr))
-		    return FALSE;
+		    return false;
 		}
 	      else
 		{
 		  /* The extended address record and the extended
-                     linear address record are combined, at least by
-                     some readers.  We need an extended linear address
-                     record here, so if we've already written out an
-                     extended address record, zero it out to avoid
-                     confusion.  */
+		     linear address record are combined, at least by
+		     some readers.  We need an extended linear address
+		     record here, so if we've already written out an
+		     extended address record, zero it out to avoid
+		     confusion.  */
 		  if (segbase != 0)
 		    {
 		      addr[0] = 0;
 		      addr[1] = 0;
 		      if (! ihex_write_record (abfd, 2, 0, 2, addr))
-			return FALSE;
+			return false;
 		      segbase = 0;
 		    }
 
 		  extbase = where & 0xffff0000;
 		  if (where > extbase + 0xffff)
 		    {
-		      char buf[20];
-
-		      sprintf_vma (buf, where);
-		      (*_bfd_error_handler)
-			(_("%s: address 0x%s out of range for Intel Hex file"),
-			 bfd_get_filename (abfd), buf);
+		      _bfd_error_handler
+			/* xgettext:c-format */
+			(_("%pB: address %#" PRIx64
+			   " out of range for Intel Hex file"),
+			 abfd, (uint64_t) where);
 		      bfd_set_error (bfd_error_bad_value);
-		      return FALSE;
+		      return false;
 		    }
 		  addr[0] = (bfd_byte)(extbase >> 24) & 0xff;
 		  addr[1] = (bfd_byte)(extbase >> 16) & 0xff;
 		  if (! ihex_write_record (abfd, 2, 0, 4, addr))
-		    return FALSE;
+		    return false;
 		}
 	    }
 
 	  rec_addr = where - (extbase + segbase);
 
-          /* Output records shouldn't cross 64K boundaries.  */
-          if (rec_addr + now > 0xffff)
-            now = 0x10000 - rec_addr;
+	  /* Output records shouldn't cross 64K boundaries.  */
+	  if (rec_addr + now > 0xffff)
+	    now = 0x10000 - rec_addr;
 
 	  if (! ihex_write_record (abfd, now, rec_addr, 0, p))
-	    return FALSE;
+	    return false;
 
 	  where += now;
 	  p += now;
@@ -863,7 +882,7 @@ ihex_write_object_contents (bfd *abfd)
 	  startbuf[2] = (bfd_byte)(start >> 8) & 0xff;
 	  startbuf[3] = (bfd_byte)start & 0xff;
 	  if (! ihex_write_record (abfd, 4, 0, 3, startbuf))
-	    return FALSE;
+	    return false;
 	}
       else
 	{
@@ -872,20 +891,20 @@ ihex_write_object_contents (bfd *abfd)
 	  startbuf[2] = (bfd_byte)(start >> 8) & 0xff;
 	  startbuf[3] = (bfd_byte)start & 0xff;
 	  if (! ihex_write_record (abfd, 4, 0, 5, startbuf))
-	    return FALSE;
+	    return false;
 	}
     }
 
   if (! ihex_write_record (abfd, 0, 0, 1, NULL))
-    return FALSE;
+    return false;
 
-  return TRUE;
+  return true;
 }
 
 /* Set the architecture for the output file.  The architecture is
    irrelevant, so we ignore errors about unknown architectures.  */
 
-static bfd_boolean
+static bool
 ihex_set_arch_mach (bfd *abfd,
 		    enum bfd_architecture arch,
 		    unsigned long mach)
@@ -893,9 +912,9 @@ ihex_set_arch_mach (bfd *abfd,
   if (! bfd_default_set_arch_mach (abfd, arch, mach))
     {
       if (arch != bfd_arch_unknown)
-	return FALSE;
+	return false;
     }
-  return TRUE;
+  return true;
 }
 
 /* Get the size of the headers, for the linker.  */
@@ -909,40 +928,44 @@ ihex_sizeof_headers (bfd *abfd ATTRIBUTE_UNUSED,
 
 /* Some random definitions for the target vector.  */
 
-#define	ihex_close_and_cleanup                    _bfd_generic_close_and_cleanup
-#define ihex_bfd_free_cached_info                 _bfd_generic_bfd_free_cached_info
-#define ihex_new_section_hook                     _bfd_generic_new_section_hook
-#define ihex_get_section_contents_in_window       _bfd_generic_get_section_contents_in_window
-#define ihex_get_symtab_upper_bound               bfd_0l
-#define ihex_canonicalize_symtab                  ((long (*) (bfd *, asymbol **)) bfd_0l)
-#define ihex_make_empty_symbol                    _bfd_generic_make_empty_symbol
-#define ihex_print_symbol                         _bfd_nosymbols_print_symbol
-#define ihex_get_symbol_info                      _bfd_nosymbols_get_symbol_info
-#define ihex_bfd_is_target_special_symbol         ((bfd_boolean (*) (bfd *, asymbol *)) bfd_false)
-#define ihex_bfd_is_local_label_name              _bfd_nosymbols_bfd_is_local_label_name
-#define ihex_get_lineno                           _bfd_nosymbols_get_lineno
-#define ihex_find_nearest_line                    _bfd_nosymbols_find_nearest_line
-#define ihex_find_line                            _bfd_nosymbols_find_line
-#define ihex_find_inliner_info                    _bfd_nosymbols_find_inliner_info
-#define ihex_bfd_make_debug_symbol                _bfd_nosymbols_bfd_make_debug_symbol
-#define ihex_read_minisymbols                     _bfd_nosymbols_read_minisymbols
-#define ihex_minisymbol_to_symbol                 _bfd_nosymbols_minisymbol_to_symbol
-#define ihex_bfd_get_relocated_section_contents   bfd_generic_get_relocated_section_contents
-#define ihex_bfd_relax_section                    bfd_generic_relax_section
-#define ihex_bfd_gc_sections                      bfd_generic_gc_sections
-#define ihex_bfd_lookup_section_flags             bfd_generic_lookup_section_flags
-#define ihex_bfd_merge_sections                   bfd_generic_merge_sections
-#define ihex_bfd_is_group_section                 bfd_generic_is_group_section
-#define ihex_bfd_discard_group                    bfd_generic_discard_group
-#define ihex_section_already_linked               _bfd_generic_section_already_linked
-#define ihex_bfd_define_common_symbol             bfd_generic_define_common_symbol
-#define ihex_bfd_link_hash_table_create           _bfd_generic_link_hash_table_create
-#define ihex_bfd_link_add_symbols                 _bfd_generic_link_add_symbols
-#define ihex_bfd_link_just_syms                   _bfd_generic_link_just_syms
-#define ihex_bfd_copy_link_hash_symbol_type \
-  _bfd_generic_copy_link_hash_symbol_type
-#define ihex_bfd_final_link                       _bfd_generic_final_link
-#define ihex_bfd_link_split_section               _bfd_generic_link_split_section
+#define	ihex_close_and_cleanup			  _bfd_generic_close_and_cleanup
+#define ihex_bfd_free_cached_info		  _bfd_generic_bfd_free_cached_info
+#define ihex_new_section_hook			  _bfd_generic_new_section_hook
+#define ihex_get_section_contents_in_window	  _bfd_generic_get_section_contents_in_window
+#define ihex_get_symtab_upper_bound		  _bfd_long_bfd_0
+#define ihex_canonicalize_symtab		  _bfd_nosymbols_canonicalize_symtab
+#define ihex_make_empty_symbol			  _bfd_generic_make_empty_symbol
+#define ihex_print_symbol			  _bfd_nosymbols_print_symbol
+#define ihex_get_symbol_info			  _bfd_nosymbols_get_symbol_info
+#define ihex_get_symbol_version_string		  _bfd_nosymbols_get_symbol_version_string
+#define ihex_bfd_is_target_special_symbol	  _bfd_bool_bfd_asymbol_false
+#define ihex_bfd_is_local_label_name		  _bfd_nosymbols_bfd_is_local_label_name
+#define ihex_get_lineno				  _bfd_nosymbols_get_lineno
+#define ihex_find_nearest_line			  _bfd_nosymbols_find_nearest_line
+#define ihex_find_line				  _bfd_nosymbols_find_line
+#define ihex_find_inliner_info			  _bfd_nosymbols_find_inliner_info
+#define ihex_bfd_make_debug_symbol		  _bfd_nosymbols_bfd_make_debug_symbol
+#define ihex_read_minisymbols			  _bfd_nosymbols_read_minisymbols
+#define ihex_minisymbol_to_symbol		  _bfd_nosymbols_minisymbol_to_symbol
+#define ihex_bfd_get_relocated_section_contents	  bfd_generic_get_relocated_section_contents
+#define ihex_bfd_relax_section			  bfd_generic_relax_section
+#define ihex_bfd_gc_sections			  bfd_generic_gc_sections
+#define ihex_bfd_lookup_section_flags		  bfd_generic_lookup_section_flags
+#define ihex_bfd_merge_sections			  bfd_generic_merge_sections
+#define ihex_bfd_is_group_section		  bfd_generic_is_group_section
+#define ihex_bfd_group_name			  bfd_generic_group_name
+#define ihex_bfd_discard_group			  bfd_generic_discard_group
+#define ihex_section_already_linked		  _bfd_generic_section_already_linked
+#define ihex_bfd_define_common_symbol		  bfd_generic_define_common_symbol
+#define ihex_bfd_link_hide_symbol		  _bfd_generic_link_hide_symbol
+#define ihex_bfd_define_start_stop		  bfd_generic_define_start_stop
+#define ihex_bfd_link_hash_table_create		  _bfd_generic_link_hash_table_create
+#define ihex_bfd_link_add_symbols		  _bfd_generic_link_add_symbols
+#define ihex_bfd_link_just_syms			  _bfd_generic_link_just_syms
+#define ihex_bfd_copy_link_hash_symbol_type	  _bfd_generic_copy_link_hash_symbol_type
+#define ihex_bfd_final_link			  _bfd_generic_final_link
+#define ihex_bfd_link_split_section		  _bfd_generic_link_split_section
+#define ihex_bfd_link_check_relocs		  _bfd_generic_link_check_relocs
 
 /* The Intel Hex target vector.  */
 
@@ -958,6 +981,7 @@ const bfd_target ihex_vec =
   ' ',				/* AR_pad_char.  */
   16,				/* AR_max_namelen.  */
   0,				/* match priority.  */
+  TARGET_KEEP_UNUSED_SECTION_SYMBOLS, /* keep unused section symbols.  */
   bfd_getb64, bfd_getb_signed_64, bfd_putb64,
   bfd_getb32, bfd_getb_signed_32, bfd_putb32,
   bfd_getb16, bfd_getb_signed_16, bfd_putb16,	/* Data.  */
@@ -972,16 +996,16 @@ const bfd_target ihex_vec =
     _bfd_dummy_target,
   },
   {
-    bfd_false,
+    _bfd_bool_bfd_false_error,
     ihex_mkobject,
     _bfd_generic_mkarchive,
-    bfd_false,
+    _bfd_bool_bfd_false_error,
   },
   {				/* bfd_write_contents.  */
-    bfd_false,
+    _bfd_bool_bfd_false_error,
     ihex_write_object_contents,
     _bfd_write_archive_contents,
-    bfd_false,
+    _bfd_bool_bfd_false_error,
   },
 
   BFD_JUMP_TABLE_GENERIC (ihex),

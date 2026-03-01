@@ -1,6 +1,6 @@
 /* `a.out' object-file definitions, including extensions to 64-bit fields
 
-   Copyright (C) 1999-2014 Free Software Foundation, Inc.
+   Copyright (C) 1999-2022 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ struct external_exec
 #else
 #define OMAGIC 0407		/* Object file or impure executable.  */
 #define NMAGIC 0410		/* Code indicating pure executable.  */
+#define IMAGIC 0411		/* Separate instruction & data spaces for PDP-11. */
 #define ZMAGIC 0413		/* Code indicating demand-paged executable.  */
 #define BMAGIC 0415		/* Used by a b.out object.  */
 
@@ -136,7 +137,7 @@ struct external_exec
    in the text.  */
 #ifndef N_HEADER_IN_TEXT
 #define N_HEADER_IN_TEXT(x) \
-  (((x).a_entry & (TARGET_PAGE_SIZE-1)) >= EXEC_BYTES_SIZE)
+  (((x)->a_entry & (TARGET_PAGE_SIZE-1)) >= EXEC_BYTES_SIZE)
 #endif
 
 /* Sun shared libraries, not linux.  This macro is only relevant for ZMAGIC
@@ -199,26 +200,28 @@ struct external_exec
 #define	N_TXTSIZE(x) \
   (/* For QMAGIC, we don't consider the header part of the text section.  */\
    N_IS_QMAGIC (x)							\
-   ? (x).a_text - EXEC_BYTES_SIZE					\
+   ? (x)->a_text - EXEC_BYTES_SIZE					\
    : ((N_MAGIC (x) != ZMAGIC || N_SHARED_LIB (x))			\
-      ? (x).a_text							\
+      ? (x)->a_text							\
       : (N_HEADER_IN_TEXT (x)						\
-	 ? (x).a_text - EXEC_BYTES_SIZE	/* No padding.  */		\
-	 : (x).a_text			/* A page of padding.  */ )))
+	 ? (x)->a_text - EXEC_BYTES_SIZE	/* No padding.  */	\
+	 : (x)->a_text				/* A page of padding.  */ )))
 #endif
 /* The address of the data segment in virtual memory.
    It is the text segment address, plus text segment size, rounded
    up to a N_SEGSIZE boundary for pure or pageable files.  */
 #ifndef N_DATADDR
 #define N_DATADDR(x) \
-  (N_MAGIC (x) == OMAGIC						\
+  (N_MAGIC (x) == IMAGIC						\
+   ? (bfd_vma) 0							\
+   : N_MAGIC (x) == OMAGIC						\
    ? (N_TXTADDR (x) + N_TXTSIZE (x))					\
    : (N_SEGSIZE (x) + ((N_TXTADDR (x) + N_TXTSIZE (x) - 1)		\
 		       & ~ (bfd_vma) (N_SEGSIZE (x) - 1))))
 #endif
 /* The address of the BSS segment -- immediately after the data segment.  */
 
-#define N_BSSADDR(x)	(N_DATADDR (x) + (x).a_data)
+#define N_BSSADDR(x)	(N_DATADDR (x) + (x)->a_data)
 
 /* Offsets of the various portions of the file after the text segment.  */
 
@@ -238,16 +241,16 @@ struct external_exec
 #define N_DATOFF(x)	(N_TXTOFF (x) + N_TXTSIZE (x))
 #endif
 #ifndef N_TRELOFF
-#define N_TRELOFF(x)	(N_DATOFF (x) + (x).a_data)
+#define N_TRELOFF(x)	(N_DATOFF (x) + (x)->a_data)
 #endif
 #ifndef N_DRELOFF
-#define N_DRELOFF(x)	(N_TRELOFF (x) + (x).a_trsize)
+#define N_DRELOFF(x)	(N_TRELOFF (x) + (x)->a_trsize)
 #endif
 #ifndef N_SYMOFF
-#define N_SYMOFF(x)	(N_DRELOFF (x) + (x).a_drsize)
+#define N_SYMOFF(x)	(N_DRELOFF (x) + (x)->a_drsize)
 #endif
 #ifndef N_STROFF
-#define N_STROFF(x)	(N_SYMOFF (x) + (x).a_syms)
+#define N_STROFF(x)	(N_SYMOFF (x) + (x)->a_syms)
 #endif
 
 /* Symbols */
@@ -346,7 +349,7 @@ struct internal_nlist
 
 struct reloc_std_external
 {
-  bfd_byte r_address[BYTES_IN_WORD];	/* Offset of of data to relocate.  */
+  bfd_byte r_address[BYTES_IN_WORD];	/* Offset of data to relocate.  */
   bfd_byte r_index[3];			/* Symbol table index of symbol.  */
   bfd_byte r_type[1];			/* Relocation type.  */
 };
@@ -406,7 +409,7 @@ struct reloc_std_internal
 
 struct reloc_ext_external
 {
-  bfd_byte r_address[BYTES_IN_WORD];	/* Offset of of data to relocate.  */
+  bfd_byte r_address[BYTES_IN_WORD];	/* Offset of data to relocate.  */
   bfd_byte r_index[3];			/* Symbol table index of symbol.  */
   bfd_byte r_type[1];			/* Relocation type.  */
   bfd_byte r_addend[BYTES_IN_WORD];	/* Datum addend.  */
@@ -476,32 +479,14 @@ enum reloc_type
   RELOC_11,	
   RELOC_WDISP2_14,
   RELOC_WDISP19,
-  RELOC_HHI22,			/* data[0:21] = (addend + sv) >> 42     */
-  RELOC_HLO10,			/* data[0:9] = (addend + sv) >> 32      */
-  
-  /* 29K relocation types.  */
-  RELOC_JUMPTARG,
-  RELOC_CONST,
-  RELOC_CONSTH,
-  
-  /* All the new ones I can think of, for sparc v9.  */
-  RELOC_64,			/* data[0:63] = addend + sv 		*/
-  RELOC_DISP64,			/* data[0:63] = addend - pc + sv 	*/
-  RELOC_WDISP21,		/* data[0:20] = (addend + sv - pc)>>2 	*/
-  RELOC_DISP21,			/* data[0:20] = addend - pc + sv        */
-  RELOC_DISP14,			/* data[0:13] = addend - pc + sv 	*/
-  /* Q .
-     What are the other ones,
-     Since this is a clean slate, can we throw away the ones we dont
-     understand ? Should we sort the values ? What about using a
-     microcode format like the 68k ?  */
+
   NO_RELOC
   };
 
 
 struct reloc_internal
 {
-  bfd_vma r_address;		/* Offset of of data to relocate.  */
+  bfd_vma r_address;		/* Offset of data to relocate.  */
   long	r_index;		/* Symbol table index of symbol.  */
   enum reloc_type r_type;	/* Relocation type.  */
   bfd_vma r_addend;		/* Datum addend.  */

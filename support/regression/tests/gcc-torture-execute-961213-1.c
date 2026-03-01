@@ -8,8 +8,7 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when long long constants are supported!
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
+#if !defined(__SDCC_pic14) && !defined(__SDCC_pic16) && !defined(__SDCC_pdk14)
 int
 g (unsigned long long int *v, int n, unsigned int a[], int b)
 {
@@ -24,7 +23,7 @@ g (unsigned long long int *v, int n, unsigned int a[], int b)
 void
 testTortureExecute (void)
 {
-#if 0
+#if !defined(__SDCC_mcs51) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16) && !defined(__SDCC_pdk14) // Lack of memory
   int res;
   unsigned int ar[] = { 10, 11, 12, 13, 14 };
   unsigned long long int v;

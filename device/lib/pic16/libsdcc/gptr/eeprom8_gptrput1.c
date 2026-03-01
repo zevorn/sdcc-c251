@@ -26,37 +26,31 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-/* write address is expected to be in WREG:PRODL:FSR0L while
- * write value is in TBLPTRH:TBLPTRL:PRODH:[stack] */
+extern int EEADR;
+extern int EECON1;
+extern int EEDATA;
+extern int FSR0H;
+extern int FSR0L;
+extern int INTCON;
+extern int PREINC1;
+extern int __eeprom8_write;
 
-extern EEADR;
-extern EECON1;
-extern EEDATA;
-extern FSR0H;
-extern FSR0L;
-extern INTCON;
-extern PREINC1;
-extern __eeprom8_write;
-
+/* Write 1 byte to 8-bit EEPROM address.  Data in WREG. */
 void
 __eeprom8_gptrput1(void) __naked
 {
     __asm
-        MOVFF   _INTCON, _FSR0H     ; save previous interupt state
+        MOVFF   _INTCON, _FSR0L     ; save previous interrupt state
         BCF     _INTCON, 7, 0       ; GIE = 0: disable interrupts
 
-        BCF     _EECON1, 7, 0       ; EEPGD = 0: access EEPROM, not program memory
-        BCF     _EECON1, 6, 0       ; CFGS = 0: access EEPROM, not config words
         BSF     _EECON1, 2, 0       ; WREN = 1: enable write access
 
-        MOVFF   _FSR0L, _EEADR      ; address first byte
-
-        MOVFF   _PREINC1, _EEDATA   ; load first byte
+        MOVWF   _EEDATA             ; load first byte
         CALL    ___eeprom8_write    ; write and address next byte
 
         BCF     _EECON1, 2, 0       ; WREN = 0: disable write access
 
-        BTFSC   _FSR0H, 7, 0        ; check previous interrupt state
+        BTFSC   _FSR0L, 7, 0        ; check previous interrupt state
         BSF     _INTCON, 7, 0       ; conditionally re-enable interrupts
 
         RETURN

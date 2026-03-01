@@ -61,12 +61,18 @@ union float_long
 #endif
 
 
-/* Functions on the z80 & gbz80 are always reentrant and so the "reentrant" */
+/* Functions on the z80 and related are always reentrant and so the "reentrant" */
 /* keyword is not defined. */
-#if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_r2k) || defined(__SDCC_r3ka) || defined(__SDCC_tlcs90) || defined(__SDCC_gbz80) || defined(__SDCC_stm8)
+#if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k) || defined(__SDCC_tlcs90) || defined(__SDCC_sm83) || defined(__SDCC_ez80) || defined(__SDCC_z80n) || defined(__SDCC_r800) || defined(__SDCC_stm8) || defined(__SDCC_f8) || defined(__SDCC_f8l)
 #define _FLOAT_FUNC_REENTRANT
+#define _NEAR
+#elif (defined(__SDCC_mos6502) || defined(__SDCC_mos65c02) || defined(__SDCC_s08) || defined(__SDCC_hc08)) && !defined(__SDCC_STACK_AUTO)
+#define _FLOAT_FUNC_REENTRANT
+#define _FLOAT_NON_REENTRANT
+#define _NEAR __data
 #else
 #define _FLOAT_FUNC_REENTRANT __reentrant
+#define _NEAR
 #endif
 
 /**********************************************
@@ -103,4 +109,6 @@ float ceilf(float x) _FLOAT_FUNC_REENTRANT;
 float floorf(float x) _FLOAT_FUNC_REENTRANT;
 float modff(float x, float * y);
 
+int isnan(float f);
+int isinf(float f);
 #endif  /* _INC_MATH */

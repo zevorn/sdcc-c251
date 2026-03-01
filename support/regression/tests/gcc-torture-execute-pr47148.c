@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-#if 0
-//TODO: Enable once sdcc supports C99's mixture of declarations and statements.
 /* PR tree-optimization/47148 */
 
 static inline unsigned
@@ -32,17 +30,14 @@ foo (unsigned char x, unsigned y)
   unsigned d = bar (a, a);
   b &= ((a - d) && (a - 1)) + c;
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   foo (1, 1);
   foo (-1, 1);
   if (b && ((unsigned char) -1) == 255)
     ASSERT (0);
   return;
-#endif
 }
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2006-2014 Free Software Foundation, Inc.
+/* Copyright (C) 2006-2022 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -11,10 +11,10 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
 
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, write to the Free
-   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-   02111-1307 USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 /* This is somewhat modelled after the file of the same name on SVR4
    systems.  It provides a definition of the core file format for ELF
@@ -31,13 +31,7 @@
 
 /* We define here only the symbols differing from their 64-bit variant.  */
 #include <sys/procfs.h>
-
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#else
-typedef unsigned int uint32_t;
-typedef unsigned long long int uint64_t;
-#endif
 
 /* Unsigned 64-bit integer aligned to 8 bytes.  */
 typedef uint64_t __attribute__ ((__aligned__ (8))) a8_uint64_t;

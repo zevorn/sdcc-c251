@@ -26,16 +26,17 @@
 ;   might be covered by the GNU General Public License.
 ;--------------------------------------------------------------------------
 
-	.globl __sdcc_heap_init
-	.globl __sdcc_heap_start
-	.globl __sdcc_heap_end
+	.globl ___sdcc_heap_init
+	.globl ___sdcc_heap
+	.globl ___sdcc_heap_end
 
 	.area GSINIT
-	call __sdcc_heap_init
+	call ___sdcc_heap_init
 
 	.area DATA
-	; For now just allocate 128 bytes for the heap.
-__sdcc_heap_start::
-	.ds 255
-__sdcc_heap_end::
-	.ds 1 
+	; For now just allocate 1024 bytes for the heap.
+___sdcc_heap::
+	.ds 1023
+___sdcc_heap_end::
+	.ds 1
+

@@ -82,6 +82,8 @@ char* my_strncpy ( char *dst, const char *src, size_t n, char terminator )
     return(0);
 }
 
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
+
 /*
  * Read raw directory data and transform into FS_MZDIR *dir.
  *
@@ -89,7 +91,7 @@ char* my_strncpy ( char *dst, const char *src, size_t n, char terminator )
 char fs_read_directory_block ( FS_MZDIR *dir, unsigned int block )
 {
     char            res;
-#if defined(__SDCC_mcs51)
+#if defined(__SDCC_mcs51) || defined (__SDCC_STACK_AUTO)
     static __xdata FS_MZ_BLDIR     bl_dir;
 #else
     FS_MZ_BLDIR     bl_dir;
@@ -119,9 +121,11 @@ char fs_read_directory_block ( FS_MZDIR *dir, unsigned int block )
 }
 
 __xdata FS_MZDIR dir;
+#endif
 
 void testBug(void)
 {
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
     unsigned char i;
 
     fs_read_directory_block(&dir, 0);
@@ -134,4 +138,5 @@ void testBug(void)
         ASSERT(dir.fheader[i].fexec == i + 3);
         ASSERT(dir.fheader[i].block == i + 4);
     }
+#endif
 }

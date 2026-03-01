@@ -1,5 +1,5 @@
 /* An abstract string datatype.
-   Copyright (C) 1998, 1999, 2000, 2002, 2004 Free Software Foundation, Inc.
+   Copyright (C) 1998-2026 Free Software Foundation, Inc.
    Contributed by Mark Mitchell (mark@markmitchell.com).
 
 This file is part of GNU CC.
@@ -47,7 +47,7 @@ Boston, MA 02110-1301, USA.  */
 
 /* Performs in-place initialization of a dyn_string struct.  This
    function can be used with a dyn_string struct on the stack or
-   embedded in another object.  The contents of of the string itself
+   embedded in another object.  The contents of the string itself
    are still dynamically allocated.  The string initially is capable
    of holding at least SPACE characeters, including the terminating
    NUL.  If SPACE is 0, it will silently be increated to 1.  
@@ -277,7 +277,7 @@ dyn_string_insert_cstr (dyn_string_t dest, int pos, const char *src)
   for (i = dest->length; i >= pos; --i)
     dest->s[i + length] = dest->s[i];
   /* Splice in the new stuff.  */
-  strncpy (dest->s + pos, src, length);
+  memcpy (dest->s + pos, src, length);
   /* Compute the new length.  */
   dest->length += length;
   return 1;

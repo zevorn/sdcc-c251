@@ -35,6 +35,8 @@
      mcs51 small stack-auto
 */
 
+#include <sdcc-lib.h>
+
 #if !defined(__SDCC_USE_XSTACK) && !defined(_SDCC_NO_ASM_LIB_FUNCS)
 #  if defined(__SDCC_mcs51)
 #    if defined(__SDCC_MODEL_SMALL)
@@ -629,8 +631,10 @@ struct some_struct {
 	short a ;
 	char b;
 	long c ;};
-#if defined(__SDCC_hc08) || defined(__SDCC_s08) || defined(__SDCC_stm8)
-/* big endian order */
+	
+#include <stdbit.h>
+
+#if __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 union bil {
         struct {unsigned char b3,b2,b1,b0 ;} b;
         struct {unsigned short hi,lo ;} i;
@@ -638,7 +642,6 @@ union bil {
         struct { unsigned char b3; unsigned short i12; unsigned char b0;} bi;
 } ;
 #else
-/* little endian order */
 union bil {
         struct {unsigned char b0,b1,b2,b3 ;} b;
         struct {unsigned short lo,hi ;} i;
@@ -698,13 +701,15 @@ _mullong (long a, long b)
 
         return t.l;
 }
-#elif defined(__SDCC_z80) || defined(__SDCC_gbz80) || defined(__SDCC_r2k) || defined(__SDCC_r3k)
+#elif defined(__SDCC_z80) || defined(__SDCC_sm83) || defined(__SDCC_r2ka) || defined(__SDCC_r3k) || defined(__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k) || defined(__SDCC_r800)
 /* 32x32->32 multiplication to be used
    if 16x16->16 is faster than three 8x8->16.
    2009, by M.Bodrato ( http://bodrato.it/ )
 
-   z80 and gbz80 don't have any hardware multiplication.
-   r2k and r3k have 16x16 hardware multiplication.
+   z80 and sm83 don't have any hardware multiplication, not even 8x8.
+   software 16x16 is nearly as efficient as software 8x8 there.
+   r2k(a) and r3k(a) have 16x16 hardware multiplication,
+   but on r2k it is affected by a hardware bug, and not used by sdcc.
  */
 long
 _mullong (long a, long b)
@@ -731,7 +736,7 @@ _mullong (long a, long b)
 }
 #else
 long
-_mullong (long a, long b)
+_mullong (long a, long b) __SDCC_NONBANKED
 {
         union bil t;
 
@@ -758,3 +763,4 @@ _mullong (long a, long b)
 #endif
 
 #endif // _MULLONG_ASM
+

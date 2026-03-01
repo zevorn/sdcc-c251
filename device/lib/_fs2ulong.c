@@ -13,7 +13,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -90,6 +90,7 @@ fs2ulong_done:
 */
 
 /* (c)2000/2001: hacked a little by johan.knol@iduna.nl for sdcc */
+/* (c)2022:      fix sdcc bug #3276 -- Benedikt Freisen */
 
 
 union float_long
@@ -99,24 +100,30 @@ union float_long
 };
 
 /* convert float to unsigned long */
-unsigned long 
-__fs2ulong (float a1)
+unsigned long __fs2ulong (float a1) __SDCC_FLOAT_NONBANKED
 {
   volatile union float_long fl1;
-  volatile int exp;
-  volatile long l;
-  
+  int exp;
+  unsigned long l;
+
   fl1.f = a1;
-  
+
   if (!fl1.l || SIGN(fl1.l))
     return (0);
 
   exp = EXP (fl1.l) - EXCESS - 24;
   l = MANT (fl1.l);
-  
-  l >>= -exp;
+
+  if (exp > 8)
+    return 0xfffffffful;
+
+  if (exp < 0)
+    l >>= -exp;
+  else
+    l <<= exp;
 
   return l;
 }
 
 #endif
+

@@ -9,7 +9,6 @@
 #endif
 
 /* PR tree-optimization/19283 */
-
 static inline unsigned short
 foo (unsigned int *p)
 {

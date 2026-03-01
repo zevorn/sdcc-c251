@@ -256,7 +256,7 @@ not_negative:
 #else // _DIVSLONG_ASM
 
 long
-_divslong (long x, long y)
+_divslong (long x, long y) __SDCC_NONBANKED
 {
   long r;
 

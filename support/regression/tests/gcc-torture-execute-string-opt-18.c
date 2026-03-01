@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-
+#ifndef __SDCC_pdk14 // Lack of memory
 void test1 (void *ptr)
 {
   if (memcpy(ptr,ptr,8) != ptr)
@@ -61,11 +61,12 @@ void test7 (const char *ptr)
   if (strncmp(ptr,ptr,8) != 0)
     ASSERT (0);
 }
-
+#endif
 
 void
 testTortureExecute (void)
 {
+#ifndef __SDCC_pdk14 // Lack of memory
   char buf[10];
 
   test1 (buf);
@@ -73,11 +74,14 @@ testTortureExecute (void)
   test2 (buf);
 #endif
   test3 (buf);
+#if !defined (__APPLE__)
   test4 (buf);
+#endif
   test5 (buf);
   test6 (buf);
   test7 (buf);
 
   return;
+#endif
 }
 

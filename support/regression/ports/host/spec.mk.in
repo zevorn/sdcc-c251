@@ -1,6 +1,11 @@
-# Port specification for compiling on the host machines version of gcc
-SDCC = @CC@
-SDCCFLAGS = @CFLAGS@ @C99_FLAG@ $(CPPFLAGS) -DPORT_HOST=1 -DREENTRANT= -I$(top_builddir) -I$(top_srcdir)
+# Port specification for compiling on the host machines compiler
+
+# runtimeout in seconds
+RUN_TIMEOUT = 1
+
+CC = @CC@
+SDCC =${CC}
+SDCCFLAGS = @CFLAGS@ $(CPPFLAGS) -DPORT_HOST=1 -DREENTRANT= -I$(top_builddir) -I$(top_srcdir)
 SDLDFLAGS = @LDFLAGS@
 # disable all warnings:
 SDCCFLAGS+= -w
@@ -18,21 +23,20 @@ INC_DIR = .
 EXTRAS = $(PORT_CASES_DIR)/testfwk$(OBJEXT) $(PORT_CASES_DIR)/support$(OBJEXT)
 include $(srcdir)/fwk/lib/spec.mk
 
-%.out: %$(BINEXT)
-	mkdir -p $(dir $@)
-	-$< > $@
-	-grep -n FAIL $@ /dev/null || true
+EMU_INPUT =
+SIM_TIMEOUT = ${RUN_TIMEOUT}
 
 %$(BINEXT): %$(OBJEXT) $(EXTRAS) $(FWKLIB)
-	$(SDCC) $(SDCCFLAGS) $(SDLDFLAGS) -o $@ $< $(EXTRAS) $(FWKLIB) -lm
+	${M_V_CCLD}$(SDCC) $(SDCCFLAGS) $(SDLDFLAGS) -o $@ $< $(EXTRAS) $(FWKLIB) -lm
 
-%$(OBJEXT): %.c
-	$(SDCC) $(SDCCFLAGS) -c $< -o $@
+#%$(OBJEXT): %.c
+#      $(SDCC) $(SDCCFLAGS) -c $< -o $@
 
 $(PORT_CASES_DIR)/%$(OBJEXT): $(PORTS_DIR)/$(PORT)/%.c
-	$(SDCC) $(SDCCFLAGS) -c $< -o $@
+	${M_V_CC}$(SDCC) $(SDCCFLAGS) -c $< -o $@
 
 $(PORT_CASES_DIR)/%$(OBJEXT): $(srcdir)/fwk/lib/%.c
-	$(SDCC) $(SDCCFLAGS) -c $< -o $@
+	${M_V_CC}$(SDCC) $(SDCCFLAGS) -c $< -o $@
+
 
 _clean:

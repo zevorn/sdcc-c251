@@ -3,22 +3,25 @@
 VPATH  = @srcdir@
 srcdir = @srcdir@
 top_builddir = @top_builddir@
+abs_top_builddir = @abs_top_builddir@
 
 LIB_TYPE     = @LIB_TYPE@
 
 CC = $(top_builddir)/bin/sdcc
+SDAR = $(abs_top_builddir)/bin/sdar
 
 # override PORTDIR defined by super (parent) makefile
 override PORTDIR = ../build/ds390
 
 #VERBOSE = --verbose
 
-OBJECTS = tinibios.rel memcpyx.rel lcd390.rel i2c390.rel rtc390.rel putchar.rel gptr_cmp.rel
+OBJECTS = tinibios.rel memcpyx.rel i2c390.rel rtc390.rel putchar.rel gptr_cmp.rel \
+          atomic_flag_test_and_set.rel atomic_flag_clear.rel __sdcc_atomic_maybe_rollback.rel
 
 SOURCES = $(patsubst %.rel,%.c,$(OBJECTS))
 
 CPPFLAGS = -I$(srcdir)/../../include
-CFLAGS = -mds390 $(CPPFLAGS) $(VERBOSE) --std-c99
+CFLAGS = -mds390 $(CPPFLAGS) $(VERBOSE) --std-c23
 
 all: $(OBJECTS) $(PORTDIR)/libds390.lib
 
@@ -35,10 +38,10 @@ ifeq ($(LIB_TYPE), SDCCLIB)
 	$(top_builddir)/bin/sdcclib -a $@ $(OBJECTS)
 else
   ifeq ($(LIB_TYPE), AR)
-	$(top_builddir)/bin/sdar -rcS $@ $(OBJECTS)
+	$(SDAR) -rcSD $@ $(OBJECTS)
   else
     ifeq ($(LIB_TYPE), RANLIB)
-	$(top_builddir)/bin/sdar -rc $@ $(OBJECTS)
+	$(SDAR) -rcD $@ $(OBJECTS)
     else
 	rm -f $@;
 	for libfile in $(basename $(OBJECTS)); do echo $$libfile >>$@; done

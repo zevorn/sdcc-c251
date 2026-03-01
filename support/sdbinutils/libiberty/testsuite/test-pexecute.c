@@ -1,5 +1,5 @@
 /* Pexecute test program,
-   Copyright (C) 2005 Free Software Foundation, Inc.
+   Copyright (C) 2005-2026 Free Software Foundation, Inc.
    Written by Ian Lance Taylor <ian@airs.com>.
 
    This file is part of GNU libiberty.
@@ -211,7 +211,7 @@ main (int argc, char **argv)
       const char *pex_run_err;						\
       if (trace)							\
 	fprintf (stderr, "Line %d: running %s %s\n",			\
-		 __LINE__, EXECUTABLE, ARGV[0]);			\
+		 __LINE__, EXECUTABLE, ARGV[1]);			\
       pex_run_err = pex_run (PEXOBJ, FLAGS, EXECUTABLE, ARGV, OUTNAME,	\
 			     ERRNAME, &err);				\
       if (pex_run_err != NULL)						\
@@ -281,6 +281,20 @@ main (int argc, char **argv)
   TEST_PEX_RUN (pex1, 0, "./test-pexecute", subargv, NULL, NULL);
   e = TEST_PEX_READ_OUTPUT (pex1);
   CHECK_LINE (e, "foo");
+  if (TEST_PEX_GET_STATUS_1 (pex1) != 0)
+    ERROR ("echo exit status failed");
+  pex_free (pex1);
+
+  /* Check empty parameters don't get lost.  */
+  pex1 = TEST_PEX_INIT (PEX_USE_PIPES, "temp");
+  subargv[1] = "echo";
+  subargv[2] = "foo";
+  subargv[3] = "";
+  subargv[4] = "bar";
+  subargv[5] = NULL;
+  TEST_PEX_RUN (pex1, 0, "./test-pexecute", subargv, NULL, NULL);
+  e = TEST_PEX_READ_OUTPUT (pex1);
+  CHECK_LINE (e, "foo  bar");  /* Two spaces!  */
   if (TEST_PEX_GET_STATUS_1 (pex1) != 0)
     ERROR ("echo exit status failed");
   pex_free (pex1);

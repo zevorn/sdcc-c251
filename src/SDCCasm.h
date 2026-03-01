@@ -47,14 +47,12 @@ struct _ASM_MAPPINGS
 /* The default asxxxx token mapping.
  */
 extern const ASM_MAPPINGS asm_asxxxx_mapping;
-#if 0
-/* not used */
+
+/* The default mapping for small (<16 bit word) Padauk architectures.
+ */
+extern const ASM_MAPPINGS asm_asxxxx_smallpdk_mapping;
 extern const ASM_MAPPINGS asm_gas_mapping;
-#endif
 extern const ASM_MAPPINGS asm_a390_mapping;
-#if !OPT_DISABLE_XA51
-extern const ASM_MAPPINGS asm_xa_asm_mapping;
-#endif
 
 /** Last entry has szKey = NULL.
  */

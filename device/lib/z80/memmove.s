@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
 ;  memmove.s
 ;
-;  Copyright (C) 2008-2009, Philipp Klaus Krause, Marco Bodrato
+;  Copyright (C) 2008-2021, Philipp Klaus Krause, Marco Bodrato
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -13,7 +13,7 @@
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ;  GNU General Public License for more details.
 ;
-;  You should have received a copy of the GNU General Public License 
+;  You should have received a copy of the GNU General Public License
 ;  along with this library; see the file COPYING. If not, write to the
 ;  Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
 ;   MA 02110-1301, USA.
@@ -26,6 +26,9 @@
 ;   might be covered by the GNU General Public License.
 ;--------------------------------------------------------------------------
 
+	.module memmove
+	.optsdcc -mz80 sdcccall(1)
+
         .area   _CODE
 
 	.globl _memmove
@@ -33,17 +36,13 @@
 ; The Z80 has the ldir and lddr instructions, which are perfect for implementing memmove().
 
 _memmove:
-	pop	af
-	pop	hl
-	pop	de
+	pop	iy
 	pop	bc
-	push	bc
-	push	de
-	push	hl
-	push	af
 	ld	a, c
 	or	a, b
-	ret	Z
+	ex	de, hl
+	jr	Z, end
+	ex	de, hl
 	push	hl
 	sbc	hl, de		; or above cleared carry.
 	add	hl, de		; same carry as the line before
@@ -55,11 +54,12 @@ memmove_down:
 	add	hl, bc
 	inc	bc
 	lddr
-	pop	hl
-	ret
+	pop	de
+end:
+	jp	(iy)
 memmove_up:
 	ex      de, hl
 	ldir
-	pop	hl
-	ret
+	pop	de
+	jp	(iy)
 

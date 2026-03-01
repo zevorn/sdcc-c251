@@ -25,6 +25,7 @@
 -------------------------------------------------------------------------*/
 
 #include "SDCCset.h"
+#include "SDCCicode.h"
 
 #ifndef SDCCDFLOW_H
 #define SDCCDFLOW_H 1
@@ -36,4 +37,26 @@ DEFSETFUNC (mergeInDefs);
 DEFSETFUNC (isDefAlive);
 iCode *usedInRemaining (operand *, iCode *);
 int usedBetweenPoints (operand *, iCode *, iCode *);
+
+struct valinfos;
+
+struct valinfo
+{
+	bool nothing, anything;
+	bool nonnull;                     // Value is known to not be null - useful for pointers
+	long long int min, max;
+	unsigned long long knownbitsmask;
+	unsigned long long knownbits;
+	unsigned long minsize;            // Pointing to somewhere where there are at least minsize bytes of the pointed-to object
+	unsigned long maxsize;            // Pointing to somewhere where there are at most maxsize bytes of the pointed-to object
+	unsigned long maybeminsize;       // Pointing to somewhere where there are at least minsize bytes of the pointed-to object, assuming array parmeters are arrays of that size
+	unsigned long maybemaxsize;       // Pointing to somewhere where there are at most maxsize bytes of the pointed-to object, assuming array parmeters are arrays of that size
+};
+
+bool valinfo_union (struct valinfo *v0, const struct valinfo v1);
+struct valinfo getOperandValinfo (const iCode *ic, const operand *op);
+void recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix);
+void optimizeValinfo (iCode *sic);
+
 #endif
+

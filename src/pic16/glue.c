@@ -101,7 +101,7 @@ unsigned int pic16aopLiteral (value *val, int offset)
 
 iCode *tic;
 symbol *nsym;
-char tbuffer[512], *tbuf=tbuffer;;
+char tbuffer[512], *tbuf=tbuffer;
 
 
 /*-----------------------------------------------------------------*/
@@ -171,7 +171,6 @@ pic16emitRegularMap (memmap * map, bool addPublics, bool arFlag)
                         /* new version */
                         if(IS_STATIC(sym->etype)
                                 && !sym->ival) /* && !sym->level*/ {
-                          reg_info *reg;
                           sectSym *ssym;
                           int found=0;
 
@@ -183,7 +182,7 @@ pic16emitRegularMap (memmap * map, bool addPublics, bool arFlag)
                                         sym->implicit = 1;
 #endif
 
-                                reg = pic16_allocDirReg( operandFromSymbol( sym ));
+                                reg_info *reg = pic16_allocDirReg (operandFromSymbol (sym, false));
 
                                 if(reg) {
                                   for(ssym=setFirstItem(sectSyms); ssym; ssym=setNextItem(sectSyms)) {
@@ -238,7 +237,7 @@ pic16emitRegularMap (memmap * map, bool addPublics, bool arFlag)
                                                 sym->implicit = 1;              // mark as implicit
 #endif
                                         if(!sym->ival) {
-                                                reg = pic16_allocDirReg( operandFromSymbol(sym) );
+                                                reg = pic16_allocDirReg (operandFromSymbol (sym, false));
                                                 if(reg) {
                                                         if(checkAddReg(&pic16_fix_udata, reg)) {
                                                                 /* and add to globals list if not exist */
@@ -266,7 +265,7 @@ pic16emitRegularMap (memmap * map, bool addPublics, bool arFlag)
                                         if(IS_AGGREGATE(sym->type)) {
                                                 reg=pic16_allocRegByName(sym->rname, getSize( sym->type ), NULL);
                                         } else {
-                                                reg = pic16_allocDirReg( operandFromSymbol( sym ) );
+                                                reg = pic16_allocDirReg (operandFromSymbol (sym, false));
                                         }
 
                                         {
@@ -382,7 +381,7 @@ pic16_initPointer (initList * ilist, sym_link *toType)
       return valCastLiteral(toType, 0.0, 0);
   }
 
-  expr = decorateType(resolveSymbols( list2expr (ilist) ), FALSE);
+  expr = decorateType(resolveSymbols( list2expr (ilist) ), FALSE, true);
 //  expr = list2expr( ilist );
 
   if (!expr)
@@ -397,7 +396,7 @@ pic16_initPointer (initList * ilist, sym_link *toType)
       (expr->opval.op == '+' || expr->opval.op == '-') &&
       IS_AST_SYM_VALUE (expr->left) &&
       (IS_ARRAY(expr->left->ftype) || IS_PTR(expr->left->ftype)) &&
-      compareType(toType, expr->left->ftype) &&
+      compareType(toType, expr->left->ftype, false) &&
       IS_AST_LIT_VALUE (expr->right)) {
     return valForCastAggr (expr->left, expr->left->ftype,
                            expr->right,
@@ -407,7 +406,7 @@ pic16_initPointer (initList * ilist, sym_link *toType)
   /* (char *)&a */
   if (IS_AST_OP(expr) && expr->opval.op==CAST &&
       IS_AST_OP(expr->right) && expr->right->opval.op=='&') {
-    if (compareType(toType, expr->left->ftype)!=1) {
+    if (compareType(toType, expr->left->ftype, false)!=1) {
       werror (W_INIT_WRONG);
       printFromToType(expr->left->ftype, toType);
     }
@@ -532,9 +531,9 @@ _pic16_printPointerType (const char *name, char ptype, void *p)
 {
   char buf[256];
 
-  sprintf (buf, "LOW(%s)", name);
+  SNPRINTF(buf, sizeof(buf), "LOW(%s)", name);
   pic16_emitDS (buf, ptype, p);
-  sprintf (buf, "HIGH(%s)", name);
+  SNPRINTF(buf, sizeof(buf), "HIGH(%s)", name);
   pic16_emitDS (buf, ptype, p);
 }
 
@@ -565,7 +564,7 @@ pic16_printGPointerType (const char *iname, const unsigned int itype,
     case FUNCTION: /* fall through */
     case GPOINTER:
       /* GPTRs pointing to __data space should be reported as POINTERs */
-      sprintf (buf, "UPPER(%s)", iname);
+      SNPRINTF(buf, sizeof(buf), "UPPER(%s)", iname);
       pic16_emitDS (buf, ptype, p);
       break;
 
@@ -573,7 +572,7 @@ pic16_printGPointerType (const char *iname, const unsigned int itype,
     case FPOINTER: /* fall through */
     case IPOINTER: /* fall through */
     case PPOINTER: /* __data space */
-      sprintf (buf, "0x%02x", GPTR_TAG_DATA);
+      SNPRINTF(buf, sizeof(buf), "0x%02x", GPTR_TAG_DATA);
       pic16_emitDS (buf, ptype, p);
       break;
 
@@ -623,7 +622,7 @@ pic16_printIvalType (symbol *sym, sym_link * type, initList * ilist, char ptype,
   }
 
   if (val->type != type) {
-    val = valCastLiteral(type, floatFromVal (val), ullFromVal (val));
+    val = valCastLiteral(type, floatFromVal (val), (TYPE_TARGET_ULONGLONG) ullFromVal (val));
   }
 
   for (i = 0; i < (int)getSize (type); i++) {
@@ -662,7 +661,7 @@ pic16_printIvalChar (symbol *sym, sym_link * type, initList * ilist, const char 
         DCL_ELEM (type) = ilen;
 #endif
 
-      /* len is 0 if declartion equals initializer,
+      /* len is 0 if declaration equals initializer,
        * >0 if declaration greater than initializer
        * <0 if declaration less than initializer
        * Strategy: if >0 emit 0x00 for the rest of the length,
@@ -1037,7 +1036,7 @@ pic16_printIvalFuncPtr (sym_link * type, initList * ilist, char ptype, void *p)
   }
 
   if (IS_LITERAL(val->etype)) {
-    if (0 && compareType(type, val->etype) == 0) {
+    if (0 && compareType(type, val->etype, false) == 0) {
       werrorfl (ilist->filename, ilist->lineno, E_INCOMPAT_TYPES);
       printFromToType (val->type, type);
     }
@@ -1046,7 +1045,7 @@ pic16_printIvalFuncPtr (sym_link * type, initList * ilist, char ptype, void *p)
   }
 
   /* check the types   */
-  if ((dLvl = compareType (val->type, type->next)) <= 0)
+  if ((dLvl = compareType (val->type, type->next, false)) <= 0)
     {
       pic16_emitDB(0x00, ptype, p);
       return;
@@ -1110,7 +1109,7 @@ pic16_printIvalPtr (symbol * sym, sym_link * type, initList * ilist, char ptype,
       return;
 
   /* check the type      */
-  if (compareType (type, val->type) == 0) {
+  if (compareType (type, val->type, false) == 0) {
     werrorfl (ilist->filename, ilist->lineno, W_INIT_WRONG);
     printFromToType (val->type, type);
   }
@@ -1179,7 +1178,7 @@ void pic16_printIval (symbol * sym, sym_link * type, initList * ilist, char ptyp
       else
         {
           ast *ast = newAst_VALUE (constVal("0"));
-          ast = decorateType (ast, RESULT_TYPE_NONE);
+          ast = decorateType (ast, RESULT_TYPE_NONE, true);
           ilist = newiList(INIT_NODE, ast);
         }
     }
@@ -1361,8 +1360,9 @@ CODESPACE: %d\tCONST: %d\tPTRCONST: %d\tSPEC_CONST: %d\n", __FUNCTION__, map->sn
               ++noAlloc;
               resolveIvalSym (sym->ival, sym->type);
               asym = newSymbol (sym->rname, 0);
-              abSym = Safe_calloc (1, sizeof (absSym));
-              strcpy (abSym->name, sym->rname);
+              abSym = Safe_alloc(sizeof (absSym));
+              strncpy(abSym->name, sym->rname, sizeof(abSym->name) - 1);
+              abSym->name[sizeof(abSym->name) - 1] = '\0';
               abSym->address = SPEC_ADDR (sym->etype);
               addSet (&absSymSet, abSym);
 
@@ -1370,7 +1370,7 @@ CODESPACE: %d\tCONST: %d\tPTRCONST: %d\tSPEC_CONST: %d\n", __FUNCTION__, map->sn
               pic16_addpBlock (pb);
 
               pcf = pic16_newpCodeFunction (moduleName, asym->name);
-              PCF (pcf)->absblock = 1;
+              PCF (pcf)->absblock = TRUE;
 
               pic16_addpCode2pBlock (pb, pcf);
               pic16_addpCode2pBlock (pb, pic16_newpCodeLabel (sym->rname, -1));
@@ -1658,7 +1658,7 @@ pic16emitOverlay (struct dbuf_s *aBuf)
              declarations into one chunk and will not overlay
              sad but true */
           dbuf_printf (aBuf, ";\t.area _DUMMY\n");
-          /* output the area informtion */
+          /* output the area information */
           dbuf_printf (aBuf, ";\t.area\t%s\n", port->mem.overlay_name); /* MOF */
         }
 
@@ -1795,6 +1795,23 @@ pic16glue ()
         pic16_addpCode2pBlock(pb,pic16_newpCode(POC_RETURN,NULL));
     }
 
+    /* Emit a label denoting the end of SRAM for crt0iz to zero the correct */
+    /* amount of memory for this device */
+    if(mainf && IFFUNC_HASBODY(mainf->type)) {
+      unsigned long ramsize = pic16 ? pic16->RAMsize : 0x200;
+      symbol *sym;
+
+      // This used to use the global reg (see bug #3767), instead of decalring one locally.
+      // I don't know if using a local reg_info is correct here,
+      // but it makes this compile, and does not change the number of regression test failures.
+      reg_info *reg = newReg (REG_SFR, PO_SFR_REGISTER, ramsize-1, "_sram_end", 0, 0, NULL);
+      addSet (&pic16_fix_udata, reg);
+
+      sym = newSymbol ("sram_end", 0);
+      SNPRINTF(sym->rname, sizeof(sym->rname), "_%s", sym->name);
+      addSet (&publics, sym);
+    }
+
     /* At this point we've got all the code in the form of pCode structures */
     /* Now it needs to be rearranged into the order it should be placed in the */
     /* code space */
@@ -1821,10 +1838,9 @@ pic16glue ()
 
 #if 1
     if(pic16_options.dumpcalltree) {
-      FILE *cFile;
+        FILE *cFile;
 
-        sprintf(buffer, "%s", dstFileName);
-        strcat(buffer, ".calltree");
+        SNPRINTF(buffer, sizeof(buffer), "%s.calltree", dstFileName);
         cFile = fopen(buffer, "w");
         pic16_printCallTree( cFile );
         fclose(cFile);
@@ -1834,21 +1850,19 @@ pic16glue ()
     pic16_InlinepCode();
     pic16_AnalyzepCode('*');
 
-
     if(pic16_debug_verbose)
       pic16_pcode_test();
 
     /* now put it all together into the assembler file */
     /* create the assembler file name */
-    if((noAssemble || options.c1mode)  && fullDstFileName) {
-      sprintf (buffer, "%s", fullDstFileName);
+    if((options.no_assemble || options.c1mode)  && fullDstFileName) {
+      SNPRINTF(buffer, sizeof(buffer), "%s", fullDstFileName);
     } else {
-      sprintf (buffer, "%s", dstFileName);
-      strcat (buffer, ".asm");
+      SNPRINTF(buffer, sizeof(buffer), "%s.asm", dstFileName);
     }
 
     if(!(asmFile = fopen (buffer, "w"))) {
-      werror (E_FILE_OPEN_ERR, buffer);
+      werror (E_OUTPUT_FILE_OPEN_ERR, buffer, strerror (errno));
       exit (1);
     }
 
@@ -1860,8 +1874,8 @@ pic16glue ()
       fprintf(asmFile, "\t.file\t\"%s\"\n", fullSrcFileName);
 
     /* Let the port generate any global directives, etc. */
-    if(port->genAssemblerPreamble) {
-      port->genAssemblerPreamble(asmFile);
+    if(port->genAssemblerStart) {
+      port->genAssemblerStart(asmFile);
     }
 
     /* Put all variables into a cblock */

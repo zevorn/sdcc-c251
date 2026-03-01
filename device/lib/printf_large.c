@@ -36,7 +36,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <stdbool.h>
+#include <stdbit.h>
 #include <sdcc-lib.h>
 
 #define PTR value.ptr
@@ -88,7 +88,7 @@ typedef union
 } value_t;
 
 #ifndef __SDCC_STACK_AUTO
-  static bool lower_case;
+  static _Bool lower_case;
   static pfn_outputchar output_char;
   static void* p;
   static value_t value;
@@ -113,7 +113,7 @@ typedef union
 
 #ifdef __SDCC_STACK_AUTO
   static void
-  output_digit (unsigned char n, bool lower_case, pfn_outputchar output_char, void* p)
+  output_digit (unsigned char n, _Bool lower_case, pfn_outputchar output_char, void* p)
   {
     register unsigned char c = n + (unsigned char)'0';
 
@@ -146,7 +146,7 @@ typedef union
 #ifdef __SDCC_STACK_AUTO
   #define OUTPUT_2DIGITS( B )   { output_2digits( B, lower_case, output_char, p ); charsOutputted += 2; }
   static void
-  output_2digits (unsigned char b, bool lower_case, pfn_outputchar output_char, void* p)
+  output_2digits (unsigned char b, _Bool lower_case, pfn_outputchar output_char, void* p)
   {
     output_digit( b>>4,   lower_case, output_char, p );
     output_digit( b&0x0F, lower_case, output_char, p );
@@ -215,7 +215,7 @@ calculate_digit (unsigned char radix)
    library yet (e.g. log()).
    It does most of the modifiers, but has some restrictions. E.g. the
    abs(float) shouldn't be bigger than an unsigned long (that's
-   about 4294967295), but still makes it usefull for most real-life
+   about 4294967295), but still makes it useful for most real-life
    applications.
 */
 
@@ -226,7 +226,7 @@ calculate_digit (unsigned char radix)
 static unsigned char
 output_float (float f, unsigned char reqWidth,
               signed char reqDecimals,
-              bool left, bool zero, bool sign, bool space,
+              _Bool left, _Bool zero, _Bool sign, _Bool space,
               pfn_outputchar output_char, void* p)
 {
   unsigned char charsOutputted = 0;
@@ -240,11 +240,11 @@ output_float (float f, unsigned char reqWidth,
 static void
 output_float (float f, unsigned char reqWidth,
               signed char reqDecimals,
-              bool left, bool zero, bool sign, bool space)
+              _Bool left, _Bool zero, _Bool sign, _Bool space)
 {
   __xdata char fpBuffer[128];
 #endif //__SDCC_STACK_AUTO
-  bool negative = 0;
+  _Bool negative = 0;
   unsigned long integerPart;
   float rounding;
   float decimalPart;
@@ -392,7 +392,7 @@ output_float (float f, unsigned char reqWidth,
     OUTPUT_CHAR (fpBuffer[i], p);
   } while (i--);
 
-  // ouput the decimal part
+  // output the decimal part
   if (reqDecimals)
   {
     OUTPUT_CHAR ('.', p);
@@ -433,25 +433,25 @@ output_float (float f, unsigned char reqWidth,
 int
 _print_format (pfn_outputchar pfn, void* pvoid, const char *format, va_list ap)
 {
-  bool   left_justify;
-  bool   zero_padding;
-  bool   prefix_sign;
-  bool   prefix_space;
-  bool   signed_argument;
-  bool   char_argument;
-  bool   long_argument;
-  bool   float_argument;
+  _Bool   left_justify;
+  _Bool   zero_padding;
+  _Bool   prefix_sign;
+  _Bool   prefix_space;
+  _Bool   signed_argument;
+  _Bool   char_argument;
+  _Bool   long_argument;
+  _Bool   float_argument;
 #ifdef __SDCC_STACK_AUTO
-  bool   lower_case;
+  _Bool   lower_case;
   value_t value;
   int charsOutputted;
 #endif
-  bool   lsd;
+  _Bool   lsd;
 
   unsigned char radix;
-  unsigned char  width;
-  signed char decimals;
-  unsigned char  length;
+  size_t  width;
+  int decimals;
+  size_t  length;
   char           c;
 
 #ifdef __SDCC_STACK_AUTO
@@ -654,6 +654,11 @@ get_conversion_spec:
           OUTPUT_2DIGITS( value.byte[1] );
         }
         OUTPUT_2DIGITS( value.byte[0] );
+#elif __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
+        OUTPUT_CHAR('0', p);
+        OUTPUT_CHAR('x', p);
+        OUTPUT_2DIGITS( value.byte[0] );
+        OUTPUT_2DIGITS( value.byte[1] );
 #else
         OUTPUT_CHAR('0', p);
         OUTPUT_CHAR('x', p);

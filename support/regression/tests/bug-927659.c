@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 unsigned char
-foo(unsigned char a, ...) REENTRANT
+foo(unsigned char a, ...) __reentrant
 {
   va_list argptr;
   unsigned char b;
@@ -21,7 +21,7 @@ foo(unsigned char a, ...) REENTRANT
 }
 
 unsigned char
-bar(unsigned char a, unsigned char b) REENTRANT
+bar(unsigned char a, unsigned char b) __reentrant
 {
   return b / a;
 }
@@ -37,6 +37,7 @@ testReverse(void)
 void
 testAddFunc(void)
 {
+#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
   char buf[5];
   unsigned char count = 0;
 
@@ -44,4 +45,5 @@ testAddFunc(void)
   ASSERT(count == 1 &&
          buf[0] == '5' &&
          buf[1] == '\0');
+#endif
 }

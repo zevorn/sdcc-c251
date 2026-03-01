@@ -256,7 +256,7 @@ not_negative:
 #else // _MODSLONG_ASM
 
 long
-_modslong (long a, long b)
+_modslong (long a, long b) __SDCC_NONBANKED
 {
   long r;
 

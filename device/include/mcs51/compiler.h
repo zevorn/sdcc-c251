@@ -2,6 +2,8 @@
    compiler.h
 
    Copyright (C) 2006, Maarten Brock, sourceforge.brock@dse.nl
+   Portions of this file are Copyright 2014 Silicon Laboratories, Inc.
+   http://developer.silabs.com/legal/version/v11/Silicon_Labs_Software_License_Agreement.txt
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -42,6 +44,9 @@
   * or written.
   * SFR16X and SFR32X for 16 bit and 32 bit xdata registers are not defined
   * to avoid portability issues because of compiler endianness.
+  * SFR16LEX is provided for 16 bit little endian xdata registers. It is usable
+  * on little endian compilers only; on big endian compilers, these registers
+  * will not be defined.
   * This file is to be included in every microcontroller specific header file.
   * Example:
   *
@@ -76,8 +81,15 @@
 # define SFRX(name, addr)       __xdata volatile unsigned char __at(addr) name
 # define SFR16(name, addr)      __sfr16 __at(((addr+1U)<<8) | addr)       name
 # define SFR16E(name, fulladdr) __sfr16 __at(fulladdr)                    name
+# define SFR16LEX(name, addr)   __xdata volatile unsigned short __at(addr) name
 # define SFR32(name, addr)      __sfr32 __at(((addr+3UL)<<24) | ((addr+2UL)<<16) | ((addr+1UL)<<8) | addr) name
 # define SFR32E(name, fulladdr) __sfr32 __at(fulladdr)                    name
+
+# define INTERRUPT(name, vector) void name (void) __interrupt (vector)
+# define INTERRUPT_USING(name, vector, regnum) void name (void) __interrupt (vector) __using (regnum)
+
+// NOP () macro support
+#define NOP() __asm NOP __endasm
 
 /** Keil C51
   * http://www.keil.com
@@ -88,8 +100,16 @@
 # define SFRX(name, addr)       volatile unsigned char xdata name _at_ addr
 # define SFR16(name, addr)      sfr16 name = addr
 # define SFR16E(name, fulladdr) /* not supported */
+# define SFR16LEX(name, addr)   /* not supported */
 # define SFR32(name, fulladdr)  /* not supported */
 # define SFR32E(name, fulladdr) /* not supported */
+
+# define INTERRUPT(name, vector) void name (void) interrupt vector
+# define INTERRUPT_USING(name, vector, regnum) void name (void) interrupt vector using regnum
+
+// NOP () macro support
+extern void _nop_ (void);
+#define NOP() _nop_()
 
 /** Raisonance
   * http://www.raisonance.com
@@ -100,8 +120,15 @@
 # define SFRX(name, addr)       xdata at addr volatile unsigned char name
 # define SFR16(name, addr)      sfr16 at addr                        name
 # define SFR16E(name, fulladdr) /* not supported */
+# define SFR16LEX(name, addr)   /* not supported */
 # define SFR32(name, fulladdr)  /* not supported */
 # define SFR32E(name, fulladdr) /* not supported */
+
+# define INTERRUPT(name, vector) void name (void) interrupt vector
+# define INTERRUPT_USING(name, vector, regnum) void name (void) interrupt vector using regnum
+
+// NOP () macro support -- NOP is opcode 0x00
+#define NOP() asm { 0x00 }
 
 /** IAR 8051
   * http://www.iar.com
@@ -112,8 +139,18 @@
 # define SFRX(name, addr)       __xdata __no_init volatile unsigned char name @ addr
 # define SFR16(name, addr)      __sfr __no_init volatile unsigned int  name @ addr
 # define SFR16E(name, fulladdr) /* not supported */
+# define SFR16LEX(name, addr)   /* not supported */
 # define SFR32(name, fulladdr)  __sfr __no_init volatile unsigned long name @ addr
 # define SFR32E(name, fulladdr) /* not supported */
+
+# define _PPTOSTR_(x) #x
+# define _PPARAM_(address) _PPTOSTR_(vector=address * 8 + 3)
+# define _PPARAM2_(regbank) _PPTOSTR_(register_bank=regbank)
+# define INTERRUPT(name, vector) _Pragma(_PPARAM_(vector)) __interrupt void name(void)
+# define INTERRUPT_USING(name, vector, regnum) _Pragma(_PPARAM2_(regnum)) _Pragma(_PPARAM_(vector)) __interrupt void name(void)
+
+extern __intrinsic void __no_operation (void);
+#define NOP() __no_operation()
 
 /** Tasking / Altium
   * http://www.altium.com/tasking
@@ -128,8 +165,16 @@
 # define SFR16(name, addr)      /* not supported */
 #endif
 # define SFR16E(name, fulladdr) /* not supported */
+# define SFR16LEX(name, addr)   /* not supported */
 # define SFR32(name, fulladdr)  /* not supported */
 # define SFR32E(name, fulladdr) /* not supported */
+
+# define INTERRUPT(name, vector) _interrupt (vector) void name (void)
+# define INTERRUPT_USING(name, vector, regnum) _interrupt (vector) _using(regnum) void name (void)
+
+// NOP () macro support
+extern void _nop (void);
+#define NOP() _nop()
 
 /** Hi-Tech 8051
   * http://www.htsoft.com
@@ -140,8 +185,15 @@
 # define SFRX(name, addr)       volatile far unsigned char name @ addr
 # define SFR16(name, addr)      /* not supported */
 # define SFR16E(name, fulladdr) /* not supported */
+# define SFR16LEX(name, addr)   /* not supported */
 # define SFR32(name, fulladdr)  /* not supported */
 # define SFR32E(name, fulladdr) /* not supported */
+
+# define INTERRUPT(name, vector)       void name (void) interrupt vector
+# define INTERRUPT_PROTO(name, vector)
+
+// NOP () macro support
+#define NOP() asm(" nop ")
 
 /** Crossware
   * http://www.crossware.com
@@ -152,6 +204,7 @@
 # define SFRX(name, addr)       volatile unsigned char _xdata name _at addr
 # define SFR16(name, addr)      _sfrword name = addr
 # define SFR16E(name, fulladdr) /* not supported */
+# define SFR16LEX(name, addr)   /* not supported */
 # define SFR32(name, fulladdr)  /* not supported */
 # define SFR32E(name, fulladdr) /* not supported */
 
@@ -164,6 +217,7 @@
 # define SFRX(name, addr)       xdata volatile unsigned char name @ addr
 # define SFR16(name, addr)      /* not supported */
 # define SFR16E(name, fulladdr) /* not supported */
+# define SFR16LEX(name, addr)   /* not supported */
 # define SFR32(name, fulladdr)  /* not supported */
 # define SFR32E(name, fulladdr) /* not supported */
 
@@ -177,6 +231,7 @@
 # define SFRX(name, addr)       volatile unsigned char  name
 # define SFR16(name, addr)      volatile unsigned short name
 # define SFR16E(name, fulladdr) volatile unsigned short name
+# define SFR16LEX(name, addr)   volatile unsigned short name
 # define SFR32(name, fulladdr)  volatile unsigned long  name
 # define SFR32E(name, fulladdr) volatile unsigned long  name
 

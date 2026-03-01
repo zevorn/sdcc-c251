@@ -69,6 +69,11 @@ sdas_init (char *path)
     { "8051", TARGET_ID_8051 },
     { "390", TARGET_ID_DS390 },
     { "6808", TARGET_ID_6808 },
+    { "stm8", TARGET_ID_STM8 },
+    { "pdk13", TARGET_ID_PDK13 },
+    { "pdk14", TARGET_ID_PDK14 },
+    { "pdk15", TARGET_ID_PDK15 },
+    { "pdk16", TARGET_ID_PDK16 },
   };
   int i = NELEM (tgt);
 
@@ -118,6 +123,11 @@ get_sdas_target(void)
   return target;
 }
 
+void
+set_sdas_target(enum sdas_target_e newtarget)
+{
+  target = newtarget;
+}
 
 int
 is_sdas_target_z80_like(void)
@@ -132,4 +142,20 @@ is_sdas_target_8051_like(void)
 {
   check_init();
   return target == TARGET_ID_8051 || target == TARGET_ID_DS390;
+}
+
+int
+is_sdas_target_stm8(void)
+{
+  check_init();
+  return target == TARGET_ID_STM8;
+}
+
+int
+is_sdas_target_pdk(void)
+{
+  check_init();
+  return target == TARGET_ID_PDK13 ||
+         target == TARGET_ID_PDK14 ||
+         target == TARGET_ID_PDK15;
 }

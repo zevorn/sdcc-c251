@@ -10,35 +10,35 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#if !defined __SDCC_WEIRD_BOOL
-  #define __SDCC_WEIRD_BOOL 0
-#endif
+bool ret_true(void)
+{
+  return(true);
+}
 
-  bool ret_true(void)
-  {
-    return(true);
-  }
+bool ret_false(void)
+{
+  return(false);
+}
 
-  bool ret_false(void)
-  {
-    return(false);
-  }
+volatile bool E;
 
-  volatile bool E;
+bool (* const pa[])(void) = {&ret_true, &ret_false};
 
-  bool (* const pa[])(void) = {&ret_true, &ret_false};
+struct s
+{
+  bool b;
+};
 
-#if (__SDCC_WEIRD_BOOL == 0)
-  struct s
-  {
-    bool b;
-  };
+struct
+{
+  bool b : 1;
+  bool b1 : 1;
+} s2;
 
-  struct
-  {
-    bool b : 1;
-  } s2;
-#endif
+void fieldassign(void)
+{
+	s2.b1 = s2.b;
+}
 
 void
 testBug2233(void)
@@ -55,6 +55,7 @@ testBug2233(void)
 #endif
 }
 
+
 void
 testBool(void)
 {
@@ -67,12 +68,10 @@ testBool(void)
 	ASSERT((*(pa[0]))() == true);
 	ASSERT((*(pa[1]))() == false);
 
-#if (__SDCC_WEIRD_BOOL == 0)
 	s2.b = (z & 2);
 	ASSERT(s2.b);
 	s2.b = (bool)(z & 2);
 	ASSERT(s2.b);
-#endif
 
 	E = true;
 	ASSERT((E ? 1 : 0) == (!(!E)));
@@ -83,7 +82,7 @@ testBool(void)
 	ASSERT((E ? 1 : 0) == (!(!E)));
 	ASSERT((E += 2) == 1);
 	ASSERT((--E, --E, E) == E);
-
+#if !defined (__SDCC_pdk13) // Lack of memory
 	E = 0;   ASSERT(!E); // sets E to 0
 	E = 1;   ASSERT(E);  // sets E to 1
 	E = 4;   ASSERT(E);  // sets E to 1
@@ -96,5 +95,12 @@ testBool(void)
 	E--;     ASSERT(E);  // sets E to 1-E
 	E = true;
 	E--;     ASSERT(!E); // sets E to 1-E
+
+	ASSERT(!s2.b1);
+	s2.b = true;
+	fieldassign();
+	ASSERT(s2.b1);
+#endif
 #endif
 }
+

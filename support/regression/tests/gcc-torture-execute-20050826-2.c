@@ -39,7 +39,7 @@ int inet_check_attr (void *r, struct rtattr **rta)
 void
 testTortureExecute (void)
 {
-#if 0 // TODO: Enable when struct can be assigned!
+#if !defined(__SDCC_pdk14) // Lack of memory
   struct rtattr rt[2];
   struct rtattr *rta[14];
   int i;

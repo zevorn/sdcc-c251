@@ -643,7 +643,7 @@ static void * cvt_altpat_mnem3(void *pp,pCodeWildBlock *pcwb)
 /*                    by SDCCpeeph.c into a string of tokens.      */
 /*                                                                 */
 /*                                                                 */
-/* The tokenizer is of the classic type. When an item is encounterd*/
+/* The tokenizer is of the classic type. When an item is encountered*/
 /* it is converted into a token. The token is a structure that     */
 /* encodes the item's type and it's value (when appropriate).      */
 /*                                                                 */
@@ -1149,7 +1149,7 @@ static void   peepRuleCondition(char *cond, pCodePeep *pcp)
 static void initpCodeWildBlock(pCodeWildBlock *pcwb)
 {
 
-  //  pcwb = Safe_calloc(1,sizeof(pCodeWildBlock));
+  //  pcwb = Safe_alloc(sizeof(pCodeWildBlock));
 
   if(!pcwb)
     return;
@@ -1184,7 +1184,7 @@ static void postinit_pCodeWildBlock(pCodeWildBlock *pcwb)
 static void initpCodePeep(pCodePeep *pcp)
 {
 
-  //  pcwb = Safe_calloc(1,sizeof(pCodeWildBlock));
+  //  pcwb = Safe_alloc(sizeof(pCodeWildBlock));
 
   if(!pcp)
     return;
@@ -1229,10 +1229,10 @@ void peepRules2pCode(peepRule *rules)
 
     //DFPRINTF((stderr,"\nRule:\n\n"));
 
-    pcps = Safe_calloc(1,sizeof(pCodePeepSnippets));
+    pcps = Safe_alloc(sizeof(pCodePeepSnippets));
     peepSnippets = DLL_append((DLList*)peepSnippets,(DLList*)pcps);
 
-    currentRule = pcps->peep  = Safe_calloc(1,sizeof(pCodePeep));
+    currentRule = pcps->peep = Safe_alloc(sizeof(pCodePeep));
     initpCodePeep(currentRule);
 
     /* Convert the target block */
@@ -1285,7 +1285,7 @@ void peepRules2pCode(peepRule *rules)
 /* DLList * DLL_append                                             */
 /*                                                                 */
 /*  Append a DLList object to the end of a DLList (doubly linked   */
-/* list). If The list to which we want to append is non-existant   */
+/* list). If The list to which we want to append is non-existent   */
 /* then one is created. Other wise, the end of the list is sought  */
 /* out and a new DLList object is appended to it. In either case,  */
 /* the void *data is added to the newly created DLL object.        */
@@ -1394,7 +1394,7 @@ int pCodeSearchCondition(pCode *pc, unsigned int cond, int contIfSkip)
 *-----------------------------------------------------------------*/
 static int pCodeOpCompare(pCodeOp *pcops, pCodeOp *pcopd)
 {
-  char b[50], *n2;
+  char b[200], *n2;
 
   if(!pcops || !pcopd)
     return 0;
@@ -1420,7 +1420,7 @@ static int pCodeOpCompare(pCodeOp *pcops, pCodeOp *pcopd)
   }
 
   b[0]=0;
-  get_op(pcops,b,50);
+  get_op(pcops,b,sizeof(b));
 
   n2 = get_op(pcopd,NULL,0);
 
@@ -1510,7 +1510,7 @@ static int pCodePeepMatchLabels(pCodePeep *peepBlock, pCode *pcs, pCode *pcd)
 /* ination has no wild cards, then MatchLine will compare the two  */
 /* pcodes (src and dest) for a one-to-one match. If the destination*/
 /* has wildcards, then those get expanded. When a wild card is     */
-/* encountered for the first time it autmatically is considered a  */
+/* encountered for the first time it automatically is considered a  */
 /* match and the object that matches it is referenced in the       */
 /* variables or opcodes array (depending on the type of match).    */
 /*                                                                 */

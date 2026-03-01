@@ -9,7 +9,12 @@
 #pragma disable_warning 85
 #endif
 
+#if !defined(__SDCC_pic14) // Unimplemented setjmp
 #include <string.h>
+#include <setjmp.h>
+
+#ifndef __SDCC_pdk14 // Lack of memory
+jmp_buf try;
 
 typedef struct A {
   int a, b;
@@ -33,7 +38,7 @@ A *bar (const char *v, int w, int x, const char *y, int z)
 {
   if (w)
     ASSERT (0);
-  return 0;
+  longjmp(try, 1);
 }
 
 void test (const char *x, int *y)
@@ -44,14 +49,21 @@ void test (const char *x, int *y)
   if (y)
     d->a[d->b]->b = *y;
 }
+#endif
+#endif
 
 void
 testTortureExecute (void)
 {
-#if !(defined (__GNUC__) && defined (__GNUC_MINOR__) && (__GNUC__ < 5))
-  d->b = 0;
-  d->a = &a;
-  test ("", 0);
+#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pic14) // Unimplemented setjmp
+  if (setjmp(try) == 0)
+  {
+    d->b = 0;
+    d->a = &a;
+    test ("", 0);
+  }
+#endif
 #endif
 }
 

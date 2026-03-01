@@ -8,7 +8,6 @@
 #pragma std_c99
 #endif
 
-#if 0 // TODO: Enable when struct can be returned
 /* Test that sibling call is not used if there is an argument overlap.  */
 
 struct S
@@ -16,6 +15,7 @@ struct S
   int a, b, c;
 };
 
+#ifndef __SDCC_pdk14 // Lack of memory
 int
 foo2 (struct S x, struct S y)
 {
@@ -57,7 +57,7 @@ baz3 (struct S x, struct S y, struct S z)
 void
 testTortureExecute (void)
 {
-#if 0
+#ifndef __SDCC_pdk14 // Lack of memory
   struct S a = { 3, 4, 5 }, b = { 6, 7, 8 }, c = { 9, 10, 11 };
 
   bar2 (b, a);
@@ -66,3 +66,4 @@ testTortureExecute (void)
   return;
 #endif
 }
+

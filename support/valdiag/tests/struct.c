@@ -16,12 +16,23 @@ struct tag {
 } badstruct;
 #endif
 
-
-#ifdef TEST3
+#ifdef TEST3a
 struct tag {
   int good1;
   int bad:255;	/* ERROR */
   int good2;
+} badstruct;
+#endif
+
+#ifdef TEST3b
+struct tag {
+  int good1;
+  float badtype1 : 5; /* ERROR */
+  int good2;
+  _Bool badwidth2 : 2; /* ERROR */
+  int good3;
+  int badwidth2 : 17; /* ERROR */
+  int good4;
 } badstruct;
 #endif
 
@@ -102,3 +113,61 @@ void test(void)
 }
 
 #endif
+
+/* bug 3086: SDCC had infinite loop on this error */
+#ifdef TEST9
+struct tag1 {
+  union {
+    struct tag2;	/* ERROR(SDCC) */ /* IGNORE(GCC) */
+  } tag3;		/* IGNORE */
+};
+#endif
+
+// C23 allows multiple compatible definitions for struct.
+#ifdef TEST10
+#ifdef __SDCC
+#pragma std_c23
+#endif
+
+struct A {int x; int y;}; /* IGNORE */
+struct A {int x; int y;}; /* IGNORE(GCC) */
+struct A {int x; int z;}; /* ERROR */
+
+#endif
+
+#ifdef TEST11a
+// Anonymous struct/union is a C11 feature.
+#ifdef __SDCC
+#pragma std_c99
+#endif
+struct s
+{
+  struct {int i;}; /* WARNING */
+  char; /* ERROR */
+};
+#endif
+
+#ifdef TEST11b
+#ifdef __SDCC
+// Anonymous struct/union is a C11 feature.
+#pragma std_c11
+#endif
+struct s
+{
+  struct {int i;};
+  char; /* ERROR */
+};
+#endif
+
+#ifdef TEST11c
+// Anonymous struct/union is a C11 feature, which we also allow in the SDCC-specific dialects correspondignto earlier standards.
+#ifdef __SDCC
+#pragma std_sdcc99
+#endif
+struct s
+{
+  struct {int i;};
+  char; /* ERROR */
+};
+#endif
+

@@ -31,7 +31,7 @@
  * device/lib/pic16/libsdcc/gptr{get,put}{1,2,3,4}.c */
 #define GPTR_TAG_DATA   0x80
 #define GPTR_TAG_EEPROM 0x40
-#define GPTR_TAG_CODE   0x00    /* must be 0 becaue of UPPER(sym)==0 */
+#define GPTR_TAG_CODE   0x00    /* must be 0 because of UPPER(sym)==0 */
 
 struct pCodeOp;
 
@@ -47,6 +47,10 @@ enum
     AOP_PCODE,
     AOP_STA		// asmop on stack
   };
+
+/* Maximum number of registers allocated to an operand (maximum operand size).
+ * Many buffers are sized to this. */
+#define PIC16_MAX_ASMOP_REGS  8
 
 /* type asmop : a homogenised type for 
    all the different spaces an operand can be
@@ -72,16 +76,16 @@ typedef struct asmop
     union
       {
 	value *aop_lit;		/* if literal */
-	reg_info *aop_reg[4];	/* array of registers */
+	reg_info *aop_reg[PIC16_MAX_ASMOP_REGS];	/* array of registers */
 	char *aop_dir;		/* if direct  */
 	reg_info *aop_ptr;		/* either -> to r0 or r1 */
 	int aop_stk;		/* stack offset when AOP_STK */
-	char *aop_str[4];	/* just a string array containing the location */
+	char *aop_str[PIC16_MAX_ASMOP_REGS];	/* just a string array containing the location */
 /*	regs *aop_alloc_reg;     * points to a dynamically allocated register */
 	pCodeOp *pcop;
 	struct {
 	  int stk;
-	  pCodeOp *pop[4];
+	  pCodeOp *pop[PIC16_MAX_ASMOP_REGS];
         } stk;
       }
     aopu;
@@ -143,7 +147,7 @@ extern unsigned pic16_fReturnSizePic;
 
 int pic16_getDataSize(operand *op);
 void pic16_emitpcode_real(PIC_OPCODE poc, pCodeOp *pcop);
-#define pic16_emitpcode(poc,pcop)	do { if (pic16_pcode_verbose) pic16_emitpcomment ("%s:%u(%s):", __FILE__, __LINE__, __FUNCTION__); pic16_emitpcode_real(poc,pcop); } while(0)
+#define pic16_emitpcode(poc,pcop)	do { if (pic16_pcode_verbose) pic16_emitpcomment ("%s:%u(%s):", __FILE__, __LINE__, __func__); pic16_emitpcode_real(poc,pcop); } while(0)
 void pic16_emitpLabel(int key);
 void pic16_emitcode (char *inst,char *fmt, ...);
 void DEBUGpic16_emitcode (char *inst,char *fmt, ...);
@@ -167,6 +171,7 @@ void pic16_genLeftShiftLiteral (operand *left, operand *right, operand *result, 
 pCodeOp *pic16_popGet2p(pCodeOp *src, pCodeOp *dst);
 void pic16_emitpcomment (char *fmt, ...);
 
+pCodeOp *pic16_popGetExternal (const char *str);
 pCodeOp *pic16_popGetLabel(int key);
 pCodeOp *pic16_popCopyReg(pCodeOpReg *pc);
 pCodeOp *pic16_popCopyGPR2Bit(pCodeOp *pc, int bitval);
@@ -205,16 +210,16 @@ int inWparamList(char *s);
 #define DUMP_FUNCTION_EXIT	0
 
 #if DUMP_FUNCTION_ENTRY
-#define FENTRY	if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __FUNCTION__)
-#define FENTRY2 if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __FUNCTION__)
+#define FENTRY	if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __func__)
+#define FENTRY2 if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __func__)
 #else
 #define FENTRY
 #define FENTRY2
 #endif
 
 #if DUMP_FUNCTION_EXIT
-#define FEXIT	if(pic16_options.debgen&2)pic16_emitpcomment("; **}", "%d %s", __LINE__, __FUNCTION__)
-#define FEXIT2	if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __FUNCTION__)
+#define FEXIT	if(pic16_options.debgen&2)pic16_emitpcomment("; **}", "%d %s", __LINE__, __func__)
+#define FEXIT2	if(pic16_options.debgen&2)pic16_emitpcomment("**{\t%d %s", __LINE__, __func__)
 #else
 #define FEXIT
 #define FEXIT2

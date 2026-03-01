@@ -9,7 +9,8 @@
 #endif
 
 // TODO: Enable when sdcc supports long long constants!
-#if 0
+#if !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
+int
 f (signed long long int x)
 {
   return x > 0xFFFFFFFFLL || x < -0x80000000LL;
@@ -19,9 +20,8 @@ f (signed long long int x)
 void
 testTortureExecute (void)
 {
-#if 0
-  if (f (0) != 0)
-    ASSERT (0);
+#if !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
+  ASSERT(f (0) == 0);
   return;
 #endif
 }

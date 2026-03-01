@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------------------
-   _divslonglong.c - routine for divsion of 64 bit unsigned long long
+   _divslonglong.c - routine for division of 64 bit unsigned long long
 
    Copyright (C) 2012, Philipp Klaus Krause . pkk@spth.de
 
@@ -13,7 +13,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License 
+   You should have received a copy of the GNU General Public License
    along with this library; see the file COPYING. If not, write to the
    Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA.
@@ -26,14 +26,14 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#pragma std_c99
-
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <sdcc-lib.h>
+
 #ifdef __SDCC_LONGLONG
-long long 
-_divslonglong (long long numerator, long long denominator)
+long long
+_divslonglong (long long numerator, long long denominator) __SDCC_NONBANKED
 {
   bool numeratorneg = (numerator < 0);
   bool denominatorneg = (denominator < 0);
