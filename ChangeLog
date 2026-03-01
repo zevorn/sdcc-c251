@@ -2,7 +2,16 @@
 
 	* support/sdbinutils/include,
 	  support/sdbinutils/config,
-	  support/sdbinutils/configure:
+	  support/sdbinutils/configure,
+	  support/sdbinutils/bfd/coff-z80.c,
+	  support/sdbinutils/bfd/coff-z8k.c,
+	  support/sdbinutils/bfd/cpu-s12z.c,
+	  support/sdbinutils/bfd/cpu-z8k.c,
+	  support/sdbinutils/binutils/ChangeLog-2018,
+	  support/sdbinutils/binutils/ChangeLog-2019,
+	  support/sdbinutils/binutils/ChangeLog-2020,
+	  support/sdbinutils/binutils/Makefile.am,
+	  support/sdbinutils/binutils/bfdtest2.c:
 	  Reduce diff to upstream GNU binutils 2.38.
 
 2026-02-28 Janko Stamenović
