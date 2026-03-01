@@ -215,6 +215,8 @@ public:
   u16_t op16_BC(void);
   u16_t op16_DE(void);
   u16_t op16_HL(void);
+  u16_t op16_iIRd(void);
+  u32_t op32_iIRd(void);
   void write8(u16_t a, u8_t v) { vc.wr++; rom->write(a, v); }
   void write8io(u16_t a, u8_t v) { vc.wr++; rwas->write(a, v); }
   void write16(u16_t a, u16_t v) { vc.wr+=2;
@@ -233,11 +235,11 @@ public:
     l= rwas->read(a); h= rwas->read(a+1);
     return h*256+l;
   }
-  u32_t read32(u16_t a) { u16_t l, h; vc.rd+=4;
+  u32_t read32(u16_t a) { u16_t l, h;
     l= read16(a); h= read16(a+2);
     return (h<<16)+l;
   }
-  u32_t read32io(u16_t a) { u16_t l, h; vc.rd+=4;
+  u32_t read32io(u16_t a) { u16_t l, h;
     l= read16io(a); h= read16io(a+2);
     return (h<<16)+l;
   }
@@ -305,6 +307,8 @@ public:
   virtual int add_hl_ss(u16_t op);
   virtual int adc_hl_ss(u16_t op);
   virtual int add8(u8_t op2, bool cy);				// 0f,4t,0r,0w
+  virtual int add16(u16_t op1, u16_t op2, class cl_cell16 &cRes, bool cy);
+  virtual int add32(u32_t op1, u32_t op2, class cl_cell32 &cRes, bool cy);
   virtual int sub8(u8_t op2, bool cy);				// 0f,4t,0r,0w
   virtual int sub16(u16_t op2, bool cy);			// 0f,4t,0r,0w
   virtual int sub32(u32_t op1, u32_t op2, class cl_cell32 &cRes, bool cy);
@@ -314,12 +318,13 @@ public:
   virtual int add_ir_xy(u16_t op);				// 0f,4t,0r,0r
   virtual int xor8(class cl_cell8 &dest, u8_t op1, u8_t op2);	// 0f,1t,0r,0w
   virtual int xor16(class cl_cell16 &dest, u16_t op1,u16_t op2);// 0f,4t,0r,0w
+  virtual int xor32(class cl_cell32 &dest, u32_t op1,u32_t op2);// 0f,?t,0r,0w
   virtual int or8(class cl_cell8 &dest, u8_t op1, u8_t op2);	// 0f,1t,0r,0w
-  virtual int or16(class cl_cell16 &dest,
-		    u16_t op1, u16_t op2);			// 0f,1t,0r,0w
+  virtual int or16(class cl_cell16 &dest, u16_t op1,u16_t op2);	// 0f,1t,0r,0w
+  virtual int or32(class cl_cell32 &dest,u32_t op1,u32_t op2);	// 0f,?t,0r,0w
   virtual int and8(class cl_cell8 &dest, u8_t op1, u8_t op2);	// 0f,1t,0r,0w
-  virtual int and16(class cl_cell16 &dest,
-		    u16_t op1, u16_t op2);			// 0f,1t,0r,0w
+  virtual int and16(class cl_cell16 &dest,u16_t op1,u16_t op2);	// 0f,1t,0r,0w
+  virtual int and32(class cl_cell32 &dest,u32_t op1,u32_t op2);	// 0f,?t,0r,0w
   virtual int cp8(u8_t op1, u8_t op2);				// 0f,3t,0r,0w
   virtual int cp16(u16_t op1, u16_t op2);			// 0f,4t,0r,0w
   virtual int cp32(u32_t op1, u32_t op2);			// 0f,4t,0r,0w
