@@ -1,3 +1,8 @@
+2026-03-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/sdbinutils/include:
+	  Reduce diff to upstream GNU binutils 2.38.
+
 2026-02-28 Janko Stamenović
 
 	* sdas/asrab/rab.h
@@ -59,7 +64,7 @@
 2026-02-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/sdbinutils:
-	  Reduce diff to upstream GNU binutils 3.38.
+	  Reduce diff to upstream GNU binutils 2.38.
 
 2026-02-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
