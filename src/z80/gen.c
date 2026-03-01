@@ -2862,9 +2862,21 @@ adjustPair (const char *pair, int *pold, int new_val)
 
   while (*pold < new_val)
     {
-      emit2 ("inc %s", pair);
-      cost2 (1, 1, 1, 1 , 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
-      (*pold)++;
+      if (IS_R6K && *pold + 1 < new_val && !strcmp (pair, "iy") && !_G.preserveCarry)
+        {
+          int d = new_val - *pold;
+          if (d >= 128)
+            d = 127;
+          emit2 ("add iy, #%d", d);
+          cost (3, 6);
+          (*pold) += d;
+        }
+      else
+        {
+          emit2 ("inc %s", pair);
+          cost2 (1, 1, 1, 1 , 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
+          (*pold)++;
+        }
     }
   while (*pold > new_val)
     {
@@ -9366,10 +9378,12 @@ genPlusIncr (const iCode *ic)
           return true;
         }
       else if (resultId == getPairId (ic->left->aop) &&
-        (IS_Z80N && resultId != PAIR_IY && icount > 3 || IS_TLCS90 && (resultId == PAIR_HL || resultId == PAIR_IY) && icount > 2))
+        (IS_Z80N && resultId != PAIR_IY && icount > 3 ||
+        IS_TLCS90 && (resultId == PAIR_HL || resultId == PAIR_IY) && icount > 2 ||
+        IS_R6K && resultId == PAIR_IY && icount > 1 && icount < 128))
         {
-          emit2 ("add %s, !immed%s", getPairName (IC_RESULT (ic)->aop), aopGetLitWordLong (IC_RIGHT (ic)->aop, 0, false));
-          if (IS_TLCS90)
+          emit2 ("add %s, !immed%s", getPairName (ic->result->aop), aopGetLitWordLong (IC_RIGHT (ic)->aop, 0, false));
+          if (IS_R6K || IS_TLCS90)
             cost (3, 6);
           else
             cost2 (4, -1, 4, 4, 16, -1, -1, -1, -1, -1, 4, 4, 4, -1, -1);
@@ -16776,7 +16790,7 @@ genPointerGet (const iCode *ic)
       if (!isRegDead (A_IDX, ic) && !(aopInReg (left->aop, 2, A_IDX) && size == 1 && !rightval && !bit_field))
         _push (PAIR_AF), pushed_a = true;
 
-      bool use_add_iy_d = IS_R6K_NOTYET && (size == 2 || (!bc_ok && !de_ok));
+      bool use_add_iy_d = IS_R6K && (size == 2 || (!bc_ok && !de_ok));
 
       if (!hl_ok && !iy_ok)
         UNIMPLEMENTED;
@@ -17240,7 +17254,7 @@ genPointerGet (const iCode *ic)
             }
         }
       if (!isPairDead (pair, ic))
-        if ((IS_EZ80 || IS_R6K_NOTYET) && pair == PAIR_IY && last_offset > 1)
+        if ((IS_EZ80 || IS_R6K) && pair == PAIR_IY && last_offset > 1)
           {
             if (IS_EZ80)
               {
@@ -17760,7 +17774,7 @@ genPointerSet (iCode *ic)
       if (!isRegDead (A_IDX, ic) && !(aopInReg (result->aop, 2, A_IDX) && size == 1 && !bit_field))
         _push (PAIR_AF), pushed_a = true;
 
-      bool use_add_iy_d = IS_R6K_NOTYET && (size == 2 || (!bc_ok && !de_ok));
+      bool use_add_iy_d = IS_R6K && (size == 2 || (!bc_ok && !de_ok));
 
       if (!iy_ok)
         UNIMPLEMENTED;
@@ -18067,7 +18081,7 @@ genPointerSet (iCode *ic)
 
   // Restore operand in pair.
   if (!isPairDead (pairId, ic) && getPairId (result->aop) == pairId)
-    if ((IS_EZ80 || IS_R6K_NOTYET) && pairId == PAIR_IY && last_offset > 1)
+    if ((IS_EZ80 || IS_R6K) && pairId == PAIR_IY && last_offset > 1)
       {
         if (IS_EZ80)
           {
