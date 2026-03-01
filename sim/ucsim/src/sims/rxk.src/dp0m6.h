@@ -28,27 +28,31 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #ifndef DP0M6_HEADER
 #define DP0M6_HEADER
 
+
 /*
-add iy, #d
-and hl, d(ix)
-and hl, n(sp)
-cp hl, d(ix)
-cp hl, n(sp)
-+ jp ge, mn
-+ jp le, mn
-+ jp leu, mn
-+ jr ge, e
-+ jr le, e
-+ jr leu, e
-or hl, d(ix)
-or hl, n(sp)
-sbc hl, d(ix)
-sbc hl, n(sp)
-+ swap bc
-+ swap de
-+ swap hl
-xor hl, d(ix)
-xor hl, n(sp)
++ add iy, #d	fd/dd c5
++ and hl, d(ix)	fd/dd a0
++ cp hl, d(ix)	fd/dd b1
++ or hl, d(ix)	fd/dd b0
++ sbc hl, d(ix)	fd/dd 91
++ xor hl, d(ix)	fd/dd a1
+
+and hl, n(sp)	49 ca
+cp hl, n(sp)	49 fa
+or hl, n(sp)	49 ea
+sbc hl, n(sp)	49 ba
+xor hl, n(sp)	49 da
+
++ jp ge, mn	00-m11 43
++ jp le, mn	00-m11 53
++ jp leu, mn	00-m11 4b
++ jr ge, e	00-m11 80
++ jr le, e	00-m11 90
++ jr leu, e	00-m11 88
+
++ swap bc	ed 87
++ swap de	ed a7
++ swap hl	ed c7
 */
 
 #define JP_GE_MN		instruction_6k11_43
@@ -74,9 +78,11 @@ xor hl, n(sp)
 #define TSTNULL_PZ		instruction_6ked_b6
 #define SWAP_E			instruction_6ked_b7
 #define SWAP_H			instruction_6ked_c7
+#define ADC_JKHL_BCDE		instruction_6ked_ce
 #define SWAP_BC			instruction_6ked_cf
 #define SWAP_L			instruction_6ked_d7
 #define SWAP_DE			instruction_6ked_df
+#define SBC_JKHL_BCDE		instruction_6ked_de
 #define LLJP_GE_LXPC_MN		instruction_6ked_e2
 #define JRE_GE_EE		instruction_6ked_e3
 #define FLAG_GE_HL		instruction_6ked_e4
@@ -86,6 +92,26 @@ xor hl, n(sp)
 #define FLAG_LE_HL		instruction_6ked_f4
 #define SWAP_A			instruction_6ked_f7
 #define SWAP_JK			instruction_6ked_ff
+
+#define SWAP_IRR		instruction_6kdd_32
+#define ADD_HL_iIRd		instruction_6kdd_80
+#define ADC_HL_iIRd		instruction_6kdd_81
+#define ADD_JKHL_iIRd		instruction_6kdd_82
+#define ADC_JKHL_iIRd		instruction_6kdd_83
+#define SUB_HL_iIRd		instruction_6kdd_90
+#define SBC_HL_iIRd		instruction_6kdd_91
+#define SUB_JKHL_iIRd		instruction_6kdd_92
+#define SBC_JKHL_iIRd		instruction_6kdd_93
+#define AND_HL_iIRd		instruction_6kdd_a0
+#define XOR_HL_iIRd		instruction_6kdd_a1
+#define AND_JKHL_iIRd		instruction_6kdd_a2
+#define XOR_JKHL_iIRd		instruction_6kdd_a3
+#define OR_HL_iIRd		instruction_6kdd_b0
+#define CP_HL_iIRd		instruction_6kdd_b1
+#define OR_JKHL_iIRd		instruction_6kdd_b2
+#define CP_JKHL_iIRd		instruction_6kdd_b3
+#define ADD_IR_D		instruction_6kdd_c5
+
 
 #endif
 
