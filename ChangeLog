@@ -1,6 +1,13 @@
 2026-03-02 Philipp Klaus Krause <philipp@colecovision.eu>
 
-	* support/sdbinutils/config_
+	* support/sdbinutils/config,
+	  support/sdbinutils/ChangeLog,
+	  support/sdbinutils/MAINTAINERS,
+	  support/sdbinutils/config-ml.in,
+	  support/sdbinutils/config.sub,
+	  support/sdbinutils/libtool.m4,
+	  support/sdbinutils/ltmain.sh,
+	  support/sdbinutils/SECURITY.txt:
 	  Reduce diff to upstream GNU binutils 2.46.0.
 
 2026-03-02 Philipp Klaus Krause <philipp@colecovision.eu>
