@@ -178,7 +178,7 @@ struct	mne	mne[] = {
 
     {   NULL,   "ld",           S_LD,           0,      0x40    },
 
-    {	NULL,	"call",		S_CALL,		0,	0xC4	},
+    {	NULL,	"call",		S_CALL,		0,	0xCD	},
     {	NULL,	"jp",		S_JP,		0,	0xC2	},
     {	NULL,	"jr",		S_JR,		0,	0x18	},
     {   NULL,   "djnz",         S_DJNZ,         0,      0x10    },
@@ -275,11 +275,16 @@ struct	mne	mne[] = {
     {   NULL,   "flag",		X_FLAG,		0,	0xA4	},
     {   NULL,   "clr",          X_CLR,          0,      0xBF    },
 
+    {   NULL,   "rlb",          X_RLB_RRB,      0,      0x6F    },
+    {   NULL,   "rrb",          X_RLB_RRB,      0,      0x7F    },
+
     {   NULL,   "ljp",          X_LJP,          0,      0xC7    },
     {   NULL,   "lcall",        X_LJP,          0,      0xCF    },
     {   NULL,   "lljp",         X_LJP,          0,      0x87    },
     {   NULL,   "llcall",       X_LJP,          0,      0x8F    },
 
+    {	NULL,	"setsysp",	S_CALL,		0,	0xB1	},
+    {	NULL,	"setusrp",	S_CALL,		0,	0xB5	},
 
     {   NULL,   "lret",         S_ED_0ARGS,     0,      0x45    },
     {   NULL,   "bool",         X_BOOL,         0,      0xCC    },
@@ -290,6 +295,7 @@ struct	mne	mne[] = {
     {   NULL,   "copy",         R4K_INH2,       0,      0x80    },
     {   NULL,   "copyr",        R4K_INH2,       0,      0x88    },
     {   NULL,   "exp",          R4K_INH2,       0,      0xD9    },
+    {   NULL,   "fsyscall",     R4K_INH2,       0,      0x55    },
 
     {   NULL,   "sbox",         X_BOX,          0,      0x02    },
     {   NULL,   "ibox",         X_BOX,          0,      0x12    },

@@ -1,3 +1,11 @@
+2026-03-02 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: r4k fixes and rlb, rrb, setsysp, setusrp
+
 2026-03-02 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge binutils branch to synchronize with upstream GNU binutils 2.38.

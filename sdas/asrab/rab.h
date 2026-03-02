@@ -208,8 +208,7 @@
 #define R6K_1_ALW       105
 #define X_FLAG		106
 #define X_BOX		107
-
-
+#define X_RLB_RRB	108
 
 
 #define BCDE_PG           0xDD
