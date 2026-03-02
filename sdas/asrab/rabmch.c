@@ -1401,6 +1401,28 @@ machine(struct mne *mp)
 				op = 0x92;
 				ep = &e2;
 			}
+			if (t1 == S_INDM && t2 == S_R16 && 
+				(v2 == BC || v2 == DE || v2 == IX || v2 == IY)) {
+				outab(0xED);
+				if (v2 == IX) v2 = 2;
+				if (v2 == IY) v2 = 3;
+				op = 0x0B + (v2 << 4);
+				ep = &e1;
+				outab(op);
+				outr3b(ep,0);
+				break;
+			}
+			if (t1 == S_R16 && t2 == S_INDM &&
+				(v1 == BC || v1 == DE || v1 == IX || v1 == IY)) {
+				outab(0xED);
+				if (v1 == IX) v1 = 2;
+				if (v1 == IY) v1 = 3;
+				op = 0x0A + (v1 << 4);
+				ep = &e1;
+				outab(op);
+				outr3b(ep,0);
+				break;
+			}
 			if (op > 0) {
 				if (IS_MODE_10(rab))
 					outab( 0x7F );
@@ -1490,25 +1512,29 @@ machine(struct mne *mp)
         case X_JRE:
                 if (!IS_MODE_10_OR_11(rab))
                         xerr('o', "A Rabbit 4000 Instruction.");
-      
                 if ((v1 = admode(ALT_CND)) != 0) {
                         op += v1<<3;
 			comma(1);
+
 		} else {
                         op = 0x98;
 		}
 		expr(&e2, 0);
-		if (IS_MODE_10(rab))
+		v1 = 1;
+		if (op == 0x98 && IS_MODE_10(rab))
 			outab( 0x7F );
+		if (op != 0x98) {
+			outab( 0xED );
+		}
 		outab(op);
                 if (mchpcr(&e2)) {
-                        v2 = (int) (e2.e_addr - dot.s_addr - 1);
+                        v2 = (int) (e2.e_addr - dot.s_addr - 2);
                         if (pass == 2 && ((v2 < -32768) || (v2 > 32767)))
                                 aerr();
                         outab( (v2 & 0xFF) );
                         outab( (v2 >> 8) );
 		} else {
-			outrb(&e2, R_PCR);
+			rerr();
 		}
 		if (e2.e_mode != S_USER)
 			rerr();

@@ -45,7 +45,7 @@
  * 02-Feb-22 basxto/bbbbbr:
  *      - raise NCPS to 256 like in upstream
  */
-
+ 
 #define VOID    void
 #define OTHERSYSTEM
 
@@ -63,7 +63,7 @@
  * Local Definitions
  */
 
-#define	VERSION	"V05.50.4+NoICE+SDCCmods-WIP-R11"
+#define	VERSION	"V05.50.4+NoICE+SDCCmods-WIP-R12"
 #define	COPYRIGHT "2025"
 
 /*
@@ -815,7 +815,7 @@ struct	asmf
  *	The macrofp structure masquerades as a FILE Handle
  *	for inclusion in an asmf structure.  This structure
  *	contains the reference to the macro to be inserted
- *	into the assembler stream and information to
+ *	into the assembler stream and information to 
  *	restore the assembler state at macro completion.
  *
  * The Parameters:

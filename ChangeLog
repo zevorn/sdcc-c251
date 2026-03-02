@@ -1,5 +1,11 @@
 2026-03-02 Janko Stamenović
 
+	* sdas/asrab/rabmch.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: r4k some ldf jre modes / improvements
+
+2026-03-02 Janko Stamenović
+
 	* sdas/asrab/rabpst.c
 	  sdas/asxxsrc/asxxxx.h
 	  sdasrab: fix sbox ibox codes
