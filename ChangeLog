@@ -1,3 +1,7 @@
+2026-03-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge binutils branch to synchronize with upstream GNU binutils 2.38.
+
 2026-03-02 Janko Stamenović
 
 	* sdas/asrab/rabmch.c
@@ -16,6 +20,23 @@
 	  sdas/asrab/rabpst.c
 	  sdas/asxxsrc/asxxxx.h
 	  sdasrab: add various r4k instructions, including lljp, llcall, llret
+
+2026-03-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/sdbinutils/include,
+	  support/sdbinutils/config,
+	  support/sdbinutils/configure,
+	  support/sdbinutils/bfd/coff-z80.c,
+	  support/sdbinutils/bfd/coff-z8k.c,
+	  support/sdbinutils/bfd/cpu-s12z.c,
+	  support/sdbinutils/bfd/cpu-z8k.c,
+	  support/sdbinutils/binutils/ChangeLog-2018,
+	  support/sdbinutils/binutils/ChangeLog-2019,
+	  support/sdbinutils/binutils/ChangeLog-2020,
+	  support/sdbinutils/binutils/Makefile.am,
+	  support/sdbinutils/binutils/bfdtest2.c,
+	  support/sdbinutils/binutils/Makefile.in:
+	  Reduce diff to upstream GNU binutils 2.38.
 
 2026-02-28 Janko Stamenović
 
@@ -78,7 +99,7 @@
 2026-02-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/sdbinutils:
-	  Reduce diff to upstream GNU binutils 3.38.
+	  Reduce diff to upstream GNU binutils 2.38.
 
 2026-02-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
