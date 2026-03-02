@@ -3113,7 +3113,7 @@ replace restart {
 	ret	%1
 	nop
 	; common peephole 161 replaced jump by return.
-} if isPort('r5k' 'r6k'), labelIsReturnOnly(%5), labelRefCountChange(%5 -1)
+} if isPort('r5k' 'r6k'), same(%1 'nz' 'z' 'nc' 'c' 'lz' 'lo' 'p' 'm'), labelIsReturnOnly(%5), labelRefCountChange(%5 -1)
 
 // SM83 doesn't have ret cc for all flags, but it does for all flags for which is has JP CC.
 // This rule can be dangerous for Rabbits: it might trigger a hardware bug in the Rabbit 5000.

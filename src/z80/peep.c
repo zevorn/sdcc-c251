@@ -1944,6 +1944,9 @@ int z80instructionSize(lineNode *pl)
   if(IS_RAB && lineIsInst (pl, "mul"))
     return(1);
 
+  if((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "mulu"))
+    return(2);
+
   if(lineIsInst (pl, "lddr") || lineIsInst (pl, "ldir") || lineIsInst (pl, "cpir") || lineIsInst (pl, "cpdr"))
     return(2);
 

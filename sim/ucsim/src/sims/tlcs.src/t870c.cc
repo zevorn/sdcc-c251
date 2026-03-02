@@ -104,6 +104,8 @@ cl_t870c::cl_t870c(class cl_sim *asim):
   uc_itab[0x2f4]= &cl_itab::invalid_instruction;
   uc_itab[0x2f5]= &cl_itab::invalid_instruction;
   uc_itab[0x2ff]= &cl_itab::invalid_instruction;
+
+  vector_start= 0xffc0;
 }
 
 int
@@ -237,6 +239,7 @@ cl_t870c::reset(void)
   cl_uc::reset();
   PC= rom->read(0xffff) * 256 + rom->read(0xfffe);
   rSP= 0x00ff;
+  imf= 0;
 }
 
 
@@ -558,6 +561,15 @@ cl_t870c::disassc(t_addr addr, chars *comment)
 	    {
 	      u16_t a= code1 + code2*256;
 	      work.appendf("0x%04x", a);
+	    }
+	  else if (fmt=="vn")
+	    {
+	      u16_t a= vector_start;
+	      u16_t n= code0 & 0xf;
+	      a+= n*2;
+	      work.appendf("%d", n);
+	      if (comment)
+		comment->appendf("; [%04x]=%04x", a, get16(a));
 	    }
 	  continue;
 	}
@@ -1022,6 +1034,18 @@ cl_t870c::pop(MCELL *reg)
 }
 
 int
+cl_t870c::POP_PSW(MP)
+{
+  u16_t a= rSP+1;
+  u8_t v;
+  v= asd->read(a);
+  RD;
+  cSP.W(a);
+  cF.W(v);
+  return resGO;
+}
+
+int
 cl_t870c::push(MCELL *reg)
 {
   t_addr sp_before= rSP;
@@ -1029,6 +1053,20 @@ cl_t870c::push(MCELL *reg)
   t_mem val;
   wr16(a, val= reg->R());
   cSP.W(a-1);
+  class cl_stack_push *o= new cl_stack_push(instPC, val, sp_before, rSP);
+  o->init();
+  stack_write(o);
+  return resGO;
+}
+
+int
+cl_t870c::PUSH_PSW(MP)
+{
+  t_addr sp_before= rSP;
+  t_mem val;
+  asd->write(sp_before, val= rF);
+  WR;
+  cSP.W(rSP-1);
   class cl_stack_push *o= new cl_stack_push(instPC, val, sp_before, rSP);
   o->init();
   stack_write(o);
@@ -1801,17 +1839,6 @@ cl_t870c::jr(u8_t a)
 }
 
 int
-cl_t870c::jr_cc(u8_t a, bool cond)
-{
-  i8_t v= a;
-  if (cond)
-    PC= (PC + v + 0) & PCmask;
-  else
-    cF.W(rF|MJF);
-  return resGO;
-}
-
-int
 cl_t870c::jrs(u8_t code, bool cond)
 {
   i16_t v= code & 0x1f;
@@ -1827,6 +1854,24 @@ cl_t870c::jrs(u8_t code, bool cond)
   return resGO;
 }
 
+int
+cl_t870c::jr_cc(u8_t a, bool cond)
+{
+  i8_t v= a;
+  if (cond)
+    PC= (PC + v + 0) & PCmask;
+  else
+    cF.W(rF|MJF);
+  return resGO;
+}
+
+int
+cl_t870c::call(u16_t a)
+{
+  push(&cPC);
+  cPC.W(a);
+  return resGO;
+}
 
 int
 cl_t870c::CLR_CF(MP)
@@ -1942,6 +1987,21 @@ cl_t870c::ROLD_A_src(MP)
   RD;
   v= (v<<4) + (rA&0xf);
   rA= (rA&0xf0) + vh;
+  cF.W(rF|MJF);
+  cA.W(rA);
+  sdc->write(v);
+  WR;
+  return resGO;
+}
+
+int
+cl_t870c::RORD_A_src(MP)
+{
+  u8_t v= sdc->read();
+  u8_t vl= v & 0xf;
+  RD;
+  v= ((rA&0xf)<<4) + (v>>4);
+  rA= (rA&0xf0) + vl;
   cF.W(rF|MJF);
   cA.W(rA);
   sdc->write(v);

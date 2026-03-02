@@ -175,6 +175,9 @@ addr(struct expr *esp)
 		} else
                 if ((indx = admode(R8IP)) != 0) {
                         mode = S_R8IP;
+		} else
+                if ((indx = admode(R16SU)) != 0) {
+                        mode = S_R16SU;
 		} else {
 			mode = S_USER;
 			expr(esp, 0);
@@ -351,6 +354,11 @@ struct  adsym   RXPC[] = {
   {   "",       0000    }
 };
 
+struct  adsym   R16SU[] = {
+  {   "su",     1|0400  },
+  {   "",       0000    }
+};
+
 /*
  * Conditional definitions
  */
@@ -376,5 +384,12 @@ struct  adsym   ALT_CND[] = {
     {   "Z",    CC_Z |0400  },
     {   "NC",   CC_NC|0400  },
     {   "C",    CC_C |0400  },
+    {   "",     0000        }
+};
+
+struct  adsym   R6_CND[] = {
+    {   "GE",   CC_GE|0400  },
+    {   "LEU",  CC_LEU|0400 },
+    {   "LE",   CC_LE|0400  },
     {   "",     0000        }
 };
