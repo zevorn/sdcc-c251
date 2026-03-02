@@ -1,3 +1,26 @@
+2026-03-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge binutils branch to synchronize with upstream GNU binutils 2.38.
+
+2026-03-02 Janko Stamenović
+
+	* sdas/asrab/rabmch.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: r4k some ldf jre modes / improvements
+
+2026-03-02 Janko Stamenović
+
+	* sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: fix sbox ibox codes
+
+2026-03-01 Janko Stamenović
+
+	* sdas/asrab/rabmch.c
+	  sdas/asrab/rabpst.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdasrab: add various r4k instructions, including lljp, llcall, llret
+
 2026-03-01 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/sdbinutils/include,
