@@ -1,5 +1,10 @@
 2026-03-02 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* support/sdbinutils/config_
+	  Reduce diff to upstream GNU binutils 2.46.0.
+
+2026-03-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Merge binutils branch to synchronize with upstream GNU binutils 2.38.
 
 2026-03-02 Janko Stamenović

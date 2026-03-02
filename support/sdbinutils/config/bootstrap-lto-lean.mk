@@ -1,10 +1,10 @@
-# This option enables LTO for stage2 and stage3 in slim mode
+# This option enables LTO for stage4 and LTO for generators in stage3 with profiledbootstrap.
+# Otherwise, LTO is used in only stage3.
 
-STAGE2_CFLAGS += -flto=jobserver -frandom-seed=1
-STAGE3_CFLAGS += -flto=jobserver -frandom-seed=1
-STAGEprofile_CFLAGS += -flto=jobserver -frandom-seed=1
-STAGEtrain_CFLAGS += -flto=jobserver -frandom-seed=1
-STAGEfeedback_CFLAGS += -flto=jobserver -frandom-seed=1
+STAGE3_CFLAGS += -flto=jobserver
+override STAGEtrain_CFLAGS := $(filter-out -flto=jobserver,$(STAGEtrain_CFLAGS))
+STAGEtrain_GENERATOR_CFLAGS += -flto=jobserver
+STAGEfeedback_CFLAGS += -flto=jobserver
 
 # assumes the host supports the linker plugin
 LTO_AR = $$r/$(HOST_SUBDIR)/prev-gcc/gcc-ar$(exeext) -B$$r/$(HOST_SUBDIR)/prev-gcc/
@@ -16,5 +16,4 @@ LTO_EXPORTS = AR="$(LTO_AR)"; export AR; \
 	      NM="$(LTO_NM)"; export NM;
 LTO_FLAGS_TO_PASS = AR="$(LTO_AR)" RANLIB="$(LTO_RANLIB)" NM="$(LTO_NM)"
 
-do-compare = $(SHELL) $(srcdir)/contrib/compare-lto $$f1 $$f2
-extra-compare = gcc/lto1$(exeext)
+do-compare = /bin/true
