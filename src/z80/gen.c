@@ -10243,6 +10243,38 @@ genPlus (iCode * ic)
           started = true;
           i += 2;
         }
+      else if ((IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && !maskedword && i + 1 < size && aopInReg (ic->result->aop, i, HL_IDX) &&
+        ((aopInReg (leftop, i, HL_IDX) || aopOnStack (leftop, i, 2) || leftop->type == AOP_DIR || leftop->type == AOP_IY) &&
+            aopOnStack (rightop, i, 2) && (spOffset (rightop->aopu.aop_stk) + i < (IS_R6K ? 255 : 127) || abs (fpOffset (rightop->aopu.aop_stk) + i) < 128) ||
+          (aopInReg (rightop, i, HL_IDX) || aopOnStack (rightop, i, 2) || rightop->type == AOP_DIR || rightop->type == AOP_IY) &&
+            aopOnStack (leftop, i, 2) && (spOffset (leftop->aopu.aop_stk) + i < (IS_R6K ? 255 : 127) || abs (fpOffset (leftop->aopu.aop_stk) + i) < 128)))
+        {
+          const struct asmop *stk_aop;
+          struct asmop *other_aop;
+          if (aopOnStack (rightop, i, 2) && (spOffset (rightop->aopu.aop_stk) + i < (IS_R6K ? 255 : 127) || abs (fpOffset (rightop->aopu.aop_stk) + i) < 128))
+            {
+              stk_aop = rightop;
+              other_aop = leftop;
+            }
+          else
+            {
+              stk_aop = leftop;
+              other_aop = rightop;
+            }
+          bool a_free = isRegDead (A_IDX, ic) && leftop->regs[A_IDX] <= i && rightop->regs[A_IDX] <= i && (ic->result->aop->regs[A_IDX] < 0 || ic->result->aop->regs[A_IDX] >= i);
+          int sp_offset = spOffset (stk_aop->aopu.aop_stk) + i;
+          int fp_offset = fpOffset (stk_aop->aopu.aop_stk) + i;
+          genMove_o (ASMOP_HL, 0, other_aop, i, 2, a_free, true, false, false, true);
+          if (sp_offset <= (IS_R6K ? 255 : 127))
+            emit2 (started ? "adc hl, %d (sp)" : "add hl, %d (sp)", sp_offset);
+          else if (-128 <= fp_offset && fp_offset <= 127)
+            emit2 (started ? "adc hl, %d (ix)" : "add hl, %d (ix)", fp_offset);
+          else
+            wassert (0);
+          cost2 (3, 3, -1, 3, -1, -1, -1, 12, -1, 12, -1, 7, 6, -1, -1);
+          i += 2;
+          started = true;
+        }
       // When adding a literal, the 16 bit addition results in smaller, faster code than two 8-bit additions.
       else if (!maskedword && (!premoved || i) && aopInReg (IC_RESULT (ic)->aop, i, HL_IDX) && aopInReg (leftop, i, HL_IDX) && (rightop->type == AOP_LIT && !aopIsLitVal (rightop, i, 1, 0) || rightop->type == AOP_IMMD))
         {
