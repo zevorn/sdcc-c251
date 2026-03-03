@@ -167,9 +167,7 @@ static char *Page[5] = {
 /*
  * Process a machine op.
  */
-void
-machine(mp)
-struct mne *mp;
+void machine(struct mne *mp)
 {
 	struct expr e1, e2, e3;
 	char *p1, *p2;
@@ -2050,8 +2048,7 @@ opcy_aerr()
  * based upon the expression type and value.
  */
 int
-ls_mode(e)
-struct expr *e;
+ls_mode(struct expr *e)
 {
 	unsigned flag, v;
 
@@ -2086,9 +2083,7 @@ struct expr *e;
  * Else return 0.
  */
 int
-valu_err(e, n)
-struct expr *e;
-int n;
+valu_err(struct expr *e, int n)
 {
 	a_uint v;
 
@@ -2116,8 +2111,7 @@ int n;
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
-struct expr *esp;
+mchpcr(struct expr *esp)
 {
 	if (esp->e_base.e_ap == dot.s_area) {
 		return(1);
@@ -2141,7 +2135,7 @@ struct expr *esp;
  * Machine specific initialization.
  */
 void
-minit()
+minit(void)
 {
 	/*
 	 * 24-Bit Machine
@@ -2165,8 +2159,7 @@ minit()
  * If no room, force the longer form of the offset.
  */
 unsigned
-setbit(b)
-unsigned b;
+setbit(unsigned b)
 {
 	if (bp >= &bb[NB])
 		return(1);
@@ -2186,7 +2179,7 @@ unsigned b;
  * This will force the longer form of the offset.
  */
 unsigned
-getbit()
+getbit(void)
 {
 	unsigned f;
 
