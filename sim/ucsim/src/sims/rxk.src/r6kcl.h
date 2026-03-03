@@ -49,6 +49,10 @@ public:
   virtual void mode10(void);
   virtual void mode4k(void);
 
+  virtual u8_t  op8_iSPn(void);
+  virtual u16_t op16_iSPn(void);
+  virtual u32_t op32_iSPn(void);
+    
   // page0 (mode11) and page 7f (mode10)
   virtual int JP_GE_MN(MP) { return jp_f_mn(cond_GE(rF)); }
   virtual int JP_LE_MN(MP) { return jp_f_mn(cond_LE(rF)); }
@@ -111,6 +115,17 @@ public:
   virtual int SUB_JKHL_iIRd(MP) { tick(12); return sub32(rJKHL, op32_iIRd(), destJKHL(), false); }
   virtual int SBC_HL_iIRd(MP) { tick(8); return sub16(op16_iIRd(), true); }
   virtual int SBC_JKHL_iIRd(MP) { tick(12); return sub32(rJKHL, op32_iIRd(), destJKHL(), true); }
+
+  // page 49
+  virtual int PAGE_6K49(MP);
+  virtual int ADD_HL_iSPn(MP) { tick(8); return add16(rHL, op16_iSPn(), destHL(), false); }
+  virtual int ADC_HL_iSPn(MP) { tick(8); return add16(rHL, op16_iSPn(), destHL(), true); }
+  virtual int SUB_HL_iSPn(MP) { tick(8); return sub16(rHL, op16_iSPn(), destHL(), false); }
+  virtual int SBC_HL_iSPn(MP) { tick(8); return sub16(rHL, op16_iSPn(), destHL(), true); }
+  virtual int AND_HL_iSPn(MP) { tick(10); return and16(destHL(), rHL, op16_iSPn()); }
+  virtual int XOR_HL_iSPn(MP) { tick(8); return xor16(destHL(), rHL, op16_iSPn()); }
+  virtual int OR_HL_iSPn(MP) { tick(10); return or16(destHL(), rHL, op16_iSPn()); }
+  virtual int CP_HL_iSPn(MP) { tick(8); return cp16(rHL, op16_iSPn()); }
 };
 
 
