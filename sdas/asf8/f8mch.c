@@ -169,8 +169,7 @@ static char *Page[5] = {
  * Process a machine op.
  */
 VOID
-machine(mp)
-struct mne *mp;
+machine(struct mne *mp)
 {
 	struct expr e1, e2, e3;
 	int t1, t2, t3;
@@ -1067,8 +1066,7 @@ opcy_aerr()
  * Return 1 for 16-bit offset, 0 for 8-bit offset.
  */
 int
-ls_mode(e)
-struct expr *e;
+ls_mode(struct expr *e)
 {
 	int flag, v;
 
@@ -1104,8 +1102,7 @@ struct expr *e;
  * Return 1 for 16-bit, 0 for 8-bit.
  */
 int
-d_mode(e)
-struct expr *e;
+d_mode(struct expr *e)
 {
 	int flag, v;
 
@@ -1139,9 +1136,7 @@ struct expr *e;
  * value is not a valid unsigned or signed value.
  */
 VOID
-valu_aerr(e, n)
-struct expr *e;
-int n;
+valu_aerr(struct expr *e, int n)
 {
 	int v;
 
@@ -1168,8 +1163,7 @@ int n;
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
-struct expr *esp;
+mchpcr(struct expr *esp)
 {
 	if (esp->e_base.e_ap == dot.s_area) {
 		return(1);
@@ -1217,8 +1211,7 @@ minit()
  * If no room, force the longer form of the offset.
  */
 int
-setbit(b)
-int b;
+setbit(int b)
 {
 	if (bp >= &bb[NB])
 		return(1);
