@@ -1157,14 +1157,19 @@ machine(struct mne *mp)
       
 	case S_CALL:
 		t1 = addr(&e1);
-		if (IS_MIN_4K(rab)) {
-			if (t1 == S_IDHL || t1 == S_IDIY) {
-				outab((t1 == S_IDHL) ? 0xED : 0xFD);
-				outab(0xEA);
-				break;
+		if (op == 0xCD) { /* call */
+			if (IS_MIN_4K(rab)) {
+				if (t1 == S_IDHL || t1 == S_IDIX || t1 == S_IDIY) {
+					outab((t1 == S_IDHL) ? 0xED 
+						: ((t1 == S_IDIX) ? 0xDD : 0xFD));
+					outab(0xEA);
+					break;
+				}
 			}
+		} else { /* setsysp setusrp */
+			if (IS_MIN_4K(rab))
+				outab(0xED);
 		}
-                op = 0xCD;
 		outab(op);
 		outrw(&e1, 0);
 		break;
@@ -1418,7 +1423,7 @@ machine(struct mne *mp)
 				if (v1 == IX) v1 = 2;
 				if (v1 == IY) v1 = 3;
 				op = 0x0A + (v1 << 4);
-				ep = &e1;
+				ep = &e2;
 				outab(op);
 				outr3b(ep,0);
 				break;
@@ -1520,7 +1525,6 @@ machine(struct mne *mp)
                         op = 0x98;
 		}
 		expr(&e2, 0);
-		v1 = 1;
 		if (op == 0x98 && IS_MODE_10(rab))
 			outab( 0x7F );
 		if (op != 0x98) {
@@ -1644,6 +1648,22 @@ machine(struct mne *mp)
 		aerr( );
 		break;
 
+	case X_RLB_RRB:
+		if (IS_MIN_4K(rab)) {
+			t1 = addr(&e1);
+			v1 = (int) e1.e_addr;
+			comma(1);
+			t2 = addr(&e2);
+			v2 = (int) e2.e_addr;
+			if (t1 == S_R8 && v1 == A && 
+				(t2 == S_R32_BCDE || t2 == S_R32_JKHL)) {
+				outab((t2 == S_R32_BCDE) ? BCDE_PG : JKHL_PG);
+				outab(op);
+				break;
+			}
+		}
+		aerr( );
+		break;
 
 	default:
 		xerr('o', "Internal Opcode Error.");

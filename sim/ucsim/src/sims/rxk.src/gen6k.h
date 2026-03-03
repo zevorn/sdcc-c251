@@ -77,5 +77,14 @@ GEN(dd,b2)
 GEN(dd,b3)
 GEN(dd,c5)
 
+GEN(49,8a)
+GEN(49,9a)
+GEN(49,aa)
+GEN(49,ba)
+GEN(49,ca)
+GEN(49,da)
+GEN(49,ea)
+GEN(49,fa)
+
 #undef WRAP_HEAD
 #undef GEN
