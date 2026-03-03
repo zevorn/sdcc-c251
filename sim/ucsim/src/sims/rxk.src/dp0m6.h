@@ -37,11 +37,11 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 + sbc hl, d(ix)	fd/dd 91
 + xor hl, d(ix)	fd/dd a1
 
-and hl, n(sp)	49 ca
-cp hl, n(sp)	49 fa
-or hl, n(sp)	49 ea
-sbc hl, n(sp)	49 ba
-xor hl, n(sp)	49 da
++ and hl, n(sp)	49 ca
++ cp hl, n(sp)	49 fa
++ or hl, n(sp)	49 ea
++ sbc hl, n(sp)	49 ba
++ xor hl, n(sp)	49 da
 
 + jp ge, mn	00-m11 43
 + jp le, mn	00-m11 53
@@ -111,6 +111,15 @@ xor hl, n(sp)	49 da
 #define OR_JKHL_iIRd		instruction_6kdd_b2
 #define CP_JKHL_iIRd		instruction_6kdd_b3
 #define ADD_IR_D		instruction_6kdd_c5
+
+#define ADD_HL_iSPn		instruction_6k49_8a
+#define ADC_HL_iSPn		instruction_6k49_9a
+#define SUB_HL_iSPn		instruction_6k49_aa
+#define SBC_HL_iSPn		instruction_6k49_ba
+#define AND_HL_iSPn		instruction_6k49_ca
+#define XOR_HL_iSPn		instruction_6k49_da
+#define OR_HL_iSPn		instruction_6k49_ea
+#define CP_HL_iSPn		instruction_6k49_fa
 
 
 #endif
