@@ -231,6 +231,7 @@ x86_64*)	 targ_archs=bfd_i386_arch ;;
 xtensa*)	 targ_archs=bfd_xtensa_arch ;;
 z80*|r800|z180|gbz80|ez80*)	 targ_archs=bfd_z80_arch ;;
 z8k*)		 targ_archs=bfd_z8k_arch ;;
+asxxxx*)	 targ_archs=bfd_z80_arch ;;
 *)		 targ_archs=bfd_${targ_cpu}_arch ;;
 esac
 
@@ -1490,6 +1491,10 @@ case "${targ}" in
     want64=true
     ;;
 #endif
+
+  asxxxx-*-*)
+    targ_defvec=asxxxx_vec
+    ;;
 
 # END OF targmatch.h
   bpf-*-*)

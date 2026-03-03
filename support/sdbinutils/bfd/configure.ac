@@ -179,6 +179,8 @@ AH_VERBATIM([00_CONFIG_H_CHECK],
 #endif
 #define __CONFIG_H__ 1])
 
+target=asxxxx-unknown-unknown
+
 if test -z "$target" ; then
     AC_MSG_ERROR(Unrecognized target system type; please check config.sub.)
 fi
@@ -660,6 +662,8 @@ do
     tekhex_vec)			 tb="$tb tekhex.lo" ;;
     core_cisco_be_vec)		 tb="$tb cisco-core.lo" ;;
     core_cisco_le_vec)		 tb="$tb cisco-core.lo" ;;
+
+    asxxxx_vec)			 tb="$tb asxxxx.lo"; want64=false; host64=false; target64=false ;;
 
     "")				 ;;
     *) AC_MSG_ERROR(*** unknown target vector $vec) ;;

@@ -1,5 +1,5 @@
 
-#line 2 "arlex.c"
+#line 3 "arlex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -588,8 +588,8 @@ char *yytext;
 extern int yylex (void);
 
 int linenumber;
-#line 591 "arlex.c"
 #line 592 "arlex.c"
+#line 593 "arlex.c"
 
 #define INITIAL 0
 
@@ -807,7 +807,7 @@ YY_DECL
 #line 45 "arlex.l"
 
 
-#line 810 "arlex.c"
+#line 811 "arlex.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1069,7 +1069,7 @@ YY_RULE_SETUP
 #line 90 "arlex.l"
 ECHO;
 	YY_BREAK
-#line 1072 "arlex.c"
+#line 1073 "arlex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

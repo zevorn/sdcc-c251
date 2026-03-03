@@ -1,5 +1,5 @@
 
-#line 2 "syslex.c"
+#line 3 "syslex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -523,8 +523,8 @@ char *yytext;
 #endif
 
 extern int yylex (void);
-#line 526 "syslex.c"
 #line 527 "syslex.c"
+#line 528 "syslex.c"
 
 #define INITIAL 0
 
@@ -741,7 +741,7 @@ YY_DECL
 	{
 #line 34 "syslex.l"
 
-#line 744 "syslex.c"
+#line 745 "syslex.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -936,7 +936,7 @@ YY_RULE_SETUP
 #line 75 "syslex.l"
 ECHO;
 	YY_BREAK
-#line 939 "syslex.c"
+#line 940 "syslex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

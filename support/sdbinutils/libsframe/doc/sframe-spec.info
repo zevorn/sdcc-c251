@@ -20,7 +20,7 @@ File: sframe-spec.info,  Node: Top,  Next: Introduction,  Up: (dir)
 The SFrame format
 *****************
 
-                           February 10, 2026
+                             March 3, 2026
 
    This manual describes Version 3 of the SFrame file format.  SFrame
 stands for Simple Frame.  The SFrame format keeps track of the minimal
@@ -189,7 +189,7 @@ format since Version 1 was published.
         − SFRAME_V2_S390X_OFFSET_DECODE_REGNUM: Decode a DWARF register
           number from an FP/RA offset.
         − SFRAME_FRE_RA_OFFSET_INVALID: Invalid RA offset value (like
-          SFRAME_CFA_FIXED_RA_INVALID). Used on s390x as padding offset
+          SFRAME_CFA_FIXED_RA_INVALID).  Used on s390x as padding offset
           to represent FP without RA saved.
         − SFRAME_S390X_CFA_OFFSET_ADJUSTMENT: CFA offset (from CFA base
           register) adjustment value.  Used to enable use of 8-bit
@@ -682,7 +682,7 @@ Name of SFrame FDE PC Type    Value   Description
 ‘SFRAME_V3_FDE_PCTYPE_MASK’   1       Stacktracers perform a
                                       (PC % REP_BLOCK_SIZE
                                       >= FRE_START_ADDR) to look up a matching
-                                      FRE. REP_BLOCK_SIZE is the size in bytes
+                                      FRE.  REP_BLOCK_SIZE is the size in bytes
                                       of the repeating block of program
                                       instructions and is encoded via
                                       ‘sfde_func_rep_size’ in the SFrame FDE.
@@ -1414,22 +1414,22 @@ Index
 
 Tag Table:
 Node: Top563
-Node: Introduction1287
-Node: Overview1513
-Node: Changes from Version 2 to Version 33161
-Node: Changes from Version 1 to Version 26049
-Node: SFrame Section9570
-Node: SFrame Preamble10070
-Node: SFrame Magic Number and Endianness11669
-Node: SFrame Version12205
-Node: SFrame Flags12844
-Node: SFrame Header14571
-Node: SFrame ABI/arch Identifier20181
-Node: SFrame Function Descriptor Entries21328
-Node: The SFrame FDE Index22036
-Node: The SFrame FDE Attribute25106
-Node: The SFrame FDE Info Bytes27891
-Node: The SFrame FDE PC Types30434
+Node: Introduction1285
+Node: Overview1511
+Node: Changes from Version 2 to Version 33159
+Node: Changes from Version 1 to Version 26047
+Node: SFrame Section9569
+Node: SFrame Preamble10069
+Node: SFrame Magic Number and Endianness11668
+Node: SFrame Version12204
+Node: SFrame Flags12843
+Node: SFrame Header14570
+Node: SFrame ABI/arch Identifier20180
+Node: SFrame Function Descriptor Entries21327
+Node: The SFrame FDE Index22035
+Node: The SFrame FDE Attribute25105
+Node: The SFrame FDE Info Bytes27890
+Node: The SFrame FDE PC Types30433
 Node: The SFrame FDE Types32266
 Node: The SFrame FRE Types35079
 Node: SFrame Frame Row Entries36580
