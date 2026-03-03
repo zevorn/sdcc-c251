@@ -1,5 +1,11 @@
 2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Use R6K instructions with indexed adressing mode in r6k port.
+
+2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* sdas/asf8/f8adr.c,
 	  sdas/asf8/f8mch.c,
 	  sdas/asstm8/stm8mch.c:
