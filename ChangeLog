@@ -1,5 +1,10 @@
 2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/stm8/gen.c:
+	  Improve codegen for xor with partially-known operands, inspired by blake2s regression test.
+
+2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* support/sdbinutils/bfd/Makefile.in,
 	  support/sdbinutils/bfd/aclocal.m4,
 	  support/sdbinutils/bfd/asxxxx.c,
