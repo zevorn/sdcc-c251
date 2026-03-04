@@ -2967,9 +2967,9 @@ genEor (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
 
         other_stacked = stack_aop (other, i, &other_offset);
 
-        if (aopIsLitVal (right_aop, i, 1, 0))
+        if (aopIsLitVal (other, i, 1, 0))
           ;
-        else if (aopIsLitVal (right_aop, i, 1, 0xff))
+        else if (aopIsLitVal (other, i, 1, 0xff))
           emit3 (A_CPL, ASMOP_A, 0);
         else if (!other_stacked)
           emit3_o (A_XOR, ASMOP_A, 0, other, i);
@@ -3017,9 +3017,16 @@ genEor (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
       if (omitbyte == i)
         continue;
 
-      if (aopIsLitVal (right_aop, i, 1, 0))
+      if (aopIsLitVal (right_aop, i, 1, 0x00))
         {
           cheapMove (result_aop, i, left_aop, i, result_in_a);
+          if (aopInReg (result_aop, i, A_IDX))
+            result_in_a = true;
+          continue;
+        }
+      else if (aopIsLitVal (left_aop, i, 1, 0x00))
+        {
+          cheapMove (result_aop, i, right_aop, i, result_in_a);
           if (aopInReg (result_aop, i, A_IDX))
             result_in_a = true;
           continue;

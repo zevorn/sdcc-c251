@@ -1,5 +1,5 @@
 /* BFD semi-generic back-end for a.out binaries.
-   Copyright (C) 1990-2022 Free Software Foundation, Inc.
+   Copyright (C) 1990-2026 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -190,34 +190,34 @@ DESCRIPTION
 reloc_howto_type howto_table_ext[] =
 {
   /*	 Type	      rs   size bsz  pcrel bitpos ovrf			sf name		 part_inpl readmask setmask pcdone.  */
-  HOWTO (RELOC_8,	0,  0,	8,  false, 0, complain_overflow_bitfield, 0, "8",	    false, 0, 0x000000ff, false),
-  HOWTO (RELOC_16,	0,  1,	16, false, 0, complain_overflow_bitfield, 0, "16",	    false, 0, 0x0000ffff, false),
-  HOWTO (RELOC_32,	0,  2,	32, false, 0, complain_overflow_bitfield, 0, "32",	    false, 0, 0xffffffff, false),
-  HOWTO (RELOC_DISP8,	0,  0,	8,  true,  0, complain_overflow_signed,	  0, "DISP8",	    false, 0, 0x000000ff, false),
-  HOWTO (RELOC_DISP16,	0,  1,	16, true,  0, complain_overflow_signed,	  0, "DISP16",	    false, 0, 0x0000ffff, false),
-  HOWTO (RELOC_DISP32,	0,  2,	32, true,  0, complain_overflow_signed,	  0, "DISP32",	    false, 0, 0xffffffff, false),
-  HOWTO (RELOC_WDISP30, 2,  2,	30, true,  0, complain_overflow_signed,	  0, "WDISP30",	    false, 0, 0x3fffffff, false),
-  HOWTO (RELOC_WDISP22, 2,  2,	22, true,  0, complain_overflow_signed,	  0, "WDISP22",	    false, 0, 0x003fffff, false),
-  HOWTO (RELOC_HI22,   10,  2,	22, false, 0, complain_overflow_bitfield, 0, "HI22",	    false, 0, 0x003fffff, false),
-  HOWTO (RELOC_22,	0,  2,	22, false, 0, complain_overflow_bitfield, 0, "22",	    false, 0, 0x003fffff, false),
-  HOWTO (RELOC_13,	0,  2,	13, false, 0, complain_overflow_bitfield, 0, "13",	    false, 0, 0x00001fff, false),
-  HOWTO (RELOC_LO10,	0,  2,	10, false, 0, complain_overflow_dont,	  0, "LO10",	    false, 0, 0x000003ff, false),
-  HOWTO (RELOC_SFA_BASE,0,  2,	32, false, 0, complain_overflow_bitfield, 0, "SFA_BASE",    false, 0, 0xffffffff, false),
-  HOWTO (RELOC_SFA_OFF13,0, 2,	32, false, 0, complain_overflow_bitfield, 0, "SFA_OFF13",   false, 0, 0xffffffff, false),
-  HOWTO (RELOC_BASE10,	0,  2,	10, false, 0, complain_overflow_dont,	  0, "BASE10",	    false, 0, 0x000003ff, false),
-  HOWTO (RELOC_BASE13,	0,  2,	13, false, 0, complain_overflow_signed,	  0, "BASE13",	    false, 0, 0x00001fff, false),
-  HOWTO (RELOC_BASE22, 10,  2,	22, false, 0, complain_overflow_bitfield, 0, "BASE22",	    false, 0, 0x003fffff, false),
-  HOWTO (RELOC_PC10,	0,  2,	10, true,  0, complain_overflow_dont,	  0, "PC10",	    false, 0, 0x000003ff, true),
-  HOWTO (RELOC_PC22,   10,  2,	22, true,  0, complain_overflow_signed,	  0, "PC22",	    false, 0, 0x003fffff, true),
-  HOWTO (RELOC_JMP_TBL, 2,  2,	30, true,  0, complain_overflow_signed,	  0, "JMP_TBL",	    false, 0, 0x3fffffff, false),
-  HOWTO (RELOC_SEGOFF16,0,  2,	0,  false, 0, complain_overflow_bitfield, 0, "SEGOFF16",    false, 0, 0x00000000, false),
-  HOWTO (RELOC_GLOB_DAT,0,  2,	0,  false, 0, complain_overflow_bitfield, 0, "GLOB_DAT",    false, 0, 0x00000000, false),
-  HOWTO (RELOC_JMP_SLOT,0,  2,	0,  false, 0, complain_overflow_bitfield, 0, "JMP_SLOT",    false, 0, 0x00000000, false),
-  HOWTO (RELOC_RELATIVE,0,  2,	0,  false, 0, complain_overflow_bitfield, 0, "RELATIVE",    false, 0, 0x00000000, false),
-  HOWTO (0,		0,  3,	0,  false, 0, complain_overflow_dont,	  0, "R_SPARC_NONE",false, 0, 0x00000000, true),
-  HOWTO (0,		0,  3,	0,  false, 0, complain_overflow_dont,	  0, "R_SPARC_NONE",false, 0, 0x00000000, true),
+  HOWTO (RELOC_8,	0,  1,	8,  false, 0, complain_overflow_bitfield, 0, "8",	    false, 0, 0x000000ff, false),
+  HOWTO (RELOC_16,	0,  2,	16, false, 0, complain_overflow_bitfield, 0, "16",	    false, 0, 0x0000ffff, false),
+  HOWTO (RELOC_32,	0,  4,	32, false, 0, complain_overflow_bitfield, 0, "32",	    false, 0, 0xffffffff, false),
+  HOWTO (RELOC_DISP8,	0,  1,	8,  true,  0, complain_overflow_signed,	  0, "DISP8",	    false, 0, 0x000000ff, false),
+  HOWTO (RELOC_DISP16,	0,  2,	16, true,  0, complain_overflow_signed,	  0, "DISP16",	    false, 0, 0x0000ffff, false),
+  HOWTO (RELOC_DISP32,	0,  4,	32, true,  0, complain_overflow_signed,	  0, "DISP32",	    false, 0, 0xffffffff, false),
+  HOWTO (RELOC_WDISP30, 2,  4,	30, true,  0, complain_overflow_signed,	  0, "WDISP30",	    false, 0, 0x3fffffff, false),
+  HOWTO (RELOC_WDISP22, 2,  4,	22, true,  0, complain_overflow_signed,	  0, "WDISP22",	    false, 0, 0x003fffff, false),
+  HOWTO (RELOC_HI22,   10,  4,	22, false, 0, complain_overflow_bitfield, 0, "HI22",	    false, 0, 0x003fffff, false),
+  HOWTO (RELOC_22,	0,  4,	22, false, 0, complain_overflow_bitfield, 0, "22",	    false, 0, 0x003fffff, false),
+  HOWTO (RELOC_13,	0,  4,	13, false, 0, complain_overflow_bitfield, 0, "13",	    false, 0, 0x00001fff, false),
+  HOWTO (RELOC_LO10,	0,  4,	10, false, 0, complain_overflow_dont,	  0, "LO10",	    false, 0, 0x000003ff, false),
+  HOWTO (RELOC_SFA_BASE,0,  4,	32, false, 0, complain_overflow_bitfield, 0, "SFA_BASE",    false, 0, 0xffffffff, false),
+  HOWTO (RELOC_SFA_OFF13,0, 4,	32, false, 0, complain_overflow_bitfield, 0, "SFA_OFF13",   false, 0, 0xffffffff, false),
+  HOWTO (RELOC_BASE10,	0,  4,	10, false, 0, complain_overflow_dont,	  0, "BASE10",	    false, 0, 0x000003ff, false),
+  HOWTO (RELOC_BASE13,	0,  4,	13, false, 0, complain_overflow_signed,	  0, "BASE13",	    false, 0, 0x00001fff, false),
+  HOWTO (RELOC_BASE22, 10,  4,	22, false, 0, complain_overflow_bitfield, 0, "BASE22",	    false, 0, 0x003fffff, false),
+  HOWTO (RELOC_PC10,	0,  4,	10, true,  0, complain_overflow_dont,	  0, "PC10",	    false, 0, 0x000003ff, true),
+  HOWTO (RELOC_PC22,   10,  4,	22, true,  0, complain_overflow_signed,	  0, "PC22",	    false, 0, 0x003fffff, true),
+  HOWTO (RELOC_JMP_TBL, 2,  4,	30, true,  0, complain_overflow_signed,	  0, "JMP_TBL",	    false, 0, 0x3fffffff, false),
+  HOWTO (RELOC_SEGOFF16,0,  4,	0,  false, 0, complain_overflow_bitfield, 0, "SEGOFF16",    false, 0, 0x00000000, false),
+  HOWTO (RELOC_GLOB_DAT,0,  4,	0,  false, 0, complain_overflow_bitfield, 0, "GLOB_DAT",    false, 0, 0x00000000, false),
+  HOWTO (RELOC_JMP_SLOT,0,  4,	0,  false, 0, complain_overflow_bitfield, 0, "JMP_SLOT",    false, 0, 0x00000000, false),
+  HOWTO (RELOC_RELATIVE,0,  4,	0,  false, 0, complain_overflow_bitfield, 0, "RELATIVE",    false, 0, 0x00000000, false),
+  HOWTO (0,		0,  0,	0,  false, 0, complain_overflow_dont,	  0, "R_SPARC_NONE",false, 0, 0x00000000, true),
+  HOWTO (0,		0,  0,	0,  false, 0, complain_overflow_dont,	  0, "R_SPARC_NONE",false, 0, 0x00000000, true),
 #define RELOC_SPARC_REV32 RELOC_WDISP19
-  HOWTO (RELOC_SPARC_REV32, 0, 2, 32, false, 0, complain_overflow_dont,	  0,"R_SPARC_REV32",false, 0, 0xffffffff, false),
+  HOWTO (RELOC_SPARC_REV32, 0, 4, 32, false, 0, complain_overflow_dont,	  0,"R_SPARC_REV32",false, 0, 0xffffffff, false),
 };
 
 /* Convert standard reloc records to "arelent" format (incl byte swap).  */
@@ -225,29 +225,23 @@ reloc_howto_type howto_table_ext[] =
 reloc_howto_type howto_table_std[] =
 {
   /* type	       rs size bsz  pcrel bitpos ovrf			  sf name     part_inpl readmask  setmask    pcdone.  */
-HOWTO ( 0,	       0,  0,	8,  false, 0, complain_overflow_bitfield,0,"8",		true, 0x000000ff,0x000000ff, false),
-HOWTO ( 1,	       0,  1,	16, false, 0, complain_overflow_bitfield,0,"16",	true, 0x0000ffff,0x0000ffff, false),
-HOWTO ( 2,	       0,  2,	32, false, 0, complain_overflow_bitfield,0,"32",	true, 0xffffffff,0xffffffff, false),
-HOWTO ( 3,	       0,  4,	64, false, 0, complain_overflow_bitfield,0,"64",	true, 0xdeaddead,0xdeaddead, false),
-HOWTO ( 4,	       0,  0,	8,  true,  0, complain_overflow_signed,	 0,"DISP8",	true, 0x000000ff,0x000000ff, false),
-HOWTO ( 5,	       0,  1,	16, true,  0, complain_overflow_signed,	 0,"DISP16",	true, 0x0000ffff,0x0000ffff, false),
-HOWTO ( 6,	       0,  2,	32, true,  0, complain_overflow_signed,	 0,"DISP32",	true, 0xffffffff,0xffffffff, false),
-HOWTO ( 7,	       0,  4,	64, true,  0, complain_overflow_signed,	 0,"DISP64",	true, 0xfeedface,0xfeedface, false),
-HOWTO ( 8,	       0,  2,	 0, false, 0, complain_overflow_bitfield,0,"GOT_REL",	false,	       0,0x00000000, false),
-HOWTO ( 9,	       0,  1,	16, false, 0, complain_overflow_bitfield,0,"BASE16",	false,0xffffffff,0xffffffff, false),
-HOWTO (10,	       0,  2,	32, false, 0, complain_overflow_bitfield,0,"BASE32",	false,0xffffffff,0xffffffff, false),
+HOWTO ( 0,	       0,  1,	8,  false, 0, complain_overflow_bitfield,0,"8",		true, 0x000000ff,0x000000ff, false),
+HOWTO ( 1,	       0,  2,	16, false, 0, complain_overflow_bitfield,0,"16",	true, 0x0000ffff,0x0000ffff, false),
+HOWTO ( 2,	       0,  4,	32, false, 0, complain_overflow_bitfield,0,"32",	true, 0xffffffff,0xffffffff, false),
+HOWTO ( 3,	       0,  8,	64, false, 0, complain_overflow_bitfield,0,"64",	true, 0xdeaddead,0xdeaddead, false),
+HOWTO ( 4,	       0,  1,	8,  true,  0, complain_overflow_signed,	 0,"DISP8",	true, 0x000000ff,0x000000ff, false),
+HOWTO ( 5,	       0,  2,	16, true,  0, complain_overflow_signed,	 0,"DISP16",	true, 0x0000ffff,0x0000ffff, false),
+HOWTO ( 6,	       0,  4,	32, true,  0, complain_overflow_signed,	 0,"DISP32",	true, 0xffffffff,0xffffffff, false),
+HOWTO ( 7,	       0,  8,	64, true,  0, complain_overflow_signed,	 0,"DISP64",	true, 0xfeedface,0xfeedface, false),
+HOWTO ( 8,	       0,  4,	 0, false, 0, complain_overflow_bitfield,0,"GOT_REL",	false,	       0,0x00000000, false),
+HOWTO ( 9,	       0,  2,	16, false, 0, complain_overflow_bitfield,0,"BASE16",	false,0xffffffff,0xffffffff, false),
+HOWTO (10,	       0,  4,	32, false, 0, complain_overflow_bitfield,0,"BASE32",	false,0xffffffff,0xffffffff, false),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
-  HOWTO (16,	       0,  2,	 0, false, 0, complain_overflow_bitfield,0,"JMP_TABLE", false,	       0,0x00000000, false),
-EMPTY_HOWTO (-1),
-EMPTY_HOWTO (-1),
-EMPTY_HOWTO (-1),
-EMPTY_HOWTO (-1),
-EMPTY_HOWTO (-1),
-EMPTY_HOWTO (-1),
+  HOWTO (16,	       0,  4,	 0, false, 0, complain_overflow_bitfield,0,"JMP_TABLE", false,	       0,0x00000000, false),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
@@ -257,7 +251,13 @@ EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
-  HOWTO (32,	       0,  2,	 0, false, 0, complain_overflow_bitfield,0,"RELATIVE",	false,	       0,0x00000000, false),
+EMPTY_HOWTO (-1),
+EMPTY_HOWTO (-1),
+EMPTY_HOWTO (-1),
+EMPTY_HOWTO (-1),
+EMPTY_HOWTO (-1),
+EMPTY_HOWTO (-1),
+  HOWTO (32,	       0,  4,	 0, false, 0, complain_overflow_bitfield,0,"RELATIVE",	false,	       0,0x00000000, false),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
@@ -265,7 +265,7 @@ EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
 EMPTY_HOWTO (-1),
-  HOWTO (40,	       0,  2,	 0, false, 0, complain_overflow_bitfield,0,"BASEREL",	false,	       0,0x00000000, false),
+  HOWTO (40,	       0,  4,	 0, false, 0, complain_overflow_bitfield,0,"BASEREL",	false,	       0,0x00000000, false),
 };
 
 #define TABLE_SIZE(TABLE)	(sizeof (TABLE) / sizeof (TABLE[0]))
@@ -407,7 +407,7 @@ FUNCTION
 	aout_@var{size}_swap_exec_header_out
 
 SYNOPSIS
-	void aout_@var{size}_swap_exec_header_out
+	bool aout_@var{size}_swap_exec_header_out
 	  (bfd *abfd,
 	   struct internal_exec *execp,
 	   struct external_exec *raw_bytes);
@@ -416,11 +416,37 @@ DESCRIPTION
 	Swap the information in an internal exec header structure
 	@var{execp} into the buffer @var{raw_bytes} ready for writing to disk.
 */
-void
+bool
 NAME (aout, swap_exec_header_out) (bfd *abfd,
 				   struct internal_exec *execp,
 				   struct external_exec *bytes)
 {
+  const char *err = NULL;
+  uint64_t val;
+#define MAXVAL(x) ((UINT64_C (1) << (8 * sizeof (x) - 1) << 1) - 1)
+  if ((val = execp->a_text) > MAXVAL (bytes->e_text))
+    err = "e_text";
+  else if ((val = execp->a_data) > MAXVAL (bytes->e_data))
+    err = "e_data";
+  else if ((val = execp->a_bss) > MAXVAL (bytes->e_bss))
+    err = "e_bss";
+  else if ((val = execp->a_syms) > MAXVAL (bytes->e_syms))
+    err = "e_syms";
+  else if ((val = execp->a_entry) > MAXVAL (bytes->e_entry))
+    err = "e_entry";
+  else if ((val = execp->a_trsize) > MAXVAL (bytes->e_trsize))
+    err = "e_trsize";
+  else if ((val = execp->a_drsize) > MAXVAL (bytes->e_drsize))
+    err = "e_drsize";
+#undef MAXVAL
+  if (err)
+    {
+      _bfd_error_handler (_("%pB: %#" PRIx64 " overflows header %s field"),
+			  abfd, val, err);
+      bfd_set_error (bfd_error_file_too_big);
+      return false;
+    }
+
   /* Now fill in fields in the raw data, from the fields in the exec struct.  */
   H_PUT_32 (abfd, execp->a_info  , bytes->e_info);
   PUT_WORD (abfd, execp->a_text  , bytes->e_text);
@@ -430,6 +456,7 @@ NAME (aout, swap_exec_header_out) (bfd *abfd,
   PUT_WORD (abfd, execp->a_entry , bytes->e_entry);
   PUT_WORD (abfd, execp->a_trsize, bytes->e_trsize);
   PUT_WORD (abfd, execp->a_drsize, bytes->e_drsize);
+  return true;
 }
 
 /* Make all the section for an a.out file.  */
@@ -451,10 +478,10 @@ FUNCTION
 	aout_@var{size}_some_aout_object_p
 
 SYNOPSIS
-	const bfd_target *aout_@var{size}_some_aout_object_p
+	bfd_cleanup aout_@var{size}_some_aout_object_p
 	 (bfd *abfd,
 	  struct internal_exec *execp,
-	  const bfd_target *(*callback_to_real_object_p) (bfd *));
+	  bfd_cleanup (*callback_to_real_object_p) (bfd *));
 
 DESCRIPTION
 	Some a.out variant thinks that the file open in @var{abfd}
@@ -469,20 +496,13 @@ NAME (aout, some_aout_object_p) (bfd *abfd,
 				 struct internal_exec *execp,
 				 bfd_cleanup (*callback_to_real_object_p) (bfd *))
 {
-  struct aout_data_struct *rawptr, *oldrawptr;
+  struct aout_data_struct *rawptr;
   bfd_cleanup result;
-  size_t amt = sizeof (* rawptr);
 
-  rawptr = (struct aout_data_struct *) bfd_zalloc (abfd, amt);
+  rawptr = bfd_zalloc (abfd, sizeof (*rawptr));
   if (rawptr == NULL)
     return NULL;
-
-  oldrawptr = abfd->tdata.aout_data;
   abfd->tdata.aout_data = rawptr;
-
-  /* Copy the contents of the old tdata struct.  */
-  if (oldrawptr != NULL)
-    *abfd->tdata.aout_data = *oldrawptr;
 
   abfd->tdata.aout_data->a.hdr = &rawptr->e;
   /* Copy in the internal_exec struct.  */
@@ -524,7 +544,6 @@ NAME (aout, some_aout_object_p) (bfd *abfd,
 
   abfd->start_address = execp->a_entry;
 
-  obj_aout_symbols (abfd) = NULL;
   abfd->symcount = execp->a_syms / sizeof (struct external_nlist);
 
   /* The default relocation entry size is that of traditional V7 Unix.  */
@@ -532,14 +551,6 @@ NAME (aout, some_aout_object_p) (bfd *abfd,
 
   /* The default symbol entry size is that of traditional Unix.  */
   obj_symbol_entry_size (abfd) = EXTERNAL_NLIST_SIZE;
-
-#ifdef USE_MMAP
-  bfd_init_window (&obj_aout_sym_window (abfd));
-  bfd_init_window (&obj_aout_string_window (abfd));
-#endif
-  obj_aout_external_syms (abfd) = NULL;
-  obj_aout_external_strings (abfd) = NULL;
-  obj_aout_sym_hashes (abfd) = NULL;
 
   if (! NAME (aout, make_sections) (abfd))
     goto error_ret;
@@ -567,7 +578,6 @@ NAME (aout, some_aout_object_p) (bfd *abfd,
   /* Call back to the format-dependent code to fill in the rest of the
      fields and do any further cleanup.  Things that should be filled
      in by the callback:  */
-
   struct exec *execp = exec_hdr (abfd);
 
   obj_textsec (abfd)->size = N_TXTSIZE (execp);
@@ -591,18 +601,13 @@ NAME (aout, some_aout_object_p) (bfd *abfd,
   obj_sym_filepos (abfd) = N_SYMOFF (execp);
 
   /* Determine the architecture and machine type of the object file.  */
-  switch (N_MACHTYPE (exec_hdr (abfd)))
-    {
-    default:
-      abfd->obj_arch = bfd_arch_obscure;
-      break;
-    }
+  abfd->obj_arch = bfd_arch_obscure;
 
   adata (abfd)->page_size = TARGET_PAGE_SIZE;
   adata (abfd)->segment_size = SEGMENT_SIZE;
   adata (abfd)->exec_bytes_size = EXEC_BYTES_SIZE;
 
-  return _bfd_no_cleanup
+  return _bfd_no_cleanup;
 
   /* The architecture is encoded in various ways in various a.out variants,
      or is not encoded at all in some of them.  The relocation size depends
@@ -612,7 +617,7 @@ NAME (aout, some_aout_object_p) (bfd *abfd,
 
      Formats such as b.out, which have additional fields in the a.out
      header, should cope with them in this callback as well.  */
-#endif				/* DOCUMENTATION */
+#endif  /* DOCUMENTATION */
 
   result = (*callback_to_real_object_p) (abfd);
 
@@ -663,7 +668,6 @@ NAME (aout, some_aout_object_p) (bfd *abfd,
 
  error_ret:
   bfd_release (abfd, rawptr);
-  abfd->tdata.aout_data = oldrawptr;
   return NULL;
 }
 
@@ -1272,7 +1276,7 @@ NAME (aout, set_section_contents) (bfd *abfd,
   if (count != 0)
     {
       if (bfd_seek (abfd, section->filepos + offset, SEEK_SET) != 0
-	  || bfd_bwrite (location, count, abfd) != count)
+	  || bfd_write (location, count, abfd) != count)
 	return false;
     }
 
@@ -1287,28 +1291,21 @@ aout_get_external_symbols (bfd *abfd)
   if (obj_aout_external_syms (abfd) == NULL)
     {
       bfd_size_type count;
-      struct external_nlist *syms;
+      struct external_nlist *syms = NULL;
       bfd_size_type amt = exec_hdr (abfd)->a_syms;
 
       count = amt / EXTERNAL_NLIST_SIZE;
       if (count == 0)
-	return true;		/* Nothing to do.  */
+	return true;
 
-#ifdef USE_MMAP
-      if (! bfd_get_file_window (abfd, obj_sym_filepos (abfd), amt,
-				 &obj_aout_sym_window (abfd), true))
-	return false;
-      syms = (struct external_nlist *) obj_aout_sym_window (abfd).data;
-#else
       /* We allocate using malloc to make the values easy to free
 	 later on.  If we put them on the objalloc it might not be
 	 possible to free them.  */
       if (bfd_seek (abfd, obj_sym_filepos (abfd), SEEK_SET) != 0)
 	return false;
-      syms = (struct external_nlist *) _bfd_malloc_and_read (abfd, amt, amt);
+      syms = _bfd_malloc_and_read (abfd, amt, amt);
       if (syms == NULL)
 	return false;
-#endif
 
       obj_aout_external_syms (abfd) = syms;
       obj_aout_external_sym_count (abfd) = count;
@@ -1324,43 +1321,32 @@ aout_get_external_symbols (bfd *abfd)
 
       /* Get the size of the strings.  */
       if (bfd_seek (abfd, obj_str_filepos (abfd), SEEK_SET) != 0
-	  || bfd_bread ((void *) string_chars, amt, abfd) != amt)
+	  || bfd_read (string_chars, amt, abfd) != amt)
 	return false;
       stringsize = GET_WORD (abfd, string_chars);
       if (stringsize == 0)
 	stringsize = 1;
-      else if (stringsize < BYTES_IN_WORD
+      else if (stringsize + 1 < BYTES_IN_WORD + 1
 	       || (size_t) stringsize != stringsize)
 	{
 	  bfd_set_error (bfd_error_bad_value);
 	  return false;
 	}
 
-#ifdef USE_MMAP
+      strings = (char *) bfd_malloc (stringsize + 1);
+      if (strings == NULL)
+	return false;
+
       if (stringsize >= BYTES_IN_WORD)
 	{
-	  if (! bfd_get_file_window (abfd, obj_str_filepos (abfd), stringsize + 1,
-				     &obj_aout_string_window (abfd), true))
-	    return false;
-	  strings = (char *) obj_aout_string_window (abfd).data;
-	}
-      else
-#endif
-	{
-	  strings = (char *) bfd_malloc (stringsize + 1);
-	  if (strings == NULL)
-	    return false;
-
-	  if (stringsize >= BYTES_IN_WORD)
+	  amt = stringsize - BYTES_IN_WORD;
+	  if (bfd_read (strings + BYTES_IN_WORD, amt, abfd) != amt)
 	    {
-	      amt = stringsize - BYTES_IN_WORD;
-	      if (bfd_bread (strings + BYTES_IN_WORD, amt, abfd) != amt)
-		{
-		  free (strings);
-		  return false;
-		}
+	      free (strings);
+	      return false;
 	    }
 	}
+
       /* Ensure that a zero index yields an empty string.  */
       if (stringsize >= BYTES_IN_WORD)
 	memset (strings, 0, BYTES_IN_WORD);
@@ -1787,11 +1773,7 @@ NAME (aout, slurp_symbol_table) (bfd *abfd)
   if (old_external_syms == NULL
       && obj_aout_external_syms (abfd) != NULL)
     {
-#ifdef USE_MMAP
-      bfd_free_window (&obj_aout_sym_window (abfd));
-#else
       free (obj_aout_external_syms (abfd));
-#endif
       obj_aout_external_syms (abfd) = NULL;
     }
 
@@ -1850,7 +1832,7 @@ emit_stringtab (bfd *abfd, struct bfd_strtab_hash *tab)
 
   /* The string table starts with the size.  */
   PUT_WORD (abfd, _bfd_stringtab_size (tab) + BYTES_IN_WORD, buffer);
-  if (bfd_bwrite ((void *) buffer, amt, abfd) != amt)
+  if (bfd_write (buffer, amt, abfd) != amt)
     return false;
 
   return _bfd_stringtab_emit (abfd, tab);
@@ -1896,7 +1878,7 @@ NAME (aout, write_syms) (bfd *abfd)
 	goto error_return;
 
       amt = EXTERNAL_NLIST_SIZE;
-      if (bfd_bwrite ((void *) &nsp, amt, abfd) != amt)
+      if (bfd_write (&nsp, amt, abfd) != amt)
 	goto error_return;
 
       /* NB: `KEEPIT' currently overlays `udata.p', so set this only
@@ -1947,7 +1929,7 @@ NAME (aout, swap_std_reloc_out) (bfd *abfd,
   int r_index;
   asymbol *sym = *(g->sym_ptr_ptr);
   int r_extern;
-  unsigned int r_length;
+  unsigned int r_length, r_size;
   int r_pcrel;
   int r_baserel, r_jmptable, r_relative;
   asection *output_section = sym->section->output_section;
@@ -1956,21 +1938,14 @@ NAME (aout, swap_std_reloc_out) (bfd *abfd,
 
   BFD_ASSERT (g->howto != NULL);
 
-  switch (bfd_get_reloc_size (g->howto))
+  r_size = bfd_get_reloc_size (g->howto);
+  r_length = bfd_log2 (r_size);
+  if (1u << r_length != r_size)
     {
-    default:
       _bfd_error_handler (_("%pB: unsupported AOUT relocation size: %d"),
-			  abfd, bfd_get_reloc_size (g->howto));
+			  abfd, r_size);
       bfd_set_error (bfd_error_bad_value);
       return;
-    case 1:
-    case 2:
-    case 4:
-      r_length = g->howto->size;	/* Size as a power of two.  */
-      break;
-    case 8:
-      r_length = 3;
-      break;
     }
 
   r_pcrel  = (int) g->howto->pc_relative; /* Relative to PC?  */
@@ -2129,8 +2104,10 @@ NAME (aout, swap_ext_reloc_out) (bfd *abfd,
   if (r_extern)								\
     {									\
       /* Undefined symbol.  */						\
-      if (r_index < bfd_get_symcount (abfd))				\
+      if (symbols != NULL && r_index < bfd_get_symcount (abfd))		\
 	cache_ptr->sym_ptr_ptr = symbols + r_index;			\
+      else								\
+	cache_ptr->sym_ptr_ptr = &bfd_abs_section_ptr->symbol;		\
       cache_ptr->addend = ad;						\
     }									\
    else									\
@@ -2141,23 +2118,23 @@ NAME (aout, swap_ext_reloc_out) (bfd *abfd,
 	{								\
 	case N_TEXT:							\
 	case N_TEXT | N_EXT:						\
-	  cache_ptr->sym_ptr_ptr = obj_textsec (abfd)->symbol_ptr_ptr;	\
+	  cache_ptr->sym_ptr_ptr = &obj_textsec (abfd)->symbol;		\
 	  cache_ptr->addend = ad - su->textsec->vma;			\
 	  break;							\
 	case N_DATA:							\
 	case N_DATA | N_EXT:						\
-	  cache_ptr->sym_ptr_ptr = obj_datasec (abfd)->symbol_ptr_ptr;	\
+	  cache_ptr->sym_ptr_ptr = &obj_datasec (abfd)->symbol;		\
 	  cache_ptr->addend = ad - su->datasec->vma;			\
 	  break;							\
 	case N_BSS:							\
 	case N_BSS | N_EXT:						\
-	  cache_ptr->sym_ptr_ptr = obj_bsssec (abfd)->symbol_ptr_ptr;	\
+	  cache_ptr->sym_ptr_ptr = &obj_bsssec (abfd)->symbol;		\
 	  cache_ptr->addend = ad - su->bsssec->vma;			\
 	  break;							\
 	default:							\
 	case N_ABS:							\
 	case N_ABS | N_EXT:						\
-	  cache_ptr->sym_ptr_ptr = bfd_abs_section_ptr->symbol_ptr_ptr;	\
+	  cache_ptr->sym_ptr_ptr = &bfd_abs_section_ptr->symbol;	\
 	  cache_ptr->addend = ad;					\
 	  break;							\
 	}								\
@@ -2436,7 +2413,7 @@ NAME (aout, squirt_out_relocs) (bfd *abfd, asection *section)
 	}
     }
 
-  if (bfd_bwrite ((void *) native, natsize, abfd) != natsize)
+  if (bfd_write (native, natsize, abfd) != natsize)
     {
       bfd_release (abfd, native);
       return false;
@@ -2492,13 +2469,7 @@ NAME (aout, canonicalize_reloc) (bfd *abfd,
 long
 NAME (aout, get_reloc_upper_bound) (bfd *abfd, sec_ptr asect)
 {
-  bfd_size_type count;
-
-  if (bfd_get_format (abfd) != bfd_object)
-    {
-      bfd_set_error (bfd_error_invalid_operation);
-      return -1;
-    }
+  size_t count, raw;
 
   if (asect->flags & SEC_CONSTRUCTOR)
     count = asect->reloc_count;
@@ -2514,10 +2485,20 @@ NAME (aout, get_reloc_upper_bound) (bfd *abfd, sec_ptr asect)
       return -1;
     }
 
-  if (count >= LONG_MAX / sizeof (arelent *))
+  if (count >= LONG_MAX / sizeof (arelent *)
+      || _bfd_mul_overflow (count, obj_reloc_entry_size (abfd), &raw))
     {
       bfd_set_error (bfd_error_file_too_big);
       return -1;
+    }
+  if (!bfd_write_p (abfd))
+    {
+      ufile_ptr filesize = bfd_get_file_size (abfd);
+      if (filesize != 0 && raw > filesize)
+	{
+	  bfd_set_error (bfd_error_file_truncated);
+	  return -1;
+	}
     }
   return (count + 1) * sizeof (arelent *);
 }
@@ -2897,34 +2878,26 @@ NAME (aout, sizeof_headers) (bfd *abfd,
   return adata (abfd).exec_bytes_size;
 }
 
-/* Free all information we have cached for this BFD.  We can always
-   read it again later if we need it.  */
+/* Throw away most malloc'd and alloc'd information for this BFD.  */
 
 bool
 NAME (aout, bfd_free_cached_info) (bfd *abfd)
 {
-  asection *o;
-
-  if (bfd_get_format (abfd) != bfd_object
-      || abfd->tdata.aout_data == NULL)
-    return true;
-
+  if ((bfd_get_format (abfd) == bfd_object
+       || bfd_get_format (abfd) == bfd_core)
+      && abfd->tdata.aout_data != NULL)
+    {
 #define BFCI_FREE(x) do { free (x); x = NULL; } while (0)
-  BFCI_FREE (obj_aout_symbols (abfd));
-#ifdef USE_MMAP
-  obj_aout_external_syms (abfd) = 0;
-  bfd_free_window (&obj_aout_sym_window (abfd));
-  bfd_free_window (&obj_aout_string_window (abfd));
-  obj_aout_external_strings (abfd) = 0;
-#else
-  BFCI_FREE (obj_aout_external_syms (abfd));
-  BFCI_FREE (obj_aout_external_strings (abfd));
-#endif
-  for (o = abfd->sections; o != NULL; o = o->next)
-    BFCI_FREE (o->relocation);
+      BFCI_FREE (adata (abfd).line_buf);
+      BFCI_FREE (obj_aout_symbols (abfd));
+      BFCI_FREE (obj_aout_external_syms (abfd));
+      BFCI_FREE (obj_aout_external_strings (abfd));
+      for (asection *o = abfd->sections; o != NULL; o = o->next)
+	BFCI_FREE (o->relocation);
 #undef BFCI_FREE
+    }
 
-  return true;
+  return _bfd_generic_bfd_free_cached_info (abfd);
 }
 
 /* a.out link code.  */
@@ -3000,9 +2973,6 @@ NAME (aout, link_hash_table_create) (bfd *abfd)
 static bool
 aout_link_add_symbols (bfd *abfd, struct bfd_link_info *info)
 {
-  bool (*add_one_symbol)
-    (struct bfd_link_info *, bfd *, const char *, flagword, asection *,
-     bfd_vma, const char *, bool, bool, struct bfd_link_hash_entry **);
   struct external_nlist *syms;
   bfd_size_type sym_count;
   char *strings;
@@ -3039,10 +3009,6 @@ aout_link_add_symbols (bfd *abfd, struct bfd_link_info *info)
   if (sym_hash == NULL)
     return false;
   obj_aout_sym_hashes (abfd) = sym_hash;
-
-  add_one_symbol = aout_backend_info (abfd)->add_one_symbol;
-  if (add_one_symbol == NULL)
-    add_one_symbol = _bfd_generic_link_add_one_symbol;
 
   p = syms;
   pend = p + sym_count;
@@ -3194,7 +3160,7 @@ aout_link_add_symbols (bfd *abfd, struct bfd_link_info *info)
 	  break;
 	}
 
-      if (! ((*add_one_symbol)
+      if (! (_bfd_generic_link_add_one_symbol
 	     (info, abfd, name, flags, section, value, string, copy, false,
 	      (struct bfd_link_hash_entry **) sym_hash)))
 	return false;
@@ -3233,20 +3199,12 @@ aout_link_free_symbols (bfd *abfd)
 {
   if (obj_aout_external_syms (abfd) != NULL)
     {
-#ifdef USE_MMAP
-      bfd_free_window (&obj_aout_sym_window (abfd));
-#else
       free ((void *) obj_aout_external_syms (abfd));
-#endif
       obj_aout_external_syms (abfd) = NULL;
     }
   if (obj_aout_external_strings (abfd) != NULL)
     {
-#ifdef USE_MMAP
-      bfd_free_window (&obj_aout_string_window (abfd));
-#else
       free ((void *) obj_aout_external_strings (abfd));
-#endif
       obj_aout_external_strings (abfd) = NULL;
     }
   return true;
@@ -3731,7 +3689,7 @@ aout_link_write_other_symbol (struct bfd_hash_entry *bh, void *data)
 
   amt = EXTERNAL_NLIST_SIZE;
   if (bfd_seek (output_bfd, flaginfo->symoff, SEEK_SET) != 0
-      || bfd_bwrite ((void *) &outsym, amt, output_bfd) != amt)
+      || bfd_write (&outsym, amt, output_bfd) != amt)
     /* FIXME: No way to handle errors.  */
     abort ();
 
@@ -3835,10 +3793,7 @@ aout_link_reloc_link_order (struct aout_final_link_info *flaginfo,
 	r_baserel = (howto->type & 8) != 0;
 	r_jmptable = (howto->type & 16) != 0;
 	r_relative = (howto->type & 32) != 0;
-	if (bfd_get_reloc_size (howto) != 8)
-	  r_length = howto->size;	/* Size as a power of two.  */
-	else
-	  r_length = 3;
+	r_length = bfd_log2 (bfd_get_reloc_size (howto));
 
 	PUT_WORD (flaginfo->output_bfd, p->offset, srel.r_address);
 	if (bfd_header_big_endian (flaginfo->output_bfd))
@@ -3947,7 +3902,7 @@ aout_link_reloc_link_order (struct aout_final_link_info *flaginfo,
 
   amt = obj_reloc_entry_size (flaginfo->output_bfd);
   if (bfd_seek (flaginfo->output_bfd, *reloff_ptr, SEEK_SET) != 0
-      || bfd_bwrite (rel_ptr, amt, flaginfo->output_bfd) != amt)
+      || bfd_write (rel_ptr, amt, flaginfo->output_bfd) != amt)
     return false;
 
   *reloff_ptr += obj_reloc_entry_size (flaginfo->output_bfd);
@@ -4761,19 +4716,12 @@ aout_link_input_section (struct aout_final_link_info *flaginfo,
 				  (file_ptr) 0, input_size))
     return false;
 
-  /* Read in the relocs if we haven't already done it.  */
-  if (aout_section_data (input_section) != NULL
-      && aout_section_data (input_section)->relocs != NULL)
-    relocs = aout_section_data (input_section)->relocs;
-  else
+  relocs = flaginfo->relocs;
+  if (rel_size > 0)
     {
-      relocs = flaginfo->relocs;
-      if (rel_size > 0)
-	{
-	  if (bfd_seek (input_bfd, input_section->rel_filepos, SEEK_SET) != 0
-	      || bfd_bread (relocs, rel_size, input_bfd) != rel_size)
-	    return false;
-	}
+      if (bfd_seek (input_bfd, input_section->rel_filepos, SEEK_SET) != 0
+	  || bfd_read (relocs, rel_size, input_bfd) != rel_size)
+	return false;
     }
 
   /* Relocate the section contents.  */
@@ -4806,7 +4754,7 @@ aout_link_input_section (struct aout_final_link_info *flaginfo,
     {
       if (bfd_seek (flaginfo->output_bfd, *reloff_ptr, SEEK_SET) != 0)
 	return false;
-      if (bfd_bwrite (relocs, rel_size, flaginfo->output_bfd) != rel_size)
+      if (bfd_write (relocs, rel_size, flaginfo->output_bfd) != rel_size)
 	return false;
       *reloff_ptr += rel_size;
 
@@ -5298,7 +5246,7 @@ aout_link_write_symbols (struct aout_final_link_info *flaginfo, bfd *input_bfd)
 	return false;
       outsym_size = outsym - flaginfo->output_syms;
       outsym_size *= EXTERNAL_NLIST_SIZE;
-      if (bfd_bwrite ((void *) flaginfo->output_syms, outsym_size, output_bfd)
+      if (bfd_write (flaginfo->output_syms, outsym_size, output_bfd)
 	  != outsym_size)
 	return false;
       flaginfo->symoff += outsym_size;
@@ -5668,7 +5616,7 @@ NAME (aout, final_link) (bfd *abfd,
       bfd_byte b[BYTES_IN_WORD];
 
       memset (b, 0, BYTES_IN_WORD);
-      if (bfd_bwrite (b, (bfd_size_type) BYTES_IN_WORD, abfd) != BYTES_IN_WORD)
+      if (bfd_write (b, BYTES_IN_WORD, abfd) != BYTES_IN_WORD)
 	goto error_return;
     }
 
