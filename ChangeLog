@@ -1,3 +1,8 @@
+2026-03-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/smallserpent.c.in:
+	  Fix prototype in smallserpent regression test.
+
 2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/stm8/gen.c:
