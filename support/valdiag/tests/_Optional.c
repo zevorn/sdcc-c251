@@ -1,3 +1,5 @@
+// Test diagnostics for _Optional.
+
 #include <stddef.h>
 
 // Basic warnings
