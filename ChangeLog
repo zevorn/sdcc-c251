@@ -1,9 +1,36 @@
 2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/stm8/gen.c:
+	  Improve codegen for xor with partially-known operands, inspired by blake2s regression test.
+
+2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/sdbinutils/bfd/Makefile.in,
+	  support/sdbinutils/bfd/aclocal.m4,
+	  support/sdbinutils/bfd/asxxxx.c,
+	  support/sdbinutils/bfd/config.bfd,
+	  support/sdbinutils/bfd/configure,
+	  support/sdbinutils/bfd/configure.ac,
+	  support/sdbinutils/binutils/arlex.c,
+	  support/sdbinutils/binutils/configure,
+	  support/sdbinutils/binutils/configure.ac:
+	  Fix issues in binutils branch merge.
+
+2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge binutils branch to synchronize with upstream GNU binutils 2.46.0.
+
+2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* sdas/asf8/f8adr.c,
 	  sdas/asf8/f8mch.c,
 	  sdas/asstm8/stm8mch.c:
 	  Replace some K&R-style functions by ANSI-style.
+
+2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/sdbinutils:
+	  Reduce diff to upstream GNU binutils 2.46.0.
 
 2026-03-02 Janko Stamenović
 
@@ -12,6 +39,18 @@
 	  sdas/asrab/rabpst.c
 	  sdas/asxxsrc/asxxxx.h
 	  sdasrab: r4k fixes and rlb, rrb, setsysp, setusrp
+
+2026-03-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/sdbinutils/config,
+	  support/sdbinutils/ChangeLog,
+	  support/sdbinutils/MAINTAINERS,
+	  support/sdbinutils/config-ml.in,
+	  support/sdbinutils/config.sub,
+	  support/sdbinutils/libtool.m4,
+	  support/sdbinutils/ltmain.sh,
+	  support/sdbinutils/SECURITY.txt:
+	  Reduce diff to upstream GNU binutils 2.46.0.
 
 2026-03-02 Philipp Klaus Krause <philipp@colecovision.eu>
 

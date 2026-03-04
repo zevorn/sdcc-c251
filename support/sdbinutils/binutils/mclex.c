@@ -1,5 +1,5 @@
 /* mclex.c -- lexer for Windows mc files parser.
-   Copyright (C) 2007-2022 Free Software Foundation, Inc.
+   Copyright (C) 2007-2026 Free Software Foundation, Inc.
 
    Written by Kai Tietz, Onevision.
 
@@ -212,7 +212,7 @@ enum_severity (int e)
 static void
 mc_add_keyword_ascii (const char *sz, int rid, const char *grp, rc_uint_type nv, const char *sv)
 {
-  unichar *usz, *usv = NULL;
+  unichar *usz = NULL, *usv = NULL;
   rc_uint_type usz_len;
 
   unicode_from_codepage (&usz_len, &usz, sz, CP_ACP);
