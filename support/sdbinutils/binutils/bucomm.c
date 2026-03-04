@@ -1,5 +1,5 @@
 /* bucomm.c -- Bin Utils COMmon code.
-   Copyright (C) 1991-2022 Free Software Foundation, Inc.
+   Copyright (C) 1991-2026 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -142,6 +142,19 @@ non_fatal (const char *format, ...)
   va_end (args);
 }
 
+/* Like xmalloc except that ABFD's objalloc memory is returned.
+   Use objalloc_free_block to free this memory and all more recently
+   allocated, or more usually, leave it to bfd_close to free.  */
+
+void *
+bfd_xalloc (bfd *abfd, size_t size)
+{
+  void *ret = bfd_alloc (abfd, size);
+  if (ret == NULL)
+    bfd_fatal (NULL);
+  return ret;
+}
+
 /* Set the default BFD target based on the configured target.  Doing
    this permits the binutils to be configured for a particular target,
    and linked against a shared BFD library which was configured for a
@@ -160,15 +173,17 @@ set_default_bfd_target (void)
 
 /* After a FALSE return from bfd_check_format_matches with
    bfd_get_error () == bfd_error_file_ambiguously_recognized, print
-   the possible matching targets.  */
+   the possible matching targets and free the list of targets.  */
 
 void
-list_matching_formats (char **p)
+list_matching_formats (char **matching)
 {
   fflush (stdout);
   fprintf (stderr, _("%s: Matching formats:"), program_name);
+  char **p = matching;
   while (*p)
     fprintf (stderr, " %s", *p++);
+  free (matching);
   fputc ('\n', stderr);
 }
 
@@ -420,6 +435,7 @@ display_info (void)
   if (!arg.error)
     display_target_tables (&arg);
 
+  free (arg.info);
   return arg.error;
 }
 
@@ -440,7 +456,6 @@ print_arelt_descr (FILE *file, bfd *abfd, bool verbose, bool offsets)
 	  char timebuf[40];
 	  time_t when = buf.st_mtime;
 	  const char *ctime_result = (const char *) ctime (&when);
-	  bfd_size_type size;
 
 	  /* PR binutils/17605: Check for corrupt time values.  */
 	  if (ctime_result == NULL)
@@ -451,11 +466,10 @@ print_arelt_descr (FILE *file, bfd *abfd, bool verbose, bool offsets)
 
 	  mode_string (buf.st_mode, modebuf);
 	  modebuf[10] = '\0';
-	  size = buf.st_size;
 	  /* POSIX 1003.2/D11 says to skip first character (entry type).  */
-	  fprintf (file, "%s %ld/%ld %6" BFD_VMA_FMT "u %s ", modebuf + 1,
+	  fprintf (file, "%s %ld/%ld %6" PRIu64 " %s ", modebuf + 1,
 		   (long) buf.st_uid, (long) buf.st_gid,
-		   size, timebuf);
+		   (uint64_t) buf.st_size, timebuf);
 	}
     }
 
@@ -535,12 +549,14 @@ make_tempname (const char *filename, int *ofd)
 #else
   tmpname = mktemp (tmpname);
   if (tmpname == NULL)
-    return NULL;
-  fd = open (tmpname, O_RDWR | O_CREAT | O_EXCL, 0600);
+    fd = -1;
+  else
+    fd = open (tmpname, O_RDWR | O_CREAT | O_EXCL, 0600);
 #endif
   if (fd == -1)
     {
       free (tmpname);
+      bfd_set_error (bfd_error_system_call);
       return NULL;
     }
   *ofd = fd;
@@ -554,22 +570,26 @@ char *
 make_tempdir (const char *filename)
 {
   char *tmpname = template_in_dir (filename);
+  char *ret;
 
 #ifdef HAVE_MKDTEMP
-  return mkdtemp (tmpname);
+  ret = mkdtemp (tmpname);
 #else
-  tmpname = mktemp (tmpname);
-  if (tmpname == NULL)
-    return NULL;
+  ret = mktemp (tmpname);
 #if defined (_WIN32) && !defined (__CYGWIN32__)
   if (mkdir (tmpname) != 0)
-    return NULL;
+    ret = NULL;
 #else
   if (mkdir (tmpname, 0700) != 0)
-    return NULL;
+    ret = NULL;
 #endif
-  return tmpname;
 #endif
+  if (ret == NULL)
+    {
+      free (tmpname);
+      bfd_set_error (bfd_error_system_call);
+    }
+  return ret;
 }
 
 /* Parse a string into a VMA, with a fatal error if it can't be

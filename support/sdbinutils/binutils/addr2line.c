@@ -1,5 +1,5 @@
 /* addr2line.c -- convert addresses to line number and function name
-   Copyright (C) 1997-2022 Free Software Foundation, Inc.
+   Copyright (C) 1997-2026 Free Software Foundation, Inc.
    Contributed by Ulrich Lauther <Ulrich.Lauther@mchp.siemens.de>
 
    This file is part of GNU Binutils.
@@ -37,6 +37,7 @@
 #include "demangle.h"
 #include "bucomm.h"
 #include "elf-bfd.h"
+#include "safe-ctype.h"
 
 static bool unwind_inlines;	/* -i, unwind inlined functions. */
 static bool with_addresses;	/* -a, show addresses.  */
@@ -51,6 +52,7 @@ static int demangle_flags = DMGL_PARAMS | DMGL_ANSI;
 static int naddr;		/* Number of addresses to process.  */
 static char **addr;		/* Hex addresses to process.  */
 
+static long symcount;
 static asymbol **syms;		/* Symbol table.  */
 
 static struct option long_options[] =
@@ -116,7 +118,6 @@ static void
 slurp_symtab (bfd *abfd)
 {
   long storage;
-  long symcount;
   bool dynamic = false;
 
   if ((bfd_get_file_flags (abfd) & HAS_SYMS) == 0)
@@ -129,7 +130,10 @@ slurp_symtab (bfd *abfd)
       dynamic = true;
     }
   if (storage < 0)
-    bfd_fatal (bfd_get_filename (abfd));
+    {
+      bfd_nonfatal (bfd_get_filename (abfd));
+      return;
+    }
 
   syms = (asymbol **) xmalloc (storage);
   if (dynamic)
@@ -137,7 +141,7 @@ slurp_symtab (bfd *abfd)
   else
     symcount = bfd_canonicalize_symtab (abfd, syms);
   if (symcount < 0)
-    bfd_fatal (bfd_get_filename (abfd));
+    bfd_nonfatal (bfd_get_filename (abfd));
 
   /* If there are no symbols left after canonicalization and
      we have not tried the dynamic symbols then give them a go.  */
@@ -220,35 +224,97 @@ find_offset_in_section (bfd *abfd, asection *section)
                                                &line, &discriminator);
 }
 
-/* Read hexadecimal addresses from stdin, translate into
+/* Lookup a symbol with offset in symbol table.  */
+
+static bfd_vma
+lookup_symbol (bfd *abfd, char *sym, size_t offset)
+{
+  long i;
+
+  for (i = 0; i < symcount; i++)
+    {
+      if (!strcmp (syms[i]->name, sym))
+	return syms[i]->value + offset + bfd_asymbol_section (syms[i])->vma;
+    }
+  /* Try again mangled */
+  for (i = 0; i < symcount; i++)
+    {
+      char *d = bfd_demangle (abfd, syms[i]->name, demangle_flags);
+      bool match = d && !strcmp (d, sym);
+      free (d);
+
+      if (match)
+	return syms[i]->value + offset + bfd_asymbol_section (syms[i])->vma;
+    }
+  return 0;
+}
+
+/* Split an symbol+offset expression. adr is modified.  */
+
+static bool
+is_symbol (char *adr, char **symp, size_t *offset)
+{
+  char *end;
+
+  while (ISSPACE (*adr))
+    adr++;
+  if (ISDIGIT (*adr) || *adr == 0)
+    return false;
+  /* Could be either symbol or hex number. Check if it has +.  */
+  if (TOUPPER(*adr) >= 'A' && TOUPPER(*adr) <= 'F' && !strchr (adr, '+'))
+    return false;
+
+  *symp = adr;
+  while (*adr && !ISSPACE (*adr) && *adr != '+')
+    adr++;
+  end = adr;
+  while (ISSPACE (*adr))
+    adr++;
+  *offset = 0;
+  if (*adr == '+')
+    {
+      adr++;
+      *offset = strtoul(adr, NULL, 0);
+    }
+  *end = 0;
+  return true;
+}
+
+/* Read hexadecimal or symbolic with offset addresses from stdin, translate into
    file_name:line_number and optionally function name.  */
 
 static void
 translate_addresses (bfd *abfd, asection *section)
 {
   int read_stdin = (naddr == 0);
+  char *adr;
+  char addr_hex[100];
+  char *symp;
+  size_t offset;
 
   for (;;)
     {
       if (read_stdin)
 	{
-	  char addr_hex[100];
-
 	  if (fgets (addr_hex, sizeof addr_hex, stdin) == NULL)
 	    break;
-	  pc = bfd_scan_vma (addr_hex, NULL, 16);
+	  adr = addr_hex;
 	}
       else
 	{
 	  if (naddr <= 0)
 	    break;
 	  --naddr;
-	  pc = bfd_scan_vma (*addr++, NULL, 16);
+	  adr = *addr++;
 	}
 
+      if (is_symbol (adr, &symp, &offset))
+        pc = lookup_symbol (abfd, symp, offset);
+      else
+        pc = bfd_scan_vma (adr, NULL, 16);
       if (bfd_get_flavour (abfd) == bfd_target_elf_flavour)
 	{
-	  const struct elf_backend_data *bed = get_elf_backend_data (abfd);
+	  elf_backend_data *bed = get_elf_backend_data (abfd);
 	  bfd_vma sign = (bfd_vma) 1 << (bed->s->arch_size - 1);
 
 	  pc &= (sign << 1) - 1;
@@ -383,24 +449,30 @@ process_file (const char *file_name, const char *section_name,
   abfd->flags |= BFD_DECOMPRESS;
 
   if (bfd_check_format (abfd, bfd_archive))
-    fatal (_("%s: cannot get addresses from archive"), file_name);
+    {
+      non_fatal (_("%s: cannot get addresses from archive"), file_name);
+      bfd_close (abfd);
+      return 1;
+    }
 
   if (! bfd_check_format_matches (abfd, bfd_object, &matching))
     {
       bfd_nonfatal (bfd_get_filename (abfd));
       if (bfd_get_error () == bfd_error_file_ambiguously_recognized)
-	{
-	  list_matching_formats (matching);
-	  free (matching);
-	}
-      xexit (1);
+	list_matching_formats (matching);
+      bfd_close (abfd);
+      return 1;
     }
 
   if (section_name != NULL)
     {
       section = bfd_get_section_by_name (abfd, section_name);
       if (section == NULL)
-	fatal (_("%s: cannot find section %s"), file_name, section_name);
+	{
+	  non_fatal (_("%s: cannot find section %s"), file_name, section_name);
+	  bfd_close (abfd);
+	  return 1;
+	}
     }
   else
     section = NULL;
