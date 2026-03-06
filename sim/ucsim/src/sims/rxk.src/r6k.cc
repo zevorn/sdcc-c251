@@ -137,30 +137,6 @@ cl_r6k::mode4k(void)
   itab[0x90]= instruction_wrapper_6k11_90;
 }
 
-u8_t
-cl_r6k::op8_iSPn(void)
-{
-  u8_t n= fetch();
-  t_addr a= (rSP + n) & 0xffff;
-  return read8io(a);
-}
-
-u16_t
-cl_r6k::op16_iSPn(void)
-{
-  u8_t n= fetch();
-  t_addr a= (rSP + n) & 0xffff;
-  return read16io(a);
-}
-
-u32_t
-cl_r6k::op32_iSPn(void)
-{
-  u8_t n= fetch();
-  t_addr a= (rSP + n) & 0xffff;
-  return read32io(a);
-}
-
 int
 cl_r6k::EX_JKHL_BCDE_(MP)
 {
@@ -288,5 +264,490 @@ cl_r6k::PAGE_6K49(MP)
   return itab_49[code](this, code);
 }
 
+int
+cl_r6k::inc_r(class cl_cell8 &cr, u8_t op)
+{
+  return add8(cr, op, 1, false);
+}
+
+int
+cl_r6k::inc_i8(t_addr addr)
+{
+  C8 *cell= (C8*)rwas->get_cell(addr);
+  vc.rd++;
+  vc.wr++;
+  return add8(*cell, cell->R(), 1, false);
+}
+
+int
+cl_r6k::dec_r(class cl_cell8 &cr, u8_t op)
+{
+  return sub8(cr, op, 1, false);
+}
+
+int
+cl_r6k::dec_i8(t_addr addr)
+{
+  C8 *cell= (C8*)rwas->get_cell(addr);
+  vc.rd++;
+  vc.wr++;
+  return sub8(*cell, cell->R(), 1, false);
+}
+
+int
+cl_r6k::inc_iPSd(u32_t ps, i8_t d)
+{
+  class cl_cell8 &f= destF();
+  t_addr a= px8se(ps, d);
+  u8_t forg= f.R() & ~(flagS|flagZ|flagV|flagC);
+  u8_t org= mem->pxread(a);
+  u16_t res= org+1;
+  if (res > 0xff) forg|= flagC;
+  if (res & 0x80) forg|= flagS;
+  if (!(res&0xff)) forg|= flagZ;
+  if (!(org&0x80) && (res&0x80)) forg|= flagV;
+  f.W(forg);
+  mem->pxwrite(a, res);
+  vc.rd++;
+  vc.wr++;
+  return resGO;
+}
+
+int
+cl_r6k::dec_iPSd(u32_t ps, i8_t d)
+{
+  class cl_cell8 &f= destF();
+  t_addr a= px8se(ps, d);
+  u8_t org= mem->pxread(a);
+  u8_t v1= org, op1= org;
+  u8_t forg;
+  u8_t res;
+  u8_t a7, b7, r7, na7, nb7, nr7;
+  i8_t o2= 1, op2= 1;
+  i8_t r= org-o2;
+  res= r;
+  forg= rF & ~(flagZ|flagS|flagV);
+  a7=  v1&0x80; na7= a7^0x80;
+  b7= op2&0x80; nb7= b7^0x80;
+  r7= res&0x80; nr7= r7^0x80;
+  if ((a7&nb7&nr7) | (na7&b7&r7)) forg|= flagV;
+  if (op1<op2) forg|= flagC;
+  if ((op1>op2) || (op1==op2)) forg&= ~flagC;
+  if (!res) forg|= flagZ;
+  if (res & 0x80) forg|= flagS;
+  mem->pxwrite(a, res);
+  f.W(forg);
+  vc.rd++;
+  vc.wr++;
+  return resGO;
+}
+
+/* shift/rotate regs */
+
+int
+cl_r6k::SL1REG(MP)
+{
+  cJKHL.set(cPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RL1REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPW.get());
+  cPW.set(t);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::SR1REG(MP)
+{
+  cJKHL.set(cPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RR1REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPW.get());
+  cPW.set(t);
+  tick(3);
+  return resGO;
+}
+
+/* shift/rotate regs */
+
+int
+cl_r6k::SL2REG(MP)
+{
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RL2REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(t);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::SR2REG(MP)
+{
+  cJKHL.set(cPX.get());
+  cPX.set(cPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RR2REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPX.get());
+  cPX.set(cPW.get());
+  cPW.set(t);
+  tick(3);
+  return resGO;
+}
+
+/* shift/rotate regs */
+
+int
+cl_r6k::SL3REG(MP)
+{
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RL3REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(t);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::SR3REG(MP)
+{
+  cJKHL.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RR3REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  cPW.set(t);
+  tick(3);
+  return resGO;
+}
+
+/* shift/rotate regs */
+
+int
+cl_r6k::SL4REG(MP)
+{
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RL4REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  cPZ.set(t);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::SR4REG(MP)
+{
+  cJKHL.set(cPZ.get());
+  cPZ.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RR4REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPZ.get());
+  cPZ.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  cPW.set(t);
+  tick(3);
+  return resGO;
+}
+
+/* shift/rotate regs */
+
+int
+cl_r6k::SL5REG(MP)
+{
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  cPZ.set(caPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RL5REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  cPZ.set(caPW.get());
+  caPW.set(t);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::SR5REG(MP)
+{
+  cJKHL.set(caPW.get());
+  caPW.set(cPZ.get());
+  cPZ.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RR5REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(caPW.get());
+  caPW.set(cPZ.get());
+  cPZ.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  cPW.set(t);
+  tick(3);
+  return resGO;
+}
+
+/* shift/rotate regs */
+
+int
+cl_r6k::SL6REG(MP)
+{
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  cPZ.set(caPW.get());
+  caPW.set(caPX.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RL6REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  cPZ.set(caPW.get());
+  caPW.set(caPX.get());
+  caPX.set(t);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::SR6REG(MP)
+{
+  cJKHL.set(caPX.get());
+  caPX.set(caPW.get());
+  caPW.set(cPZ.get());
+  cPZ.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RR6REG(MP)
+{
+  tick(3);
+  return resGO;
+}
+
+/* shift/rotate regs */
+
+int
+cl_r6k::SL7REG(MP)
+{
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  cPZ.set(caPW.get());
+  caPW.set(caPX.get());
+  caPX.set(caPY.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RL7REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  cPZ.set(caPW.get());
+  caPW.set(caPX.get());
+  caPX.set(caPY.get());
+  caPY.set(t);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::SR7REG(MP)
+{
+  cJKHL.set(caPY.get());
+  caPY.set(caPX.get());
+  caPX.set(caPW.get());
+  caPW.set(cPZ.get());
+  cPZ.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RR7REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(caPY.get());
+  caPY.set(caPX.get());
+  caPX.set(caPW.get());
+  caPW.set(cPZ.get());
+  cPZ.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  cPW.set(t);
+  tick(3);
+  return resGO;
+}
+
+/* shift/rotate regs */
+
+int
+cl_r6k::SL8REG(MP)
+{
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  cPZ.set(caPW.get());
+  caPW.set(caPX.get());
+  caPX.set(caPY.get());
+  caPY.set(caPZ.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RL8REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(cPW.get());
+  cPW.set(cPX.get());
+  cPX.set(cPY.get());
+  cPY.set(cPZ.get());
+  cPZ.set(caPW.get());
+  caPW.set(caPX.get());
+  caPX.set(caPY.get());
+  caPY.set(caPZ.get());
+  caPZ.set(t);
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::SR8REG(MP)
+{
+  cJKHL.set(caPZ.get());
+  caPZ.set(caPY.get());
+  caPY.set(caPX.get());
+  caPX.set(caPW.get());
+  caPW.set(cPZ.get());
+  cPZ.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::RR8REG(MP)
+{
+  u32_t t= cJKHL.get();
+  cJKHL.set(caPZ.get());
+  caPZ.set(caPY.get());
+  caPY.set(caPX.get());
+  caPX.set(caPW.get());
+  caPW.set(cPZ.get());
+  cPZ.set(cPY.get());
+  cPY.set(cPX.get());
+  cPX.set(cPW.get());
+  cPW.set(t);
+  tick(3);
+  return resGO;
+}
 
 /* End of rxk.src/r6k.cc */

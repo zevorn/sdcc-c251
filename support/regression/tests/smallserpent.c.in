@@ -510,7 +510,7 @@ static const uint32_t* serpent_roundkey(uint_fast8_t r, serpent_context *context
 }
 
 // Initialize subkey/key array
-void serpent_init(serpent_context *context, const uint8_t *key, uint_fast16_t key_len)
+void serpent_init(serpent_context *context, const uint8_t *key, size_t key_len)
 {
   uint_fast8_t i;
   uint32_t *w = context->wk;
