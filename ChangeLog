@@ -1,3 +1,8 @@
+2026-03-06 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/valdiag/tests/_Optional-draft-2026-03-06.c:
+	  Test for _Optional based on examples from _Optional TS draft from 2026-03-06.
+
 2026-03-04 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/valdiag/tests/_Optional-draft-2026-03-03.c:

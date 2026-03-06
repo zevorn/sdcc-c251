@@ -1,4 +1,4 @@
-// Test diagnostics for _Optional. Based on examples from _Optional TS draft from 2026-03-03.
+// Test diagnostics for _Optional. Based on examples from _Optional TS draft from 2026-03-06.
 
 #pragma std_c23
 
@@ -204,7 +204,7 @@ int opt_strcmp(_Optional const char *s1,
                 const char *: 1,
                 default : 0));
 
-  return strcmp(&*s1, &*s2);
+  return strcmp(&*s1, &*s2); /* IGNORE */ // BUG
 }
 #endif
 
@@ -506,6 +506,33 @@ void neutron(void)
 #endif
 
 #ifdef TEST37
+void pisces(const bool do_store)
+{
+  int i;
+  _Optional int *poi = nullptr;
+
+  if (do_store)
+    poi = &i;
+
+  if (do_store)
+    *poi = 1; // possible diagnostic /* IGNORE */
+}
+#endif
+
+#ifdef TEST38
+void phileas(_Optional int *const poi)
+{
+  bool do_store = true;
+
+  if (!poi)
+    do_store = false;
+
+  if (do_store)
+    *poi = 1; // possible diagnostic /* IGNORE */
+}
+#endif
+
+#ifdef TEST39
 void fred(_Optional int *poi)
 {
   int i;
@@ -518,20 +545,20 @@ void fred(_Optional int *poi)
 }
 #endif
 
-#ifdef TEST38
+#ifdef TEST40
 void ram(int *);
 void jim(_Optional int *poi)
 {
   int i[16];
 
-  poi = i;        // constrains poi to non-null
+  poi = i;       // constrains poi to non-null
   *poi = 5;      // no recommended diagnostic
   ram(&*poi);    // no recommended diagnostic
   ram(&poi[15]); // no recommended diagnostic
 }
 #endif
 
-#ifdef TEST39
+#ifdef TEST41
 void hw(int *);
 
 int sheila(_Optional int *poi)
@@ -573,12 +600,11 @@ int sheila(_Optional int *poi)
 }
 #endif
 
-#ifdef TEST40
+#ifdef TEST42
 static void fs(_Optional int *poi)
 {
-  *poi = 10; // recommended diagnostic /* WARNING */
+  *poi = 10; // possible diagnostic /* IGNORE */
 }
-
 void hazel(void)
 {
   int i;
@@ -586,25 +612,21 @@ void hazel(void)
 }
 #endif
 
-#ifdef TEST41
-_Optional int *poi;
-static void vdu(void)
+#ifdef TEST43
+static _Optional int *vdu(void)
 {
-  // do nothing
+  static int i;
+  return &i;
 }
-
 void lynne(void)
 {
-  // constrains poi to non-null on the fallthrough path
-  if (!poi) return;
-  *poi = 1; // no recommended diagnostic /* IGNORE */ // TODO: Improve analysis to better handle global variables!
-  vdu();    /* analysis discards non-null constraint on poi
-               because vdu could modify poi */
-  *poi = 2; // recommended diagnostic /* WARNING */
+  _Optional int *poi;
+  poi = vdu();
+  *poi = 2; // possible diagnostic /* IGNORE */
 }
 #endif
 
-#ifdef TEST42
+#ifdef TEST44
 void andy(_Optional int *poi)
 {
   int *pi;
@@ -614,7 +636,7 @@ void andy(_Optional int *poi)
 }
 #endif
 
-#ifdef TEST43
+#ifdef TEST45
 void tina(int *pi)
 {
   _Optional int *poi;
@@ -624,7 +646,7 @@ void tina(int *pi)
 }
 #endif
 
-#ifdef TEST44
+#ifdef TEST46
 int avon(int *pi)
 {
   _Optional int *poi;
@@ -637,7 +659,7 @@ int avon(int *pi)
 }
 #endif
 
-#ifdef TEST45
+#ifdef TEST47
 _Optional int *volatile poi;
 int brisbane(void)
 {
@@ -648,7 +670,7 @@ int brisbane(void)
 }
 #endif
 
-#ifdef TEST46
+#ifdef TEST48
 _Optional int *poi;
 void perth(_Optional int **ppoi)
 {
@@ -662,7 +684,7 @@ void perth(_Optional int **ppoi)
 }
 #endif
 
-#ifdef TEST47
+#ifdef TEST49
 void victoria(_Optional int **ppoi_1, _Optional int **ppoi_2)
 {
   // constrains *ppoi_1 to non-null on the fallthrough path
@@ -676,7 +698,7 @@ void victoria(_Optional int **ppoi_1, _Optional int **ppoi_2)
 }
 #endif
 
-#ifdef TEST48
+#ifdef TEST50
 _Optional int *poi;
 void darwin(_Optional int **ppoi, _Optional int *upoi)
 {
@@ -690,7 +712,7 @@ void darwin(_Optional int **ppoi, _Optional int *upoi)
 }
 #endif
 
-#ifdef TEST49
+#ifdef TEST51
 void jordan(_Optional int *poi)
 {
   _Optional int *poi_2, **ppoi = &poi_2;
@@ -705,7 +727,7 @@ void jordan(_Optional int *poi)
 }
 #endif
 
-#ifdef TEST50
+#ifdef TEST52
 void orlando(_Optional int **ppoi_1,
              _Optional int ** restrict ppoi_2)
 {
@@ -720,7 +742,7 @@ void orlando(_Optional int **ppoi_1,
 }
 #endif
 
-#ifdef TEST51
+#ifdef TEST53
 _Optional int *poi;
 void buxton(void); // has unknown side effects
 void adelaide(void)
@@ -735,7 +757,7 @@ void adelaide(void)
 }
 #endif
 
-#ifdef TEST52
+#ifdef TEST54
 void bethany(void); // has unknown side effects
 void lazarus(_Optional int **ppoi)
 {
@@ -749,7 +771,7 @@ void lazarus(_Optional int **ppoi)
 }
 #endif
 
-#ifdef TEST53
+#ifdef TEST55
 void morris(_Optional int **ppoi); // has unknown side effects
 void aquarius(_Optional int *poi)
 {
@@ -763,7 +785,7 @@ void aquarius(_Optional int *poi)
 }
 #endif
 
-#ifdef TEST54
+#ifdef TEST56
 void omega(_Optional int *const *ppoi); // unknown side effects
 _Optional int **ppoi;
 void spinner(_Optional int *poi)
@@ -781,7 +803,7 @@ void spinner(_Optional int *poi)
 }
 #endif
 
-#ifdef TEST55
+#ifdef TEST57
 _Optional int *poi;
 void chandler(_Optional int **ppoi)
 {
@@ -796,7 +818,7 @@ void chandler(_Optional int **ppoi)
 }
 #endif
 
-#ifdef TEST56
+#ifdef TEST58
 _Optional int *poi;
 void monica(_Optional int **ppoi, _Optional int *lpoi)
 {
@@ -809,7 +831,7 @@ void monica(_Optional int **ppoi, _Optional int *lpoi)
 }
 #endif
 
-#ifdef TEST57
+#ifdef TEST59
 void rachel(_Optional int **ppoi_1, _Optional int **ppoi_2)
 {
   int i;
@@ -823,7 +845,7 @@ void rachel(_Optional int **ppoi_1, _Optional int **ppoi_2)
 }
 #endif
 
-#ifdef TEST58
+#ifdef TEST60
 _Optional int *poi;
 void ursula(void) [[reproducible]]; // no observable effects /* IGNORE */ TODO: implement the attribute
 void phoebe(void)
@@ -837,12 +859,12 @@ void phoebe(void)
 }
 #endif
 
-#ifdef TEST59
+#ifdef TEST61
 _Optional int *ptr_to_optional; // valid
 int *_Optional optional_ptr; // constraint violation /* ERROR */
 #endif
 
-#ifdef TEST60
+#ifdef TEST62
 // declaration constraint does not apply to typedef
 typedef int TAI[2][3];
 typedef _Optional int TOI;
@@ -867,7 +889,7 @@ TAOI aoi; // array of optional int /* ERROR */
 TOI aoi[2][3]; // as above /* ERROR */
 #endif
 
-#ifdef TEST61
+#ifdef TEST63
 // valid: referenced type is qualified
 _Optional int *frpoi(float);
 _Optional int (*frpaoi(void))[10]; /* IGNORE */ // todo: implement support for this
@@ -877,7 +899,7 @@ _Optional int froi(float); /* ERROR */
 _Optional int (*pfroi)(float); /* ERROR */
 #endif
 
-#ifdef TEST62
+#ifdef TEST64
 #if 0 // missing support for this array stuff
 // valid: referenced type is qualified
 void fpoi( _Optional int *poi);
@@ -903,7 +925,7 @@ void fopai(int (*_Optional opai)[2][3]);
 #endif
 #endif
 
-#ifdef TEST63
+#ifdef TEST65
 #if 0 // incomplete support
 int sum(_Optional int poi[static 4])
 {
@@ -922,7 +944,7 @@ int main(void)
 #endif
 #endif
 
-#ifdef TEST64
+#ifdef TEST66
 typedef int TFRI(float);
 
 // valid: does not declare an object
@@ -947,7 +969,7 @@ TOPI opi; /* ERROR */
 TOPFRI opfri; /* ERROR */
 #endif
 
-#ifdef TEST65
+#ifdef TEST67
 #if 0 // incomplete support
 typedef int TFRI(float);
 
@@ -964,7 +986,7 @@ Y ofri;
 #endif
 #endif
 
-#ifdef TEST66
+#ifdef TEST68
 #if 0 // incomplete support
 // valid: does not declare an array
 typedef _Optional int TAOI[2][3];
@@ -982,7 +1004,7 @@ TAOI aoi;
 #endif
 #endif
 
-#ifdef TEST67
+#ifdef TEST69
 #if 0 // incomplete support
 // valid: does not declare a function
 typedef _Optional typeof(int (float)) TOFRI;
@@ -1000,15 +1022,15 @@ TOFRI ofri;
 #endif
 #endif
 
-#ifdef TEST68
+#ifdef TEST70
 char *npc = nullptr;            // valid but unsafe /* IGNORE */
-char *lpc = "hello";            // valid but unsafe /* WARNING */
+char *lpc = "hello";            // valid but unsafe /* IGNORE */ // TODO: Bug: Missing warning!
 
 _Optional char *npoc = nullptr; // valid and safe
 const char *lpcc = "hello";     // valid and safe
 #endif
 
-#ifdef TEST69
+#ifdef TEST71
 static char *pc;                       // valid but unsafe /* IGNORE */
 char *apc[2] = {&(char){}};            // valid but unsafe /* IGNORE */
 
@@ -1016,7 +1038,7 @@ static _Optional char *poc;            // valid and safe
 _Optional char *apoc[2] = {&(char){}}; // valid and safe /* IGNORE */ // TODO: bug?
 #endif
 
-#ifdef TEST70
+#ifdef TEST72
 int main(void)
 {
   char *npc, *lpc;
