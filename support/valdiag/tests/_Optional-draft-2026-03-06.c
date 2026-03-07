@@ -926,7 +926,6 @@ void fopai(int (*_Optional opai)[2][3]);
 #endif
 
 #ifdef TEST65
-#if 0 // incomplete support for _optional a[static n]
 int sum(_Optional int poi[static 4])
 {
   int tot = 0;
@@ -941,7 +940,6 @@ int main(void)
 {
   return sum(nullptr); // valid (returns 0)
 }
-#endif
 #endif
 
 #ifdef TEST66

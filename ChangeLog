@@ -1,4 +1,4 @@
-2026-03-XX Philipp Klaus Krause <philipp@colecovision.eu>
+2026-03-07 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* .version,
 	  doc/sdccman.lyx,
@@ -11,7 +11,10 @@
 	  src/SDCCval.c,
 	  support/valdiag/tests/_Optional-draft-2026-03-06.c,
 	  support/valdiag/tests/_Optional.c,
-	  support/valdiag/tests/bug-3805.c:
+	  support/valdiag/tests/bug-3805.c,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCopt.c,
+	  support/regression/tests/optional-static.c:
 	  Follow current _Optional TS draft instead of N3422 for _Optional-qualified array parameters. Fix bug #3805.
 
 2026-03-06 Philipp Klaus Krause <philipp@colecovision.eu>

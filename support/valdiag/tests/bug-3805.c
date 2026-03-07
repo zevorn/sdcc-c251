@@ -8,8 +8,13 @@ int f(int i, int j)
     return i + j;
 }
 
-typeof (int (*)(int, int)) g(void)
+typeof (int (*)(int, int)) g1(void)
 {
     return &f; // Invalid diagnostic happened here.
+}
+
+int (*g2(void))(int, int)
+{
+	return &f; // Invalid diagnostic happened here.
 }
 
