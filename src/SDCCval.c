@@ -3649,7 +3649,7 @@ checkParameterTypeList (value *forward_declaration, value *parameters)
         werror (E_PARAM_NAME_OMITTED, "", 0);
       else
         {
-          checkQualifiers (forward_declaration->sym, forward_declaration->sym->type, false);
+          checkQualifiers (forward_declaration->sym, forward_declaration->sym->type, false, true);
           addSymChain (&forward_declaration->sym);
           bool found = false;
           for (value *p = parameters; p; p = p->next)
@@ -3665,7 +3665,7 @@ checkParameterTypeList (value *forward_declaration, value *parameters)
   for (value *p = parameters; p; p = p->next)
     {
       changePointer (p->type);
-      checkQualifiers (p->sym, p->type, false);
+      checkQualifiers (p->sym, p->type, false, true);
       if (p->sym)
         addSymChain (&p->sym);
     }

@@ -787,7 +787,7 @@ setAstFileLine (ast *tree, const char *filename, int lineno)
 /* funcOfType :- function of type with name                        */
 /*-----------------------------------------------------------------*/
 symbol *
-funcOfType (const char *name, sym_link *rtype, sym_link * argType, int nArgs, int rent)
+funcOfType (const char *name, sym_link *rtype, sym_link *argType, int nArgs, int rent)
 {
   symbol *sym;
   /* create the symbol */
@@ -6036,7 +6036,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
             }
           else if (!typecompat)
             {
-              werrorfl (tree->filename, tree->lineno, W_RETURN_MISMATCH);
+              werrorfl (tree->filename, tree->lineno, E_RETURN_MISMATCH);
               printFromToType (RTYPE (tree), currFunc->type->next);
             }
 

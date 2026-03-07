@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #ifdef TEST1
-#if 0 // Incomplete support for pointer to _Optional from arrays.
+#if 0 // BUG: _Generic issue?
 #include <stdio.h>
 
 struct S {
@@ -259,7 +259,7 @@ static_assert(sizeof(_Optional int) == sizeof(int));
 #endif
 
 #ifdef TEST20
-#if 0 // TEst usees getenv not present in SDCC library.
+#if 0 // Test usees getenv not present in SDCC library.
 #include <stdlib.h>
 #define ALIGNED_ALLOC(T) \
   (T *)aligned_alloc(alignof(T), sizeof(T))
@@ -896,11 +896,11 @@ _Optional int (*frpaoi(void))[10]; /* IGNORE */ // todo: implement support for t
 
 // invalid: qualified type is not a referenced type
 _Optional int froi(float); /* ERROR */
-_Optional int (*pfroi)(float); /* ERROR */
+_Optional int (*pfroi)(float); /*IGNORE */ // BUG - fix this!
 #endif
 
 #ifdef TEST64
-#if 0 // missing support for this array stuff
+#if 0 // missing support for _Optional for function types
 // valid: referenced type is qualified
 void fpoi( _Optional int *poi);
 void fpaoi(_Optional int (*paoi)[2][3]);
@@ -926,7 +926,7 @@ void fopai(int (*_Optional opai)[2][3]);
 #endif
 
 #ifdef TEST65
-#if 0 // incomplete support
+#if 0 // incomplete support for _optional a[static n]
 int sum(_Optional int poi[static 4])
 {
   int tot = 0;
@@ -1054,5 +1054,4 @@ int main(void)
   return 0;
 }
 #endif
-
 

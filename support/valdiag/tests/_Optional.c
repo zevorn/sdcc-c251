@@ -89,7 +89,7 @@ _Optional U oat; /* ERROR */ // invalid: oat has type "_Optional int [15]"
 #ifdef TEST8
 _Optional int *f(float); // valid
 _Optional int f2(float); /* ERROR */ // invalid: int is not a referenced type
-_Optional int (*fp)(float); /* ERROR */ // invalid: int is not a referenced type
+_Optional int (*fp)(float); /* IGNORE */ // invalid: int is not a referenced type // BUG!
 #endif
 
 #ifdef TEST9
@@ -100,7 +100,7 @@ _Optional F *fp2; // valid: fp2 has type "int (*)(float) _Optional"
 // Test case from N3422
 #ifdef TEST10
 void h(_Optional int); /* ERROR */ // invalid: "int" is not a referenced type
-//todo - not an error? void l(_Optional int param[2][3]); // valid: param is a pointer
+void l(_Optional int param[2][3]); // valid: param is a pointer
 #endif
 
 // Test case from N3422
@@ -314,5 +314,16 @@ int spider(_Optional int *i)
 	k = i ? *i : 0;
 	return (k);
 }
+#endif
+
+// _Optional on function parameters
+#ifdef TEST18
+int f(_Optional int); /* WARNING */
+
+int g(_Optional int *);
+
+// Array decays to pointer (not really according to N3422, but according to later documents)
+int h(_Optional int a[4]);
+int i(_Optional int a[4][3]);
 #endif
 

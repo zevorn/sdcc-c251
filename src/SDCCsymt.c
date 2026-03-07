@@ -2080,13 +2080,13 @@ promoteAnonStructs (int su, structdef * sdef)
 /*                  diagnostics, if provided.                       */
 /*------------------------------------------------------------------*/
 void
-checkQualifiers (symbol *sym, sym_link *type, bool check_vla_unspec)
+checkQualifiers (symbol *sym, sym_link *type, bool check_vla_unspec, bool decay)
 {
   sym_link *t = type;
   bool pointed_to = false;
   while (t)
     {
-      if (!pointed_to && isOptional (t))
+      if (!pointed_to && isOptional (t) && !(IS_ARRAY(t) && decay))
         {
           if (sym)
             werrorfl (sym->fileDef, sym->lineDef, E_BAD_OPTIONAL);
@@ -2114,7 +2114,7 @@ checkQualifiers (symbol *sym, sym_link *type, bool check_vla_unspec)
             werror (E_VLA_UNSPECIFIED_SCOPE);
           break;
         }
-      pointed_to = IS_PTR (t);
+      pointed_to |= IS_PTR (t) || (decay && IS_ARRAY (t));
       t = t->next;
     }
 }
@@ -2179,7 +2179,7 @@ checkSClass (symbol *sym, bool isProto)
       SPEC_ATOMIC (sym->etype) = 0;
     }
 
-  checkQualifiers (sym, sym->type, true);
+  checkQualifiers (sym, sym->type, true, false);
 
   /* if absolute address given then it mark it as
      volatile -- except in the PIC port */
@@ -2949,7 +2949,7 @@ computeType (sym_link * type1, sym_link * type2, RESULT_TYPE resultType, int op)
 /* compareFuncType - compare function prototypes                    */
 /*------------------------------------------------------------------*/
 int
-compareFuncType (sym_link * dest, sym_link * src)
+compareFuncType (sym_link *dest, sym_link *src)
 {
   value *exargs, *acargs;
   value *checkValue;
@@ -3143,14 +3143,13 @@ compareType (sym_link *dest, sym_link *src, bool ignoreimplicitintrinsic)
             {
               return -1;
             }
-          if ((IS_FARPTR (dest) ^  IS_FARPTR (src)) && (port->far_in_generic || port->generic_in_far))
+          if ((IS_FARPTR (dest) ^ IS_FARPTR (src)) && (port->far_in_generic || port->generic_in_far))
             mustCast = true;
           
           if (IS_PTR (src) && (IS_GENPTR (dest) || ((DCL_TYPE (src) == POINTER) && (DCL_TYPE (dest) == IPOINTER))))
             {
               return comparePtrType (dest, src, true, ignoreimplicitintrinsic);
             }
-
 
           if (IS_PTR (dest) && IS_ARRAY (src))
             {
@@ -3205,7 +3204,7 @@ compareType (sym_link *dest, sym_link *src, bool ignoreimplicitintrinsic)
   if ((SPEC_NOUN (dest) == V_BITINT || SPEC_NOUN (dest) == V_BITINTBITFIELD) && (SPEC_NOUN (src) == V_BITINT || SPEC_NOUN (src) == V_BITINTBITFIELD))
     {
       if (SPEC_BITINTWIDTH (dest) != SPEC_BITINTWIDTH (src) ||
-        SPEC_USIGN (dest) && !SPEC_USIGN (src) && SPEC_BITINTWIDTH (dest) % 8) // Cast from sgined to unsigned type cannot be omitted, since it requires masking top bits.
+        SPEC_USIGN (dest) && !SPEC_USIGN (src) && SPEC_BITINTWIDTH (dest) % 8) // Cast from signed to unsigned type cannot be omitted, since it requires masking top bits.
         return -1;
       return (SPEC_USIGN (dest) == SPEC_USIGN (src) ? 1 : -2);
     }
@@ -3877,6 +3876,10 @@ processFuncArgs (symbol *func, sym_link *funcType)
   /* Nothing to do if no function type found */
   if (!funcType)
     return;
+
+  // Also do return type.
+  if (funcType->next)
+    processFuncArgs (0, funcType->next);
 
   /* if this function has variable argument list */
   /* then make the function a reentrant one    */

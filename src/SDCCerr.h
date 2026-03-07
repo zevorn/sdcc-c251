@@ -80,14 +80,14 @@ enum {
   E_BIT_ARRAY                   =  50, /* bit array not allowed  */
   E_DUPLICATE_TYPEDEF           =  51, /* typedef name duplicate */
   E_ARG_TYPE                    =  52, /* arg type mismatch   */
-  E_RET_VALUE                   =  53, /* return value mismatch */
+  E_RETURN_MISMATCH             =  53, /* return type mismatch */
   E_FUNC_AGGR                   =  54, /* Function cannot return aggregate. Func body ignored */
   E_FUNC_DEF                    =  55, /* ANSI Style def neede */
   E_DUPLICATE_LABEL             =  56, /* duplicate label name */
   E_LABEL_UNDEF                 =  57, /* undefined label used */
   E_FUNC_VOID                   =  58, /* void func ret value  */
   W_VOID_FUNC                   =  59, /* func must return value */
-  W_RETURN_MISMATCH             =  60, /* return value mismatch */
+  W_RETURN_MISMATCH             =  60, /* return type mismatch */
   E_CASE_CONTEXT                =  61, /* case stmnt without switch */
   E_CASE_CONSTANT               =  62, /* case expression ! const */
   E_BREAK_CONTEXT               =  63, /* break statement invalid */
