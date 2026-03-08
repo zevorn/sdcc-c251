@@ -1,5 +1,11 @@
 2026-03-08 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCC.y,
+	  support/valdiag/tests/_Optional-draft-2026-03-06.c:
+	  Fix typeof_unqual(_Optional).
+
+2026-03-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/SDCCsymt.c,
 	  src/SDCCsymt.h,
 	  src/SDCCicode.c,

@@ -82,7 +82,7 @@ static_assert(_Generic(typeof(m), const int: 1, default: 0));
 #ifdef TEST7
 typedef int U[15];
 _Optional U oat; /* ERROR */ // invalid: oat has type "_Optional int [15]"
-//todo - not an error! _Optional U *poat; // valid: poat has type "_Optional int (*)[15]"
+_Optional U *poat; // valid: poat has type "_Optional int (*)[15]"
 #endif
 
 // Test case from N3422

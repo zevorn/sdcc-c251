@@ -825,6 +825,7 @@ typeof_specifier
        SPEC_RESTRICT ($$) = 0;
        SPEC_VOLATILE ($$) = 0;
        SPEC_ATOMIC ($$) = 0;
+       SPEC_OPTIONAL ($$) = 0;
        SPEC_ADDRSPACE ($$) = 0;
      }
    | TYPEOF_UNQUAL '(' type_name ')'
@@ -836,6 +837,7 @@ typeof_specifier
        SPEC_RESTRICT ($$) = 0;
        SPEC_VOLATILE ($$) = 0;
        SPEC_ATOMIC ($$) = 0;
+       SPEC_OPTIONAL ($$) = 0;
        SPEC_ADDRSPACE ($$) = 0;
      }
 

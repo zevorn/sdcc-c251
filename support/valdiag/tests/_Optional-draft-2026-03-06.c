@@ -83,13 +83,11 @@ int *brazil(_Optional int *poi)
 #endif
 
 #ifdef TEST5
-#if 0 // BUG
 int *foxton(_Optional int *poi)
 {
   static typeof_unqual(poi[0]) i; // no recommended diagnostic
   return &i;
 }
-#endif
 #endif
 
 #ifdef TEST6
@@ -399,7 +397,7 @@ void fox(_Optional int *poi)
 {
   int i, *pi;
 
-  if (poi != nullptr) { // poi is non-null within the block /* IGNORE */ // Check: why evely wanring here?
+  if (poi != nullptr) { // poi is non-null within the block /* IGNORE */ // Check: why evelyn warning here?
     pi = poi;           // violates type constraints for = /* WARNING */
     pi = (int *)poi;    // valid
   }
@@ -539,7 +537,7 @@ void fred(_Optional int *poi)
   _Optional int *poi_2 = &i;
 
   for (i = 0; i < 200; ++i)
-    poi_2 = (i * 13) % 2 ? &i : poi; /* IGNORE */ // TODO: what happens here?
+    poi_2 = (i * 13) % 2 ? &i : poi;
 
   *poi_2 = 1; // possible diagnostic /* IGNORE */
 }
@@ -572,7 +570,7 @@ int sheila(_Optional int *poi)
 
   // constrains poi to non-null in the secondary block
   for (; poi;) {
-    *poi = 6;      // no recommended diagnostic
+    *poi = 6;     // no recommended diagnostic
     hw(&*poi);    // no recommended diagnostic
     hw(&poi[15]); // no recommended diagnostic
     break;
@@ -872,11 +870,11 @@ typedef TOI TAOI[2][3];
 typedef _Optional TAI TOAI;
 
 // valid: referenced type is qualified
-TAOI *paoi; // pointer to array of optional int /* IGNORE */ // TODO
-TOI (*paoi)[2][3]; // as above /* IGNORE */ // TODO
-_Optional int (*paoi)[2][3]; // as above /* IGNORE */ // TODO
-TOAI *poai; // pointer to optional array of int /* IGNORE */ // TODO
-_Optional TAI *poai; // as above /* IGNORE */ // TODO
+TAOI *paoi; // pointer to array of optional int
+TOI (*paoi)[2][3]; // as above
+_Optional int (*paoi)[2][3]; // as above
+TOAI *poai; // pointer to optional array of int
+_Optional TAI *poai; // as above
 
 // effect of qualifying array or element type is the same
 static_assert(_Generic(paoi, typeof(poai): 1, default: 0));
@@ -892,7 +890,7 @@ TOI aoi[2][3]; // as above /* ERROR */
 #ifdef TEST63
 // valid: referenced type is qualified
 _Optional int *frpoi(float);
-_Optional int (*frpaoi(void))[10]; /* IGNORE */ // todo: implement support for this
+_Optional int (*frpaoi(void))[10];
 
 // invalid: qualified type is not a referenced type
 _Optional int froi(float); /* ERROR */
