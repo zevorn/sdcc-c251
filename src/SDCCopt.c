@@ -2284,7 +2284,7 @@ checkStaticArrayParams (ebbIndex *ebbi)
                 paramtype = operandType (ic->right);
               }
 
-            if (IS_DECL (paramtype) && (DCL_STATIC_ARRAY_PARAM (paramtype) || DCL_ELEM (paramtype) || DCL_ELEM_AST (paramtype))) // Only check array parameters.
+            if (IS_DECL (paramtype) && !isOptional (paramtype->next) && (DCL_STATIC_ARRAY_PARAM (paramtype) || DCL_ELEM (paramtype) || DCL_ELEM_AST (paramtype))) // Only check array parameters.
               {
                 unsigned long paramsize;
                 if (DCL_ELEM (paramtype) != 0) // Array size is an integer constant

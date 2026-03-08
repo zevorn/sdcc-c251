@@ -1,7 +1,54 @@
+2026-03-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge _Optional branch.
+
+2026-03-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCC.y,
+	  support/valdiag/tests/_Optional-draft-2026-03-06.c:
+	  Fix typeof_unqual(_Optional).
+
+2026-03-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/SDCCicode.c,
+	  support/valdiag/tests/bug-3940.c:
+	  Fix bug #3940.
+
+2026-03-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* .version,
+	  doc/sdccman.lyx,
+	  src/SDCC.y,
+	  src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/SDCCval.c,
+	  support/valdiag/tests/_Optional-draft-2026-03-06.c,
+	  support/valdiag/tests/_Optional.c,
+	  support/valdiag/tests/bug-3805.c,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCopt.c,
+	  support/regression/tests/optional-static.c:
+	  Follow current _Optional TS draft instead of N3422 for _Optional-qualified array parameters. Fix bug #3805.
+
+2026-03-06 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/valdiag/tests/_Optional-draft-2026-03-06.c:
+	  Test for _Optional based on examples from _Optional TS draft from 2026-03-06.
+
 2026-03-05 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/sdbinutils/bfd:
 	  aarch64 host fixes for recent binutils merge.
+
+2026-03-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/valdiag/tests/_Optional-draft-2026-03-03.c:
+	  Test for _Optional based on examples from _Optional TS draft from 2026-03-03.
 
 2026-03-04 Philipp Klaus Krause <philipp@colecovision.eu>
 

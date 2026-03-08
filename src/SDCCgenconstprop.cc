@@ -194,7 +194,7 @@ getParamValinfo (const operand *op)
   sym_link *type = operandType (op);
   struct valinfo v = getTypeValinfo (type, true);
   if (IS_SYMOP (op) && OP_SYMBOL_CONST (op)->ismyparm &&
-    IS_DECL (type) && DCL_ELEM (type))
+    IS_DECL (type) && DCL_ELEM (type) && !isOptional (type->next))
     {
       if (DCL_STATIC_ARRAY_PARAM (type)) // Valid pointer to an array of at least DCL_ELEM (type) elements.
         {
@@ -929,7 +929,7 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
       else if (ic->op == RECEIVE)
         {
           sym_link *type = operandType (ic->result);
-          if (IS_DECL (type) && DCL_ELEM (type))
+          if (IS_DECL (type) && DCL_ELEM (type) && !isOptional (type->next))
             {
               if (DCL_STATIC_ARRAY_PARAM (type))
                 {
