@@ -1,4 +1,4 @@
-/* bug-3389.c
+/* bug-3805.c
 
    An issue in processing function parameters of a returned function type resulted in an invalid diagnostic for --stack-auto. (and ports where this is the default)
  */

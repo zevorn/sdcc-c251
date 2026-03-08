@@ -741,7 +741,7 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
         werror (W_REPEAT_QUALIFIER, "const");
       if (SPEC_VOLATILE (dest) && SPEC_VOLATILE (src))
         werror (W_REPEAT_QUALIFIER, "volatile");
-      if (SPEC_OPTIONAL(dest) && SPEC_OPTIONAL (src))
+      if (SPEC_OPTIONAL (dest) && SPEC_OPTIONAL (src))
         werror (W_REPEAT_QUALIFIER, "_Optional");
       if (SPEC_STAT (dest) && SPEC_STAT (src))
         werror (W_REPEAT_QUALIFIER, "static");
@@ -2711,7 +2711,9 @@ computeType (sym_link * type1, sym_link * type2, RESULT_TYPE resultType, int op)
       else if (IS_PTR(type2) && IS_VOID(type2->next))
         return copyLinkChain (type2);
 
-      /* Otherwise fall through to the general case */
+      // Otherwise fall through to the general case,
+      // where there is more special handling for the
+      // conditional operator in some places.
     }
 
   /* shift operators have the important type in the left operand */
@@ -2799,6 +2801,28 @@ computeType (sym_link * type1, sym_link * type2, RESULT_TYPE resultType, int op)
     {
       SPEC_SCLS (reType) = S_REGISTER;
       SPEC_CONST (reType) = 0;
+    }
+
+  // "If both the second and third operands are pointers, the result type is a pointer to a type qualified
+  // with all the type qualifiers of the types referenced by both operands;" (ISO C2y draft N3685 §6.5.16p8).
+  if (op == ':' && IS_PTR (type1) && IS_PTR (type2))
+    {
+      if (IS_PTR (rType) && IS_SPEC (rType->next))
+        {
+          SPEC_CONST (rType->next) = isConst (type1->next) || isConst (type2->next);
+          SPEC_RESTRICT (rType->next) = isRestrict (type1->next) || isRestrict (type2->next);
+          SPEC_VOLATILE (rType->next) = isVolatile (type1->next) || isVolatile (type2->next);
+          SPEC_ATOMIC (rType->next) = isAtomic (type1->next) || isAtomic (type2->next);
+          SPEC_OPTIONAL (rType->next) = isOptional (type1->next) || isOptional (type2->next);
+        }
+      else if (IS_PTR (rType) && IS_PTR (rType->next))
+        {
+          DCL_PTR_CONST (rType->next) = isConst (type1->next) || isConst (type2->next);
+          DCL_PTR_RESTRICT (rType->next) = isRestrict (type1->next) || isRestrict (type2->next);
+          DCL_PTR_VOLATILE (rType->next) = isVolatile (type1->next) || isVolatile (type2->next);
+          DCL_PTR_ATOMIC (rType->next) = isAtomic (type1->next) || isAtomic (type2->next);
+          DCL_PTR_OPTIONAL (rType->next) = isOptional (type1->next) || isOptional (type2->next);
+        }
     }
 
   switch (resultType)
@@ -5316,7 +5340,7 @@ newEnumType (symbol *enumlist, sym_link *userRequestedType)
 /* isConstant - check if the type is constant                        */
 /*-------------------------------------------------------------------*/
 bool
-isConstant (sym_link *type)
+isConst (sym_link *type)
 {
   if (!type)
     return 0;

@@ -572,7 +572,7 @@ extern sym_link *validateLink (sym_link * l,
 #define IS_LONGLONG(x)   (IS_SPEC(x) && x->select.s.b_longlong)
 #define IS_UNSIGNED(x)   (IS_SPEC(x) && x->select.s.b_unsigned)
 #define IS_TYPEDEF(x)    (IS_SPEC(x) && x->select.s.b_typedef)
-#define IS_CONSTANT(x)   (isConstant (x))
+#define IS_CONSTANT(x)   (isConst (x))
 #define IS_RESTRICT(x)   (isRestrict (x))
 #define IS_STRUCT(x)     (IS_SPEC(x) && x->select.s.noun == V_STRUCT)
 #define IS_ABSOLUTE(x)   (IS_SPEC(x) && x->select.s.b_absadr )
@@ -774,7 +774,7 @@ sym_link *typeFromStr (const char *);
 STORAGE_CLASS sclsFromPtr (sym_link * ptr);
 sym_link *newEnumType (symbol *enumlist, sym_link *userRequestedType);
 void promoteAnonStructs (int, structdef *);
-bool isConstant (sym_link *type);
+bool isConst (sym_link *type);
 bool isVolatile (sym_link *type);
 bool isRestrict (sym_link *type);
 bool isAtomic (sym_link *type);

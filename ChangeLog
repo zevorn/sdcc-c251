@@ -1,3 +1,11 @@
+2026-03-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/SDCCicode.c,
+	  support/valdiag/tests/bug-3940.c:
+	  Fix bug #3940.
+
 2026-03-07 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* .version,
