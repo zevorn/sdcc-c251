@@ -327,6 +327,31 @@ public:
   virtual int RL8REG(MP);
   virtual int SR8REG(MP);
   virtual int RR8REG(MP);
+  // complex tasks
+  virtual int SHAF1(MP);
+  virtual int SHAF2(MP);
+  virtual int SHAF3(MP);
+  virtual int MD5F1(MP);
+  virtual int MD5F2(MP);
+  virtual int MD5F3(MP);
+  // block stuff
+  virtual void pldi(void);
+  virtual int PLDI(MP) { tick(9); pldi(); return resGO; }
+  virtual int PLDIR(MP);
+  virtual int PLDISR(MP);
+  virtual void pldd(void);
+  virtual int PLDD(MP) { tick(9); pldd(); return resGO; }
+  virtual int PLDDR(MP);
+  virtual int PLDDSR(MP);
+  virtual int PLSIR(MP);
+  virtual int PLSIDR(MP);
+  virtual int PLSDR(MP);
+  virtual int PLSDDR(MP);
+  // AES
+  virtual int AESSR(MP);
+  virtual int AESISR(MP);
+  virtual int AESMC(MP);
+  virtual int AESIMC(MP);
 };
 
 
