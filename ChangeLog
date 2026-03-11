@@ -1,3 +1,8 @@
+2026-03-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Disable use of most R4K-specific instructions for r4k; makes the self-tests of Dhrystone, Coremark, stdcbench pass on R4K hardware.
+
 2026-03-11 Janko Stamenović
 
 	* support/regression/tests/gcrypt-serpent.c.in
