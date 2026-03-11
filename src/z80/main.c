@@ -1179,9 +1179,9 @@ _hasNativeMulFor (iCode *ic, sym_link *left, sym_link *right)
     (result_size == 2 || result_size <= 4 && !IS_UNSIGNED (left) && !IS_UNSIGNED (right)))
     return(true);
   // Later Rabbits also have unsigned 16x16->32 multiplication.
-  else if ((IS_R4K || IS_R5K || IS_R6K) && getSize (left) == 2 && getSize (right) == 2 &&
+  /*else if ((IS_R4K || IS_R5K || IS_R6K) && getSize (left) == 2 && getSize (right) == 2 && // DANGER: page 0x7f! Bug (not yet tested)?
     (result_size <= 4 && IS_UNSIGNED (left) && IS_UNSIGNED (right)))
-    return(true);
+    return(true);*/
   // The R800 has unsigned 16x16->32 multiplication.
   else if (IS_R800 && getSize (left) == 2 && getSize (right) == 2 &&
     (result_size == 2 || result_size <= 4 && IS_UNSIGNED (left) && IS_UNSIGNED (right)))
