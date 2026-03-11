@@ -4775,7 +4775,7 @@ genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, boo
 
       bool source_sp = IS_RAB && source_sp_offset <= 255 || (IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && source_sp_offset <= 127;
       bool result_sp = IS_RAB && result_sp_offset <= 255 || (IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && result_sp_offset <= 127;
-      if (i + 3 < n && !assigned[i + 1] && !assigned[i + 2] && !assigned[i + 3] && jk_free && hl_free && (IS_R4K_NOTYET || IS_R5K || IS_R6K) &&
+      if (i + 3 < n && !assigned[i + 1] && !assigned[i + 2] && !assigned[i + 3] && jk_free && hl_free && (IS_R4K_NOTYET || IS_R5K || IS_R6K) && // todo: not currently tested in benchmark self-tests, needs extra test on hw!
         (result->type == AOP_STK && result_fp_offset >= -128 && result_fp_offset <= 127 || result_sp) &&
         (source->type == AOP_STK && source_fp_offset >= -128 && source_fp_offset <= 127 || source_sp))
         {
@@ -4921,7 +4921,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
 
       if (assigned[i])
         i++;
-      else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && // The 32 bit loads of the Rabbit 4000 are the fastest way to move data to the stack.
+      else if ((IS_R4K || IS_R5K || IS_R6K) && // The 32 bit loads of the Rabbit 4000 are the fastest way to move data to the stack.
         i + 3 < n && aopOnStack (result, roffset + i, 4) && (abs(fp_offset) <= 127 || sp_offset <= 255) &&
         (aopInReg (source, soffset + i + 2, BC_IDX) && aopInReg (source, soffset + i, DE_IDX) || aopInReg (source, soffset + i + 2, JK_IDX) && aopInReg (source, soffset + i, HL_IDX)))
         {
@@ -5588,7 +5588,7 @@ skip_byte:
 
       if (assigned[i])
         i++;
-      else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && i + 3 < n && !assigned[i] && !assigned[i + 1] && !assigned[i + 2] && !assigned[i + 3] &&
+      else if ((IS_R4K || IS_R5K || IS_R6K) && i + 3 < n && !assigned[i] && !assigned[i + 1] && !assigned[i + 2] && !assigned[i + 3] &&
         sp_offset <= 255 &&
         (aopInReg (result, roffset + i + 2, JK_IDX) && aopInReg (result, roffset + i, HL_IDX) || aopInReg (result, roffset + i + 2, BC_IDX) && aopInReg (result, roffset + i, DE_IDX)))
         {
@@ -6154,7 +6154,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
         (source->type == AOP_IY || source->type == AOP_DIR || source->type == AOP_HL) &&
         (getPairId_o (result, roffset + i + 2) == PAIR_BC && getPairId_o (result, roffset + i) == PAIR_DE || getPairId_o (result, roffset + i + 2) == PAIR_JK && getPairId_o (result, roffset + i) == PAIR_HL))
         {
-          emit2 ("ld %s%s,!mems", _pairs[getPairId_o (result, roffset + i + 2)].name, _pairs[getPairId_o (result, roffset + i)].name, aopGetLitWordLong (source, soffset + i, false));
+          emit2 ("ld %s%s, !mems", _pairs[getPairId_o (result, roffset + i + 2)].name, _pairs[getPairId_o (result, roffset + i)].name, aopGetLitWordLong (source, soffset + i, false));
           cost (4, 17);
           i += 4;
           continue;
@@ -8918,7 +8918,7 @@ genEndFunction (iCode *ic)
           adjustStack (poststackadjust, !aopRet (sym->type) || aopRet (sym->type)->regs[A_IDX] < 0, false, bc_free && de_free, hl_free, iy_free);
           _push (bc_free ? PAIR_BC : PAIR_DE);
         }
-      else if (rab_llret && (IS_R4K_NOTYET || IS_R5K || IS_R6K) && (bc_free && de_free || jk_free && hl_free))
+      else if (rab_llret && (IS_R4K || IS_R5K || IS_R6K) && (bc_free && de_free || jk_free && hl_free))
        {
          bool use_bcde = bc_free && de_free; // Prefer to use bcde, to prefer hl free for use in adjustStack (where it is more useful than bc and de).
          pop (use_bcde ? ASMOP_BCDE: ASMOP_JKHL, 0, 4);
@@ -11240,7 +11240,7 @@ genEor (const iCode *ic, iCode *ifx, asmop *result_aop, asmop *left_aop, asmop *
             }
         }
 
-        if (IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1)
+        if (IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) // Not used in benchmark self-tests, will need extra test on hw!
           {
             const bool this_byte_l = aopInReg (result_aop, i, L_IDX) &&
               (aopInReg (left_aop, i, L_IDX) && aopInReg (right_aop, i, E_IDX) || aopInReg (left_aop, i, E_IDX) && aopInReg (right_aop, i, L_IDX));
@@ -11313,7 +11313,7 @@ genEor (const iCode *ic, iCode *ifx, asmop *result_aop, asmop *left_aop, asmop *
             continue;
           }
 
-        if (i + 1 < size && (IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90) && hl_free && de_free &&
+        if (i + 1 < size && (IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90) && hl_free && de_free &&  // Not used in benchmark self-tests, will need extra test on hw!
           left_aop->type == AOP_STK && right_aop->type == AOP_STK && result_aop->type == AOP_STK)
           {
             genMove_o (ASMOP_DE, 0, left_aop, i, 2, a_free, true, true, false, true);
@@ -13084,8 +13084,8 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
 
           if (aopInReg (left->aop, offset, HL_IDX) &&
             ((!IS_SM83 && isRegDead (HL_IDX, ic) && (aopInReg (right->aop, offset, BC_IDX) || aopInReg (right->aop, offset, DE_IDX) || bc_dead || de_dead)) ||
-            (IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (right->aop, offset, DE_IDX) ||
-            (IS_R4K_NOTYET || IS_R5K || IS_R6K) && aopInReg (right->aop, offset, JK_IDX) ||
+            (IS_R4K || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (right->aop, offset, DE_IDX) ||
+            (IS_R4K || IS_R5K || IS_R6K) && aopInReg (right->aop, offset, JK_IDX) ||
             (IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (right->aop, offset, BC_IDX)))
             {
               asmop *rightpairaop;
@@ -13099,8 +13099,8 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
                 rightpairaop = de_dead ? ASMOP_DE : ASMOP_BC;
 
               genMove_o (rightpairaop, 0, right->aop, offset, 2, a_dead, false, false, iy_dead, true);
-              if ((IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (rightpairaop, 0, DE_IDX) ||
-                (IS_R4K_NOTYET || IS_R5K || IS_R6K) && aopInReg (right->aop, offset, JK_IDX) ||
+              if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (rightpairaop, 0, DE_IDX) ||
+                (IS_R4K || IS_R5K || IS_R6K) && aopInReg (right->aop, offset, JK_IDX) ||
                 (IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (right->aop, offset, BC_IDX))
                 emit3w (A_CP, ASMOP_HL, rightpairaop);
               else
@@ -13117,7 +13117,7 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
           else if (!IS_SM83 && hl_dead && left->aop->type == AOP_STK && (aopInReg (right->aop, offset, DE_IDX) || aopInReg (right->aop, offset, BC_IDX)))
             {
               genMove_o (ASMOP_HL, 0, left->aop, offset, 2, a_dead, true, de_dead, iy_dead, true);
-              if ((IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (right->aop, offset, DE_IDX) ||
+              if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (right->aop, offset, DE_IDX) ||
                 (IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (right->aop, offset, BC_IDX))
                 emit3w_o (A_CP, ASMOP_HL, 0, right->aop, offset);
               else
@@ -13136,7 +13136,7 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
               asmop *rightpairaop = de_dead ? ASMOP_DE : ASMOP_BC;
               genMove_o (rightpairaop, 0, right->aop, offset, 2, a_dead, true, false, iy_dead, true);
               genMove_o (ASMOP_HL, 0, left->aop, offset, 2, a_dead, true, false, iy_dead, true);
-              if ((IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (rightpairaop, 0, DE_IDX) ||
+              if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (rightpairaop, 0, DE_IDX) ||
                 (IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (right->aop, offset, BC_IDX))
                 emit3w (A_CP, ASMOP_HL, rightpairaop);
               else
@@ -19795,7 +19795,7 @@ genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
               c->aop->aopu.aop_reg[0]->rIdx != H_IDX && c->aop->aopu.aop_reg[0]->rIdx != L_IDX &&
               c->aop->aopu.aop_reg[0]->rIdx != IYH_IDX && c->aop->aopu.aop_reg[0]->rIdx != IYL_IDX &&
               c->aop->aopu.aop_reg[0]->rIdx != B_IDX);
-  indirect_c = (IS_R3KA || IS_R4K_NOTYET || IS_R5K || IS_R6K) && ulFromVal (n->aop->aopu.aop_lit) > 1 && c->aop->type == AOP_IY;
+  indirect_c = (IS_R3KA || IS_R4K || IS_R5K || IS_R6K) && ulFromVal (n->aop->aopu.aop_lit) > 1 && c->aop->type == AOP_IY;
 
   double_loop = (size > 255 || optimize.codeSpeed);
 
@@ -19807,7 +19807,7 @@ genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
   sizecost_direct += (live_HL) * 2;
   sizecost_loop = 9 + double_loop * 2 + ((size % 2) && double_loop) * 2 + !direct_cl * sizecost_ld_a_caop;
   sizecost_loop += (live_HL + live_B) * 2;
-  sizecost_ldir = indirect_c ? 11 : (12 + !direct_c * sizecost_ld_a_caop - ((IS_R3KA || IS_R4K_NOTYET || IS_R5K || IS_R6K) && !optimize.codeSpeed));
+  sizecost_ldir = indirect_c ? 11 : (12 + !direct_c * sizecost_ld_a_caop - ((IS_R3KA || IS_R4K || IS_R5K || IS_R6K) && !optimize.codeSpeed));
   sizecost_ldir += (live_HL + live_DE + live_BC) * 2;
 
   if (sizecost_direct <= sizecost_loop && sizecost_direct < sizecost_ldir) // straight-line code.
@@ -19907,7 +19907,7 @@ genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
 
           emit3 (A_LD, ASMOP_E, ASMOP_L);
           emit3 (A_LD, ASMOP_D, ASMOP_H);
-          if (!(IS_R3KA || IS_R4K_NOTYET || IS_R5K || IS_R6K) || optimize.codeSpeed)
+          if (!(IS_R3KA || IS_R4K || IS_R5K || IS_R6K) || optimize.codeSpeed)
             {
               emit3w (A_INC, ASMOP_DE, 0);
               preinc = true;
@@ -19917,7 +19917,7 @@ genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
       cost2 (3, 3, 3, 3, 10, 9, 6, 6, 12, 6, 3, 3, 3, 3, 3);
       // The Rabbit 2000 to Rabbit 3000 (i.e. r2k and r2ka port) have a ldir wait state bug that affects copies between different types of memory.
       // That is not a problem here, as we copy within an object, and thus within one memory.
-      emit2 ((IS_R3KA || IS_R4K_NOTYET || IS_R5K || IS_R6K) ? "lsidr" : "ldir");
+      emit2 ((IS_R3KA || IS_R4K || IS_R5K || IS_R6K) ? "lsidr" : "ldir");
       regalloc_dry_run_cost += 2;
     }
 
