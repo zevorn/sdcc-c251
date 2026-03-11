@@ -11745,7 +11745,7 @@ genMultTwoChar (const iCode *ic)
       cost (2, 36);
       spillPair (PAIR_DE);
     }
-  else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && ic->result->aop->size > 2 && // TODO: mulu not used in benchmark self-tests, needs extra testing on hardware!
+  else if ((IS_R4K || IS_R5K || IS_R6K) && ic->result->aop->size > 2 && // TODO: mulu not used in benchmark self-tests, needs extra testing on hardware!
     SPEC_USIGN (getSpec (operandType (ic->left))) && SPEC_USIGN (getSpec (operandType (ic->right))))
     {
       emit2 ("mulu");
