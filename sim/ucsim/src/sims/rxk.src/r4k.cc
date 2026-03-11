@@ -89,6 +89,12 @@ cl_r4k::cl_r4k(class cl_sim *asim):
 {
 }
 
+cl_r4k::cl_r4k(class cl_sim *asim, t_addr arom_size):
+  cl_r3ka(asim)
+{
+  rom_size= arom_size;
+}
+
 int
 cl_r4k::init(void)
 {
@@ -137,8 +143,10 @@ cl_r4k::id_string(void)
 void
 cl_r4k::reset(void)
 {
-  ioi->set(0x1b, 0); // stacksegh
-  ioi->set(0x1f, 0); // datasegh
+  //ioi->set(0x1b, 0); // stacksegh
+  mem->stackseg= 0;
+  //ioi->set(0x1f, 0); // datasegh
+  mem->dataseg= 0;
   ioi->set(0x420, 0); // edmr
   cl_r3ka::reset();
   mode3k();  
@@ -764,8 +772,10 @@ cl_r4k::PAGE_4K6D(t_mem code)
   
   h= code>>4;
   l= code&0xf;
-  if ((l == 0xd) || (l == 0xf))
-    return resINV;
+  if (l == 0xd)
+    return page_6dxd(code);
+  if (l == 0xf)
+    return page_6dxf(code);
   
   switch (h&3)
     {
@@ -934,7 +944,7 @@ cl_r4k_cpu::write(class cl_memory_cell *cell, t_mem *val)
   else if (cell == stacksegl)
     {
       (*val)&= 0xff;
-      stackseg->set(*val);
+      stacksegl->set(*val);
       ruc->mem->set_stackseg(stacksegh->read() * 256 + *val);
     }
   else if (cell == stacksegh)

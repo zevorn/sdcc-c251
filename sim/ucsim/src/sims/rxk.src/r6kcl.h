@@ -39,6 +39,7 @@ public:
   
  public:
   cl_r6k(class cl_sim *asim);
+  cl_r6k(class cl_sim *asim, t_addr arom_size);
   virtual const char *id_string(void);
   virtual int init(void);
 
@@ -356,6 +357,9 @@ public:
 
   // R6K mod of page CB
   virtual int page_cb_6(t_mem code);
+  // R6K mod of page 6D
+  virtual int page_6dxd(t_mem code);
+  virtual int page_6dxf(t_mem code);
 };
 
 

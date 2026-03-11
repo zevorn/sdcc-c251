@@ -143,6 +143,7 @@ public:
   class cl_cell16 caAF, caBC, caDE, caHL;
   class cl_cell16 *cIR;
   class cl_memory_cell *XPC;
+  t_addr rom_size;
   class cl_ras *mem;
   class cl_address_space *ioi, *ioe;
   class cl_address_space *rwas;
@@ -158,7 +159,7 @@ public:
   virtual void mk_hw_elements(void);
   virtual void make_cpu_hw(void);
   virtual void make_memories(void);
-  virtual t_addr chip_size() { return 0x100000; }
+  virtual t_addr chip_size() { return rom_size?rom_size:0x100000; }
 
   virtual double def_xtal(void) { return 1000000; }
   virtual int clock_per_cycle(void) { return 1; }

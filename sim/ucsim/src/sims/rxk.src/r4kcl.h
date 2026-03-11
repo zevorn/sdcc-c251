@@ -61,12 +61,13 @@ public:
   class cl_cell32 *cIRR, *caIRR;
  public:
   cl_r4k(class cl_sim *asim);
+  cl_r4k(class cl_sim *asim, t_addr aropm_size);
   virtual int init();
   virtual const char *id_string(void);
   virtual void reset(void);
   
   virtual void make_cpu_hw(void);
-  virtual t_addr chip_size() { return 0x1000000; }
+  virtual t_addr chip_size() { return rom_size?rom_size:0x1000000; }
 
   virtual struct dis_entry *dis_entry(t_addr addr);
   virtual struct dis_entry *dis_6d_entry(t_addr addr);
@@ -470,6 +471,8 @@ public:
   
   // Starter of extra pages
   virtual int PAGE_4K6D(t_mem code);
+  virtual int page_6dxd(t_mem code) { return resINV; }
+  virtual int page_6dxf(t_mem code) { return resINV; }
   virtual int PAGE_4K7F(t_mem code);
 };
 
