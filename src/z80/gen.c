@@ -3041,7 +3041,7 @@ fetchLitPair (PAIR_ID pairId, asmop *left, int offset, bool f_dead, bool dry)
       emit2 ("ld l, h");
       cost (1 + 1, 2 + 2);
     }
-  else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && pairId == PAIR_HL && left->type == AOP_LIT && aopIsLitVal (left, offset, 2, 0x0000))
+  else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && pairId == PAIR_HL && left->type == AOP_LIT && aopIsLitVal (left, offset, 2, 0x0000)) // BUG? Works on simulator, but makes Coremark selftest fail on R4K hardware. Apparently clr hl vs ld hl, #0x0000 is the only difference between working fine and failing. Need to investigate further.
     {
       emit2 ("clr hl");
       cost (2, 4);
@@ -3103,14 +3103,14 @@ push (asmop *aop, int offset, int size)
   while (size)
     {
       if ((size >= 2 && aop->type == AOP_LIT || aop->type == AOP_IMMD) &&
-         (IS_Z80N || IS_R4K_NOTYET || IS_R5K || IS_R6K)) // Same size, but slower (21 vs 23 cycles for Z80N, 13 vs 15 vor R4K, 13 vs 16 for R5K/R6K) than going through a register pair other than iy. Only worth it under high register pressure.
+         (IS_Z80N || IS_R4K || IS_R5K || IS_R6K)) // Same size, but slower (21 vs 23 cycles for Z80N, 13 vs 15 vor R4K, 13 vs 16 for R5K/R6K) than going through a register pair other than iy. Only worth it under high register pressure.
          {
            emit3w_o (A_PUSH, aop, size - 2, 0, 0);
            _G.stack.pushed += 2;
            size -= 2;
          }
       else if (size >= 4 && aopInReg (aop, offset + size - 4, DE_IDX) && aopInReg (aop, offset + size - 2, BC_IDX) &&
-        (IS_R4K_NOTYET || IS_R5K || IS_R6K))
+        (IS_R4K || IS_R5K || IS_R6K))
         {
           emit2 ("push bcde");
           cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
@@ -3125,7 +3125,7 @@ push (asmop *aop, int offset, int size)
           size -= 4;
         }
       else if (size >= 3 && aopInReg (aop, offset + size - 3, D_IDX) && aopInReg (aop, offset + size - 2, BC_IDX) &&
-        (IS_R4K_NOTYET || IS_R5K || IS_R6K))
+        (IS_R4K || IS_R5K || IS_R6K))
         {
           emit2 ("push bcde");
           cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
@@ -3198,7 +3198,7 @@ pop (const asmop *aop, int offset, int size)
     _pop (getPairId_o (aop, offset));
   else if (size == 4 && getPairId_o (aop, offset) == PAIR_DE && getPairId_o (aop, offset + 2) == PAIR_BC)
     {
-      if (IS_R4K_NOTYET || IS_R5K || IS_R6K)
+      if (IS_R4K || IS_R5K || IS_R6K)
         {
           emit2 ("pop bcde");
           cost (2, 13);
@@ -7278,7 +7278,7 @@ genIpush (const iCode *ic)
         {
           genMove_o (ASMOP_BCDE, 0, ic->left->aop, 0, 3, isRegDead (A_IDX, ic), isRegDead (HL_IDX, ic), true, isRegDead (IY_IDX, ic), true);
           emit3 (A_LD, ASMOP_B, ASMOP_ZERO);
-          if (IS_R4K_NOTYET || IS_R5K || IS_R6K)
+          if (IS_R4K || IS_R5K || IS_R6K)
             {
               emit2 ("push bcde");
               cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
@@ -7453,7 +7453,7 @@ genIpush (const iCode *ic)
               }
          }
        else if (size >= 2 && (ic->left->aop->type == AOP_LIT || ic->left->aop->type == AOP_IMMD) &&
-         (IS_Z80N || IS_R4K_NOTYET || IS_R5K || IS_R6K)) // Same size, but slower (21 vs 23 cycles for Z80N, 13 vs 15 vor R4K, 13 vs 16 for R5K/R6K) than going through a register pair other than iy. Only worth it under high register pressure.
+         (IS_Z80N || IS_R4K || IS_R5K || IS_R6K)) // Same size, but slower (21 vs 23 cycles for Z80N, 13 vs 15 vor R4K, 13 vs 16 for R5K/R6K) than going through a register pair other than iy. Only worth it under high register pressure.
          {
            emit3w_o (A_PUSH, ic->left->aop, size - 2, 0, 0);
            d = 2;
@@ -7544,7 +7544,7 @@ genIpush (const iCode *ic)
           cost2 (1, 1, 1, 1, 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
           d = 1;
         }
-      else if ((IS_Z80N || IS_R4K_NOTYET || IS_R5K || IS_R6K) && ic->left->aop->type == AOP_LIT)
+      else if ((IS_Z80N || IS_R4K || IS_R5K || IS_R6K) && ic->left->aop->type == AOP_LIT)
         {
           emit2 ("push !immedword", (unsigned)(byteOfVal (ic->left->aop->aopu.aop_lit, size - 1) << 8));
           cost2 (4, -1, -1, -1, 23, -1, 15, 16, -1, -1, -1, -1, -1, -1, -1);
@@ -11745,7 +11745,7 @@ genMultTwoChar (const iCode *ic)
       cost (2, 36);
       spillPair (PAIR_DE);
     }
-  else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && ic->result->aop->size > 2 &&
+  else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && ic->result->aop->size > 2 && // TODO: mulu not used in benchmark self-tests, needs extra testing on hardware!
     SPEC_USIGN (getSpec (operandType (ic->left))) && SPEC_USIGN (getSpec (operandType (ic->right))))
     {
       emit2 ("mulu");
@@ -12648,7 +12648,7 @@ fix:
       // There is no good signed compare in the Z80, so we need workarounds.
       if (sign)
         {
-          if (ifx && ((IS_R4K_NOTYET || IS_R5K_NOTYET) && IC_TRUE (ifx) || IS_R6K_NOTYET || IS_TLCS90)) // Some Rabbits do have conditional jumps that (for some cases) allow an efficient signed compare. WARNING: TThere is soemthign wrong with jp lt! Enabling this works fine on uCsim, but breaks on a real Rabbit 4000!
+          if (ifx && ((IS_R4K_NOTYET || IS_R5K_NOTYET) && IC_TRUE (ifx) || IS_R6K_NOTYET || IS_TLCS90)) // Some Rabbits do have conditional jumps that (for some cases) allow an efficient signed compare. WARNING: There is soemthing wrong with jp lt! Enabling this works fine on uCsim, but breaks on a real Rabbit 4000!
             {
               genIfxJump (ifx, "lt");
               return;
@@ -12998,7 +12998,7 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
               offset++;
               a_result = aopInReg (left->aop, 0, A_IDX);
             }
-          else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90) && size >= 2 && skipbyte != offset + 1 &&
+          else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90) && size >= 2 && skipbyte != offset + 1 && // TODO: Makes stdcbench hang on hardware, when enabled?
             aopInReg (left->aop, offset, HL_IDX) && // tlcs870c(1) has cp rr, nn, but it is expensive (4 bytes).
             byteOfVal (right->aop->aopu.aop_lit, offset) <= 127 && !byteOfVal (right->aop->aopu.aop_lit, offset + 1))
             {
@@ -17984,7 +17984,7 @@ genPointerSet (iCode *ic)
     {
       last_offset = offset;
 
-      if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && (!bit_field ? offset + 3 < size : blen >= 32) && pairId == PAIR_HL &&
+      if ((IS_R4K || IS_R5K || IS_R6K) && (!bit_field ? offset + 3 < size : blen >= 32) && pairId == PAIR_HL &&
         getPairId_o (right->aop, offset) == PAIR_DE && getPairId_o (right->aop, offset + 2) == PAIR_BC)
         {
           emit2 ("ld (hl), bcde");
@@ -18177,7 +18177,7 @@ genIfx (iCode *ic, iCode *popIc)
       genIfxJump (ic, "nz");
       goto release;
     }
-  else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 &&
+  else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 && // TODO: not used in benchmark self-tests, needs extra test on hardware!
     (getPairId_o (cond->aop, 0) == PAIR_DE && getPairId_o (cond->aop, 2) == PAIR_BC || getPairId_o (cond->aop, 0) == PAIR_BC && getPairId_o (cond->aop, 2) == PAIR_DE))
     {
       emit2 ("test bcde");
@@ -18185,7 +18185,7 @@ genIfx (iCode *ic, iCode *popIc)
       genIfxJump (ic, "nz");
       goto release;
     }
-  else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 &&
+  else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 && // TODO: not used in benchmark self-tests, needs extra test on hardware!
     (getPairId_o (cond->aop, 0) == PAIR_HL && getPairId_o (cond->aop, 2) == PAIR_JK || getPairId_o (cond->aop, 0) == PAIR_JK && getPairId_o (cond->aop, 2) == PAIR_HL))
     {
       emit2 ("test jkhl");
