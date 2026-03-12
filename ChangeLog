@@ -1,3 +1,44 @@
+2026-03-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/r3ka/crt0.s,
+	  device/lib/r4k/crt0.s,
+	  device/lib/r5k/crt0.s,
+	  device/lib/r6k/crt0.s,
+	  .version:
+	  Fix MMIDR setup in Rabbit startup code.
+	* src/z80/gen.c:
+	  Fix a bug in code generation for pointer writes.
+
+2026-03-12 Janko Stamenović
+
+	* support/regression/tests/gcrypt-serpent.c.in
+	  fix #3941 (v2)
+
+2026-03-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Fix jump distance calculation for R4K 32-bit load instructions.
+
+2026-03-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/main.c:
+	  Disable use of many R4K-specific instructions for r4k; makes the self-tests of Dhrystone, Coremark, stdcbench pass on R4K hardware.
+
+2026-03-11 Janko Stamenović
+
+	* support/regression/tests/gcrypt-serpent.c.in
+	  reverting my previous: #3941 still needs fix
+
+2026-03-11 Janko Stamenović
+
+	* support/regression/tests/gcrypt-serpent.c.in
+	  fixing #3941 of gcrypt-serpent regtest on BE
+
+2026-03-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge _Optional branch.
+
 2026-03-08 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCC.y,

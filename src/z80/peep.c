@@ -1637,7 +1637,7 @@ bool z80canSplitReg (const char *reg, char dst[][16], int nDst)
   return TRUE;
 }
 
-int z80instructionSize(lineNode *pl)
+int z80instructionSize (lineNode *pl)
 {
   const char *op0start = lineArg (pl, 0);
   const char *op1start = lineArg (pl, 1);
@@ -1649,7 +1649,7 @@ int z80instructionSize(lineNode *pl)
   if(lineIsInst (pl, "ld"))
     {
       // Rabbit 4000 32-bit loads
-      if ((IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP (op0start, "bcde", 2) || !STRNCASECMP (op0start, "jkhl", 2)))
+      if ((IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP (op0start, "bcde", 4) || !STRNCASECMP (op0start, "jkhl", 4)))
         {
           if (op1start[0] == '(' && !STRNCASECMP(op1start, "(hl)", 2))
             return (4); // ld bcde, (mn)
@@ -1658,7 +1658,7 @@ int z80instructionSize(lineNode *pl)
           else
             return(2);
         }
-      if ((IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP (op1start, "bcde", 2) || !STRNCASECMP (op1start, "jkhl", 2)))
+      if ((IS_R4K || IS_R5K || IS_R6K) && (!STRNCASECMP (op1start, "bcde", 4) || !STRNCASECMP (op1start, "jkhl", 4)))
         {
           if (op1start[0] == '(' && !STRNCASECMP(op0start, "(hl)", 2))
             return (4); // ld (mn), bcde

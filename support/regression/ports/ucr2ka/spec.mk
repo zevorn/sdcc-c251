@@ -1,6 +1,6 @@
 # Regression test specification for the z80 target running with uCsim
 
-EMU_PORT_FLAG=-tr2k
+EMU_PORT_FLAG=-tr2ksdcc
 
 # path to uCsim
 ifdef SDCC_BIN_PATH

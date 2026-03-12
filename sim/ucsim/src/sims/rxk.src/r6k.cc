@@ -37,6 +37,12 @@ cl_r6k::cl_r6k(class cl_sim *asim):
 {
 }
 
+cl_r6k::cl_r6k(class cl_sim *asim, t_addr arom_size):
+  cl_r5k(asim)
+{
+  rom_size= arom_size;
+}
+
 const char *
 cl_r6k::id_string(void)
 {
@@ -93,6 +99,23 @@ cl_r6k::dis_entry(t_addr addr)
   return cl_r5k::dis_entry(addr);
 }
 
+char *
+cl_r6k::disassc_cb_6(t_addr addr, chars *comment)
+{
+  u8_t code= rom->read(addr);
+  switch (code & 7)
+    {
+    case 0: return strdup("LD    B,B");
+    case 1: return strdup("LD    C,C");
+    case 2: return strdup("LD    D,D");
+    case 3: return strdup("LD    E,E");
+    case 4: return strdup("LD    H,H");
+    case 5: return strdup("LD    L,L");
+    case 6: return strdup("-- UNKNOWN/INVALID");
+    case 7: return strdup("LD    A,A");
+    }
+  return strdup("");
+}
 
 int page49_wrapper(class cl_uc *uc, t_mem code)
 {
@@ -749,5 +772,498 @@ cl_r6k::RR8REG(MP)
   tick(3);
   return resGO;
 }
+
+/* JKHL = ((PX ^ PY) & PW) ^ PY */
+
+int
+cl_r6k::SHAF1(MP)
+{
+  u32_t v= cPX.get() ^ cPY.get();
+  v&= cPW.get();
+  v^= cPY.get();
+  cJKHL.W(v);
+  tick(3);
+  return resGO;
+}
+
+/* JKHL = ((PW | PX) & PY) | (PW & PX) */
+
+int
+cl_r6k::SHAF2(MP)
+{
+  u32_t v1= cPW.get() | cPX.get();
+  v1&= cPY.get();
+  u32_t v2= cPW.get() & cPX.get();
+  v1|= v2;
+  cJKHL.W(v1);
+  tick(3);
+  return resGO;
+}
+
+/* JKHL = PW ^ PX ^ PY */
+
+int
+cl_r6k::SHAF3(MP)
+{
+  u32_t v= cPW.get();
+  v^= cPX.get();
+  v^= cPY.get();
+  cJKHL.W(v);
+  tick(3);
+  return resGO;
+}
+
+/* JKHL + (PW & PX) | ((~PW) & PY) */
+
+int
+cl_r6k::MD5F1(MP)
+{
+  u32_t v1= cPW.get();
+  v1&= cPX.get();
+  u32_t v2= ~cPW.get();
+  v2&= cPY.get();
+  v1|= v2;
+  cJKHL.W(v1);
+  tick(3);
+  return resGO;
+}
+
+/* JKHL = (PY & PW) | ((~PY) & PX) */
+
+int
+cl_r6k::MD5F2(MP)
+{
+  u32_t v1= cPY.get();
+  v1&= cPW.get();
+  u32_t v2= ~cPY.get();
+  v2&= cPX.get();
+  v1|= v2;
+  cJKHL.W(v1);
+  tick(3);
+  return resGO;
+}
+
+/* JKHL = PX ^ (PW | (~PY)) */
+
+int
+cl_r6k::MD5F3(MP)
+{
+  u32_t v= ~cPY.get();
+  v|= cPW.get();
+  v^= cPX.get();
+  cJKHL.W(v);
+  tick(3);
+  return resGO;
+}
+
+/* IO:d (PX) = (PY); BC = BC-1; PX = PX+1; PY = PY+1 */
+
+void
+cl_r6k::pldi(void)
+{
+  u8_t f= cF.get();
+  f&= ~flagV;
+  u8_t v= mem->pxread(cPY.get());
+  pxwriteio(cPX.get(), v);
+  cBC.W(cBC.get()-1);
+  u32_t p= px8(cPX.get(), 1);
+  cPX.W(p);
+  p= px8(cPY.get(), 1);
+  cPY.W(p);
+  // TODO: how to set V?
+  cF.W(f);
+}
+
+int
+cl_r6k::PLDIR(MP)
+{
+  u8_t f= cF.get() & ~flagV;
+  tick(6);
+  do {
+    pldi();
+    tick(6);
+  }
+  while (cBC.get());
+  cF.W(f);
+  return resGO;
+}
+
+/* IO:d (PX) = (PY); BC = BC-1; PY = PY+1; repeat while {BC != 0} */
+
+int
+cl_r6k::PLDISR(MP)
+{
+  u8_t f= cF.get(), v;
+  u32_t p, bc;
+  f&= ~flagV;
+  tick(6);
+  do {
+    v= mem->pxread(cPY.get());
+    pxwriteio(cPX.get(), v);
+    cBC.W(bc= cBC.get()-1);
+    p= px8(cPY.get(), 1);
+    cPY.W(p);
+    tick(6);
+  }
+  while (bc);
+  // TODO: how to set V?
+  cF.W(f);
+  return resGO;
+}
+
+/* IO:d  (PX) = (PY); BC = BC-1; PX = PX-1; PY = PY-1 */
+
+void
+cl_r6k::pldd(void)
+{
+  u8_t f= cF.get();
+  f&= ~flagV;
+  u8_t v= mem->pxread(cPY.get());
+  pxwriteio(cPX.get(), v);
+  cBC.W(cBC.get()-1);
+  u32_t p= px8se(cPX.get(), -1);
+  cPX.W(p);
+  p= px8se(cPY.get(), -1);
+  cPY.W(p);
+  // TODO: how to set V?
+  cF.W(f);
+}
+
+
+int
+cl_r6k::PLDDR(MP)
+{
+  u8_t f= cF.get() & ~flagV;
+  tick(6);
+  do {
+    pldd();
+    tick(6);
+  }
+  while (cBC.get());
+  cF.W(f);
+  return resGO;
+}
+
+/* IO:d (PX) = (PY); BC = BC-1; PY = PY-1; repeat while {BC != 0} */
+
+int
+cl_r6k::PLDDSR(MP)
+{
+  u8_t f= cF.get(), v;
+  u32_t p, bc;
+  f&= ~flagV;
+  tick(6);
+  do {
+    v= mem->pxread(cPY.get());
+    pxwriteio(cPX.get(), v);
+    cBC.W(bc= cBC.get()-1);
+    p= px8se(cPY.get(), -1);
+    cPY.W(p);
+    tick(6);
+  }
+  while (bc);
+  // TODO: how to set V?
+  cF.W(f);
+  return resGO;
+}
+
+/* IO:s (PX) = (PY); BC = BC-1; PX = PX+1; PY = PY+1; repeat while {BC != 0} */
+
+int
+cl_r6k::PLSIR(MP)
+{
+  u8_t f= cF.get() & ~flagV, v;
+  u32_t p, bc;
+  tick(6);
+  do {
+    v= pxreadio(cPY.get());
+    mem->pxwrite(cPX.get(), v);
+    p= px8(cPX.get(), 1);
+    cPX.W(p);
+    p= px8(cPY.get(), 1);
+    cPY.W(p);
+    cBC.W(bc= cBC.get()-1);
+    tick(6);
+  }
+  while (bc);
+  cF.W(f);
+  return resGO;
+}
+
+
+/* IO:s (PX) = (PY); BC = BC-1; PX = PX+1; repeat while {BC != 0} */
+
+int
+cl_r6k::PLSIDR(MP)
+{
+  u8_t f= cF.get() & ~flagV, v;
+  u32_t p, bc;
+  tick(6);
+  do {
+    v= pxreadio(cPY.get());
+    mem->pxwrite(cPX.get(), v);
+    p= px8(cPX.get(), 1);
+    cPX.W(p);
+    cBC.W(bc= cBC.get()-1);
+    tick(6);
+  }
+  while (bc);
+  cF.W(f);
+  return resGO;
+}
+
+
+/* IO:s (PX) = (PY); BC = BC-1; PX = PX-1; PY = PY-1; repeat while {BC != 0} */
+
+int
+cl_r6k::PLSDR(MP)
+{
+  u8_t f= cF.get() & ~flagV, v;
+  u32_t p, bc;
+  tick(6);
+  do {
+    v= pxreadio(cPY.get());
+    mem->pxwrite(cPX.get(), v);
+    p= px8se(cPX.get(), -1);
+    cPX.W(p);
+    p= px8se(cPY.get(), -1);
+    cPY.W(p);
+    cBC.W(bc= cBC.get()-1);
+    tick(6);
+  }
+  while (bc);
+  cF.W(f);
+  return resGO;
+}
+
+
+/* IO:s (PX) = (PY); BC = BC-1; PX = PX-1; repeat while {BC != 0} */
+
+int
+cl_r6k::PLSDDR(MP)
+{
+  u8_t f= cF.get() & ~flagV, v;
+  u32_t p, bc;
+  tick(6);
+  do {
+    v= pxreadio(cPY.get());
+    mem->pxwrite(cPX.get(), v);
+    p= px8se(cPX.get(), -1);
+    cPX.W(p);
+    cBC.W(bc= cBC.get()-1);
+    tick(6);
+  }
+  while (bc);
+  cF.W(f);
+  return resGO;
+}
+
+static u32_t
+rotlby(u32_t v, int by)
+{
+  u32_t s;
+  for (; by; by--)
+    {
+      s= v & 0x80000000;
+      v<<= 1;
+      if (s)
+	v|= 1;
+    }
+  return v;
+}
+
+static u32_t
+rotrby(u32_t v, int by)
+{
+  u32_t b0;
+  for (; by; by--)
+    {
+      b0= v & 1;
+      v>>= 1;
+      if (b0)
+	v|= 0x80000000;
+    }
+  return v;
+}
+
+int
+cl_r6k::AESSR(MP)
+{
+  // row 0 PW
+  // row 1 PX
+  cPX.W(rotlby(cPX.get(), 8));
+  // row 2 PY
+  cPY.W(rotlby(cPY.get(), 16));
+  // row 3 PZ
+  cPZ.W(rotlby(cPZ.get(), 24));
+  tick(3);
+  return resGO;
+}
+
+int
+cl_r6k::AESISR(MP)
+{
+  // row 0 PW
+  // row 1 PX
+  cPX.W(rotrby(cPX.get(), 8));
+  // row 2 PY
+  cPY.W(rotrby(cPY.get(), 16));
+  // row 3 PZ
+  cPZ.W(rotrby(cPZ.get(), 24));
+  tick(3);
+  return resGO;
+}
+
+#define xtime(x) ((x << 1) ^ (((x >> 7) & 1) * 0x1b))
+
+static void
+reg2arr(u32_t reg, u8_t state[4][4], int row)
+{
+  state[row][0]= reg>>24;
+  state[row][1]= reg>>16;
+  state[row][2]= reg>>8;
+  state[row][3]= reg;
+}
+
+static u32_t
+arr2reg(u8_t state[4][4], int row)
+{
+  u32_t v= state[row][3];
+  v|= state[row][2]<<8;
+  v|= state[row][1]<<16;
+  v|= state[row][0]<<24;
+  return v;
+}
+
+int
+cl_r6k::AESMC(MP)
+{
+  u8_t state[4][4];
+  int i;
+  u8_t tmp[4];
+  reg2arr(cPW.get(), state, 0);
+  reg2arr(cPX.get(), state, 1);
+  reg2arr(cPY.get(), state, 2);
+  reg2arr(cPZ.get(), state, 3);
+  for (i= 0; i < 4; i++)
+    {
+      tmp[0]= xtime(state[0][i]) ^ (xtime(state[1][i]) ^ state[1][i]) ^ state[2][i] ^ state[3][i];
+      tmp[1]= state[0][i] ^ xtime(state[1][i]) ^ (xtime(state[2][i]) ^ state[2][i]) ^ state[3][i];
+      tmp[2]= state[0][i] ^ state[1][i] ^ xtime(state[2][i]) ^ (xtime(state[3][i]) ^ state[3][i]);
+      tmp[3]= (xtime(state[0][i]) ^ state[0][i]) ^ state[1][i] ^ state[2][i] ^ xtime(state[3][i]);
+      
+      state[0][i] = tmp[0];
+      state[1][i] = tmp[1];
+      state[2][i] = tmp[2];
+      state[3][i] = tmp[3];
+    }
+  cPW.W(arr2reg(state, 0));
+  cPX.W(arr2reg(state, 1));
+  cPY.W(arr2reg(state, 2));
+  cPZ.W(arr2reg(state, 3));
+  tick(3);
+  return resGO;
+}
+
+// Russian Peasant Multiplication)
+
+static u8_t
+gmul(u8_t a, u8_t b)
+{
+  u8_t p = 0;
+  int i;
+  for (i= 0; i < 8; i++)
+    {
+      if (b & 1)
+	p^= a;
+      u8_t hi_bit_set= a & 0x80;
+      a<<= 1;
+      if (hi_bit_set)
+	a^= 0x1b; // AES irreducibilis polinom
+      b>>= 1;
+    }
+  return p;
+}
+
+int
+cl_r6k::AESIMC(MP)
+{
+  u8_t state[4][4];
+  int i, j;
+  u8_t tmp[4];
+  reg2arr(cPW.get(), state, 0);
+  reg2arr(cPX.get(), state, 1);
+  reg2arr(cPY.get(), state, 2);
+  reg2arr(cPZ.get(), state, 3);
+  
+  u8_t column[4];
+  for (i= 0; i < 4; i++)
+    {
+      // Save actual column
+      for (j= 0; j < 4; j++)
+	column[j]= state[j][i];
+      // Multiply by the inverse matrix
+      state[0][i]= gmul(column[0], 0x0e) ^ gmul(column[1], 0x0b) ^ gmul(column[2], 0x0d) ^ gmul(column[3], 0x09);
+      state[1][i]= gmul(column[0], 0x09) ^ gmul(column[1], 0x0e) ^ gmul(column[2], 0x0b) ^ gmul(column[3], 0x0d);
+      state[2][i]= gmul(column[0], 0x0d) ^ gmul(column[1], 0x09) ^ gmul(column[2], 0x0e) ^ gmul(column[3], 0x0b);
+      state[3][i]= gmul(column[0], 0x0b) ^ gmul(column[1], 0x0d) ^ gmul(column[2], 0x09) ^ gmul(column[3], 0x0e);
+    }
+  
+  cPW.W(arr2reg(state, 0));
+  cPX.W(arr2reg(state, 1));
+  cPY.W(arr2reg(state, 2));
+  cPZ.W(arr2reg(state, 3));
+  tick(3);
+  return resGO;
+}
+
+
+int
+cl_r6k::page_cb_6(t_mem code)
+{
+  // code is the 2nd byte
+  switch (code & 0x7)
+    {
+    case 0: tick(2); return LD_B_B(code);
+    case 1: tick(2); return LD_C_C(code);
+    case 2: tick(2); return LD_D_D(code);
+    case 3: tick(2); return LD_E_E(code);
+    case 4: tick(2); return LD_H_H(code);
+    case 5: tick(2); return LD_L_L(code);
+    case 6: return resINV_INST;
+    case 7: tick(2); return LD_A_A(code);
+    }
+  return resGO;
+}
+
+
+int
+cl_r6k::page_6dxd(t_mem code)
+{
+  // code is the 2nd byte
+  switch (code)
+    {
+    case 0x0d: return add32(destPW(), rPW, 1, false);
+    case 0x4d: return add32(destPX(), rPX, 1, false);
+    case 0x8d: return add32(destPY(), rPY, 1, false);
+    case 0xcd: return add32(destPZ(), rPZ, 1, false);
+    }
+  return resINV;
+}
+
+int
+cl_r6k::page_6dxf(t_mem code)
+{
+  // code is the 2nd byte
+  switch (code)
+    {
+    case 0x0f: return sub32(destPW(), rPW, 1, false);
+    case 0x4f: return sub32(destPX(), rPX, 1, false);
+    case 0x8f: return sub32(destPY(), rPY, 1, false);
+    case 0xcf: return sub32(destPZ(), rPZ, 1, false);
+    }
+  return resINV;
+}
+
 
 /* End of rxk.src/r6k.cc */

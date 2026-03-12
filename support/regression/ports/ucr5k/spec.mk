@@ -1,6 +1,6 @@
 # Regression test specification for the r5k target running with uCsim
 
-EMU_PORT_FLAG=-tr5k
+EMU_PORT_FLAG=-tr5ksdcc
 
 # path to uCsim
 ifdef SDCC_BIN_PATH

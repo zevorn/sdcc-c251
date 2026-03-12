@@ -39,11 +39,13 @@ public:
   
  public:
   cl_r6k(class cl_sim *asim);
+  cl_r6k(class cl_sim *asim, t_addr arom_size);
   virtual const char *id_string(void);
   virtual int init(void);
 
   virtual struct dis_entry *dis_entry(t_addr addr);
-
+  virtual char *disassc_cb_6(t_addr addr, chars *comment);
+  
   virtual void mode3k(void);
   virtual void mode01(void);
   virtual void mode10(void);
@@ -327,6 +329,37 @@ public:
   virtual int RL8REG(MP);
   virtual int SR8REG(MP);
   virtual int RR8REG(MP);
+  // complex tasks
+  virtual int SHAF1(MP);
+  virtual int SHAF2(MP);
+  virtual int SHAF3(MP);
+  virtual int MD5F1(MP);
+  virtual int MD5F2(MP);
+  virtual int MD5F3(MP);
+  // block stuff
+  virtual void pldi(void);
+  virtual int PLDI(MP) { tick(9); pldi(); return resGO; }
+  virtual int PLDIR(MP);
+  virtual int PLDISR(MP);
+  virtual void pldd(void);
+  virtual int PLDD(MP) { tick(9); pldd(); return resGO; }
+  virtual int PLDDR(MP);
+  virtual int PLDDSR(MP);
+  virtual int PLSIR(MP);
+  virtual int PLSIDR(MP);
+  virtual int PLSDR(MP);
+  virtual int PLSDDR(MP);
+  // AES
+  virtual int AESSR(MP);
+  virtual int AESISR(MP);
+  virtual int AESMC(MP);
+  virtual int AESIMC(MP);
+
+  // R6K mod of page CB
+  virtual int page_cb_6(t_mem code);
+  // R6K mod of page 6D
+  virtual int page_6dxd(t_mem code);
+  virtual int page_6dxf(t_mem code);
 };
 
 

@@ -68,6 +68,7 @@ cl_rxk::cl_rxk(class cl_sim *asim):
   caRtab[5]= &caL;
   caRtab[7]= &caA;
   kmode= 0;
+  rom_size= 0;
 }
 
 int
@@ -126,7 +127,7 @@ cl_rxk::init(void)
   ioi->set(0x11, 0); // stackseg
   ioi->set(0x12, 0); // dataseg
   ioi->set(0x13, 0xff); // segsize
-  mem->re_decode();
+  //mem->re_decode();
   
   return 0;
 }
@@ -147,7 +148,7 @@ cl_rxk::reset(void)
   mem->set_dataseg(0);
   mem->set_segsize(0xff);
   mem->set_stackseg(0);
-  mem->set_xpc(0);
+  mem->set_xpc(0); // calls re-decode
 
   rIP= 0xff;
   rIIR= 0;
@@ -466,7 +467,7 @@ cl_rxk::disassc_cb(t_addr addr, chars *comment)
 	case 3: strcpy(b, "RR %r"); break;
 	case 4: strcpy(b, "SLA %r"); break;
 	case 5: strcpy(b, "SRA %r"); break;
-	case 6: return strdup("-- UNKNOWN/INVALID");
+	case 6: return disassc_cb_6(addr, comment);
 	case 7: strcpy(b, "SRL %r"); break;
 	}
       break;
@@ -506,6 +507,12 @@ cl_rxk::disassc_cb(t_addr addr, chars *comment)
     }
 
   return(strdup(work.c_str()));
+}
+
+char *
+cl_rxk::disassc_cb_6(t_addr addr, chars *comment)
+{
+  return strdup("-- UNKNOWN/INVALID");
 }
 
 char *
