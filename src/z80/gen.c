@@ -3202,9 +3202,9 @@ pop (const asmop *aop, int offset, int size)
 {
   if (getPairId_o (aop, offset) == PAIR_JK)
     {
-      //emit3w (A_EX, ASMOP_JK, ASMOP_HL); // DANGER: page 0x7f! Bug (not yet tested)?
-      //_pop (PAIR_HL);
-      //emit3w (A_EX, ASMOP_JK, ASMOP_HL);
+      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
+      _pop (PAIR_HL);
+      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
       UNIMPLEMENTED;
     }
   else if (size == 2 && getPairId_o (aop, offset) != PAIR_INVALID)
@@ -4563,8 +4563,6 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
   else if ((aopInReg (to, to_offset, J_IDX) || aopInReg (to, to_offset, K_IDX)) && // Only very few instructions can write jk. Use hl instead.
     !aopInReg (from, from_offset, H_IDX) && !aopInReg (from, from_offset, L_IDX))
     {
-    // DANGER: page 0x7f! Bug (not yet tested)?
-    /*
       emit3w (A_EX, ASMOP_JK, ASMOP_HL);
       if (aopInReg (to, to_offset, J_IDX) && aopInReg (from, from_offset, K_IDX))
         emit3 (A_LD, ASMOP_H, ASMOP_L);
@@ -4572,18 +4570,15 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
         emit3 (A_LD, ASMOP_L, ASMOP_H);
       else
         cheapMove (ASMOP_HL, aopInReg (to, to_offset, J_IDX), from, from_offset, a_dead);
-      emit3w (A_EX, ASMOP_JK, ASMOP_HL);*/
-      UNIMPLEMENTED;
+      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
     }
   else if ((aopInReg (from, from_offset, J_IDX) || aopInReg (from, from_offset, K_IDX)) && // Only very few instructions can read jk. Use hl instead.
     !aopInReg (to, to_offset, H_IDX) && !aopInReg (to, to_offset, L_IDX))
     {
-    // DANGER: page 0x7f! Bug (not yet tested)?
-      /*wassert (!aopInReg (to, to_offset, J_IDX) && !aopInReg (to, to_offset, K_IDX)); // Should have been handled above.
+      wassert (!aopInReg (to, to_offset, J_IDX) && !aopInReg (to, to_offset, K_IDX)); // Should have been handled above.
       emit3w (A_EX, ASMOP_JK, ASMOP_HL);
       cheapMove (to, to_offset, ASMOP_HL, aopInReg (from, from_offset, J_IDX), a_dead);
-      emit3w (A_EX, ASMOP_JK, ASMOP_HL);*/
-      UNIMPLEMENTED;
+      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
     }
   else if (!aopInReg (to, to_offset, A_IDX) && !aopInReg (from, from_offset, A_IDX) && // Go through a.
     (from->type == AOP_DIR || from->type == AOP_SFR || to->type == AOP_SFR ||
@@ -7348,8 +7343,7 @@ genIpush (const iCode *ic)
           emit3w_o (A_PUSH, ic->left->aop, size - 2, 0, 0);
           d = 2;
         }
-#if 0 // Disabled to avoid triggering other disabled functionality
-      else if (size >= 4 && (IS_R4K || IS_R5K || IS_R6K) &&
+      else if (size >= 4 && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && // Makes Coremark hang on R4K hardware (but the Coremark-based regression test passes on uCsim, and stdcbench, which also uses push bcde when this is enabled also still works).
         (ic->left->aop->type == AOP_STK || ic->left->aop->type == AOP_IY) && (bc_free && de_free || jk_free && hl_free ))
         {
           bool use_bcde = bc_free && de_free;
@@ -7358,7 +7352,6 @@ genIpush (const iCode *ic)
           cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
           d = 4;
         }
-#endif
       else if (size >= 2 && IS_SM83 && a_free &&
          (aopIsLitVal (ic->left->aop, size - 2, 2, 0x0000) ||
           aopIsLitVal (ic->left->aop, size - 2, 2, 0x0080) ||
