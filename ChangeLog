@@ -2,7 +2,7 @@
 
 	* src/z80/gen.c,
 	  src/z80/main.c:
-	  Reenable use of some page 0x7f R4K instructions for r4k port.
+	  Reenable use of most page 0x7f R4K instructions for r4k port.
 
 2026-03-12 Philipp Klaus Krause <philipp@colecovision.eu>
 

@@ -5247,7 +5247,7 @@ skip_byte_push_iy:
     }
 
   // Try to use Rabbit 4000 ex bc, hl
-  if (IS_R4K_NOTYET || IS_R5K || IS_R6K) // DANGER: page 0x7f! Bug (not yet tested)?
+  if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) // BUG: stdcbench selftest fails if this is enabled!!
     {
       int ex[4] = {-2, -2, -2, -2}; // Swapped bytes
       bool no = false; // Still needed byte would be overwritten
@@ -5301,7 +5301,7 @@ skip_byte_push_iy:
     }
 
   // Try to use Rabbit 4000 ex jk, hl
-  if (IS_R4K_NOTYET || IS_R5K || IS_R6K) // DANGER: page 0x7f! Bug (not yet tested)?
+  if (IS_R4K || IS_R5K || IS_R6K)
     {
       int ex[4] = {-2, -2, -2, -2}; // Swapped bytes
       bool no = false; // Still needed byte would be overwritten
@@ -7350,10 +7350,10 @@ genIpush (const iCode *ic)
         }
 #if 0 // Disabled to avoid triggering other disabled functionality
       else if (size >= 4 && (IS_R4K || IS_R5K || IS_R6K) &&
-        (ic->left->aop->type == AOP_STK /*|| ic->left->aop->type == AOP_IY affected by hw bug: ld jkhl, (mn)?*/) && (bc_free && de_free || jk_free && hl_free ))
+        (ic->left->aop->type == AOP_STK || ic->left->aop->type == AOP_IY) && (bc_free && de_free || jk_free && hl_free ))
         {
           bool use_bcde = bc_free && de_free;
-          genMove_o (use_bcde ? ASMOP_BCDE : ASMOP_JKHL, 0, ic->left->aop, size - 4, 4, a_free, hl_free, de_free, iy_free, true); // DANGER: possible page 0x7f! Bug (not yet tested)?
+          genMove_o (use_bcde ? ASMOP_BCDE : ASMOP_JKHL, 0, ic->left->aop, size - 4, 4, a_free, hl_free, de_free, iy_free, true);
           emit2 (use_bcde ? "push bcde" : "push jkhl");
           cost2 (2, -1, -1, -1, -1, -1, 18, 19, -1, -1, -1, -1, -1, -1, -1);
           d = 4;
@@ -11294,7 +11294,7 @@ genEor (const iCode *ic, iCode *ifx, asmop *result_aop, asmop *left_aop, asmop *
             }
         }
 
-        if (IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) // DANGER: page 0x7f! Bug (not yet tested)? Not used in benchmark self-tests, will need extra test on hw!
+        if (IS_R4K || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1)
           {
             const bool this_byte_l = aopInReg (result_aop, i, L_IDX) &&
               (aopInReg (left_aop, i, L_IDX) && aopInReg (right_aop, i, E_IDX) || aopInReg (left_aop, i, E_IDX) && aopInReg (right_aop, i, L_IDX));
@@ -11367,7 +11367,7 @@ genEor (const iCode *ic, iCode *ifx, asmop *result_aop, asmop *left_aop, asmop *
             continue;
           }
 
-        if (i + 1 < size && (IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90) && hl_free && de_free &&  // DANGER: page 0x7f! Bug (not yet tested)? Not used in benchmark self-tests, will need extra test on hw!
+        if (i + 1 < size && (IS_R4K || IS_R5K || IS_R6K || IS_TLCS90) && hl_free && de_free &&
           left_aop->type == AOP_STK && right_aop->type == AOP_STK && result_aop->type == AOP_STK)
           {
             genMove_o (ASMOP_DE, 0, left_aop, i, 2, a_free, true, true, false, true);
@@ -12186,7 +12186,7 @@ genIfxJump (iCode *ic, const char *jval)
       else if (!strcmp (jval, "z") || !strcmp (jval, "nz") || !strcmp (jval, "c") || !strcmp (jval, "nc") ||
         !strcmp (jval, "m") || !strcmp (jval, "p") || !strcmp (jval, "po") || !strcmp (jval, "pe"))
         inst = jval;
-      else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) &&
+      else if ((IS_R4K || IS_R5K || IS_R6K) &&
         (!strcmp (jval, "gt") || !strcmp (jval, "lt") || !strcmp (jval, "gtu")))
         inst = jval;
       else if (IS_R6K_NOTYET &&
@@ -12250,11 +12250,11 @@ genIfxJump (iCode *ic, const char *jval)
         inst = "ge";
       else if (IS_R6K_NOTYET && !strcmp (jval, "gtu"))
         inst = "leu";
-       else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90) && !strcmp (jval, "le"))
+       else if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90) && !strcmp (jval, "le"))
         inst = "gt";
-      else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90) && !strcmp (jval, "ge"))
+      else if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90) && !strcmp (jval, "ge"))
         inst = "lt";
-      else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && !strcmp (jval, "leu"))
+      else if ((IS_R4K || IS_R5K || IS_R6K) && !strcmp (jval, "leu"))
         inst = "gtu";
       else
         {
@@ -12702,7 +12702,7 @@ fix:
       // There is no good signed compare in the Z80, so we need workarounds.
       if (sign)
         {
-          if (ifx && ((IS_R4K_NOTYET || IS_R5K_NOTYET) && IC_TRUE (ifx) || IS_R6K_NOTYET || IS_TLCS90)) // Some Rabbits do have conditional jumps that (for some cases) allow an efficient signed compare. WARNING: There is soemthing wrong with jp lt! Enabling this works fine on uCsim, but breaks on a real Rabbit 4000!
+          if (ifx && ((IS_R4K || IS_R5K) && IC_TRUE (ifx) || IS_R6K_NOTYET || IS_TLCS90)) // Some Rabbits do have conditional jumps that (for some cases) allow an efficient signed compare. WARNING: There is soemthing wrong with jp lt! Enabling this works fine on uCsim, but breaks on a real Rabbit 4000!
             {
               genIfxJump (ifx, "lt");
               return;
@@ -15320,7 +15320,7 @@ genRotW (const iCode *ic)
 
   wassert (s == 1 || s == lbits - 1);
 
-  if ((IS_Z80N || IS_R4K_NOTYET || IS_R5K || IS_R6K) && size == 2 && // DANGER: page 0x7f! Bug (not yet tested)?
+  if ((IS_Z80N || IS_R4K || IS_R5K || IS_R6K) && size == 2 &&
     (aopInReg (result->aop, 0, DE_IDX) || aopInReg (left->aop, 0, DE_IDX) && isRegDead (DE_IDX, ic)) && (isRegDead (B_IDX, ic) || !IS_Z80N))
     {
       genMove (ASMOP_DE, left->aop, isRegDead (A_IDX, ic), isRegDead (HL_IDX, ic), true, isRegDead (IY_IDX, ic));
@@ -15369,8 +15369,8 @@ genRotW (const iCode *ic)
                   emit3w (A_ADC, ASMOP_HL, ASMOP_HL);
                   i += 2;
                 }
-              else if (IS_RAB && i + 1 < size && aopInReg (rotaop, i, DE_IDX) || // DANGER: page 0x7f! Bug (not yet tested)?
-                (IS_R4K_NOTYET || IS_R5K || IS_R6K) && aopInReg (rotaop, i, BC_IDX))
+              else if (IS_RAB && i + 1 < size && aopInReg (rotaop, i, DE_IDX) ||
+                (IS_R4K || IS_R5K || IS_R6K) && aopInReg (rotaop, i, BC_IDX))
                 {
                   emit3w_o (A_RL, rotaop, i, 0, 0);
                   i += 2;
@@ -15401,7 +15401,7 @@ genRotW (const iCode *ic)
             {
               if (offset > 0 &&
                 IS_RAB && (aopInReg (left->aop, offset - 1, DE_IDX) || aopInReg (left->aop, offset - 1, HL_IDX) || aopInReg (left->aop, offset - 1, IY_IDX) ||
-                (IS_R4K_NOTYET || IS_R5K || IS_R6K) && aopInReg (left->aop, offset - 1, BC_IDX))) // DANGER: page 0x7f! Bug (not yet tested)?
+                (IS_R4K || IS_R5K || IS_R6K) && aopInReg (left->aop, offset - 1, BC_IDX)))
                 emit3w_o (A_RR, left->aop, --offset, 0, 0);
               else
                 emit3_o (A_RR, left->aop, offset, 0, 0);
@@ -15686,12 +15686,12 @@ genLeftShift (const iCode *ic)
         (aopInReg (shiftop, offset, HL_IDX) ||
         !started && aopInReg (shiftop, offset, IY_IDX) ||
         (IS_RAB || optimize.codeSize && !started && !IS_SM83) && aopInReg (shiftop, offset, DE_IDX)) ||
-        (IS_R4K_NOTYET || IS_R5K || IS_R6K) && aopInReg (shiftop, offset, BC_IDX)) // DANGER: page 0x7f! Bug (not yet tested)?
+        (IS_R4K || IS_R5K || IS_R6K) && aopInReg (shiftop, offset, BC_IDX))
         {
           if (aopInReg (shiftop, offset, HL_IDX) || aopInReg (shiftop, offset, IY_IDX) || IS_TLCS870C || IS_TLCS870C1)
             emit3w_o (started ? A_ADC : A_ADD, shiftop, offset, shiftop, offset);
           else if (IS_RAB && aopInReg (shiftop, offset, DE_IDX) ||
-            (IS_R4K_NOTYET || IS_R5K || IS_R6K) && aopInReg (shiftop, offset, BC_IDX)) // DANGER: page 0x7f! Bug (not yet tested)?
+            (IS_R4K || IS_R5K || IS_R6K) && aopInReg (shiftop, offset, BC_IDX))
             {
               if (!started)
                 emit3 (A_CP, ASMOP_A, ASMOP_A);
@@ -16196,7 +16196,7 @@ genRightShift (const iCode * ic)
       {
         if (IS_RAB && !(is_signed && first) && size >= 2 && byteoffset < 2 && shiftop->type == AOP_REG &&
         (getPairId_o (shiftop, offset - 1) == PAIR_HL || getPairId_o (shiftop, offset - 1) == PAIR_DE || getPairId_o (shiftop, offset - 1) == PAIR_IY ||
-          ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && getPairId_o (shiftop, offset - 1) == PAIR_BC))) // DANGER: page 0x7f! Bug (not yet tested)?
+          ((IS_R4K || IS_R5K || IS_R6K) && getPairId_o (shiftop, offset - 1) == PAIR_BC)))
         {
           if (first)
             {
@@ -18195,7 +18195,7 @@ genIfx (iCode *ic, iCode *popIc)
       genIfxJump (ic, "nz");
       goto release;
     }
-  else if (cond->aop->size == 2 && (IS_R4K_NOTYET || IS_R5K || IS_R6K) && (aopInReg (cond->aop, 0, BC_IDX) || aopInReg (cond->aop, 0, HL_IDX) || aopInReg (cond->aop, 0, IY_IDX))) // DANGER: page 0x7f! Bug (not yet tested)?
+  else if (cond->aop->size == 2 && (IS_R4K || IS_R5K || IS_R6K) && (aopInReg (cond->aop, 0, BC_IDX) || aopInReg (cond->aop, 0, HL_IDX) || aopInReg (cond->aop, 0, IY_IDX))) 
     {
       emit2 ("test %s", _pairs[getPairId (cond->aop)].name);
       cost (2, 4);
@@ -18231,7 +18231,7 @@ genIfx (iCode *ic, iCode *popIc)
       genIfxJump (ic, "nz");
       goto release;
     }
-  else if ((IS_R4K || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 && // TODO: not used in benchmark self-tests, needs extra test on hardware!
+  else if ((IS_R4K || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 &&
     (getPairId_o (cond->aop, 0) == PAIR_DE && getPairId_o (cond->aop, 2) == PAIR_BC || getPairId_o (cond->aop, 0) == PAIR_BC && getPairId_o (cond->aop, 2) == PAIR_DE))
     {
       emit2 ("test bcde");
@@ -18239,7 +18239,7 @@ genIfx (iCode *ic, iCode *popIc)
       genIfxJump (ic, "nz");
       goto release;
     }
-  else if ((IS_R4K || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 && // TODO: not used in benchmark self-tests, needs extra test on hardware!
+  else if ((IS_R4K || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 &&
     (getPairId_o (cond->aop, 0) == PAIR_HL && getPairId_o (cond->aop, 2) == PAIR_JK || getPairId_o (cond->aop, 0) == PAIR_JK && getPairId_o (cond->aop, 2) == PAIR_HL))
     {
       emit2 ("test jkhl");
