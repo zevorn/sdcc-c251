@@ -3203,6 +3203,11 @@ In 4.5.18,
  plain int bit-fields are signed.
 \end_layout
 
+\begin_layout Itemize
+In 4.5.20,
+ some non-matching return types that previously raised warnings raise errors.
+\end_layout
+
 \begin_layout Section
 System Requirements
 \end_layout
@@ -51688,7 +51693,6 @@ status collapsed
 
 \begin_layout Plain Layout
 
-
 \backslash
 /
 \end_layout
@@ -51712,7 +51716,6 @@ status open
 status collapsed
 
 \begin_layout Plain Layout
-
 
 \backslash
 /
@@ -51787,7 +51790,6 @@ status collapsed
 
 \begin_layout Plain Layout
 
-
 \backslash
 /
 \end_layout
@@ -51811,7 +51813,6 @@ status open
 status collapsed
 
 \begin_layout Plain Layout
-
 
 \backslash
 /

@@ -534,7 +534,7 @@ declaration
                  addSym (StructTab, sdef, sdef->tag, sdef->level, currBlockno, false);
                  uselessDecl = false;
                }
-             checkQualifiers (sdef->tagsym, $1, false);
+             checkQualifiers (sdef->tagsym, $1, false, false);
            }
          if (uselessDecl)
            werror(W_USELESS_DECL);
@@ -825,6 +825,7 @@ typeof_specifier
        SPEC_RESTRICT ($$) = 0;
        SPEC_VOLATILE ($$) = 0;
        SPEC_ATOMIC ($$) = 0;
+       SPEC_OPTIONAL ($$) = 0;
        SPEC_ADDRSPACE ($$) = 0;
      }
    | TYPEOF_UNQUAL '(' type_name ')'
@@ -836,6 +837,7 @@ typeof_specifier
        SPEC_RESTRICT ($$) = 0;
        SPEC_VOLATILE ($$) = 0;
        SPEC_ATOMIC ($$) = 0;
+       SPEC_OPTIONAL ($$) = 0;
        SPEC_ADDRSPACE ($$) = 0;
      }
 

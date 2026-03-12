@@ -61,12 +61,13 @@ public:
   class cl_cell32 *cIRR, *caIRR;
  public:
   cl_r4k(class cl_sim *asim);
+  cl_r4k(class cl_sim *asim, t_addr aropm_size);
   virtual int init();
   virtual const char *id_string(void);
   virtual void reset(void);
   
   virtual void make_cpu_hw(void);
-  virtual t_addr chip_size() { return 0x1000000; }
+  virtual t_addr chip_size() { return rom_size?rom_size:0x1000000; }
 
   virtual struct dis_entry *dis_entry(t_addr addr);
   virtual struct dis_entry *dis_6d_entry(t_addr addr);
@@ -83,7 +84,19 @@ public:
   virtual class cl_cell32 &destBCDE(void) { return altd?caBCDE:cBCDE; }
   virtual class cl_cell32 &destJKHL(void) { return altd?caJKHL:cJKHL; }
   virtual class cl_cell16 &destJK(void) { return altd?caJK:cJK; }
-  
+
+  // operands, addressed by SP+n
+  virtual u8_t  op8_iSPn(void);
+  virtual u16_t op16_iSPn(void);
+  virtual u32_t op32_iSPn(void);
+  // operands, addressed by ps(PW,PX,PY,PZ)+d
+  virtual u8_t  op8_iPSd(u32_t ps, i8_t d);
+  virtual u16_t op16_iPSd(u32_t ps, i8_t d);
+  virtual u32_t op32_iPSd(u32_t ps, i8_t d);
+  // IO prefixed ops addressed by Px
+  virtual u8_t pxreadio(u32_t ps);
+  virtual void pxwriteio(u32_t ps, u8_t v);
+    
   virtual void print_regs(class cl_console_base *con);
 
   virtual int convc_pp(class cl_cell32 &pp);
@@ -349,8 +362,8 @@ public:
   virtual int LD_iIXd_IRR(t_mem code) { return ld_iird_irr(cIX); }
   virtual int LD_iIYd_IRR(t_mem code) { return ld_iird_irr(cIY); }
   virtual int LD_iSPn_IRR(t_mem code);
-  virtual int NEG_IRR(t_mem coed) { return sub32(0, cIRR->get(),
-						 *cIRR, false); }
+  virtual int NEG_IRR(t_mem coed) { return sub32(*cIRR, 0, cIRR->get(),
+						 false); }
   virtual int POP_IRR(t_mem code);
   virtual int PUSH_IRR(t_mem code);
   virtual int RL_1_IRR(t_mem code) { return rot33left(*destIRR(),
@@ -458,6 +471,8 @@ public:
   
   // Starter of extra pages
   virtual int PAGE_4K6D(t_mem code);
+  virtual int page_6dxd(t_mem code) { return resINV; }
+  virtual int page_6dxf(t_mem code) { return resINV; }
   virtual int PAGE_4K7F(t_mem code);
 };
 

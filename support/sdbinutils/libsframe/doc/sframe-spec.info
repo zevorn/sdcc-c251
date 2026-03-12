@@ -20,7 +20,7 @@ File: sframe-spec.info,  Node: Top,  Next: Introduction,  Up: (dir)
 The SFrame format
 *****************
 
-                             March 3, 2026
+                             March 4, 2026
 
    This manual describes Version 3 of the SFrame file format.  SFrame
 stands for Simple Frame.  The SFrame format keeps track of the minimal
