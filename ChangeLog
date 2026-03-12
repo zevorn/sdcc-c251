@@ -1,5 +1,11 @@
 2026-03-12 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c,
+	  src/z80/main.c:
+	  Reenable use of some page 0x7f R4K instructions for r4k port.
+
+2026-03-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* device/lib/r3ka/crt0.s,
 	  device/lib/r4k/crt0.s,
 	  device/lib/r5k/crt0.s,

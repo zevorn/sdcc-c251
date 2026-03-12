@@ -3053,7 +3053,7 @@ fetchLitPair (PAIR_ID pairId, asmop *left, int offset, bool f_dead, bool dry)
       emit2 ("ld l, h");
       cost (1 + 1, 2 + 2);
     }
-  else if ((IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && pairId == PAIR_HL && left->type == AOP_LIT && aopIsLitVal (left, offset, 2, 0x0000)) // DANGER: page 0x7f! BUG? Works on simulator, but makes Coremark selftest fail on R4K hardware. Apparently clr hl vs ld hl, #0x0000 is the only difference between working fine and failing. Need to investigate further.
+  else if ((IS_R4K || IS_R5K || IS_R6K) && pairId == PAIR_HL && left->type == AOP_LIT && aopIsLitVal (left, offset, 2, 0x0000))
     {
       emit2 ("clr hl");
       cost (2, 4);
@@ -11799,7 +11799,7 @@ genMultTwoChar (const iCode *ic)
       cost (2, 36);
       spillPair (PAIR_DE);
     }
-  else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K) && ic->result->aop->size > 2 && // DANGER: page 0x7f! Bug (not yet tested)? TODO: mulu not used in benchmark self-tests, needs extra testing on hardware!
+  else if ((IS_R4K || IS_R5K || IS_R6K) && ic->result->aop->size > 2 &&
     SPEC_USIGN (getSpec (operandType (ic->left))) && SPEC_USIGN (getSpec (operandType (ic->right))))
     {
       emit2 ("mulu");
@@ -13052,7 +13052,7 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
               offset++;
               a_result = aopInReg (left->aop, 0, A_IDX);
             }
-          else if ((IS_R4K_NOTYET || IS_R5K || IS_R6K || IS_TLCS90) && size >= 2 && skipbyte != offset + 1 && // DANGER: page 0x7f! Bug (not yet tested)? TODO: Makes stdcbench hang on hardware, when enabled?
+          else if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90) && size >= 2 && skipbyte != offset + 1 &&
             aopInReg (left->aop, offset, HL_IDX) && // tlcs870c(1) has cp rr, nn, but it is expensive (4 bytes).
             byteOfVal (right->aop->aopu.aop_lit, offset) <= 127 && !byteOfVal (right->aop->aopu.aop_lit, offset + 1))
             {
