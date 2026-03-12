@@ -1,3 +1,14 @@
+2026-03-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/lib/r3ka/crt0.s,
+	  device/lib/r4k/crt0.s,
+	  device/lib/r5k/crt0.s,
+	  device/lib/r6k/crt0.s,
+	  .version:
+	  Fix MMIDR setup in Rabbit startup code.
+	* src/z80/gen.c:
+	  Fix a bug in code generation for pointer writes.
+
 2026-03-12 Janko Stamenović
 
 	* support/regression/tests/gcrypt-serpent.c.in

@@ -48,9 +48,12 @@ EDMR		.equ	0x420 ; Enable Dual-Mode Register
 	; Reset vector - assuming smode0 and smode1 input pins are grounded
 	.org 	0
 
-	; Switch to instruction set mode 10
+	; Enable 16-bit internal I/O addresses and switch to instruction set mode 10
 .r4k00
 	ld	a, #0x80
+
+	ioi
+	ld	(MMIDR), a
 	ioi
 	ld	(EDMR), a
 .r4k10

@@ -3030,7 +3030,7 @@ fetchLitPair (PAIR_ID pairId, asmop *left, int offset, bool f_dead, bool dry)
         }
     }
 
-  if(dry)
+  if (dry)
     return(-1);
 
   // Both a lit on the right and a true symbol on the left
@@ -17618,7 +17618,7 @@ genPointerSet (iCode *ic)
       goto release;
     }
   if (!to_far && !IS_SM83 && !bit_field && isLitWord (result->aop) && size == 4 && offset == 0 &&
-    (getPairId_o (right->aop, 0) != PAIR_INVALID && getPairId_o (right->aop, 2) != PAIR_INVALID || isLitWord (right->aop)))
+    (getPairId_o (right->aop, 0) != PAIR_INVALID && getPairId_o (right->aop, 2) != PAIR_INVALID || isLitWord (right->aop) && isPairDead (PAIR_HL, ic)))
     {
       if (isLitWord (right->aop))
         {
