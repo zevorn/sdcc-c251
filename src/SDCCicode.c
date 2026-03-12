@@ -2178,7 +2178,7 @@ checkPtrQualifiers (sym_link * ltype, sym_link * rtype, operand *op)
 {
   if (IS_PTR (ltype) && IS_PTR (rtype) && !IS_FUNCPTR (ltype) && !op->isConstEliminated)
     {
-      if (!isConstant (ltype->next) && isConstant (rtype->next))
+      if (!isConst (ltype->next) && isConst (rtype->next))
         werror (W_TARGET_LOST_QUALIFIER, "const");
 #if 0
       // disabled because SDCC will make all union fields volatile
@@ -2224,7 +2224,7 @@ geniCodeCast (sym_link *type, operand *op, bool implicit)
   {
     if (IS_PTR (type))
       {
-        op->isConstEliminated = (isConstant (opetype) && !isConstant (getSpec (type)));
+        op->isConstEliminated = (isConst (opetype) && !isConst (getSpec (type)));
         op->isRestrictEliminated = (isRestrict (opetype) && !isRestrict (getSpec (type)));
         op->isOptionalEliminated = (isOptional (opetype) && !isOptional (getSpec (type)));
       }

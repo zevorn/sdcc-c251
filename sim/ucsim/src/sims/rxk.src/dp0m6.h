@@ -258,6 +258,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define SR1REG			instruction_6k49_8e
 #define RR1REG			instruction_6k49_8f
 // 90-9f
+#define PLDISR			instruction_6k49_90
+#define PLDDSR			instruction_6k49_98
 #define ADC_A_iSPn		instruction_6k49_99
 #define ADC_HL_iSPn		instruction_6k49_9a
 #define ADC_JKHL_iSPn		instruction_6k49_9b
@@ -266,10 +268,14 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define SR2REG			instruction_6k49_9e
 #define RR2REG			instruction_6k49_9f
 // a0-af
+#define PLDI			instruction_6k49_a0
+#define AESSR			instruction_6k49_a2
+#define AESISR			instruction_6k49_a3
 #define INC_iPWd		instruction_6k49_a4
 #define INC_iPXd		instruction_6k49_a5
 #define INC_iPYd		instruction_6k49_a6
 #define INC_iPZd		instruction_6k49_a7
+#define PLDD			instruction_6k49_a8
 #define SUB_A_iSPn		instruction_6k49_a9
 #define SUB_HL_iSPn		instruction_6k49_aa
 #define SUB_JKHL_iSPn		instruction_6k49_ab
@@ -278,10 +284,14 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define SR3REG			instruction_6k49_ae
 #define RR3REG			instruction_6k49_af
 // b0-bf
+#define PLDIR			instruction_6k49_b0
+#define AESMC			instruction_6k49_b2
+#define AESIMC			instruction_6k49_b3
 #define DEC_iPWd		instruction_6k49_b4
 #define DEC_iPXd		instruction_6k49_b5
 #define DEC_iPYd		instruction_6k49_b6
 #define DEC_iPZd		instruction_6k49_b7
+#define PLDDR			instruction_6k49_b8
 #define SBC_A_iSPn		instruction_6k49_b9
 #define SBC_HL_iSPn		instruction_6k49_ba
 #define SBC_JKHL_iSPn		instruction_6k49_bb
@@ -290,6 +300,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define SR4REG			instruction_6k49_be
 #define RR4REG			instruction_6k49_bf
 // c0-cf
+#define SHAF1			instruction_6k49_c2
+#define MD5F1			instruction_6k49_c3
 #define AND_A_iSPn		instruction_6k49_c9
 #define AND_HL_iSPn		instruction_6k49_ca
 #define AND_JKHL_iSPn		instruction_6k49_cb
@@ -298,6 +310,10 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define SR5REG			instruction_6k49_ce
 #define RR5REG			instruction_6k49_cf
 // d0-df
+#define PLSIDR			instruction_6k49_d0
+#define SHAF2			instruction_6k49_d2
+#define MD5F2			instruction_6k49_d3
+#define PLSDDR			instruction_6k49_d8
 #define XOR_A_iSPn		instruction_6k49_d9
 #define XOR_HL_iSPn		instruction_6k49_da
 #define XOR_JKHL_iSPn		instruction_6k49_db
@@ -306,6 +322,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define SR6REG			instruction_6k49_de
 #define RR6REG			instruction_6k49_df
 // e0-ef
+#define SHAF3			instruction_6k49_e2
+#define MD5F3			instruction_6k49_e3
 #define OR_A_iSPn		instruction_6k49_e9
 #define OR_HL_iSPn		instruction_6k49_ea
 #define OR_JKHL_iSPn		instruction_6k49_eb
@@ -314,6 +332,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define SR7REG			instruction_6k49_ee
 #define RR7REG			instruction_6k49_ef
 // f0-ff
+#define PLSIR			instruction_6k49_f0
+#define PLSDR			instruction_6k49_f8
 #define CP_A_iSPn		instruction_6k49_f9
 #define CP_HL_iSPn		instruction_6k49_fa
 #define CP_JKHL_iSPn		instruction_6k49_fb
