@@ -1,3 +1,8 @@
+2026-03-12 Janko Stamenović
+
+	* support/regression/tests/gcrypt-serpent.c.in
+	  fix #3941 (v2)
+
 2026-03-12 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/peep.c:
