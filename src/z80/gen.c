@@ -3202,9 +3202,9 @@ pop (const asmop *aop, int offset, int size)
 {
   if (getPairId_o (aop, offset) == PAIR_JK)
     {
-      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
+      /*emit3w (A_EX, ASMOP_JK, ASMOP_HL); BUG: ex jk, hl apparently doesn't work on hardware in mode 10!
       _pop (PAIR_HL);
-      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
+      emit3w (A_EX, ASMOP_JK, ASMOP_HL);*/
       UNIMPLEMENTED;
     }
   else if (size == 2 && getPairId_o (aop, offset) != PAIR_INVALID)
@@ -4563,22 +4563,24 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
   else if ((aopInReg (to, to_offset, J_IDX) || aopInReg (to, to_offset, K_IDX)) && // Only very few instructions can write jk. Use hl instead.
     !aopInReg (from, from_offset, H_IDX) && !aopInReg (from, from_offset, L_IDX))
     {
-      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
+      /*emit3w (A_EX, ASMOP_JK, ASMOP_HL); BUG: ex jk, hl apparently doesn't work on hardware in mode 10!
       if (aopInReg (to, to_offset, J_IDX) && aopInReg (from, from_offset, K_IDX))
         emit3 (A_LD, ASMOP_H, ASMOP_L);
       else if (aopInReg (to, to_offset, K_IDX) && aopInReg (from, from_offset, J_IDX))
         emit3 (A_LD, ASMOP_L, ASMOP_H);
       else
         cheapMove (ASMOP_HL, aopInReg (to, to_offset, J_IDX), from, from_offset, a_dead);
-      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
+      emit3w (A_EX, ASMOP_JK, ASMOP_HL);*/
+      UNIMPLEMENTED;
     }
   else if ((aopInReg (from, from_offset, J_IDX) || aopInReg (from, from_offset, K_IDX)) && // Only very few instructions can read jk. Use hl instead.
     !aopInReg (to, to_offset, H_IDX) && !aopInReg (to, to_offset, L_IDX))
     {
-      wassert (!aopInReg (to, to_offset, J_IDX) && !aopInReg (to, to_offset, K_IDX)); // Should have been handled above.
-      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
+      /*wassert (!aopInReg (to, to_offset, J_IDX) && !aopInReg (to, to_offset, K_IDX)); // Should have been handled above.
+      emit3w (A_EX, ASMOP_JK, ASMOP_HL); BUG: ex jk, hl apparently doesn't work on hardware in mode 10!
       cheapMove (to, to_offset, ASMOP_HL, aopInReg (from, from_offset, J_IDX), a_dead);
-      emit3w (A_EX, ASMOP_JK, ASMOP_HL);
+      emit3w (A_EX, ASMOP_JK, ASMOP_HL);*/
+      UNIMPLEMENTED;
     }
   else if (!aopInReg (to, to_offset, A_IDX) && !aopInReg (from, from_offset, A_IDX) && // Go through a.
     (from->type == AOP_DIR || from->type == AOP_SFR || to->type == AOP_SFR ||
@@ -5242,7 +5244,7 @@ skip_byte_push_iy:
     }
 
   // Try to use Rabbit 4000 ex bc, hl
-  if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) // BUG: stdcbench selftest fails if this is enabled!!
+  if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) // BUG: stdcbench selftest fails if this is enabled!! Testing on hardware shows that ex bc, hl in mode 10 apparently just copies bc into hl?
     {
       int ex[4] = {-2, -2, -2, -2}; // Swapped bytes
       bool no = false; // Still needed byte would be overwritten
@@ -5296,7 +5298,7 @@ skip_byte_push_iy:
     }
 
   // Try to use Rabbit 4000 ex jk, hl
-  if (IS_R4K || IS_R5K || IS_R6K)
+  if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) // BUG!! Testing on hardware shows that ex jk, hl in mode 10 apparently just copies jk into hl?
     {
       int ex[4] = {-2, -2, -2, -2}; // Swapped bytes
       bool no = false; // Still needed byte would be overwritten
@@ -5741,7 +5743,7 @@ skip_byte:
                 _pop (PAIR_IY);
             }
           else if (requiresHL (source) && !hl_free && (aopInReg (result, roffset + i, L_IDX) || aopInReg (result, roffset + i, H_IDX)))
-            {emit2(";A");
+            {
               if (!a_free)
                 _push (PAIR_AF);
               _push (PAIR_HL);
@@ -7343,8 +7345,8 @@ genIpush (const iCode *ic)
           emit3w_o (A_PUSH, ic->left->aop, size - 2, 0, 0);
           d = 2;
         }
-      else if (size >= 4 && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) && // Makes Coremark hang on R4K hardware (but the Coremark-based regression test passes on uCsim, and stdcbench, which also uses push bcde when this is enabled also still works).
-        (ic->left->aop->type == AOP_STK || ic->left->aop->type == AOP_IY) && (bc_free && de_free || jk_free && hl_free ))
+      else if (size >= 4 && (IS_R4K || IS_R5K || IS_R6K) &&
+        (/*aopOnStack(ic->left->aop, size - 4, 4) || todo: genCopy can't copy from stack source outside of sp range to jkhl*/ ic->left->aop->type == AOP_IY) && (bc_free && de_free || jk_free && hl_free ))
         {
           bool use_bcde = bc_free && de_free;
           genMove_o (use_bcde ? ASMOP_BCDE : ASMOP_JKHL, 0, ic->left->aop, size - 4, 4, a_free, hl_free, de_free, iy_free, true);
