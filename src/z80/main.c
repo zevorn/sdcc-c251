@@ -1093,7 +1093,7 @@ _z80_genAssemblerStart (FILE * of)
   else if (TARGET_IS_R4K || TARGET_IS_R5K)
     fprintf (of, "\t.r4k10\n");
   else if (TARGET_IS_R6K)
-    fprintf (of, "\t.r4k10\n"); // Todo: adjust when we actually emit R6K instructions, too!
+    fprintf (of, "\t.r6k10\n");
   else if (TARGET_IS_TLCS90)
     fprintf (of, "\tby = 0xffed\n");
   else if (TARGET_IS_EZ80)
@@ -1179,9 +1179,9 @@ _hasNativeMulFor (iCode *ic, sym_link *left, sym_link *right)
     (result_size == 2 || result_size <= 4 && !IS_UNSIGNED (left) && !IS_UNSIGNED (right)))
     return(true);
   // Later Rabbits also have unsigned 16x16->32 multiplication.
-  /*else if ((IS_R4K || IS_R5K || IS_R6K) && getSize (left) == 2 && getSize (right) == 2 && // DANGER: page 0x7f! Bug (not yet tested)?
+  else if ((IS_R4K || IS_R5K || IS_R6K) && getSize (left) == 2 && getSize (right) == 2 &&
     (result_size <= 4 && IS_UNSIGNED (left) && IS_UNSIGNED (right)))
-    return(true);*/
+    return(true);
   // The R800 has unsigned 16x16->32 multiplication.
   else if (IS_R800 && getSize (left) == 2 && getSize (right) == 2 &&
     (result_size == 2 || result_size <= 4 && IS_UNSIGNED (left) && IS_UNSIGNED (right)))
