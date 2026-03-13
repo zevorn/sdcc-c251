@@ -1,3 +1,18 @@
+2026-03-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge rabbit branch.
+
+2026-03-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Reenable more page 0x7f R4K instruction use for r4k port.
+
+2026-03-12 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/main.c:
+	  Reenable use of most page 0x7f R4K instructions for r4k port.
+
 2026-03-12 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* device/lib/r3ka/crt0.s,
@@ -112,6 +127,12 @@
 
 2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Use R6K 16-bit instructions with indexed adressing mode in r6k port.
+
+2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Merge binutils branch to synchronize with upstream GNU binutils 2.46.0.
 
 2026-03-03 Philipp Klaus Krause <philipp@colecovision.eu>
@@ -186,6 +207,12 @@
 	  support/sdbinutils/binutils/Makefile.in:
 	  Reduce diff to upstream GNU binutils 2.38.
 
+2026-03-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Use R6K add iy, #d in r6k port.
+
 2026-02-28 Janko Stamenović
 
 	* sdas/asrab/rab.h
@@ -217,6 +244,15 @@
 	* Revert yesterday's binutils changes.
 
 2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCpeeph.h,
+	  src/z80/gen.c,
+	  src/f8/peep.c,
+	  src/z80/peep.c:
+	  Use R6K swap rr in r6k port.
+
+2026-02-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
 
 	* tests/bug-3822.c:
 	  Add test function to silence warning in regression test infrastructure.
@@ -306,10 +342,23 @@
 	  src/SDCCsymt.c:
 	  Replace pic16-specific char division support routines by generic ones.
 
+2026-02-17 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Preparations for R6K multiplications instructions.
+
 2026-02-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/scripts/sdcc.nsi:
 	  Fix section numbering for Windows installer.
+
+2026-02-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/main.c,
+	  device/lib/r6k/crt0.s,
+	  src/z80/gen.c
+	  src/z80/peep.c:
+	  Preparations for use of R6K instructions in r6k codegen.
 
 2026-02-16 Janko Stamenović
 
