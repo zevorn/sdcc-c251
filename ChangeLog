@@ -1,5 +1,9 @@
 2026-03-13 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* Merge rabbit branch.
+
+2026-03-13 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/gen.c:
 	  Reenable more page 0x7f R4K instruction use for r4k port.
 
