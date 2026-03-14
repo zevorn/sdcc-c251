@@ -54,9 +54,9 @@ m6502_genOr (iCode * ic, iCode * ifx)
 
   emitComment (TRACEGEN, __func__);
 
-  aopOp (left, ic);
-  aopOp (right, ic);
-  aopOp (result, ic);
+  m6502_aopOp (left, ic);
+  m6502_aopOp (right, ic);
+  m6502_aopOp (result, ic);
   printIC(ic);
 
   /* force literal on the right and reg on the left */
@@ -278,8 +278,8 @@ m6502_genOr (iCode * ic, iCode * ifx)
   fastRestoreOrFreeA(needpulla);
 
  release:
-  freeAsmop (left, NULL);
-  freeAsmop (right, NULL);
-  freeAsmop (result, NULL);
+  m6502_freeAsmop (left, NULL);
+  m6502_freeAsmop (right, NULL);
+  m6502_freeAsmop (result, NULL);
 }
 

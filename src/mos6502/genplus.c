@@ -82,7 +82,7 @@ genPlusInc (iCode * ic)
             {
               return true;
             }
-          else if(bcount<3 && aopCanIncDec(AOP(result)) ) 
+          else if(bcount<3 && m6502_aopCanIncDec(AOP(result)) ) 
             {
 	      while (bcount--)
                 rmwWithAop (OPINCDEC, AOP (result), 1);
@@ -137,7 +137,7 @@ genPlusInc (iCode * ic)
 
   // sameRegs
 
-  if (!aopCanIncDec (AOP (result)))
+  if (!m6502_aopCanIncDec (AOP (result)))
     return false;
 
   emitComment (TRACEGEN|VVDBG, "    %s - sameregs", __func__);
@@ -216,9 +216,9 @@ m6502_genPlus (iCode * ic)
 
   emitComment (TRACEGEN, __func__);
 
-  aopOp (left, ic);
-  aopOp (right, ic);
-  aopOp (result, ic);
+  m6502_aopOp (left, ic);
+  m6502_aopOp (right, ic);
+  m6502_aopOp (result, ic);
 
   printIC(ic);
 
@@ -325,7 +325,7 @@ m6502_genPlus (iCode * ic)
       m6502_emitTSX();
       loadRegFromAop (m6502_reg_a, AOP(left), 0);
       INIT_CARRY();
-        accopWithAop (OPCODE, AOP (right), 0);
+      accopWithAop (OPCODE, AOP (right), 0);
 
       storeRegToAop (m6502_reg_a, AOP (result), 0);
       loadRegTempAt(m6502_reg_a, getLastTempOfs() );
@@ -395,8 +395,8 @@ m6502_genPlus (iCode * ic)
   fastRestoreOrFreeA (savea);
 
  release:
-  freeAsmop (left, NULL);
-  freeAsmop (right, NULL);
-  freeAsmop (result, NULL);
+  m6502_freeAsmop (left, NULL);
+  m6502_freeAsmop (right, NULL);
+  m6502_freeAsmop (result, NULL);
 }
 
