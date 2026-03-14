@@ -1433,7 +1433,7 @@ genXorByte (const asmop *result_aop, const asmop *left_aop, const asmop *right_a
           emit2 (right_aop->type == AOP_SFR ? "xor.io" : "xor", "%s, a", aopGet (right_aop, i));
           cost (1, 1);
         }
-      else if (right_aop->type == AOP_STK || right_aop->type == AOP_STL)
+      else if (right_aop->type == AOP_STK || right_aop->type == AOP_STL || right_aop->type == AOP_SFR)
         {
           if (!p_dead || aopInReg (left_aop, i, P_IDX))
             UNIMPLEMENTED;

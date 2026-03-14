@@ -2,6 +2,8 @@
 
 	* src/z80/gen.c:
 	  Codegen improvements.
+	* src/pdk/gen.c:
+	  Fix bug #3918.
 
 2026-03-13 Philipp Klaus Krause <philipp@colecovision.eu>
 
