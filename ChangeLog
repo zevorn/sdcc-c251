@@ -1,5 +1,17 @@
 2026-03-14 Benedikt Freisen <b.freisen AT gmx.net>
 
+	* device/include/string.h,
+	  device/include/wchar.h,
+	  device/lib/_memchr.c,
+	  device/lib/_strpbrk.c,
+	  device/lib/_strrchr.c,
+	  device/lib/_strstr.c,
+	  doc/sdccman.lyx,
+	  support/regression/tests/qualifier-preserving.c:
+	  Implement C23 qualifier-preserving macros for string library functions.
+
+2026-03-14 Benedikt Freisen <b.freisen AT gmx.net>
+
 	* .version,
 	  device/lib/_slslonglong.c,
 	  device/lib/_slulonglong.c,

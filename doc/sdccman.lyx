@@ -10722,10 +10722,6 @@ long long
 .
 \end_layout
 
-\begin_layout Itemize
-Qualifier-preserving standard library functions are not implemented.
-\end_layout
-
 \begin_layout Subsubsection*
 Features missing in some ports
 \end_layout
