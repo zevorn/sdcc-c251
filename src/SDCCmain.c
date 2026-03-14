@@ -144,6 +144,8 @@ char buffer[PATH_MAX * 2];
 #define OPTION_DATA_SEG             "--dataseg"
 #define OPTION_DOLLARS_IN_IDENT     "--fdollars-in-identifiers"
 #define OPTION_SIGNED_CHAR          "--fsigned-char"
+#define OPTION_CONST_STR            "--fconst-str"
+#define OPTION_CONST_CODE           "--fconst-code"
 #define OPTION_USE_NON_FREE         "--use-non-free"
 #define OPTION_PEEP_RETURN          "--peep-return"
 #define OPTION_NO_PEEP_RETURN       "--no-peep-return"
@@ -197,6 +199,8 @@ static const OPTION optionsTable[] = {
   {0,   OPTION_STD, NULL, "Determine the language standard (c90, c99, c11, c23, c2y, sdcc89 etc.)"},
   {0,   OPTION_DOLLARS_IN_IDENT, &options.dollars_in_ident, "Permit '$' as an identifier character"},
   {0,   OPTION_SIGNED_CHAR, &options.signed_char, "Make \"char\" signed by default"},
+  {0,   OPTION_CONST_STR, &options.const_str, "Make string literals const, like in C++"},
+  {0,   OPTION_CONST_CODE, &options.const_code, "Make objects in read-only __code space implicitly const"},
   {0,   OPTION_USE_NON_FREE, &options.use_non_free, "Search / include non-free licensed libraries and header files"},
 
   {0,   NULL, NULL, "Code generation options"},

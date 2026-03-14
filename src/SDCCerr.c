@@ -775,6 +775,10 @@ struct
      "maybe invalid pointer dereferenced or array index out of bounds (assuming array parameters are arrays of given size)", 0},
   { W_OPTIONAL_PTR_DEREF, ERROR_LEVEL_WARNING,
      "pointer to _Optional could not be proven to be non-null at dereference", 0 },
+  { W_NONCONST_CODE_OBJ, ERROR_LEVEL_WARNING,
+     "object in read-only code space should be const", 0 },
+  { W_NONCONST_CODE_PTR, ERROR_LEVEL_WARNING,
+     "pointer to object in read-only code space should be pointer to const", 0 },
 };
 
 /* -------------------------------------------------------------------------------

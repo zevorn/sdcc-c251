@@ -1751,7 +1751,8 @@ strVal (const char *s)
   DCL_ARRAY_LENGTH_TYPE (val->type) = ARRAY_LENGTH_KNOWN_CONST;
   val->type->next = val->etype = newLink (SPECIFIER);
   SPEC_SCLS (val->etype) = S_LITERAL;
-  SPEC_CONST (val->etype) = 1;
+  if (options.const_str)
+    SPEC_CONST (val->etype) = 1; // NOTE: this can break _Generic
 
   bool explicit_u8 = s[0] == 'u' && s[1] == '8' && s[2] == '"';
 

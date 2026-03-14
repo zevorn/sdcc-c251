@@ -383,6 +383,8 @@ enum {
   W_ARRAY_PARAM_LENGTH          = 353, // argument for array parameter might not be of sufficient length
   W_MAYBE_INVALID_PTR_DEREF     = 354, // maybe invalid pointer dereferenced or array index out of bounds (assuming array parameters are arrays of given size)
   W_OPTIONAL_PTR_DEREF          = 355, // pointer to _Optional could not be proven to be non-null at dereference
+  W_NONCONST_CODE_OBJ           = 356, // object in read-only code space should be const
+  W_NONCONST_CODE_PTR           = 357, // pointer to object in read-only code space should be pointer to const
 
   // If you get a merge conflict here, some #pragma disable_warning in support/valdiag and support/regression will likely need to be adapted to the resolution. Check there!
 

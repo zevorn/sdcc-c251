@@ -817,29 +817,17 @@ typeof_specifier
        $$ = $3;
      }
    | TYPEOF_UNQUAL '(' expression ')'
-     {
-       $$ = typeofOp ($3);
-       wassert ($$);
-       wassert (IS_SPEC ($$));
-       SPEC_CONST ($$) = 0;
-       SPEC_RESTRICT ($$) = 0;
-       SPEC_VOLATILE ($$) = 0;
-       SPEC_ATOMIC ($$) = 0;
-       SPEC_OPTIONAL ($$) = 0;
-       SPEC_ADDRSPACE ($$) = 0;
-     }
+      {
+        $$ = typeofOp ($3);
+        wassert ($$);
+        removeQualifiers ($$);
+      }
    | TYPEOF_UNQUAL '(' type_name ')'
-     {
-       checkTypeSanity ($3, "(typeof_unqual)");
-       $$ = $3;
-       wassert (IS_SPEC ($$));
-       SPEC_CONST ($$) = 0;
-       SPEC_RESTRICT ($$) = 0;
-       SPEC_VOLATILE ($$) = 0;
-       SPEC_ATOMIC ($$) = 0;
-       SPEC_OPTIONAL ($$) = 0;
-       SPEC_ADDRSPACE ($$) = 0;
-     }
+      {
+        checkTypeSanity ($3, "(typeof_unqual)");
+        $$ = $3;
+        removeQualifiers ($$);
+      }
 
 struct_or_union_specifier
    : struct_or_union attribute_specifier_sequence_opt opt_stag

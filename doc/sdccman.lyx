@@ -3176,7 +3176,7 @@ In 4.5.12,
 
 \begin_layout Itemize
 In 4.5.12,
- struct/union members other than anoymous struct/union or bit-fields must be named.
+ struct/union members other than anonymous struct/union or bit-fields must be named.
 \end_layout
 
 \begin_layout Itemize
@@ -3206,6 +3206,84 @@ In 4.5.18,
 \begin_layout Itemize
 In 4.5.20,
  some non-matching return types that previously raised warnings raise errors.
+\end_layout
+
+\begin_layout Itemize
+In 4.5.23,
+ 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+_Generic
+\end_layout
+
+\end_inset
+
+ works as clarified by C23,
+ more attention is payed to implicit 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+char
+\end_layout
+
+\end_inset
+
+ signedness,
+ string literals are only 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+const
+\end_layout
+
+\end_inset
+
+ if requested with 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+--fconst-str
+\end_layout
+
+\end_inset
+
+,
+ and a read-only 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+__code
+\end_layout
+
+\end_inset
+
+ address space only implies 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+const
+\end_layout
+
+\end_inset
+
+ if requested with 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+--fconst-code
+\end_layout
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
@@ -11062,7 +11140,7 @@ literal "false"
 \end_inset
 
 :
- Literal Suffixes for
+ Literal Suffixes for 
 \begin_inset Flex Code
 status open
 
@@ -11072,7 +11150,7 @@ size_t
 
 \end_inset
 
-
+ (as an extension)
 \end_layout
 
 \begin_layout Subsection

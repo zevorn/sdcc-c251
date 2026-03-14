@@ -1,3 +1,27 @@
+2026-03-14 Benedikt Freisen <b.freisen AT gmx.net>
+
+	* .version,
+	  device/lib/_slslonglong.c,
+	  device/lib/_slulonglong.c,
+	  device/lib/_srslonglong.c,
+	  device/lib/_srulonglong.c,
+	  doc/sdccman.lyx,
+	  src/SDCC.y,
+	  src/SDCCast.c,
+	  src/SDCCast.h,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCglobl.h,
+	  src/SDCCglue.c,
+	  src/SDCCicode.c,
+	  src/SDCCmain.c,
+	  src/SDCCmem.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/SDCCval.c,
+	  src/pic16/glue.c:
+	  Various type system fixes related to _Generic, default constness and implicit char signedness.
+
 2026-03-14 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:
