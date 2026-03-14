@@ -28,7 +28,7 @@
 
 {type} g0_0(void) __sdcccall(0)
 {
-	i++; j++; // These j++ help overwrite a value that might happen do be in return registers if those are used for the i++.
+	i++; j++; // These j++ help overwrite a value that might happen to be in return registers if those are used for the i++.
 	return f0();
 }
 

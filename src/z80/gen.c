@@ -673,7 +673,7 @@ isRegDead (short rIdx, const iCode *ic)
 {
   if (!isRegIdxPair (&rIdx))
     return !bitVectBitValue (ic->rSurv, rIdx);
-  return !bitVectBitValue (ic->rSurv, rIdx) && !bitVectBitValue (ic->rSurv, rIdx+1);
+  return !bitVectBitValue (ic->rSurv, rIdx) && !bitVectBitValue (ic->rSurv, rIdx + 1);
 }
 
 static PAIR_ID
@@ -7971,7 +7971,10 @@ genCall (const iCode *ic)
   if (tailjump && SomethingReturned) // Explicitly check for matching registers, as otherwise calls between __sdcccall(1) and __z88dk_fastcall will go wrong.
     for (int i = 0; i < ic->result->aop->size; i++)
       if (!aopInReg (aopRet (currFunc->type), 0, aopRet (ftype)->aopu.aop_reg[0]->rIdx))
-        tailjump = false;
+        {
+          prestackadjust = 0;
+          tailjump = false;
+        }
 
   const bool jump = tailjump || !ic->parmBytes && !bigreturn && ic->op != PCALL && !IFFUNC_ISBANKEDCALL (dtype) && !IFFUNC_ISZ88DK_SHORTCALL(ftype) && IFFUNC_ISNORETURN (ftype);
   bool rab_lcall = IS_RAB && options.model == MODEL_MEDIUM;
@@ -8128,6 +8131,7 @@ genCall (const iCode *ic)
         }
       else if (rab_lcall && bc_not_parm && ic->left->aop->regs[B_IDX] < 0 && ic->left->aop->regs[C_IDX] < 0) // There is no indirect lcall or ljp, so we have to do it all manually.
         {
+          wassert (!prestackadjust);
           symbol *tlbl = NULL;
           bool a_dead = a_not_parm && ic->left->aop->regs[A_IDX] < 0;
           if (!jump)
@@ -8167,12 +8171,14 @@ genCall (const iCode *ic)
         }
       else if (rab_llcall && hl_not_parm && jk_not_parm && !jump)
         {
+          wassert (!prestackadjust);
           genMove (ASMOP_JKHL, ic->left->aop, a_not_parm, true, de_not_parm, false);
           emit2 ("llcall (jkhl)");
           cost (2, IS_R4K ? 19 : 20);
         }
       else if (rab_llcall && bc_not_parm && ic->left->aop->regs[B_IDX] < 0 && ic->left->aop->regs[C_IDX] < 0)
         {
+          wassert (!prestackadjust);
           symbol *tlbl = NULL;
           bool a_dead = a_not_parm && ic->left->aop->regs[A_IDX] < 0;
           bool hl_dead = hl_not_parm && ic->left->aop->regs[H_IDX] < 0 && ic->left->aop->regs[L_IDX] < 0;
@@ -8433,16 +8439,20 @@ genCall (const iCode *ic)
         _G.stack.pushed += ic->parmBytes + bigreturn * 2;
     }
 
+  spillCached ();
+
   /* if we need assign a result value */
   if (SomethingReturned && !bigreturn)
     {
-      genMove (ic->result->aop, aopRet (ftype), true, true, true, true);
-      if (_G.stack.pushedIX && ic->result->aop->type == AOP_STK)
-        UNIMPLEMENTED;
+      if (_G.stack.pushedIX)
+        {
+          _pop (PAIR_IX);
+          _G.stack.pushedIX = false;
+        }
+      //if (!jump)
+        genMove (ic->result->aop, aopRet (ftype), true, true, true, true);
       freeAsmop (ic->result, 0);
     }
-
-  spillCached ();
 
   restoreRegs (_G.stack.pushedIX, _G.stack.pushedJK, _G.stack.pushedIY, _G.stack.pushedDE, _G.stack.pushedBC, _G.stack.pushedHL, IC_RESULT (ic), ic);
   _G.stack.pushedIX = false;
@@ -15641,8 +15651,8 @@ genLeftShift (const iCode *ic)
       size = shiftop->size - byteshift;
       int lsize = left->aop->size - byteshift;
 
-      bool hl_dead = isPairDead (PAIR_HL, ic) && (countreg != L_IDX && countreg != H_IDX || shift_by_lit);
-      bool de_dead = isPairDead (PAIR_DE, ic) && (countreg != E_IDX && countreg != D_IDX || shift_by_lit);
+      bool hl_dead = isRegDead (HL_IDX, ic) && (countreg != L_IDX && countreg != H_IDX || shift_by_lit);
+      bool de_dead = isRegDead (DE_IDX, ic) && (countreg != E_IDX && countreg != D_IDX || shift_by_lit);
       genMove_o (shiftop, byteshift, left->aop, 0, size <= lsize ? size : lsize, (save_a_inner || countreg != A_IDX) && (isRegDead (A_IDX, ic) || save_a_outer), hl_dead, de_dead, true, true);
       hl_dead &= shiftop->regs[L_IDX] < byteshift && shiftop->regs[L_IDX] < byteshift;
       de_dead &= shiftop->regs[E_IDX] < byteshift && shiftop->regs[D_IDX] < byteshift;
@@ -16114,8 +16124,8 @@ genRightShift (const iCode * ic)
             !(left->aop->type == AOP_REG && result->aop->type != AOP_REG ||
             !IS_SM83 && (left->aop->type == AOP_STK && canAssignToPtr3 (result->aop) || result->aop->type == AOP_STK && canAssignToPtr3 (left->aop)));
 
-      bool hl_dead = isPairDead (PAIR_HL, ic) && (countreg != L_IDX && countreg != H_IDX || shift_by_lit);
-      bool de_dead = isPairDead (PAIR_HL, ic) && (countreg != E_IDX && countreg != D_IDX || shift_by_lit);
+      bool hl_dead = isRegDead (HL_IDX, ic) && (countreg != L_IDX && countreg != H_IDX || shift_by_lit);
+      bool de_dead = isRegDead (DE_IDX, ic) && (countreg != E_IDX && countreg != D_IDX || shift_by_lit);
       if (!byteoffset)
         genMove_o (shiftop, 0, left->aop, soffset, size, !save_a, hl_dead, de_dead, true, true);
       else

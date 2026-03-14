@@ -1,3 +1,11 @@
+2026-03-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Codegen fixes.
+	* src/z80/peep.c,
+	  src/z80/peeph-sm83.def:
+	  Peephole optimizer fix.
+
 2026-03-14 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.h,
