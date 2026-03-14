@@ -1,5 +1,14 @@
 2026-03-14 Benedikt Freisen <b.freisen AT gmx.net>
 
+	* src/SDCC.y,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCval.c,
+	  support/regression/tests/size_t_suffix.c:
+	  The Elvis operator ?: was voted into C2y, size_t literal suffixes were not.
+
+2026-03-14 Benedikt Freisen <b.freisen AT gmx.net>
+
 	* device/include/string.h,
 	  device/include/wchar.h,
 	  device/lib/_memchr.c,

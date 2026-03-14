@@ -420,7 +420,7 @@ conditional_expr
                      }
    | logical_or_expr '?' { seqPointNo++;} ':' conditional_expr
                      {
-                        if (!options.std_sdcc)
+                        if (!options.std_c2y && !options.std_sdcc)
                           werror (E_SYNTAX_ERROR);
                         $$ = newNode(':',$1,$5);
                         $$ = newNode('?',$1,$$);

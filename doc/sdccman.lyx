@@ -11149,6 +11149,29 @@ size_t
  (as an extension)
 \end_layout
 
+\begin_layout Itemize
+\begin_inset CommandInset href
+LatexCommand href
+name "N3804"
+target "https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3804.txt"
+literal "false"
+
+\end_inset
+
+:
+ The Elvis operator 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+?:
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
 Embedded C
 \end_layout

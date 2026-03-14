@@ -1398,8 +1398,8 @@ constIntVal (const char *s)
       p2++;
       if (strchr (p2, 'l') || strchr (p2, 'L') || strchr (p2, 'z') || strchr (p2, 'Z') || strstr (p, "wb") || strstr (p, "WB"))
         werror (E_INTEGERSUFFIX, p);
-      else if (!options.std_c2y)
-        werror (W_SIZETCONST_C2Y);
+      else if (!options.std_sdcc)
+        werror (W_SIZETCONST_SDCC);
     }
   else if ((p2 = strstr (p, "wb")) || (p2 = strstr (p, "WB")))
     {
