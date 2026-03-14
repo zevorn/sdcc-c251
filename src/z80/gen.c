@@ -10445,11 +10445,21 @@ genPlus (iCode * ic)
         }
       else if (!maskedbyte && !premoved && !IS_SM83 && hl_dead2 &&
         (!started || IS_RAB || IS_EZ80 || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1 || IS_R800) && // adc hl, rr is quite slow on Z80, Z80N, and Z180.
-        aopOnStack (leftop, i, 2) && aopInReg (rightop, i, DE_IDX) && aopOnStack (ic->result->aop, i, 2))
+        aopOnStack (leftop, i, 2) && (aopInReg (rightop, i, BC_IDX) || aopInReg (rightop, i, DE_IDX)) && aopOnStack (ic->result->aop, i, 2))
         {
-          asmop *raop = ASMOP_DE;
           genMove_o (ASMOP_HL, 0, leftop, i, 2, false, true, false, false, !started);
-          emit3w (started ? A_ADC : A_ADD, ASMOP_HL, raop);
+          emit3w_o (started ? A_ADC : A_ADD, ASMOP_HL, 0, rightop, i);
+          spillPair (PAIR_HL);
+          genMove_o (ic->result->aop, i, ASMOP_HL, 0, 2, false, true, false, false, i + 2 < size);
+          started = true;
+          i += 2;
+        }
+      else if (!maskedbyte && !premoved && !IS_SM83 && hl_dead2 &&
+        (!started || IS_RAB || IS_EZ80 || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1 || IS_R800) && // adc hl, rr is quite slow on Z80, Z80N, and Z180.
+        aopOnStack (rightop, i, 2) && (aopInReg (leftop, i, BC_IDX) || aopInReg (leftop, i, DE_IDX)) && aopOnStack (ic->result->aop, i, 2))
+        {
+          genMove_o (ASMOP_HL, 0, rightop, i, 2, false, true, false, false, !started);
+          emit3w_o (started ? A_ADC : A_ADD, ASMOP_HL, 0, leftop, i);
           spillPair (PAIR_HL);
           genMove_o (ic->result->aop, i, ASMOP_HL, 0, 2, false, true, false, false, i + 2 < size);
           started = true;
@@ -18190,18 +18200,18 @@ genIfx (iCode *ic, iCode *popIc)
       genIfxJump (ic, "nz");
       goto release;
     }
-  else if (cond->aop->size == 2 && (IS_R4K || IS_R5K || IS_R6K) && (aopInReg (cond->aop, 0, BC_IDX) || aopInReg (cond->aop, 0, HL_IDX) || aopInReg (cond->aop, 0, IY_IDX))) 
-    {
-      emit2 ("test %s", _pairs[getPairId (cond->aop)].name);
-      cost (2, 4);
-      genIfxJump (ic, "nz");
-      goto release;
-    }
-  else if (IS_RAB && cond->aop->size == 2 &&
+  else if (IS_RAB && cond->aop->size == 2 && // Try bool before test, since bool hl is just 1B.
     (isRegDead (HL_IDX, ic) && (aopInReg (cond->aop, 0, L_IDX) && aopInReg (cond->aop, 1, H_IDX) || aopInReg (cond->aop, 0, H_IDX) && aopInReg (cond->aop, 1, L_IDX)) ||
     isRegDead (IY_IDX, ic) && (aopInReg (cond->aop, 0, IYL_IDX) && aopInReg (cond->aop, 1, IYH_IDX) || aopInReg (cond->aop, 0, IYH_IDX) && aopInReg (cond->aop, 1, IYL_IDX))))
     {
       emit3w (A_BOOL, (aopInReg (cond->aop, 0, L_IDX) || aopInReg (cond->aop, 0, H_IDX)) ? ASMOP_HL : ASMOP_IY, 0);
+      genIfxJump (ic, "nz");
+      goto release;
+    }
+  else if (cond->aop->size == 2 && (IS_R4K || IS_R5K || IS_R6K) && (aopInReg (cond->aop, 0, BC_IDX) || aopInReg (cond->aop, 0, HL_IDX) || aopInReg (cond->aop, 0, IY_IDX))) 
+    {
+      emit2 ("test %s", _pairs[getPairId (cond->aop)].name);
+      cost (2, 4);
       genIfxJump (ic, "nz");
       goto release;
     }
