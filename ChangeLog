@@ -2,7 +2,9 @@
 
    	* device/lib/mos6502/abs.s:
    	  Small abs() improvement.
-
+   	* device/lib/mos6502/div.s:
+   	  Small div() improvement.
+   	  
 2026-03-14 Benedikt Freisen <b.freisen AT gmx.net>
 
 	* src/SDCC.y,
