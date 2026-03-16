@@ -6,7 +6,7 @@
 #include <stddef.h>
 
 #ifdef __SDCC
-_Pragma("std_c2y")
+_Pragma("std_sdcc23")
 #endif
 
 void

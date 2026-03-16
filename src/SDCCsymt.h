@@ -505,6 +505,7 @@ extern sym_link *validateLink (sym_link * l,
 #define SPEC_SHORT(x) validateLink(x, "SPEC_LONG", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_short
 #define SPEC_USIGN(x) validateLink(x, "SPEC_USIGN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_unsigned
 #define SPEC_SIGN(x) validateLink(x, "SPEC_SIGN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_signed
+#define SPEC_IMPLICIT_SIGN(x) validateLink(x, "SPEC_IMPLICIT_SIGN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_implicit_sign
 #define SPEC_SCLS(x) validateLink(x, "SPEC_SCLS", #x, SPECIFIER, __FILE__, __LINE__)->select.s.sclass
 #define SPEC_SCLS_IMPLICITINTRINSIC(x) validateLink(x, "SPEC_SCLS", #x, SPECIFIER, __FILE__, __LINE__)->select.s.sclass_implicitintrinsic
 #define SPEC_ENUM(x) validateLink(x, "SPEC_ENUM", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_isenum
@@ -738,7 +739,7 @@ sym_link *newBoolLink ();
 sym_link *newPtrDiffLink ();
 sym_link *newVoidLink ();
 int compareType (sym_link *, sym_link *, bool ignoreimplicitintrinsic);
-int compareTypeExact (sym_link *, sym_link *, long level);
+int compareTypeExact (sym_link *, sym_link *, long level, bool check_top_std_qual);
 int compareTypeInexact (sym_link *, sym_link *);
 int checkFunction (symbol *, symbol *);
 void cleanUpLevel (bucket **, long);

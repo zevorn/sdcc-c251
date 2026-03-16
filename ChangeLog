@@ -1,3 +1,90 @@
+2026-03-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/peep.c:
+	  f8l jump distance calculation fix.
+
+2026-03-14 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* device/lib/mos6502/abs.s:
+   	  Small abs() improvement.
+   	* device/lib/mos6502/div.s:
+   	  Small div() improvement.
+   	  
+2026-03-14 Benedikt Freisen <b.freisen AT gmx.net>
+
+	* src/SDCC.y,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCval.c,
+	  support/regression/tests/size_t_suffix.c:
+	  The Elvis operator ?: was voted into C2y, size_t literal suffixes were not.
+
+2026-03-14 Benedikt Freisen <b.freisen AT gmx.net>
+
+	* device/include/string.h,
+	  device/include/wchar.h,
+	  device/lib/_memchr.c,
+	  device/lib/_strpbrk.c,
+	  device/lib/_strrchr.c,
+	  device/lib/_strstr.c,
+	  doc/sdccman.lyx,
+	  support/regression/tests/qualifier-preserving.c:
+	  Implement C23 qualifier-preserving macros for string library functions.
+
+2026-03-14 Benedikt Freisen <b.freisen AT gmx.net>
+
+	* .version,
+	  device/lib/_slslonglong.c,
+	  device/lib/_slulonglong.c,
+	  device/lib/_srslonglong.c,
+	  device/lib/_srulonglong.c,
+	  doc/sdccman.lyx,
+	  src/SDCC.y,
+	  src/SDCCast.c,
+	  src/SDCCast.h,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCglobl.h,
+	  src/SDCCglue.c,
+	  src/SDCCicode.c,
+	  src/SDCCmain.c,
+	  src/SDCCmem.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  src/SDCCval.c,
+	  src/pic16/glue.c:
+	  Various type system fixes related to _Generic, default constness and implicit char signedness.
+
+2026-03-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Codegen fixes.
+	* src/z80/peep.c,
+	  src/z80/peeph-sm83.def:
+	  Peephole optimizer fix.
+
+2026-03-14 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.h,
+   	  src/mos6502/gen.c,
+   	  src/mos6502/genrot.c,
+   	  src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c,
+   	  src/mos6502/genand.c,
+   	  src/mos6502/genor.c,
+   	  src/mos6502/genxor.c,
+   	  src/mos6502/genrshift.c,
+   	  src/mos6502/genlshift.c,
+   	  src/mos6502/tempops.c:
+   	  Add m6502_ prefix to several global symbols (bug 3851)
+
+2026-03-14 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Codegen improvements.
+	* src/pdk/gen.c:
+	  Fix bug #3918.
+
 2026-03-13 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge rabbit branch.

@@ -134,7 +134,7 @@ findLabel (const lineNode *pl)
 }
 
 /* Check if reading arg implies reading what. */
-static bool argCont(const char *arg, const char *what)
+static bool argCont (const char *arg, const char *what)
 {
   wassert (arg);
 
@@ -502,29 +502,34 @@ z80MightRead(const lineNode *pl, const char *what)
     IS_R800 && lineIsInst (pl, "multu") ||
     IS_R800 && lineIsInst (pl, "multuw")))
     {
+      if (!rarg) // Basic support for asm syntax variant that omits left operand on 8-bit oeprations.
+        {
+          rarg = larg;
+          larg = "a";
+        }
       if (larg[0] == 'a' && larg[1] == ',')
         {
-          if(!strcmp(what, "a"))
+          if (!strcmp(what, "a"))
             return(true);
         }
       else if (IS_Z80N && !strncmp (larg, "bc", 2) && *(larg + 2) == ',')
         {
-          if(!strcmp(what, "b") || !strcmp(what, "c"))
+          if (!strcmp(what, "b") || !strcmp(what, "c"))
             return(true);
         }
       else if (IS_Z80N && !strncmp (larg, "de", 2) && *(larg + 2) == ',')
         {
-          if(!strcmp(what, "d") || !strcmp(what, "e"))
+          if (!strcmp(what, "d") || !strcmp(what, "e"))
             return(true);
         }
       else if (!strncmp (larg, "hl", 2) && larg[2] == ',') // add hl, rr
         {
-          if(!strcmp(what, "h") || !strcmp(what, "l"))
+          if (!strcmp(what, "h") || !strcmp(what, "l"))
             return(true);
         }
       else if (!strncmp(larg, "sp", 2) && larg[2] == ',') // add sp, rr
         {
-          if(!strcmp(what, "sp"))
+          if (!strcmp(what, "sp"))
             return(true);
         }
       else if (larg[0] == 'i') // add ix/y, rr

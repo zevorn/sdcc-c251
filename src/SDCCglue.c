@@ -406,7 +406,7 @@ initValPointer (ast *expr)
           if (sclass == S_CODE)
             {
               DCL_TYPE (val->type) = CPOINTER;
-              CodePtrPointsToConst (val->type);
+              checkCodePtrPointsToConst (val->type, expr->filename, expr->lineno);
             }
           else if (oclass)
             DCL_TYPE (val->type) = oclass->ptrType;
@@ -473,7 +473,7 @@ initValPointer (ast *expr)
       if (SPEC_SCLS (expr->etype) == S_CODE)
         {
           DCL_TYPE (val->type) = CPOINTER;
-          CodePtrPointsToConst (val->type);
+          checkCodePtrPointsToConst (val->type, expr->filename, expr->lineno);
         }
       else if (oclass)
         DCL_TYPE (val->type) = oclass->ptrType;

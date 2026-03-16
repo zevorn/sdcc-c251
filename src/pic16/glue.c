@@ -436,7 +436,7 @@ pic16_initPointer (initList * ilist, sym_link *toType)
       val->type = newLink (DECLARATOR);
       if(SPEC_SCLS (etype) == S_CODE) {
         DCL_TYPE (val->type) = CPOINTER;
-        CodePtrPointsToConst (val->type);
+        checkCodePtrPointsToConst (val->type, expr->filename, expr->lineno);
       }
       else if (SPEC_SCLS (etype) == S_XDATA)
         DCL_TYPE (val->type) = FPOINTER;
@@ -496,7 +496,7 @@ pic16_initPointer (initList * ilist, sym_link *toType)
     val->type = newLink (DECLARATOR);
     if (SPEC_SCLS (expr->right->etype) == S_CODE) {
       DCL_TYPE (val->type) = CPOINTER;
-      CodePtrPointsToConst (val->type);
+      checkCodePtrPointsToConst (val->type, expr->filename, expr->lineno);
     }
     else if (SPEC_SCLS (expr->right->etype) == S_XDATA)
       DCL_TYPE (val->type) = FPOINTER;

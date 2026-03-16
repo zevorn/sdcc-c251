@@ -767,14 +767,18 @@ struct
      "function with variable arguments only requires ISO C23 or later", 0 },
   { E_BAD_OPTIONAL, ERROR_LEVEL_ERROR,
      "types other than the referenced type of a pointer type shall not be optional-qualified", 0 },
-  { W_SIZETCONST_C2Y, ERROR_LEVEL_WARNING,
-     "integer literal of type size_t or ptrdiff_t requires C2y", 0 },
+  { W_SIZETCONST_SDCC, ERROR_LEVEL_WARNING,
+     "integer literals of type size_t or ptrdiff_t are an SDCC extension based on C++23", 0 },
   { W_ARRAY_PARAM_LENGTH, ERROR_LEVEL_WARNING,
      "argument for array parameter might not be of sufficient length", 0},
   { W_MAYBE_INVALID_PTR_DEREF, ERROR_LEVEL_WARNING,
      "maybe invalid pointer dereferenced or array index out of bounds (assuming array parameters are arrays of given size)", 0},
   { W_OPTIONAL_PTR_DEREF, ERROR_LEVEL_WARNING,
      "pointer to _Optional could not be proven to be non-null at dereference", 0 },
+  { W_NONCONST_CODE_OBJ, ERROR_LEVEL_WARNING,
+     "object in read-only code space should be const", 0 },
+  { W_NONCONST_CODE_PTR, ERROR_LEVEL_WARNING,
+     "pointer to object in read-only code space should be pointer to const", 0 },
 };
 
 /* -------------------------------------------------------------------------------

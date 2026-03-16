@@ -54,9 +54,9 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 
   emitComment (TRACEGEN, __func__);
 
-  aopOp (left, ic);
-  aopOp (right, ic);
-  aopOp (result, ic);
+  m6502_aopOp (left, ic);
+  m6502_aopOp (right, ic);
+  m6502_aopOp (result, ic);
   printIC(ic);
 
   /* force literal on the right and reg on the left */
@@ -124,7 +124,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 	}
 
       // special case for bit 6 and 7
-      if( (bitpos >= 0) && aopCanBit(AOP(left)))
+      if( (bitpos >= 0) && m6502_aopCanBit(AOP(left)))
         {
 	  emitComment (TRACEGEN|VVDBG, "  %s: special case mem bit %d", __func__, bitpos);
 
@@ -177,7 +177,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 
 	  if (m6502_reg_a->isDead)
 	    accopWithAop (OPCODE, AOP (right), 0);
-	  else if (aopCanBit(AOP(right)))
+	  else if (m6502_aopCanBit(AOP(right)))
 	    accopWithAop ("bit", AOP (right), 0);
 	  else
 	    {
@@ -353,8 +353,8 @@ m6502_genAnd (iCode * ic, iCode * ifx)
   fastRestoreOrFreeA(needpulla);
 
  release:
-  freeAsmop (left, NULL);
-  freeAsmop (right, NULL);
-  freeAsmop (result, NULL);
+  m6502_freeAsmop (left, NULL);
+  m6502_freeAsmop (right, NULL);
+  m6502_freeAsmop (result, NULL);
 }
 

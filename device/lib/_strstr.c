@@ -28,6 +28,8 @@
 
 #include <string.h>
 
+#undef strstr /* Avoid conflict with C23 macro */
+
 char *strstr ( const char *str1, const char *str2 )
 {
 	const char *cp = str1;
