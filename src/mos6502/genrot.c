@@ -45,8 +45,8 @@ genRRC (iCode * ic)
   emitComment (TRACEGEN, __func__);
 
   /* rotate right with carry */
-  aopOp (left, ic);
-  aopOp (result, ic);
+  m6502_aopOp (left, ic);
+  m6502_aopOp (result, ic);
   printIC (ic);
 
   if(IS_AOP_WITH_A(AOP(result))) resultInA=true;
@@ -115,8 +115,8 @@ genRRC (iCode * ic)
  release:
   //  pullOrFreeReg (m6502_reg_a, needpula);
 
-  freeAsmop (left, NULL);
-  freeAsmop (result, NULL);
+  m6502_freeAsmop (left, NULL);
+  m6502_freeAsmop (result, NULL);
 }
 
 /**************************************************************************
@@ -136,8 +136,8 @@ genRLC (iCode * ic)
   emitComment (TRACEGEN, __func__);
 
   /* rotate right with carry */
-  aopOp (left, ic);
-  aopOp (result, ic);
+  m6502_aopOp (left, ic);
+  m6502_aopOp (result, ic);
   printIC(ic);
 
   if(IS_AOP_WITH_A(AOP(result))) resultInA=true;
@@ -185,8 +185,8 @@ genRLC (iCode * ic)
 
   pullOrFreeReg (m6502_reg_a, needpulla);
 
-  freeAsmop (left, NULL);
-  freeAsmop (result, NULL);
+  m6502_freeAsmop (left, NULL);
+  m6502_freeAsmop (result, NULL);
 }
 
 /**************************************************************************
@@ -202,13 +202,13 @@ genRotX(iCode *ic, int shCount)
   int i, size;
 
   //emitComment (TRACEGEN, __func__);
-  aopOp (left, ic);
-  aopOp (result, ic);
+  m6502_aopOp (left, ic);
+  m6502_aopOp (result, ic);
   printIC(ic);
 
   size = AOP_SIZE (result);
 
- emitComment (TRACEGEN, "%s - size=%d shCount=%d",__func__, size, shCount);
+  emitComment (TRACEGEN, "%s - size=%d shCount=%d",__func__, size, shCount);
 
   if(IS_AOP_XA(AOP(result)))
     resultInXA=true;
@@ -352,8 +352,8 @@ genRotX(iCode *ic, int shCount)
 
   pullOrFreeReg (m6502_reg_a, needpulla);
 
-  freeAsmop (left, NULL);
-  freeAsmop (result, NULL);
+  m6502_freeAsmop (left, NULL);
+  m6502_freeAsmop (result, NULL);
 }
 
 /**************************************************************************
@@ -371,8 +371,8 @@ genRot8(iCode *ic, int shCount)
   emitComment (TRACEGEN, __func__);
   emitComment (TRACEGEN, "%s - size=1 shCount=%d",__func__, shCount);
 
-  aopOp (left, ic);
-  aopOp (result, ic);
+  m6502_aopOp (left, ic);
+  m6502_aopOp (result, ic);
   printIC(ic);
 
   if(IS_AOP_WITH_A(AOP(result)))
@@ -422,8 +422,8 @@ genRot8(iCode *ic, int shCount)
   storeRegToAop (m6502_reg_a, AOP (result), 0);
   pullOrFreeReg (m6502_reg_a, needpulla);
 
-  freeAsmop (left, NULL);
-  freeAsmop (result, NULL);
+  m6502_freeAsmop (left, NULL);
+  m6502_freeAsmop (result, NULL);
 }
 
 /**************************************************************************

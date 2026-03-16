@@ -29,6 +29,7 @@
 
 #define USE_OLDSALLOC 0 // Change to 1 to use old stack allocator
 
+// For register pairs, the upper byte shall be directly past the lower byte.
 enum
 {
   A_IDX = 0,

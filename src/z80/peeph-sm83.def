@@ -303,7 +303,7 @@ replace {
 } by {
 	; sm83 peephole 18d pushed #%2 faster
 	xor	a, a
-	and	a
+	and	a, a
 	push	af
 } if operandsLiteral(%2), immdInRange(0x00A0 0x00A0 '+' %2 0 %x3), notUsed(%1 'af')
 

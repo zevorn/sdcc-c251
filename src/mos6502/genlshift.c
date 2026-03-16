@@ -31,10 +31,10 @@
 #include "dbuf_string.h"
 
 /**************************************************************************
- * AccLsh - left shift accumulator by known count
+ * m6502_AccLsh - left shift accumulator by known count
  *************************************************************************/
 void
-AccLsh (int shCount)
+m6502_AccLsh (int shCount)
 {
   int i;
 
@@ -75,7 +75,7 @@ XAccLsh (reg_info *msb_reg, int shCount)
 
   if (shCount >= 8)
     {
-      AccLsh (shCount - 8);
+      m6502_AccLsh (shCount - 8);
       transferRegReg (m6502_reg_a, msb_reg, false);
       loadRegFromConst (m6502_reg_a, 0);
     }
@@ -122,7 +122,7 @@ genlsh8 (operand * result, operand * left, int shCount)
     return;
 
   if (!IS_AOP_A(AOP(result)) && sameRegs (AOP (left), AOP (result)) 
-      && shCount<3 && aopCanShift(AOP(left)) && !maskedbyte)
+      && shCount<3 && m6502_aopCanShift(AOP(left)) && !maskedbyte)
     {
       while (shCount--)
         rmwWithAop ("asl", AOP (result), 0);
@@ -132,7 +132,7 @@ genlsh8 (operand * result, operand * left, int shCount)
       if(!IS_AOP_A(AOP(result)))
 	needpulla = pushRegIfSurv (m6502_reg_a);
       loadRegFromAop (m6502_reg_a, AOP (left), 0);
-      AccLsh (shCount);
+      m6502_AccLsh (shCount);
       if (maskedbyte)
 	emit6502op ("and", IMMDFMT, bytemask);
       storeRegToAop (m6502_reg_a, AOP (result), 0);
@@ -161,7 +161,7 @@ genlsh16 (operand * result, operand * left, int shCount)
       // TODO
       needpulla = pushRegIfSurv (m6502_reg_a);
       loadRegFromAop (m6502_reg_a, AOP (left), 0);
-      AccLsh (shCount);
+      m6502_AccLsh (shCount);
       if (maskedtopbyte)
 	emit6502op ("and", IMMDFMT, topbytemask);
       storeRegToAop (m6502_reg_a, AOP (result), 1);
@@ -190,7 +190,7 @@ genlsh16 (operand * result, operand * left, int shCount)
 	  XAccLsh (m6502_reg_x, shCount);
 	}
     }
-  else if(aopCanShift(AOP(result)) && shCount <= 4)
+  else if(m6502_aopCanShift(AOP(result)) && shCount <= 4)
     {
       if( sameRegs (AOP (left), AOP (result)))
 	{
@@ -748,9 +748,9 @@ m6502_genLeftShift (iCode * ic)
 
   emitComment (TRACEGEN, __func__);
 
-  aopOp (right, ic);
-  aopOp (left, ic);
-  aopOp (result, ic);
+  m6502_aopOp (right, ic);
+  m6502_aopOp (left, ic);
+  m6502_aopOp (result, ic);
 
   printIC(ic);
 
@@ -1108,8 +1108,8 @@ m6502_genLeftShift (iCode * ic)
     loadRegTemp(m6502_reg_a);
 
  release:
-  freeAsmop (right, NULL);
-  freeAsmop (left, NULL);
-  freeAsmop (result, NULL);
+  m6502_freeAsmop (right, NULL);
+  m6502_freeAsmop (left, NULL);
+  m6502_freeAsmop (result, NULL);
 }
 

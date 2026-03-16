@@ -1,7 +1,7 @@
 ;-------------------------------------------------------------------------
 ;   div.s - implementation on std C library div
 ;
-;   Copyright (C) 2025, Gabriele Gorla
+;   Copyright (C) 2025-2026, Gabriele Gorla
 ;
 ;   This library is free software; you can redistribute it and/or modify it
 ;   under the terms of the GNU General Public License as published by the
@@ -48,22 +48,20 @@
 	
 _div:
 	jsr	___sdivmod16
-	ldy	*s1
+	lda	*s1
 	bpl	rempos
 	lda	*rem+0
 	ldx	*rem+1
 	jsr 	___negax
-	sta *rem+0
-	stx *rem+1
-rempos:
-	lda	*res+0
-	ldx	*res+1
-	pha
+	sta 	*rem+0
+	stx 	*rem+1
 	lda	*s1
+rempos:
+	ldx	*res+1
 	eor	*s2
 	bpl	pos
-	pla
+	lda	*res+0
 	jmp 	___negax
 pos:
-	pla
+	lda	*res+0
 	rts

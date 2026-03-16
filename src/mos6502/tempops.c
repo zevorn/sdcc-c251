@@ -73,8 +73,8 @@ fastRestoreA()
  * @param reg pointer for the register to save
  * @param freereg free the register if true
  *************************************************************************/
-static void
-storeRegTempi(reg_info * reg, bool freereg, bool force)
+bool
+m6502_storeRegTempi(reg_info * reg, bool freereg, bool force)
 {
   emitComment (REGOPS, "  storeRegTemp(%s) %s", reg ? reg->name : "-", freereg ? "free" : "");
 
@@ -109,12 +109,12 @@ storeRegTempi(reg_info * reg, bool freereg, bool force)
       _S.tempOfs++;
       break;
     case XA_IDX:
-      storeRegTempi (m6502_reg_a, freereg, force);
-      storeRegTempi (m6502_reg_x, freereg, force);
+      m6502_storeRegTempi (m6502_reg_a, freereg, force);
+      m6502_storeRegTempi (m6502_reg_x, freereg, force);
       break;
     case XY_IDX:
-      storeRegTempi (m6502_reg_y, freereg, force);
-      storeRegTempi (m6502_reg_x, freereg, force);
+      m6502_storeRegTempi (m6502_reg_y, freereg, force);
+      m6502_storeRegTempi (m6502_reg_x, freereg, force);
       break;
     default:
       emitcode("ERROR", "%s : bad reg %02x (%s)", __func__, regidx, reg->name);
@@ -126,54 +126,8 @@ storeRegTempi(reg_info * reg, bool freereg, bool force)
 
   if(_S.tempOfs > NUM_TEMP_REGS)
     emitcode("ERROR", "storeRegTemp(): overflow");
-}
 
-
-void
-storeRegTemp (reg_info * reg, bool freereg)
-{
-  storeRegTempi (reg, freereg, false);
-}
-
-void
-storeRegTempAlways (reg_info * reg, bool freereg)
-{
-  storeRegTempi (reg, freereg, true);
-}
-
-
-/**************************************************************************
- * Store register onto the REGTEMP stack if register is alive
- *
- * @param reg pointer for the register to save
- * @return true if the register was saved
- *************************************************************************/
-bool
-storeRegTempIfSurv (reg_info *reg)
-{
-  if (!reg->isDead)
-    {
-      storeRegTemp (reg, true);
-      return true;
-    }
-  return false;
-}
-
-/**************************************************************************
- * Store register onto the REGTEMP stack if register is in use
- *
- * @param reg pointer for the register to save
- * @return true if the register was saved
- *************************************************************************/
-bool
-storeRegTempIfUsed (reg_info *reg)
-{
-  if (!reg->isFree)
-    {
-      storeRegTemp (reg, true);
-      return true;
-    }
-  return false;
+  return true;
 }
 
 /**************************************************************************

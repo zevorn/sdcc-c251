@@ -36,7 +36,7 @@
 
 #if __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
 
-unsigned long long _slulonglong(unsigned long long l, char s) __SDCC_NONBANKED
+unsigned long long _slulonglong(unsigned long long l, unsigned char s) __SDCC_NONBANKED
 {
     uint32_t * const top =    (uint32_t *)((char *)(&l) + 0);
     uint16_t * const middle = (uint16_t *)((char *)(&l) + 4);
@@ -60,7 +60,7 @@ unsigned long long _slulonglong(unsigned long long l, char s) __SDCC_NONBANKED
 
 #elif __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_LITTLE__
 
-unsigned long long _slulonglong(unsigned long long l, char s) __SDCC_NONBANKED
+unsigned long long _slulonglong(unsigned long long l, unsigned char s) __SDCC_NONBANKED
 {
     _AUTOMEM uint32_t * const top =    (_AUTOMEM uint32_t *)((_AUTOMEM char *)(&l) + 4);
     _AUTOMEM uint16_t * const middle = (_AUTOMEM uint16_t *)((_AUTOMEM char *)(&l) + 2);

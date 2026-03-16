@@ -28,6 +28,8 @@
 
 #include <string.h>
 
+#undef strpbrk /* Avoid conflict with C23 macro */
+
 char * strpbrk ( const char * string, const char * control )
 {
 	char *ret = NULL;

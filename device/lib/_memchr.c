@@ -28,6 +28,8 @@
 
 #include <string.h>
 
+#undef memchr /* Avoid conflict with C23 macro */
+
 void *memchr(const void *s, int c, size_t n)
 {
 	unsigned char *p = (unsigned char *)s;
