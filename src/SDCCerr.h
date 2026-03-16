@@ -385,6 +385,8 @@ enum {
   W_OPTIONAL_PTR_DEREF          = 355, // pointer to _Optional could not be proven to be non-null at dereference
   W_NONCONST_CODE_OBJ           = 356, // object in read-only code space should be const
   W_NONCONST_CODE_PTR           = 357, // pointer to object in read-only code space should be pointer to const
+  W_OPTIONAL_RELATIONAL         = 358, // pointer to _Optional could not be proven to be non-null at relational operator
+  W_OPTIONAL_ARITHMETIC         = 359, // pointer to _Optional could not be proven to be non-null at pointer arithmetic
 
   // If you get a merge conflict here, some #pragma disable_warning in support/valdiag and support/regression will likely need to be adapted to the resolution. Check there!
 

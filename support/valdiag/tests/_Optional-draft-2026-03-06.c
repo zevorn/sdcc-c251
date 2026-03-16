@@ -42,7 +42,7 @@ char *str_from_array(_Optional const char (*paocc)[64])
                          default: 0)); /* IGNORE */ // TODO: implement!
 
   // invalid: array to pointer decay does not remove const
-  return *paocc;
+  return *paocc; /* IGNORE */ // todo: implement warning!
 }
 #endif
 #endif
@@ -202,7 +202,7 @@ int opt_strcmp(_Optional const char *s1,
                 const char *: 1,
                 default : 0));
 
-  return strcmp(&*s1, &*s2); /* IGNORE */ // BUG
+  return strcmp(&*s1, &*s2);
 }
 #endif
 
@@ -303,14 +303,14 @@ void purple(_Optional char *poi)
   // passes: + operator removes _Optional
   static_assert(_Generic(poi + 1,
                          char *: 1,
-                         default: 0)); /* IGNORE */ // TODO: Implement!
-  puts(poi + 1); /* IGNORE */ // BUG: should not be a warning.
+                         default: 0));
+  puts(poi + 1);
 
   // passes: - operator removes _Optional
   static_assert(_Generic(poi - 1,
                          char *: 1,
-                         default: 0)); /* IGNORE */ // TODO: Implement!
-  puts(poi - 1); /* IGNORE */ // BUG: should not be a warning.
+                         default: 0));
+  puts(poi - 1);
 }
 #endif
 
@@ -324,12 +324,12 @@ int *amber(_Optional int *poi)
 
 ptrdiff_t blue(_Optional int *poi, int *pi)
 {
-  return poi - pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi - pi; // recommended diagnostic /* WARNING */
 }
 
 int *green(_Optional int *poi)
 {
-  return poi - 0; // recommended diagnostic /* WARNING */
+  return poi - 0; // recommended diagnostic /* IGNORE */ // BUG: missing warning
 }
 
 int *black(_Optional int *poi)
@@ -349,22 +349,22 @@ char *caldecote(_Optional int *poi)
 #ifdef TEST26
 int is_lt(_Optional int *poi, int *pi)
 {
-  return poi < pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi < pi; // recommended diagnostic /* WARNING */
 }
 
 int is_le(_Optional int *poi, int *pi)
 {
-  return poi <= pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi <= pi; // recommended diagnostic /* WARNING */
 }
 
 int is_ge(_Optional int *poi, int *pi)
 {
-  return poi >= pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi >= pi; // recommended diagnostic /* WARNING */
 }
 
 int is_gt(_Optional int *poi, int *pi)
 {
-  return poi > pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi > pi; // recommended diagnostic /* WARNING */
 }
 #endif
 

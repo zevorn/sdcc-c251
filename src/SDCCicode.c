@@ -2499,6 +2499,10 @@ geniCodeSubtract (operand * left, operand * right, RESULT_TYPE resultType)
                                 operandFromLit (getSize (ltype->next)),
                                 (getArraySizePtr (left) >= INTSIZE) ? RESULT_TYPE_INT : RESULT_TYPE_CHAR);
       resType = copyLinkChain (IS_ARRAY (ltype) ? ltype->next : ltype);
+      if (IS_SPEC (resType->next))
+        SPEC_OPTIONAL (resType->next) = false;
+      else
+        DCL_PTR_OPTIONAL (resType->next) = false;
     }
   else
     {                           /* make them the same size */
@@ -2590,6 +2594,11 @@ geniCodeAdd (operand *left, operand *right, RESULT_TYPE resultType, int lvl)
         }
 
       resType = copyLinkChain (ltype);
+
+      if (IS_SPEC (resType->next))
+        SPEC_OPTIONAL (resType->next) = false;
+      else
+        DCL_PTR_OPTIONAL (resType->next) = false;
     }
   else
     { // make them the same size
@@ -2908,6 +2917,16 @@ geniCodePostDec (operand * op)
       return op;
     }
 
+  // Drop _Optional on pointer target,
+  if (IS_PTR (rvtype) && isOptional (rvtype->next))
+    {
+      rvtype = copyLinkChain (rvtype);
+      if IS_SPEC (rvtype->next)
+        SPEC_OPTIONAL (rvtype->next) = false;
+      else
+        DCL_PTR_OPTIONAL (rvtype->next) = false;
+    }
+
   rOp = newiTempOperand (rvtype, 0);
   OP_SYMBOL (rOp)->noSpilLoc = 1;
 
@@ -2973,6 +2992,15 @@ geniCodePreDec (operand * op, bool lvalue)
     ic = newiCode ('!', rop, 0);
   else
     ic = newiCode ('-', rop, operandFromLit (size));
+  // Drop _Optional on pointer target,
+  if (IS_PTR (roptype) && isOptional (roptype->next))
+    {
+      roptype = copyLinkChain (roptype);
+      if IS_SPEC (roptype->next)
+        SPEC_OPTIONAL (roptype->next) = false;
+      else
+        DCL_PTR_OPTIONAL (roptype->next) = false;
+    }
   IC_RESULT (ic) = result = newiTempOperand (roptype, 0);
   ADDTOCHAIN (ic);
 
