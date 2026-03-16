@@ -2867,6 +2867,7 @@ geniCodePreInc (operand * op, bool lvalue)
   sym_link *roptype = operandType (rop);
   operand *result;
   int size = 0;
+  bool optional_target = false;
 
   if (!op->isaddr)
     {
@@ -2885,11 +2886,21 @@ geniCodePreInc (operand * op, bool lvalue)
     ic = newiCode ('=', NULL, operandFromLit (1));
   else
     ic = newiCode ('+', rop, operandFromLit (size));
+  // Drop _Optional on pointer target,
+  if (IS_PTR (roptype) && isOptional (roptype->next))
+    {
+      roptype = copyLinkChain (roptype);
+      if IS_SPEC (roptype->next)
+        SPEC_OPTIONAL (roptype->next) = false;
+      else
+        DCL_PTR_OPTIONAL (roptype->next) = false;
+      optional_target = true;
+    }
   IC_RESULT (ic) = result = newiTempOperand (roptype, 0);
   ADDTOCHAIN (ic);
 
   (void) geniCodeAssign (op, result, 0, 0);
-  if (lvalue || (IS_TRUE_SYMOP (op) && !isOperandVolatile (op, FALSE)) || IS_BITVAR (optype))
+  if (lvalue || (IS_TRUE_SYMOP (op) && !isOperandVolatile (op, false) && !optional_target) || IS_BITVAR (optype))
     return op;
   else
     return result;
@@ -2974,6 +2985,7 @@ geniCodePreDec (operand * op, bool lvalue)
   sym_link *roptype = operandType (rop);
   operand *result;
   int size = 0;
+  bool optional_target =  false;
 
   if (!op->isaddr)
     {
@@ -3000,12 +3012,13 @@ geniCodePreDec (operand * op, bool lvalue)
         SPEC_OPTIONAL (roptype->next) = false;
       else
         DCL_PTR_OPTIONAL (roptype->next) = false;
+      optional_target = true;
     }
   IC_RESULT (ic) = result = newiTempOperand (roptype, 0);
   ADDTOCHAIN (ic);
 
   (void) geniCodeAssign (op, result, 0, 0);
-  if (lvalue || (IS_TRUE_SYMOP (op) && !isOperandVolatile (op, FALSE)) || IS_BITVAR (optype))
+  if (lvalue || (IS_TRUE_SYMOP (op) && !isOperandVolatile (op, false) && !optional_target) || IS_BITVAR (optype))
     return op;
   else
     return result;
