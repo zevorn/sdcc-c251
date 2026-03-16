@@ -223,11 +223,11 @@ f8instructionSize (lineNode *pl)
     }
 
   if (larg &&
-    (!IS_F8L && (lineIsInst (pl, "adcw") || lineIsInst (pl, "sbcw") && (!rarg || !rarg[0]) ||
+    (!IS_F8L && lineIsInst (pl, "adcw") || !IS_F8L && lineIsInst (pl, "sbcw") && (!rarg || !rarg[0]) ||
     !IS_F8L && lineIsInst (pl, "boolw") || lineIsInst (pl, "clrw") || !IS_F8L && lineIsInst (pl, "decw") || lineIsInst (pl, "incw") ||
     !IS_F8L && lineIsInst (pl, "incnw") || !IS_F8L && lineIsInst (pl, "mul") || !IS_F8L && lineIsInst (pl, "negw") || lineIsInst (pl, "popw") ||
     lineIsInst (pl, "pushw") || !IS_F8L && lineIsInst (pl, "sllw") || !IS_F8L && lineIsInst (pl, "sraw") || !IS_F8L && lineIsInst (pl, "srlw") ||
-    !IS_F8L && lineIsInst (pl, "rlcw") || !IS_F8L && lineIsInst (pl, "rrcw") || lineIsInst (pl, "tstw"))))
+    !IS_F8L && lineIsInst (pl, "rlcw") || !IS_F8L && lineIsInst (pl, "rrcw") || lineIsInst (pl, "tstw")))
     {
       if (larg[0] == 'y')
         return 1;
