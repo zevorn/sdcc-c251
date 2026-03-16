@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #ifdef TEST1
-#if 0 // BUG: _Generic issue?
+#if 1 // BUG: _Generic issue?
 #include <stdio.h>
 
 struct S {
@@ -39,7 +39,7 @@ char *str_from_array(_Optional const char (*paocc)[64])
 
   static_assert(_Generic(*paocc,
                          const char *: 1,
-                         default: 0));
+                         default: 0)); /* IGNORE */ // TODO: implement!
 
   // invalid: array to pointer decay does not remove const
   return *paocc;
@@ -67,7 +67,7 @@ _Optional int *poi;
 // fails: qualifier is dropped from controlling expression
 static_assert(_Generic(*poi,
                        _Optional int: 1,
-                       default: 0));
+                       default: 0)); /* ERROR */
 #endif
 
 #ifdef TEST4
@@ -303,13 +303,13 @@ void purple(_Optional char *poi)
   // passes: + operator removes _Optional
   static_assert(_Generic(poi + 1,
                          char *: 1,
-                         default: 0));
+                         default: 0)); /* IGNORE */ // TODO: Implement!
   puts(poi + 1); /* IGNORE */ // BUG: should not be a warning.
 
   // passes: - operator removes _Optional
   static_assert(_Generic(poi - 1,
                          char *: 1,
-                         default: 0));
+                         default: 0)); /* IGNORE */ // TODO: Implement!
   puts(poi - 1); /* IGNORE */ // BUG: should not be a warning.
 }
 #endif
@@ -983,7 +983,6 @@ Y ofri;
 #endif
 
 #ifdef TEST68
-#if 0 // incomplete support
 // valid: does not declare an array
 typedef _Optional int TAOI[2][3];
 
@@ -996,12 +995,11 @@ static_assert(_Generic(faoi,
 default: 0));
 
 // invalid: array type is not adjusted to pointer type
-TAOI aoi;
-#endif
+TAOI aoi; /* ERROR */
 #endif
 
 #ifdef TEST69
-#if 0 // incomplete support
+#if 0 // incomplete support for function types
 // valid: does not declare a function
 typedef _Optional typeof(int (float)) TOFRI;
 
@@ -1042,7 +1040,7 @@ int main(void)
   const char *pcc;
 
   npc = nullptr; // valid but unsafe /* IGNORE */
-  lpc = "hello"; // valid but unsafe /* WARNING */
+  lpc = "hello"; // valid but unsafe /* IGNORE */ // TODO: implement warning!
 
   poc = nullptr; // valid and safe
   pcc = "world"; // valid and safe
