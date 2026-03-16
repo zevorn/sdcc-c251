@@ -35,7 +35,7 @@
 #ifdef __SDCC_LONGLONG
 
 #if __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_BIG__
-long long _srslonglong(long long l, char s) __SDCC_NONBANKED
+long long _srslonglong(long long l, unsigned char s) __SDCC_NONBANKED
 {
      int32_t * const top =    ( int32_t *)((char *)(&l) + 0);
     uint32_t * const middle = (uint32_t *)((char *)(&l) + 2);
@@ -57,7 +57,7 @@ long long _srslonglong(long long l, char s) __SDCC_NONBANKED
     return(l);
 }
 #elif __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_LITTLE__
-long long _srslonglong(long long l, char s) __SDCC_NONBANKED
+long long _srslonglong(long long l, unsigned char s) __SDCC_NONBANKED
 {
     _AUTOMEM  int32_t * const top =    (_AUTOMEM  int32_t *)((_AUTOMEM char *)(&l) + 4);
     _AUTOMEM uint32_t * const middle = (_AUTOMEM uint32_t *)((_AUTOMEM char *)(&l) + 2);

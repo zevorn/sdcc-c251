@@ -32,7 +32,7 @@
 
 #ifdef __SDCC_LONGLONG
 
-long long _slslonglong(long long l, char s) __SDCC_NONBANKED
+long long _slslonglong(long long l, unsigned char s) __SDCC_NONBANKED
 {
     return((unsigned long long)(l) << s);
 }

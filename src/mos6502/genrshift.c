@@ -72,10 +72,10 @@ AccSRsh (int shCount)
 }
 
 /**************************************************************************
- * AccRsh - right shift accumulator by known count
+ * m6502_AccRsh - right shift accumulator by known count
  *************************************************************************/
 void
-AccRsh (int shCount, bool sign)
+m6502_AccRsh (int shCount, bool sign)
 {
   int i;
 
@@ -183,7 +183,7 @@ XAccRsh (int shCount, bool sign)
 
       if(shCount<8)
         {
-          AccRsh (shCount, false);
+          m6502_AccRsh (shCount, false);
           if(v&0xff)
             emit6502op ("ora", IMMDFMT, v&0xff);
         }
@@ -203,7 +203,7 @@ XAccRsh (int shCount, bool sign)
   if(shCount>=8)
     {
       transferRegReg(m6502_reg_x, m6502_reg_a, true);
-      AccRsh (shCount - 8, false);
+      m6502_AccRsh (shCount - 8, false);
       loadRegFromConst (m6502_reg_x, 0);
     }
   else if(shCount==7)
@@ -245,7 +245,7 @@ genrsh8 (operand * result, operand * left, int shCount, int sign)
     return;
 
   if (!IS_AOP_A(AOP(result)) && sameRegs (AOP (left), AOP (result)) 
-      && shCount<3 && aopCanShift(AOP(left)) && !sign)
+      && shCount<3 && m6502_aopCanShift(AOP(left)) && !sign)
     {
       while (shCount--)
         rmwWithAop ("lsr", AOP (result), 0);
@@ -255,7 +255,7 @@ genrsh8 (operand * result, operand * left, int shCount, int sign)
       if(!IS_AOP_A(AOP(result)))
 	needpulla = pushRegIfSurv (m6502_reg_a);
       loadRegFromAop (m6502_reg_a, AOP (left), 0);
-      AccRsh (shCount, sign);
+      m6502_AccRsh (shCount, sign);
       storeRegToFullAop (m6502_reg_a, AOP (result), sign);
       pullOrFreeReg (m6502_reg_a, needpulla);
     }
@@ -276,7 +276,7 @@ genrsh16 (operand * result, operand * left, int shCount, int sign)
 	{
 	  needpulla = pushRegIfSurv (m6502_reg_a);
 	  loadRegFromAop (m6502_reg_a, AOP (left), 1);
-	  AccRsh (shCount - 8, sign);
+	  m6502_AccRsh (shCount - 8, sign);
 	  storeRegToFullAop (m6502_reg_a, AOP (result), sign);
 	  pullOrFreeReg (m6502_reg_a, needpulla);
 	}
@@ -1037,9 +1037,9 @@ m6502_genRightShift (iCode * ic)
 
   emitComment (TRACEGEN, __func__);
 
-  aopOp (right, ic);
-  aopOp (left, ic);
-  aopOp (result, ic);
+  m6502_aopOp (right, ic);
+  m6502_aopOp (left, ic);
+  m6502_aopOp (result, ic);
 
   printIC(ic);
 
@@ -1354,8 +1354,8 @@ m6502_genRightShift (iCode * ic)
     loadRegTemp (m6502_reg_a);
 
  release:
-  freeAsmop (right, NULL);
-  freeAsmop (left, NULL);
-  freeAsmop (result, NULL);
+  m6502_freeAsmop (right, NULL);
+  m6502_freeAsmop (left, NULL);
+  m6502_freeAsmop (result, NULL);
 }
 

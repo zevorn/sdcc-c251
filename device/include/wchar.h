@@ -93,5 +93,37 @@ long long int wcstoll(const wchar_t nptr[restrict static 1], wchar_t **restrict 
 unsigned long long int wcstoull(const wchar_t nptr[restrict  static 1], wchar_t **restrict endptr, int base);
 #endif
 
+/* C23 const-preserving wrapper macros */
+
+#if __STDC_VERSION__ >= 202311L
+
+#ifndef __XFER_PTR_QUAL
+#define __XFER_PTR_QUAL(P, T)   typeof(_Generic(1 ? (P) : (void *)(P), \
+                                                const void * : (const T)nullptr, \
+                                                restrict void * : (restrict T)nullptr, \
+                                                restrict const void * : (restrict const T)nullptr, \
+                                                volatile void * : (volatile T)nullptr, \
+                                                volatile const void * : (volatile const T)nullptr, \
+                                                volatile restrict void * : (volatile restrict T)nullptr, \
+                                                volatile restrict const void * : (volatile restrict const T)nullptr, \
+                                                _Optional void * : (_Optional T)nullptr, \
+                                                _Optional const void * : (_Optional const T)nullptr, \
+                                                _Optional restrict void * : (_Optional restrict T)nullptr, \
+                                                _Optional restrict const void * : (_Optional restrict const T)nullptr, \
+                                                _Optional volatile void * : (_Optional volatile T)nullptr, \
+                                                _Optional volatile const void * : (_Optional volatile const T)nullptr, \
+                                                _Optional volatile restrict void * : (_Optional volatile restrict T)nullptr, \
+                                                _Optional volatile restrict const void * : (_Optional volatile restrict const T)nullptr, \
+                                                default : (T)nullptr))
+#endif
+
+#define wcschr(s, c)            ((__XFER_PTR_QUAL(s, wchar_t *))(wcschr)(s, c))
+#define wcspbrk(s1, s2)         ((__XFER_PTR_QUAL(s1, wchar_t *))(wcspbrk)(s1, s2))
+#define wcsrchr(s, c)           ((__XFER_PTR_QUAL(s, wchar_t *))(wcsrchr)(s, c))
+#define wcsstr(s1, s2)          ((__XFER_PTR_QUAL(s1, wchar_t *))(wcsstr)(s1, s2))
+#define wmemchr(s, c, n)        ((__XFER_PTR_QUAL(s, wchar_t *))(wmemchr)(s, c, n))
+
+#endif
+
 #endif /* __SDCC_WCHAR_H */
 

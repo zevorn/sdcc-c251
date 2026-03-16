@@ -1398,8 +1398,8 @@ constIntVal (const char *s)
       p2++;
       if (strchr (p2, 'l') || strchr (p2, 'L') || strchr (p2, 'z') || strchr (p2, 'Z') || strstr (p, "wb") || strstr (p, "WB"))
         werror (E_INTEGERSUFFIX, p);
-      else if (!options.std_c2y)
-        werror (W_SIZETCONST_C2Y);
+      else if (!options.std_sdcc)
+        werror (W_SIZETCONST_SDCC);
     }
   else if ((p2 = strstr (p, "wb")) || (p2 = strstr (p, "WB")))
     {
@@ -1751,7 +1751,8 @@ strVal (const char *s)
   DCL_ARRAY_LENGTH_TYPE (val->type) = ARRAY_LENGTH_KNOWN_CONST;
   val->type->next = val->etype = newLink (SPECIFIER);
   SPEC_SCLS (val->etype) = S_LITERAL;
-  SPEC_CONST (val->etype) = 1;
+  if (options.const_str)
+    SPEC_CONST (val->etype) = 1; // NOTE: this can break _Generic
 
   bool explicit_u8 = s[0] == 'u' && s[1] == '8' && s[2] == '"';
 
