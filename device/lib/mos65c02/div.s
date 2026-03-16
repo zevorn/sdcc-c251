@@ -1,7 +1,7 @@
 ;-------------------------------------------------------------------------
-;   abs.s - standard C library function
+;   div.s - implementation on std C library div
 ;
-;   Copyright (C) 2023-2026, Gabriele Gorla
+;   Copyright (C) 2025-2026, Gabriele Gorla
 ;
 ;   This library is free software; you can redistribute it and/or modify it
 ;   under the terms of the GNU General Public License as published by the
@@ -26,32 +26,42 @@
 ;   might be covered by the GNU General Public License.
 ;-------------------------------------------------------------------------
 
-	.module abs
-
+	.module div
+	
 ;--------------------------------------------------------
 ; exported symbols
 ;--------------------------------------------------------
-	.globl _abs
-	.globl ___negax
+	.globl _div
+
+;--------------------------------------------------------
+; local aliases
+;--------------------------------------------------------
+	.define res "___SDCC_m6502_ret0"
+	.define rem "___SDCC_m6502_ret2"
+	.define s1  "___SDCC_m6502_ret4"
+	.define s2  "___SDCC_m6502_ret5"
 
 ;--------------------------------------------------------
 ; code
 ;--------------------------------------------------------
 	.area CODE
-
-_abs:
-	cpx #0x00
-	bpl skip
-___negax:
-  	sec
-	eor #0xff
-	adc #0x00
-	tay
-	txa
-	eor #0xff
-	adc #0x00
-	tax
-	tya
-skip:
+	
+_div:
+	jsr	___sdivmod16
+	lda	*s1
+	bpl	rempos
+	lda	*rem+0
+	ldx	*rem+1
+	jsr	___negax
+	sta	*rem+0
+	stx	*rem+1
+	lda	*s1
+rempos:
+	ldx	*res+1
+	eor	*s2
+	bpl	pos
+	lda	*res+0
+	jmp	___negax
+pos:
+	lda	*res+0
 	rts
-
