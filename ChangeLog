@@ -9,6 +9,8 @@
 	  support/regression/tests/compound-literal.c,
 	  support/regression/tests/coremark.c.in:
 	  Fix bug #3945.
+	* src/stm8/gen.c:
+	  Fix an stm8 bool bit-field codegen issue.
 
 2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
 

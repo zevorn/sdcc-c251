@@ -8864,7 +8864,7 @@ genPointerGet (const iCode *ic)
           cost (2, 1);
         }
 
-      if (bit_field && blen < 8 && !SPEC_USIGN (getSpec (operandType (result)))) // Sign extension for partial byte of signed bit-field
+      if (bit_field && blen < 8 && !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result)))) // Sign extension for partial byte of signed bit-field
         {
           if (blen != 1) // The and above already set the z flag for blen == 1.
             {
@@ -8897,7 +8897,7 @@ genPointerGet (const iCode *ic)
 
   if (bit_field && i < size)
     {
-      if (SPEC_USIGN (getSpec (operandType (result))))
+      if (SPEC_USIGN (getSpec (operandType (result))) || IS_BOOLEAN (getSpec (operandType (result))))
         genMove_o (result->aop, i, ASMOP_ZERO, 0, bit_field ? i : size - i - 1, FALSE, FALSE, FALSE);
       else
         wassertl (0, "Unimplemented multibyte sign extension for bit-field.");
