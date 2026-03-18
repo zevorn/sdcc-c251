@@ -6401,7 +6401,7 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
       m6502_AccRsh (bstr, false);
       emit6502op ("and", IMMDFMT, ((unsigned char) - 1) >> (8 - blen));
       m6502_useReg(m6502_reg_a);
-      if (!SPEC_USIGN (etype))
+      if (!SPEC_USIGN (etype) && !IS_BOOLEAN (etype))
 	{
 	  // signed bitfield
 	  symbol *tlbl = safeNewiTempLabel (NULL);
@@ -6434,7 +6434,7 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
       loadRegFromConst(m6502_reg_y, yoff + offset);
       emit6502op ("lda", DPTRFMT_IY);
       emit6502op ("and", IMMDFMT, ((unsigned char) - 1) >> (8 - rlen));
-      if (!SPEC_USIGN (etype))
+      if (!SPEC_USIGN (etype) && !IS_BOOLEAN (etype))
 	{
 	  /* signed bitfield */
 	  symbol *tlbl = safeNewiTempLabel (NULL);
@@ -6455,7 +6455,7 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
   if (offset < rsize)
     {
       rsize -= offset;
-      if (SPEC_USIGN (etype))
+      if (SPEC_USIGN (etype) || IS_BOOLEAN (etype))
 	{
 	  while (rsize--)
 	    storeConstToAop (0, AOP (result), offset++);

@@ -1,7 +1,8 @@
 ;-------------------------------------------------------------------------
-;   abs.s - standard C library function
+;   _modsint.s - routine for division of 16 bit signed int
 ;
-;   Copyright (C) 2023-2026, Gabriele Gorla
+;   Copyright (C) 1998, Ullrich von Bassewitz
+;   Copyright (C) 2022, Gabriele Gorla
 ;
 ;   This library is free software; you can redistribute it and/or modify it
 ;   under the terms of the GNU General Public License as published by the
@@ -26,32 +27,33 @@
 ;   might be covered by the GNU General Public License.
 ;-------------------------------------------------------------------------
 
-	.module abs
+	.module _modsint
 
 ;--------------------------------------------------------
 ; exported symbols
 ;--------------------------------------------------------
-	.globl _abs
-	.globl ___negax
+	.globl __modsint
+
+;--------------------------------------------------------
+; local aliases
+;--------------------------------------------------------
+	.define res "___SDCC_m6502_ret0"
+	.define den "__divsint_PARM_2"
+	.define rem "___SDCC_m6502_ret2"
+	.define s1  "___SDCC_m6502_ret4"
+	.define s2  "___SDCC_m6502_ret5"
 
 ;--------------------------------------------------------
 ; code
 ;--------------------------------------------------------
 	.area CODE
 
-_abs:
-	cpx #0x00
-	bpl skip
-___negax:
-  	sec
-	eor #0xff
-	adc #0x00
-	tay
-	txa
-	eor #0xff
-	adc #0x00
-	tax
-	tya
-skip:
+__modsint:
+	jsr	___sdivmod16
+	lda	*rem+0
+	ldx	*rem+1
+	ldy	*s1
+	bpl	pos
+	jmp	___negax
+pos:
 	rts
-

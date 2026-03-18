@@ -3,10 +3,9 @@
 
 #ifdef __SDCC
 _Pragma("std_c23")
-#endif
-
 #undef __STDC_VERSION__
 #define __STDC_VERSION__ 202311L
+#endif
 
 #include <string.h>
 
@@ -14,6 +13,7 @@ _Pragma("std_c23")
 
 void testQualifierPreserving(void)
 {
+#if __STDC_VERSION__ >= 202311L
     // test char and void pointer representatives -- the wrappers all use the same mechanism
     char abc[] = "abc";
     ASSERT(memchr(abc, 'c', 3) == abc + 2);
@@ -25,4 +25,6 @@ void testQualifierPreserving(void)
     ASSERT(_Generic(memchr(ABC, 'C', 3), void *: 1, const void *: 2, default: 3) == 2);
     ASSERT(strchr(ABC, 'C') == ABC + 2);
     ASSERT(_Generic(strchr(ABC, 'C'), char *: 1, const char *: 2, default: 3) == 2);
+#endif
 }
+

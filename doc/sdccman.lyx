@@ -3286,6 +3286,31 @@ status open
 .
 \end_layout
 
+\begin_layout Itemize
+In 4.5.24,
+ 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+--fconst-str
+\end_layout
+
+\end_inset
+
+ has been renamed to 
+\begin_inset Flex Code
+status open
+
+\begin_layout Plain Layout
+--fconst-stringlit
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Section
 System Requirements
 \end_layout
@@ -12835,6 +12860,722 @@ name "sec:Command-Line-Options"
 \end_layout
 
 \begin_layout Subsection
+Language dialect Options
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-<arg>
+\series default
+ Determine the language standard.
+ For enhanced compatibility with other compilers,
+ 
+\series bold
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std
+\series default
+ can also be used with a single dash (i.e.
+ 
+\series bold
+-std
+\series default
+) and with 
+\series bold
+=
+\series default
+ or 
+\series bold
+
+\begin_inset space \textvisiblespace{}
+\end_inset
+
+
+\series default
+ (whitespace) as delimiter.
+ The language standard,
+ specified via 
+\series bold
+<arg>
+\series default
+,
+ can be one of the following:
+\end_layout
+
+\begin_deeper
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+c90 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-c89
+\end_layout
+
+\end_inset
+
+
+\series default
+ Follow the ISO/IEC 9899 First Edition standard (ANSI C89 / ISO C90).
+ Alternative spellings:
+ 
+\series bold
+c89
+\series default
+,
+ 
+\series bold
+iso9899:1990
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+c94 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc99
+\end_layout
+
+\end_inset
+
+
+\series default
+ Follow the ISO/IEC 9899 First Edition standard as modified in amendment 1.
+ Alternative spelling:
+ 
+\series bold
+c95,
+ iso9899:199409
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+c99 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc99
+\end_layout
+
+\end_inset
+
+
+\series default
+ Follow the ISO/IEC 9899 Second Edition standard (ISO C99).
+ Alternative spelling:
+ 
+\series bold
+iso9899:1999
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+c11 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc11
+\end_layout
+
+\end_inset
+
+
+\series default
+ Follow the ISO/IEC 9899 Third Edition standard (ISO C11).
+ Alternative spelling:
+ 
+\series bold
+iso9899:2011
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+c17 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc17
+\end_layout
+
+\end_inset
+
+
+\series default
+ Follow the ISO/IEC 9899 Fourth Edition standard (ISO C17).
+ Alternative spellings:
+ 
+\series bold
+iso9899:2017
+\series default
+,
+ 
+\series bold
+c18
+\series default
+,
+ 
+\series bold
+iso9899:2018
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+c23 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc23
+\end_layout
+
+\end_inset
+
+
+\series default
+ Follow the ISO/IEC 9899 Fifth Edition standard (ISO C23).
+ Alternative spelling:
+ 
+\series bold
+c2x
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+c2y 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc2y
+\end_layout
+
+\end_inset
+
+
+\series default
+ Enable features anticipated for the Sixth Edition standard (currently abbreviated ISO C2y).
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+sdcc90 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc89
+\end_layout
+
+\end_inset
+
+
+\series default
+ Generally follow ANSI C89 / ISO C90,
+ but allow some SDCC behaviour that conflicts with the standard.
+ Alternative spelling:
+ 
+\series bold
+sdcc89
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+sdcc99 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc99
+\end_layout
+
+\end_inset
+
+
+\series default
+ Generally follow ISO C99,
+ but allow some SDCC behaviour that conflicts with the standard.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+sdcc11 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc11
+\end_layout
+
+\end_inset
+
+
+\series default
+ Generally follow ISO C11,
+ but allow some SDCC behaviour that conflicts with the standard (default).
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+sdcc17 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc17
+\end_layout
+
+\end_inset
+
+
+\series default
+ Generally follow ISO C17,
+ but allow some SDCC behaviour that conflicts with the standard.
+ Alternative spelling:
+ 
+\series bold
+sdcc18
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+sdcc23 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc23
+\end_layout
+
+\end_inset
+
+
+\series default
+ Generally follow ISO C23,
+ but allow some SDCC behaviour that conflicts with the standard.
+ Alternative spelling:
+ 
+\series bold
+sdcc2x
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+sdcc2y 
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-std-sdcc2y
+\end_layout
+
+\end_inset
+
+
+\series default
+ Generally follow ISO C2y,
+ but allow some SDCC behaviour that conflicts with the standard.
+\end_layout
+
+\end_deeper
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-fdollars-in-identifiers
+\begin_inset Index idx
+range none
+pageformat default
+status collapsed
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-fdollars-in-identifiers
+\end_layout
+
+\end_inset
+
+
+\series default
+ Permit '$' as an identifier character.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-fsigned-char
+\begin_inset Index idx
+range none
+pageformat default
+status open
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-fsigned-char
+\end_layout
+
+\end_inset
+
+
+\series default
+ By default char is 
+\family typewriter
+unsigned
+\family default
+.
+ To set the signedness for characters to signed,
+ use the option -
+\series bold
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+
+\series default
+-fsigned-char.
+ If this option is not set and no signedness keyword (unsigned/signed) is given,
+ a char will be unsigned.
+ All other types are unaffected.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-const-stringlit
+\begin_inset Index idx
+range none
+pageformat default
+status open
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-const-stringlit
+\end_layout
+
+\end_inset
+
+
+\series default
+ Make string literals const.
+\end_layout
+
+\begin_layout Subsection
 Processor Selection Options
 \begin_inset Index idx
 range none
@@ -16277,76 +17018,6 @@ status collapsed
 
 \end_inset
 
--fsigned-char
-\begin_inset Index idx
-range none
-pageformat default
-status open
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--fsigned-char
-\end_layout
-
-\end_inset
-
-
-\series default
- By default char is 
-\family typewriter
-unsigned
-\family default
-.
- To set the signedness for characters to signed,
- use the option -
-\series bold
-
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
-
-\series default
--fsigned-char.
- If this option is set and no signedness keyword (unsigned/signed) is given,
- a char will be unsigned.
- All other types are unaffected.
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
 -nostdinc
 \begin_inset Index idx
 range none
@@ -17061,558 +17732,6 @@ status collapsed
 
 \end_inset
 
--std-<arg>
-\series default
- Determine the language standard.
- For enhanced compatibility with other compilers,
- 
-\series bold
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std
-\series default
- can also be used with a single dash (i.e.
- 
-\series bold
--std
-\series default
-) and with 
-\series bold
-=
-\series default
- or 
-\series bold
-
-\begin_inset space \textvisiblespace{}
-\end_inset
-
-
-\series default
- (whitespace) as delimiter.
- The language standard,
- specified via 
-\series bold
-<arg>
-\series default
-,
- can be one of the following:
-\end_layout
-
-\begin_deeper
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-c90 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-c89
-\end_layout
-
-\end_inset
-
-
-\series default
- Follow the ISO/IEC 9899 First Edition standard (ANSI C89 / ISO C90).
- Alternative spellings:
- 
-\series bold
-c89
-\series default
-,
- 
-\series bold
-iso9899:1990
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-c94 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc99
-\end_layout
-
-\end_inset
-
-
-\series default
- Follow the ISO/IEC 9899 First Edition standard as modified in amendment 1.
- Alternative spelling:
- 
-\series bold
-c95,
- iso9899:199409
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-c99 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc99
-\end_layout
-
-\end_inset
-
-
-\series default
- Follow the ISO/IEC 9899 Second Edition standard (ISO C99).
- Alternative spelling:
- 
-\series bold
-iso9899:1999
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-c11 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc11
-\end_layout
-
-\end_inset
-
-
-\series default
- Follow the ISO/IEC 9899 Third Edition standard (ISO C11).
- Alternative spelling:
- 
-\series bold
-iso9899:2011
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-c17 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc17
-\end_layout
-
-\end_inset
-
-
-\series default
- Follow the ISO/IEC 9899 Fourth Edition standard (ISO C17).
- Alternative spellings:
- 
-\series bold
-iso9899:2017
-\series default
-,
- 
-\series bold
-c18
-\series default
-,
- 
-\series bold
-iso9899:2018
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-c23 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc23
-\end_layout
-
-\end_inset
-
-
-\series default
- Follow the ISO/IEC 9899 Fifth Edition standard (ISO C23).
- Alternative spelling:
- 
-\series bold
-c2x
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-c2y 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc2y
-\end_layout
-
-\end_inset
-
-
-\series default
- Enable features anticipated for the Sixth Edition standard (currently abbreviated ISO C2y).
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-sdcc90 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc89
-\end_layout
-
-\end_inset
-
-
-\series default
- Generally follow ANSI C89 / ISO C90,
- but allow some SDCC behaviour that conflicts with the standard.
- Alternative spelling:
- 
-\series bold
-sdcc89
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-sdcc99 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc99
-\end_layout
-
-\end_inset
-
-
-\series default
- Generally follow ISO C99,
- but allow some SDCC behaviour that conflicts with the standard.
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-sdcc11 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc11
-\end_layout
-
-\end_inset
-
-
-\series default
- Generally follow ISO C11,
- but allow some SDCC behaviour that conflicts with the standard (default).
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-sdcc17 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc17
-\end_layout
-
-\end_inset
-
-
-\series default
- Generally follow ISO C17,
- but allow some SDCC behaviour that conflicts with the standard.
- Alternative spelling:
- 
-\series bold
-sdcc18
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-sdcc23 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc23
-\end_layout
-
-\end_inset
-
-
-\series default
- Generally follow ISO C23,
- but allow some SDCC behaviour that conflicts with the standard.
- Alternative spelling:
- 
-\series bold
-sdcc2x
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
-sdcc2y 
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--std-sdcc2y
-\end_layout
-
-\end_inset
-
-
-\series default
- Generally follow ISO C2y,
- but allow some SDCC behaviour that conflicts with the standard.
-\end_layout
-
-\end_deeper
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
 -codeseg
 \series default
 
@@ -17730,51 +17849,6 @@ const
  default CONST.
  This is useful if you need to tell the compiler to put the const data in a special segment so you can later on tell the linker to put this segment in a special place in memory.
  Can be used for instance when using bank switching to put the const data in a bank.
-\end_layout
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-\series bold
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--fdollars-in-identifiers
-\begin_inset Index idx
-range none
-pageformat default
-status collapsed
-
-\begin_layout Plain Layout
--
-\begin_inset ERT
-status collapsed
-
-\begin_layout Plain Layout
-
-\backslash
-/
-\end_layout
-
-\end_inset
-
--fdollars-in-identifiers
-\end_layout
-
-\end_inset
-
-
-\series default
- Permit '$' as an identifier character.
 \end_layout
 
 \begin_layout Labeling

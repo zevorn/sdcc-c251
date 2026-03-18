@@ -1,7 +1,7 @@
 ;-------------------------------------------------------------------------
-;   abs.s - standard C library function
+;   _modulong.s - routine for remainder of 32 bit unsigned long division
 ;
-;   Copyright (C) 2023-2026, Gabriele Gorla
+;   Copyright (C) 2022, Gabriele Gorla
 ;
 ;   This library is free software; you can redistribute it and/or modify it
 ;   under the terms of the GNU General Public License as published by the
@@ -26,32 +26,36 @@
 ;   might be covered by the GNU General Public License.
 ;-------------------------------------------------------------------------
 
-	.module abs
-
+	.module _modulong
+	
 ;--------------------------------------------------------
 ; exported symbols
 ;--------------------------------------------------------
-	.globl _abs
-	.globl ___negax
-
+	.globl __modulong
+	
+;--------------------------------------------------------
+; local aliases
+;--------------------------------------------------------
+	.define res0 "__modulong_PARM_1+0"
+	.define res1 "__modulong_PARM_1+1"
+	.define res2 "___SDCC_m6502_ret2"
+	.define res3 "___SDCC_m6502_ret3"
+	.define den  "__modulong_PARM_2"
+	.define rem  "___SDCC_m6502_ret4"
+	.define s1   "___SDCC_m6502_ret0"
+	.define s2   "___SDCC_m6502_ret1"
+	
 ;--------------------------------------------------------
 ; code
 ;--------------------------------------------------------
 	.area CODE
 
-_abs:
-	cpx #0x00
-	bpl skip
-___negax:
-  	sec
-	eor #0xff
-	adc #0x00
-	tay
-	txa
-	eor #0xff
-	adc #0x00
-	tax
-	tya
-skip:
+__modulong:
+	jsr	___udivmod32
+	lda	*rem+3
+	sta	*res3
+	lda	*rem+2
+	sta	*res2
+	ldx	*rem+1
+	lda	*rem+0
 	rts
-

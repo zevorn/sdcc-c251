@@ -10810,7 +10810,7 @@ genUnpackBits (operand * result, const char *rname, int ptype, iCode * ifx)
       emitPtrByteGet (rname, ptype, FALSE);
       AccRol (8 - bstr);
       emitcode ("anl", "a,#!constbyte", (unsigned)(((unsigned char)-1) >> (8 - blen)));
-      if (!SPEC_USIGN (etype))
+      if (!SPEC_USIGN (etype) && !IS_BOOLEAN (etype))
         {
           /* signed bitfield */
           symbol *tlbl = newiTempLabel (NULL);
@@ -10854,7 +10854,7 @@ finish:
     {
       char *source;
 
-      if (SPEC_USIGN (etype))
+      if (SPEC_USIGN (etype) || IS_BOOLEAN (etype))
         source = zero;
       else
         {
