@@ -4227,7 +4227,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
 
       bool pushed_a = false;
       
-      if (IS_EZ80 || IS_TLCS90 || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET)
+      if (IS_EZ80 || IS_TLCS90 || IS_R4K || IS_R5K || IS_R6K)
         {
           if (!aopInReg (from, from_offset, A_IDX))
             {
@@ -4325,7 +4325,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
           cost (3, 10);
           _pop (PAIR_IY);
         }
-      else if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET)
+      else if (IS_R4K || IS_R5K || IS_R6K)
         emit3_o (A_LDF, ASMOP_A, 0, from, from_offset);
       else
         {
@@ -5890,9 +5890,9 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           continue;
         }
 #endif
-      else if (i + 1 < size && source->type == AOP_FDIR && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET /*|| IS_TLCS90 alignment issue - see above*/) && getPairId_o (result, roffset + i) != PAIR_INVALID && getPairId_o (result, roffset + i) != PAIR_JK)
+      else if (i + 1 < size && source->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K /*|| IS_TLCS90 alignment issue - see above*/) && getPairId_o (result, roffset + i) != PAIR_INVALID && getPairId_o (result, roffset + i) != PAIR_JK)
         {
-          if (i + 3 < size && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) &&
+          if (i + 3 < size && (IS_R4K || IS_R5K || IS_R6K) &&
             (getPairId_o (result, roffset + i) == PAIR_DE && getPairId_o (result, roffset + i + 2) == PAIR_BC ||
               getPairId_o (result, roffset + i) == PAIR_HL && getPairId_o (result, roffset + i + 2) == PAIR_JK))
             {
@@ -5927,9 +5927,9 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           spillPair (getPairId_o (result, roffset + i));
           continue;
         }
-      else if (i + 1 < size && result->type == AOP_FDIR && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET /*|| IS_TLCS90 && getPairId_o (source, soffset + i) != PAIR_IY alignment issue - see above*/) && getPairId_o (source, soffset + i) != PAIR_INVALID && getPairId_o (source, soffset + i) != PAIR_JK)
+      else if (i + 1 < size && result->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K /*|| IS_TLCS90 && getPairId_o (source, soffset + i) != PAIR_IY alignment issue - see above*/) && getPairId_o (source, soffset + i) != PAIR_INVALID && getPairId_o (source, soffset + i) != PAIR_JK)
         {
-          if (i + 3 < size && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) &&
+          if (i + 3 < size && (IS_R4K || IS_R5K || IS_R6K) &&
             (getPairId_o (source, soffset + i) == PAIR_DE && getPairId_o (source, soffset + i + 2) == PAIR_BC ||
               getPairId_o (source, soffset + i) == PAIR_HL && getPairId_o (source, soffset + i + 2) == PAIR_JK))
             {
@@ -16478,7 +16478,7 @@ genPointerGet (const iCode *ic)
       goto release;
     }
   if ((left->aop->type == AOP_IMMD || left->aop->type == AOP_LIT && !rightval) && size == 1 && aopInReg (result->aop, 0, A_IDX) &&
-    (!from_far || IS_EZ80 || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET))
+    (!from_far || IS_EZ80 || IS_R4K || IS_R5K || IS_R6K))
     {
       if (surviving_a)
         _push (PAIR_AF), pushed_a = true;
@@ -16505,7 +16505,7 @@ genPointerGet (const iCode *ic)
       goto release;
     }
   else if (!IS_SM83 && (left->aop->type == AOP_IMMD || left->aop->type == AOP_LIT && !rightval) && isPair (result->aop) && !bit_field  &&
-    (!from_far || IS_EZ80 || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET))
+    (!from_far || IS_EZ80 || IS_R4K || IS_R5K || IS_R6K))
     {
       PAIR_ID pair = getPairId (result->aop);
       if (from_far)

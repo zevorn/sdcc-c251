@@ -1,5 +1,10 @@
 2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c:
+	  Enable use of R4K ldf for __far access.
+
+2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Merge _Optional branch.
 
 2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
