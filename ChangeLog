@@ -1,5 +1,17 @@
 2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  support/valdiag/tests/_Optional-draft-2026-03-06.c,
+	  support/valdiag/tests/conststringlit.c,
+	  support/regression/tests/bug-2684.c,
+	  support/regression/tests/compound-literal.c,
+	  support/regression/tests/coremark.c.in:
+	  Fix bug #3945.
+
+2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* Merge _Optional branch.
 
 2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
