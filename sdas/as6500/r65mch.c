@@ -694,7 +694,7 @@ minit(void)
 	/*
 	 * Address Space
 	 */
-	exprmasks(3);
+	exprmasks(4);
 	
 	/*
 	 * Zero Page Area Pointer

@@ -2390,7 +2390,7 @@ checkStaticArrayParams (ebbIndex *ebbi)
             else if (!v.anything && roff + size > (long long)v.maybemaxsize)
               werrorfl (ic->filename, ic->lineno, W_MAYBE_INVALID_PTR_DEREF);
             if ((v.anything || !v.nonnull) &&
-              (isOptional(operandType (ic->left)->next) && !ic->left->isOptionalEliminated || ic->left->isSemDeref))
+              (isOptional (operandType (ic->left)->next) && !ic->left->isOptionalEliminated || ic->left->isSemDeref))
               werrorfl (ic->filename, ic->lineno, W_OPTIONAL_PTR_DEREF);
           }
         else if (POINTER_SET (ic))
@@ -2405,6 +2405,22 @@ checkStaticArrayParams (ebbIndex *ebbi)
               (isOptional(operandType (ic->result)->next) && !ic->result->isOptionalEliminated || ic->result->isSemDeref))
               werrorfl (ic->filename, ic->lineno, W_OPTIONAL_PTR_DEREF);
           }
+        else if (ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP)
+          {
+            bool left_optional_maybenull = false;
+            bool right_optional_maybenull = false;
+            if (IS_PTR (operandType (ic->left)) && isOptional (operandType (ic->left)->next) && !ic->left->isOptionalEliminated)
+              left_optional_maybenull = !getOperandValinfo (ic, ic->left).nonnull;
+            if (IS_PTR (operandType (ic->right)) && isOptional (operandType (ic->right)->next) && !ic->right->isOptionalEliminated)
+              right_optional_maybenull = !getOperandValinfo (ic, ic->right).nonnull;
+            if (left_optional_maybenull || right_optional_maybenull)
+              werrorfl (ic->filename, ic->lineno, W_OPTIONAL_RELATIONAL);
+          }
+        else if (ic->op == '+' || ic->op == '-')
+          if (IS_PTR (operandType (ic->left)) && isOptional (operandType (ic->left)->next) && !ic->left->isOptionalEliminated && !getOperandValinfo (ic, ic->left).nonnull)
+            werrorfl (ic->filename, ic->lineno, W_OPTIONAL_ARITHMETIC);
+          else if (IS_PTR (operandType (ic->right)) && isOptional (operandType (ic->right)->next) && !ic->left->isOptionalEliminated && !getOperandValinfo (ic, ic->right).nonnull)
+            werrorfl (ic->filename, ic->lineno, W_OPTIONAL_ARITHMETIC);
       }
 }
 

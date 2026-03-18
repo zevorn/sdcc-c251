@@ -4022,6 +4022,15 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
     case DEC_OP:
       {
         sym_link *ltc = (tree->right ? RTYPE (tree) : LTYPE (tree));
+        // Drop _Optional on pointer target
+        if (IS_PTR (ltc) && isOptional (ltc->next))
+          {
+            ltc = copyLinkChain (ltc);
+            if (IS_SPEC (ltc->next))
+              SPEC_OPTIONAL (ltc->next) = false;
+            else
+              DCL_PTR_OPTIONAL (ltc->next) = false;
+          }
         COPYTYPE (TTYPE (tree), TETYPE (tree), ltc);
         if (!tree->initMode && IS_CONSTANT (TTYPE (tree)))
           werrorfl (tree->filename, tree->lineno, E_CODE_WRITE, tree->opval.op == INC_OP ? "++" : "--");
@@ -4716,7 +4725,13 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
 
       /* if the left is a pointer */
       if (IS_PTR (LTYPE (tree)) || IS_AGGREGATE (LTYPE (tree)))
-        TETYPE (tree) = getSpec (TTYPE (tree) = LTYPE (tree));
+        {
+          TETYPE (tree) = getSpec (TTYPE (tree) = copyLinkChain (LTYPE (tree)));
+          if (IS_SPEC (TTYPE (tree)->next))
+            SPEC_OPTIONAL (TTYPE (tree)->next) = false;
+          else
+            DCL_PTR_OPTIONAL (TTYPE (tree)->next) = false;
+        }
       else
         {
           tree->left = addCast (tree->left, resultTypeProp, TRUE);
@@ -4815,11 +4830,16 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
       /* the result is a ptrdiff */
       if ((IS_ARRAY (LTYPE (tree)) || IS_PTR (LTYPE (tree))) && (IS_ARRAY (RTYPE (tree)) || IS_PTR (RTYPE (tree))))
         TETYPE (tree) = TTYPE (tree) = newPtrDiffLink();
-      else
-        /* if only the left is a pointer */
-        /* then result is a pointer      */
-      if (IS_PTR (LTYPE (tree)) || IS_ARRAY (LTYPE (tree)))
-        TETYPE (tree) = getSpec (TTYPE (tree) = LTYPE (tree));
+      // If only the left is a pointer, then result is a pointer,
+      // But any _Optional qualifier on the target is dropped.
+      else if (IS_PTR (LTYPE (tree)) || IS_ARRAY (LTYPE (tree)))
+        {
+          TETYPE (tree) = getSpec (TTYPE (tree) = copyLinkChain (LTYPE (tree)));
+          if (IS_SPEC (TTYPE (tree)->next))
+            SPEC_OPTIONAL (TTYPE (tree)->next) = false;
+          else
+            DCL_PTR_OPTIONAL (TTYPE (tree)->next) = false;
+        }
       else
         {
           tree->left = addCast (tree->left, resultTypeProp, TRUE);
