@@ -1,5 +1,15 @@
 2026-03-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCicode.c,
+	  src/SDCCopt.c,
+	  support/valdiag/tests/_Optional-draft-2026-03-06.c:
+	  Bring _Optional semantics closer to latest TS draft.
+
+2026-03-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/f8/peep.c:
 	  f8l jump distance calculation fix.
 

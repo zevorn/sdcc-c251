@@ -23,7 +23,6 @@
 
 #include <memory.h>
 #include <stdlib.h>
-#include <setjmp.h>
 #include <stdio.h>
 #include <errno.h>
 

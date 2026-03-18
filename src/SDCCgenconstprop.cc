@@ -248,11 +248,8 @@ getOperandValinfo (const iCode *ic, const operand *op)
       valinfoCast (&v, type, v2, NULL); // Need to cast: ival could be out of range of type.
       valinfoUpdate (&v);
     }
-  else if ((IS_ITEMP (op) ||
-    IS_SYMOP (op) && (OP_SYMBOL_CONST (op)->islocal || OP_SYMBOL_CONST (op)->ismyparm) && // Also include a few non-iTemps in the analysis, since since they don't always get replaced by register-equivalent iTemps without --stack-auto.
-      !OP_SYMBOL_CONST (op)->addrtaken && !IS_STATIC (OP_SYMBOL_CONST (op)->etype) && !IS_EXTERN (OP_SYMBOL_CONST (op)->etype)) // Exclude what might change in between, e.g. by a backjump via longjmp, or for extern/addrtaken by an intermediate call to another function.
-    && !IS_OP_VOLATILE (op) && ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end ())
-    return (ic->valinfos->map[op->key]);
+  else if (IS_SYMOP (op) && !IS_OP_VOLATILE (op) && ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end ())
+    return (ic->valinfos->map[op->key].anything ? getTypeValinfo (type, true) : ic->valinfos->map[op->key]);
   else if (IS_ITEMP (op))
     {
       v.nothing = true;
@@ -775,7 +772,7 @@ static void update_out_edges (cfg_t &G, unsigned int i, int key_false, int key_t
 }
 
 static void
-recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<unsigned int>, std::set<unsigned int> > &todo, bool externchange, int end_it_quickly)
+recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<unsigned int>, std::set<unsigned int> > &todo, const valinfos &global_operands, bool externchange, int end_it_quickly)
 {
   iCode *const ic = G[i].ic;
   bool change = externchange;
@@ -830,7 +827,7 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
         {
           int key_true = IC_TRUE (ic) ? eBBWithEntryLabel(ebbi, IC_TRUE(ic))->sch->key : ic->next->key;
           int key_false = IC_FALSE (ic) ? eBBWithEntryLabel(ebbi, IC_FALSE(ic))->sch->key : ic->next->key;
-          if (IS_SYMOP (ic->left) && !OP_SYMBOL (ic->left)->addrtaken && !IS_OP_VOLATILE (ic->left))
+          if (IS_SYMOP (ic->left) && !IS_OP_VOLATILE (ic->left))
             {
               struct valinfo v = getOperandValinfo (ic, ic->left);
               struct valinfo v_true = v;
@@ -842,16 +839,16 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
               v_false.max = 0;
               valinfoUpdate (&v_true);
               valinfoUpdate (&v_false);
-              for(iCode *extraic = ic->prev; extraic; extraic = extraic->prev)
+              for (iCode *extraic = ic->prev; extraic; extraic = extraic->prev)
                 {
                   if (extraic->op == '=' && !POINTER_SET (extraic) && isOperandEqual (extraic->right, ic->left) &&
-                    IS_SYMOP (extraic->result) && !IS_OP_GLOBAL (extraic->result) && bitVectnBitsOn (OP_DEFS (extraic->result)) <= 1)
+                    IS_SYMOP (extraic->result) && !IS_OP_VOLATILE (extraic->result) && (bitVectnBitsOn (OP_DEFS (extraic->result)) <= 1 || extraic->next == ic))
                     update_out_edges (G, i, key_false, key_true, v_false, v_true, extraic->result->key);
                   else if (extraic->op == '=' && !POINTER_SET (extraic) && isOperandEqual (extraic->result, ic->left) &&
-                    IS_SYMOP (extraic->right) && !IS_OP_GLOBAL (extraic->right) && bitVectnBitsOn (OP_DEFS (extraic->right)) <= 1)
+                    IS_SYMOP (extraic->right) && !IS_OP_VOLATILE (extraic->right) && (bitVectnBitsOn (OP_DEFS (extraic->right)) <= 1 || extraic->next == ic))
                     update_out_edges (G, i, key_false, key_true, v_false, v_true, extraic->right->key);
                   if (extraic->op == LABEL || bitVectBitValue (OP_DEFS (ic->left), extraic->key) ||
-                    IS_OP_GLOBAL (ic->left) && (extraic->op == CALL || extraic->op == PCALL))
+                    (global_operands.map.find (ic->left->key) != global_operands.map.end()) && (POINTER_SET (extraic) || extraic->op == CALL || extraic->op == PCALL))
                     {
                       extraic = NULL;
                       break;
@@ -896,6 +893,13 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
       G[*out] = *ic->valinfos;
       if (ic->resultvalinfo)
         G[*out].map[ic->result->key] = *ic->resultvalinfo;
+
+      // Invalidate valinfo for operands that might have been written via pointer, from other functions, etc.
+      if (ic->op == SET_VALUE_AT_ADDRESS || POINTER_SET (ic) || ic->op == FUNCTION || (ic->op == CALL || ic->op == PCALL) && (!IS_SYMOP (ic->left) || !OP_SYMBOL (ic->left)->funcPure))
+        {
+          for (std::map <int, struct valinfo>::const_iterator i = global_operands.map.begin(); i != global_operands.map.end(); ++i)
+            G[*out].map[i->first] = i->second;
+        }
 
       if (resultsym)
         resultvalinfo = getTypeValinfo (operandType (ic->result), true);
@@ -1089,7 +1093,7 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
         {
           valinfoUpdate (&resultvalinfo);
 #ifdef DEBUG_GCP_ANALYSIS
-          std::cout << "resultvalinfo anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << " knownbits 0x" << resultvalinfo.knownbits << std::dec << " min " << resultvalinfo.min << " max " << resultvalinfo.max << " nonnull " << resultvalinfo.nonnull << "\n";
+          std::cout << "resultvalinfo op " << ic->result->key << " anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << " knownbits 0x" << resultvalinfo.knownbits << std::dec << " min " << resultvalinfo.min << " max " << resultvalinfo.max << " nonnull " << resultvalinfo.nonnull << "\n";
 #endif
           if (!ic->resultvalinfo)
             ic->resultvalinfo = new struct valinfo;
@@ -1119,6 +1123,7 @@ recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix)
   create_cfg_genconstprop(G, sic, ebbi);
 
   std::pair <std::queue<unsigned int>, std::set<unsigned int> > todo; // Nodes where valinfos need to be updated. We need a pair of a queue and a set to implement a queue with uniqe entries. A plain set wouldn't work, as we'd be working on some nodes all the time while never getting to others before we reach the round limit.
+  valinfos global_operands; // set of operands that are global or had their address taken, and thus need to be invalidated at every potential pointer write (or function call).
 
   // Process each node at least once, and handle incoming non-register parameters.
   typedef /*typename*/ boost::graph_traits<cfg_t>::out_edge_iterator out_iter_t;
@@ -1136,9 +1141,19 @@ recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix)
         G[0].ic->valinfos->map[G[i].ic->right->key] = getParamValinfo (G[i].ic->right);
       if (POINTER_SET (G[i].ic) && IS_SYMOP (G[i].ic->result) && OP_SYMBOL (G[i].ic->result)->ismyparm)
         G[0].ic->valinfos->map[G[i].ic->result->key] = getParamValinfo (G[i].ic->result);
+      // Need to include static objects here, since they might revert their state via setjmp/longjmp.
+      if (G[i].ic->left && !IS_ITEMP(G[i].ic->left) && IS_SYMOP (G[i].ic->left) &&
+        (!OP_SYMBOL_CONST (G[i].ic->left)->islocal && !OP_SYMBOL_CONST (G[i].ic->left)->ismyparm || OP_SYMBOL_CONST (G[i].ic->left)->addrtaken || IS_STATIC (OP_SYMBOL_CONST (G[i].ic->left)->etype)))
+        global_operands.map[G[i].ic->left->key] = getOperandValinfo (G[i].ic, G[i].ic->left);
+      if (G[i].ic->right && !IS_ITEMP(G[i].ic->right) && IS_SYMOP (G[i].ic->right) &&
+        (!OP_SYMBOL_CONST (G[i].ic->right)->islocal && !OP_SYMBOL_CONST (G[i].ic->right)->ismyparm || OP_SYMBOL_CONST (G[i].ic->right)->addrtaken || IS_STATIC (OP_SYMBOL_CONST (G[i].ic->right)->etype)))
+        global_operands.map[G[i].ic->right->key] = getOperandValinfo (G[i].ic, G[i].ic->right);
+      if (G[i].ic->result && !IS_ITEMP(G[i].ic->result) && IS_SYMOP (G[i].ic->result) &&
+        (!OP_SYMBOL_CONST (G[i].ic->result)->islocal && !OP_SYMBOL_CONST (G[i].ic->result)->ismyparm || OP_SYMBOL_CONST (G[i].ic->result)->addrtaken || IS_STATIC (OP_SYMBOL_CONST (G[i].ic->result)->etype)))
+        global_operands.map[G[i].ic->result->key] = getOperandValinfo (G[i].ic, G[i].ic->result);
     }
   for (unsigned int i = 0; i < boost::num_vertices (G); i++)
-    recompute_node (G, i, ebbi, todo, true, 0);
+    recompute_node (G, i, ebbi, todo, global_operands, true, 0);
 
   // Forward pass to get first approximation.
   for (unsigned long round = 0; !todo.first.empty (); round++)
@@ -1152,7 +1167,7 @@ recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix)
       std::cout << "Round " << round << " node " << i << " ic " << G[i].ic->key << "\n"; std::cout.flush();
 #endif
 
-      recompute_node (G, i, ebbi, todo, false, (round >= max_rounds) + (round >= max_rounds * 2));
+      recompute_node (G, i, ebbi, todo, global_operands, false, (round >= max_rounds) + (round >= max_rounds * 2));
     }
 
   // Refinement backward pass.

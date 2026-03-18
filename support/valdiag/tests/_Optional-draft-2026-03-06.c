@@ -5,7 +5,6 @@
 #include <assert.h>
 
 #ifdef TEST1
-#if 1 // BUG: _Generic issue?
 #include <stdio.h>
 
 struct S {
@@ -25,7 +24,7 @@ char *str_from_struct(_Optional const struct S *pocs)
                          default: 0));
 
   // invalid: array to pointer decay does not remove const
-  return pocs->m;
+  return pocs->m; /* IGNORE */ // todo: implement warning!
 }
 
 char *str_from_array(_Optional const char (*paocc)[64])
@@ -44,7 +43,6 @@ char *str_from_array(_Optional const char (*paocc)[64])
   // invalid: array to pointer decay does not remove const
   return *paocc; /* IGNORE */ // todo: implement warning!
 }
-#endif
 #endif
 
 #ifdef TEST2
@@ -675,7 +673,7 @@ void perth(_Optional int **ppoi)
   // constrains poi to non-null on the fallthrough path
   if (!poi) return;
 
-  *poi = 1;        // no recommended diagnostic /* IGNORE */ TODO: improve analysis for global variables.
+  *poi = 1;        // no recommended diagnostic
   *ppoi = nullptr; /* analysis discards non-null constraint
                       on poi because *ppoi could alias poi */
   *poi = 2;        // recommended diagnostic /* WARNING */
@@ -703,7 +701,7 @@ void darwin(_Optional int **ppoi, _Optional int *upoi)
   // constrains poi to non-null on the fallthrough path
   if (!poi) return;
 
-  *poi = 1;     // no recommended diagnostic /* IGNORE */ TODO: improve analysis for global variables.
+  *poi = 1;     // no recommended diagnostic
   *ppoi = upoi; /* analysis discards non-null constraint
                    on poi because *ppoi could alias poi */
   *poi = 2;     // recommended diagnostic /* WARNING */
