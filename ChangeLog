@@ -1,3 +1,29 @@
+2026-03-16 Gabriele Gorla <gorlik@yahoo.com>
+
+    * device/lib/mos6502/_divsint.s,
+      device/lib/mos6502/_divslong.s,
+      device/lib/mos6502/_divuchar.s,
+      device/lib/mos6502/_modslong.s,
+      device/lib/mos6502/_moduchar.s,
+      device/lib/mos6502/ldiv.s,
+      device/lib/mos65c02/abs.s,
+      device/lib/mos65c02/_divsint.s,
+      device/lib/mos65c02/_divslong.s,
+      device/lib/mos65c02/_divuchar.s,
+      device/lib/mos65c02/_divuint.s,
+      device/lib/mos65c02/_divulong.s,
+      device/lib/mos65c02/_modsint.s,
+      device/lib/mos65c02/_modslong.s,
+      device/lib/mos65c02/_moduchar.s,
+      device/lib/mos65c02/_moduint.s,
+      device/lib/mos65c02/_modulong.s,
+      device/lib/mos65c02/div.s,
+      device/lib/mos65c02/labs.s,
+      device/lib/mos65c02/ldiv.s:
+      Implement mul/div in asssembly for mos65c02.
+    * sdas/as6500/r65mcch.c:
+      Integrate 32bit address patch from gbdk-2020.
+
 2026-03-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/f8/peep.c:
