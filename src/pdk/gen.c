@@ -4490,7 +4490,7 @@ genPointerGet (const iCode *ic)
             }
 
           if (bit_field && blen < 8)
-            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))));
+            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result))));
 
           if (aopInReg (result->aop, i, A_IDX) && (!bit_field ? i + 1 < size : blen - 8 > 0))
             {
@@ -4509,7 +4509,7 @@ genPointerGet (const iCode *ic)
       cost (1, 2);
 
       if (bit_field && blen < 8)
-        getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))));
+        getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result))));
 
       cheapMove (result->aop, 0, ASMOP_A, 0, true, true);
       goto release;
@@ -4540,7 +4540,7 @@ genPointerGet (const iCode *ic)
           cost (1, 2);
 
           if (bit_field && blen < 8)
-            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))));
+            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result))));
 
           if (aopInReg (result->aop, i, A_IDX) && (!bit_field ? i + 1 < size : blen - 8 > 0))
             {
@@ -4620,7 +4620,7 @@ genPointerGet (const iCode *ic)
           G.p.type = AOP_INVALID;
 
           if (bit_field && blen < 8)
-            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))));
+            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result))));
 
           if (aopInReg (result->aop, i, P_IDX) && (!bit_field ? i + 1 < size : blen - 8 > 0))
             UNIMPLEMENTED;

@@ -1,3 +1,16 @@
+2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge _Optional branch.
+
+2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCcse.c,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCicode.c,
+	  src/SDCCsymt.c,
+	  support/valdiag/tests/_Optional-draft-2026-03-06.c:
+	  Various fixes and improvements, mostly for _Optional.
+
 2026-03-16 Gabriele Gorla <gorlik@yahoo.com>
 
     * device/lib/mos6502/_divsint.s,
@@ -23,6 +36,27 @@
       Implement mul/div in asssembly for mos65c02.
     * sdas/as6500/r65mcch.c:
       Integrate 32bit address patch from gbdk-2020.
+
+2026-03-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCicode.c,
+	  src/SDCCopt.c,
+	  support/valdiag/tests/_Optional-draft-2026-03-06.c:
+	  Bring _Optional semantics closer to latest TS draft.
+
+2026-03-16 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* .version,
+	  doc/sdccman.lyx,
+	  src/SDCCglobl.h,
+	  src/SDCCmain.c,
+	  src/SDCCval.c,
+	  support/regression/tests/qualifier-preserving.c,
+	  support/valdiag/tests/_Optional-draft-2026-03-06.c:
+	  Fixes for recent _Generic improvements mostly wrt. _Optional.
 
 2026-03-16 Philipp Klaus Krause <philipp@colecovision.eu>
 

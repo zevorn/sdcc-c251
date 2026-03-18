@@ -201,14 +201,14 @@ dbuf_printOperand (operand * op, struct dbuf_s *dbuf)
 //#if REGA      /* { */
       if (REGA && !getenv ("PRINT_SHORT_OPERANDS"))
         {
-          dbuf_printf (dbuf, "%s [k%d lr%d:%d so:%d]{ ia%d a2p%d re%d rm%d nos%d ru%d dp%d oe%d sdr%d}",   /*{ar%d rm%d ru%d p%d a%d u%d i%d au%d k%d ks%d}"  , */
+          dbuf_printf (dbuf, "%s [k%d lr%d:%d so:%d]{ ia%d a2p%d re%d rm%d nos%d ru%d dp%d oe%d sdr%d myp%d}",   /*{ar%d rm%d ru%d p%d a%d u%d i%d au%d k%d ks%d}"  , */
                        (OP_SYMBOL (op)->rname[0] ? OP_SYMBOL (op)->rname : OP_SYMBOL (op)->name),
                        op->key,
                        OP_LIVEFROM (op), OP_LIVETO (op),
                        OP_SYMBOL (op)->stack,
                        op->isaddr, op->aggr2ptr, OP_SYMBOL (op)->isreqv,
                        OP_SYMBOL (op)->remat, OP_SYMBOL (op)->noSpilLoc, OP_SYMBOL (op)->ruonly, OP_SYMBOL (op)->dptr,
-                       op->isOptionalEliminated, op->isSemDeref);
+                       op->isOptionalEliminated, op->isSemDeref, OP_SYMBOL (op)->ismyparm);
           {
             dbuf_append_char (dbuf, '{');
             dbuf_printTypeChain (operandType (op), dbuf);
@@ -2499,6 +2499,10 @@ geniCodeSubtract (operand * left, operand * right, RESULT_TYPE resultType)
                                 operandFromLit (getSize (ltype->next)),
                                 (getArraySizePtr (left) >= INTSIZE) ? RESULT_TYPE_INT : RESULT_TYPE_CHAR);
       resType = copyLinkChain (IS_ARRAY (ltype) ? ltype->next : ltype);
+      if (IS_SPEC (resType->next))
+        SPEC_OPTIONAL (resType->next) = false;
+      else
+        DCL_PTR_OPTIONAL (resType->next) = false;
     }
   else
     {                           /* make them the same size */
@@ -2590,6 +2594,11 @@ geniCodeAdd (operand *left, operand *right, RESULT_TYPE resultType, int lvl)
         }
 
       resType = copyLinkChain (ltype);
+
+      if (IS_SPEC (resType->next))
+        SPEC_OPTIONAL (resType->next) = false;
+      else
+        DCL_PTR_OPTIONAL (resType->next) = false;
     }
   else
     { // make them the same size
@@ -2858,6 +2867,7 @@ geniCodePreInc (operand * op, bool lvalue)
   sym_link *roptype = operandType (rop);
   operand *result;
   int size = 0;
+  bool optional_target = false;
 
   if (!op->isaddr)
     {
@@ -2876,11 +2886,21 @@ geniCodePreInc (operand * op, bool lvalue)
     ic = newiCode ('=', NULL, operandFromLit (1));
   else
     ic = newiCode ('+', rop, operandFromLit (size));
+  // Drop _Optional on pointer target,
+  if (IS_PTR (roptype) && isOptional (roptype->next))
+    {
+      roptype = copyLinkChain (roptype);
+      if IS_SPEC (roptype->next)
+        SPEC_OPTIONAL (roptype->next) = false;
+      else
+        DCL_PTR_OPTIONAL (roptype->next) = false;
+      optional_target = true;
+    }
   IC_RESULT (ic) = result = newiTempOperand (roptype, 0);
   ADDTOCHAIN (ic);
 
   (void) geniCodeAssign (op, result, 0, 0);
-  if (lvalue || (IS_TRUE_SYMOP (op) && !isOperandVolatile (op, FALSE)) || IS_BITVAR (optype))
+  if (lvalue || (IS_TRUE_SYMOP (op) && !isOperandVolatile (op, false) && !optional_target) || IS_BITVAR (optype))
     return op;
   else
     return result;
@@ -2906,6 +2926,16 @@ geniCodePostDec (operand * op)
     {
       werror (E_LVALUE_REQUIRED, "--");
       return op;
+    }
+
+  // Drop _Optional on pointer target,
+  if (IS_PTR (rvtype) && isOptional (rvtype->next))
+    {
+      rvtype = copyLinkChain (rvtype);
+      if IS_SPEC (rvtype->next)
+        SPEC_OPTIONAL (rvtype->next) = false;
+      else
+        DCL_PTR_OPTIONAL (rvtype->next) = false;
     }
 
   rOp = newiTempOperand (rvtype, 0);
@@ -2955,6 +2985,7 @@ geniCodePreDec (operand * op, bool lvalue)
   sym_link *roptype = operandType (rop);
   operand *result;
   int size = 0;
+  bool optional_target =  false;
 
   if (!op->isaddr)
     {
@@ -2973,11 +3004,21 @@ geniCodePreDec (operand * op, bool lvalue)
     ic = newiCode ('!', rop, 0);
   else
     ic = newiCode ('-', rop, operandFromLit (size));
+  // Drop _Optional on pointer target,
+  if (IS_PTR (roptype) && isOptional (roptype->next))
+    {
+      roptype = copyLinkChain (roptype);
+      if IS_SPEC (roptype->next)
+        SPEC_OPTIONAL (roptype->next) = false;
+      else
+        DCL_PTR_OPTIONAL (roptype->next) = false;
+      optional_target = true;
+    }
   IC_RESULT (ic) = result = newiTempOperand (roptype, 0);
   ADDTOCHAIN (ic);
 
   (void) geniCodeAssign (op, result, 0, 0);
-  if (lvalue || (IS_TRUE_SYMOP (op) && !isOperandVolatile (op, FALSE)) || IS_BITVAR (optype))
+  if (lvalue || (IS_TRUE_SYMOP (op) && !isOperandVolatile (op, false) && !optional_target) || IS_BITVAR (optype))
     return op;
   else
     return result;

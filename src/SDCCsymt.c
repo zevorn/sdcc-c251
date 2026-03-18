@@ -1880,11 +1880,6 @@ compStructSize (int su, structdef * sdef)
               werror (E_BITFLD_TYPE);
             }
 
-          /* ISO/IEC 9899 J.3.9 implementation defined behaviour: */
-          /* a "plain" int bitfield is unsigned */
-          if (!loop->etype->select.s.b_signed && SPEC_NOUN (loop->etype) != V_BITINTBITFIELD)
-            SPEC_USIGN (loop->etype) = 1;
-
           if (loop->bitVar == BITVAR_PAD)
             {
               /* A zero length bitfield forces padding */

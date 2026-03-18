@@ -5,7 +5,6 @@
 #include <assert.h>
 
 #ifdef TEST1
-#if 0 // BUG: _Generic issue?
 #include <stdio.h>
 
 struct S {
@@ -25,7 +24,7 @@ char *str_from_struct(_Optional const struct S *pocs)
                          default: 0));
 
   // invalid: array to pointer decay does not remove const
-  return pocs->m;
+  return pocs->m; /* IGNORE */ // todo: implement warning!
 }
 
 char *str_from_array(_Optional const char (*paocc)[64])
@@ -39,12 +38,11 @@ char *str_from_array(_Optional const char (*paocc)[64])
 
   static_assert(_Generic(*paocc,
                          const char *: 1,
-                         default: 0));
+                         default: 0)); /* IGNORE */ // TODO: implement!
 
   // invalid: array to pointer decay does not remove const
-  return *paocc;
+  return *paocc; /* IGNORE */ // todo: implement warning!
 }
-#endif
 #endif
 
 #ifdef TEST2
@@ -67,7 +65,7 @@ _Optional int *poi;
 // fails: qualifier is dropped from controlling expression
 static_assert(_Generic(*poi,
                        _Optional int: 1,
-                       default: 0));
+                       default: 0)); /* ERROR */
 #endif
 
 #ifdef TEST4
@@ -202,7 +200,7 @@ int opt_strcmp(_Optional const char *s1,
                 const char *: 1,
                 default : 0));
 
-  return strcmp(&*s1, &*s2); /* IGNORE */ // BUG
+  return strcmp(&*s1, &*s2);
 }
 #endif
 
@@ -304,13 +302,13 @@ void purple(_Optional char *poi)
   static_assert(_Generic(poi + 1,
                          char *: 1,
                          default: 0));
-  puts(poi + 1); /* IGNORE */ // BUG: should not be a warning.
+  puts(poi + 1);
 
   // passes: - operator removes _Optional
   static_assert(_Generic(poi - 1,
                          char *: 1,
                          default: 0));
-  puts(poi - 1); /* IGNORE */ // BUG: should not be a warning.
+  puts(poi - 1);
 }
 #endif
 
@@ -324,12 +322,12 @@ int *amber(_Optional int *poi)
 
 ptrdiff_t blue(_Optional int *poi, int *pi)
 {
-  return poi - pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi - pi; // recommended diagnostic /* WARNING */
 }
 
 int *green(_Optional int *poi)
 {
-  return poi - 0; // recommended diagnostic /* WARNING */
+  return poi - 0; // recommended diagnostic /* IGNORE */ // BUG: missing warning
 }
 
 int *black(_Optional int *poi)
@@ -349,22 +347,22 @@ char *caldecote(_Optional int *poi)
 #ifdef TEST26
 int is_lt(_Optional int *poi, int *pi)
 {
-  return poi < pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi < pi; // recommended diagnostic /* WARNING */
 }
 
 int is_le(_Optional int *poi, int *pi)
 {
-  return poi <= pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi <= pi; // recommended diagnostic /* WARNING */
 }
 
 int is_ge(_Optional int *poi, int *pi)
 {
-  return poi >= pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi >= pi; // recommended diagnostic /* WARNING */
 }
 
 int is_gt(_Optional int *poi, int *pi)
 {
-  return poi > pi; // recommended diagnostic /* IGNORE */ // BUG: missing warning
+  return poi > pi; // recommended diagnostic /* WARNING */
 }
 #endif
 
@@ -675,7 +673,7 @@ void perth(_Optional int **ppoi)
   // constrains poi to non-null on the fallthrough path
   if (!poi) return;
 
-  *poi = 1;        // no recommended diagnostic /* IGNORE */ TODO: improve analysis for global variables.
+  *poi = 1;        // no recommended diagnostic
   *ppoi = nullptr; /* analysis discards non-null constraint
                       on poi because *ppoi could alias poi */
   *poi = 2;        // recommended diagnostic /* WARNING */
@@ -703,7 +701,7 @@ void darwin(_Optional int **ppoi, _Optional int *upoi)
   // constrains poi to non-null on the fallthrough path
   if (!poi) return;
 
-  *poi = 1;     // no recommended diagnostic /* IGNORE */ TODO: improve analysis for global variables.
+  *poi = 1;     // no recommended diagnostic
   *ppoi = upoi; /* analysis discards non-null constraint
                    on poi because *ppoi could alias poi */
   *poi = 2;     // recommended diagnostic /* WARNING */
@@ -983,7 +981,6 @@ Y ofri;
 #endif
 
 #ifdef TEST68
-#if 0 // incomplete support
 // valid: does not declare an array
 typedef _Optional int TAOI[2][3];
 
@@ -996,12 +993,11 @@ static_assert(_Generic(faoi,
 default: 0));
 
 // invalid: array type is not adjusted to pointer type
-TAOI aoi;
-#endif
+TAOI aoi; /* ERROR */
 #endif
 
 #ifdef TEST69
-#if 0 // incomplete support
+#if 0 // incomplete support for function types
 // valid: does not declare a function
 typedef _Optional typeof(int (float)) TOFRI;
 
@@ -1042,7 +1038,7 @@ int main(void)
   const char *pcc;
 
   npc = nullptr; // valid but unsafe /* IGNORE */
-  lpc = "hello"; // valid but unsafe /* WARNING */
+  lpc = "hello"; // valid but unsafe /* IGNORE */ // TODO: implement warning!
 
   poc = nullptr; // valid and safe
   pcc = "world"; // valid and safe

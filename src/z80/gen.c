@@ -16329,7 +16329,7 @@ genUnpackBits (operand *result, int offset, int blen, int bstr)
   if (offset < rsize)
     {
       rsize -= offset;
-      if (SPEC_USIGN (etype))
+      if (SPEC_USIGN (etype) || IS_BOOLEAN (etype))
         genMove_o (result->aop, offset, ASMOP_ZERO, 0, rsize, true, false, false, false, true);
       else
         {

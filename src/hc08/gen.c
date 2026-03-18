@@ -9006,7 +9006,7 @@ genUnpackBits (operand * result, operand * left, operand * right, iCode * ifx)
       AccRsh (bstr, false);
       emitcode ("and", "#0x%02x", ((unsigned char) - 1) >> (8 - blen));
       regalloc_dry_run_cost += 2;
-      if (!SPEC_USIGN (etype))
+      if (!SPEC_USIGN (etype) && !IS_BOOLEAN (etype))
         {
           /* signed bitfield */
           symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
@@ -9045,7 +9045,7 @@ genUnpackBits (operand * result, operand * left, operand * right, iCode * ifx)
       loadRegIndexed (hc08_reg_a, litOffset, rematOffset);
       emitcode ("and", "#0x%02x", ((unsigned char) - 1) >> (8 - rlen));
       regalloc_dry_run_cost += 3;
-      if (!SPEC_USIGN (etype))
+      if (!SPEC_USIGN (etype) && !IS_BOOLEAN (etype))
         {
           /* signed bitfield */
           symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
@@ -9069,7 +9069,7 @@ finish:
   if (offset < rsize)
     {
       rsize -= offset;
-      if (SPEC_USIGN (etype))
+      if (SPEC_USIGN (etype) || IS_BOOLEAN (etype))
         {
           while (rsize--)
             storeConstToAop (0, AOP (result), offset++);

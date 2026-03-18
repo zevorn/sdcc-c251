@@ -939,7 +939,7 @@ fixPointerReads (iCode *ic)
 {
   // TODO: Why is this not necessary for IPUSH_VALUE_AT_ADDRESS?
   // And why does this have to be done during CSE (it doesn't work
-  // done earlier in eBBlockFromiCode)? Does CSE itslef create some
+  // done earlier in eBBlockFromiCode)? Does CSE itself create some
   // of the weird iCode that we fix here?
   if (ic->op != GET_VALUE_AT_ADDRESS)
     return;
@@ -1121,12 +1121,14 @@ algebraicOpts (iCode *ic, eBBlock *ebp)
       if (IS_OP_LITERAL (IC_RIGHT (ic)) &&
           isEqualVal (OP_VALUE (IC_RIGHT (ic)), 0))
         {
-          /* right size zero change to assignment */
+          bool semderef = IS_PTR (operandType (ic->left)) && isOptional (operandType (ic->left)->next); // Preserve +0 as semantic dereference for _Optional.
+          /* right side zero change to assignment */
           ic->op = '=';
           IC_RIGHT (ic) = IC_LEFT (ic);
           IC_LEFT (ic) = NULL;
           SET_ISADDR (IC_RIGHT (ic), 0);
           SET_ISADDR (IC_RESULT (ic), 0);
+          ic->result->isSemDeref |= semderef;
           return;
         }
       if (IS_OP_LITERAL (IC_LEFT (ic)) &&
