@@ -9929,6 +9929,7 @@ genPlus (iCode * ic)
                 {
                   fetchPair (PAIR_HL, IC_RIGHT (ic)->aop);
                   emit3w (A_ADD, ASMOP_HL, ASMOP_BC);
+                  spillPair (PAIR_HL);
                 }
               else
                 {
@@ -9971,6 +9972,7 @@ genPlus (iCode * ic)
                       fetchPair (PAIR_HL, IC_RIGHT (ic)->aop);
                     }
                   emit3w (A_ADD, ASMOP_HL, ASMOP_DE);
+                  spillPair (PAIR_HL);
 
                   if (maskedtopbyte)
                     {
@@ -9980,6 +9982,7 @@ genPlus (iCode * ic)
                       emit2 ("and a, #0x%02x", topbytemask);
                       cost2 (2, 2, 2, 2, 7, 6, 4, 4, 8, 4, 2, 2, 2, 2, 2);
                       emit3 (A_LD, ASMOP_H, ASMOP_A);
+                      spillPair (PAIR_HL);
                       if (!isRegDead (A_IDX, ic))
                         _pop (PAIR_AF);
                     }
@@ -9987,7 +9990,6 @@ genPlus (iCode * ic)
                   if (!isPairDead (PAIR_DE, ic))
                     _pop (PAIR_DE);
                 }
-              spillPair (PAIR_HL);
               genMove (IC_RESULT (ic)->aop, ASMOP_HL, isRegDead (A_IDX, ic), true, isPairDead (PAIR_DE, ic), true);
               goto release;
             }
@@ -10078,8 +10080,8 @@ genPlus (iCode * ic)
           genMove (pair == PAIR_BC ? ASMOP_BC : ASMOP_DE, rightop, true, true, de_dead, false);
           genMove (ASMOP_HL, leftop, true, true, de_dead && pair != PAIR_DE, false);
           emit2 ("add hl, %s", _pairs[pair].name);
-          spillPair (PAIR_HL);
           cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
+          spillPair (PAIR_HL);
           started = true;
           if (pair == PAIR_DE && !de_dead)
             _pop (PAIR_DE);
@@ -10150,8 +10152,8 @@ genPlus (iCode * ic)
         {
           genMove_o (ASMOP_HL, 0, IC_LEFT (ic)->aop, i, 2, true, true, de_dead, true, true);
           emit3w (A_ADD, ASMOP_HL, ic->right->aop);
-          started = true;
           spillPair (PAIR_HL);
+          started = true;
           genMove_o (IC_RESULT (ic)->aop, i, ASMOP_HL, 0, 2, true, true, de_dead, true, true);
           i += 2;
         }
@@ -10161,8 +10163,8 @@ genPlus (iCode * ic)
         {
           genMove_o (ASMOP_HL, 0, IC_RIGHT (ic)->aop, i, 2, true, true, de_dead, true, true);
           emit3w (A_ADD, ASMOP_HL, ic->left->aop);
-          started = true;
           spillPair (PAIR_HL);
+          started = true;
           genMove_o (IC_RESULT (ic)->aop, i, ASMOP_HL, 0, 2, true, true, de_dead, true, true);
           i += 2;
         }
@@ -10285,6 +10287,7 @@ genPlus (iCode * ic)
           else
             wassert (0);
           cost2 (3, 3, -1, 3, -1, -1, -1, 12, -1, 12, -1, 7, 6, -1, -1);
+          spillPair (PAIR_HL);
           i += 2;
           started = true;
         }
@@ -10333,9 +10336,9 @@ genPlus (iCode * ic)
             {
               emit2 ("add hl, %s", _pairs[pair].name);
               cost2 (1, 2, -1, 2, 11, 7, 2, 2, 8, 8, -1, 4, 3 , 1, 1);
-              started = true;
             }
           spillPair (PAIR_HL);
+          started = true;
           i++;
         }
       // When adding a literal, the 16 bit addition results in smaller, slower code than an 8-bit addition.
@@ -10424,6 +10427,7 @@ genPlus (iCode * ic)
           else
             genMove_o (ASMOP_DE, 0, aopInReg (leftop, i, HL_IDX) ? rightop : leftop, i, 2, false, false, true, false, !started);
           emit3w (started ? A_ADC : A_ADD, ASMOP_HL, ASMOP_DE);
+          spillPair (PAIR_HL);
           genMove_o (ic->result->aop, i, ASMOP_HL, 0, 2, false, true, true, false, i + 2 < size);
           started = true;
           i += 2;
@@ -18214,8 +18218,11 @@ genIfx (iCode *ic, iCode *popIc)
     (isRegDead (HL_IDX, ic) && (aopInReg (cond->aop, 0, L_IDX) && aopInReg (cond->aop, 1, H_IDX) || aopInReg (cond->aop, 0, H_IDX) && aopInReg (cond->aop, 1, L_IDX)) ||
     isRegDead (IY_IDX, ic) && (aopInReg (cond->aop, 0, IYL_IDX) && aopInReg (cond->aop, 1, IYH_IDX) || aopInReg (cond->aop, 0, IYH_IDX) && aopInReg (cond->aop, 1, IYL_IDX))))
     {
-      emit3w (A_BOOL, (aopInReg (cond->aop, 0, L_IDX) || aopInReg (cond->aop, 0, H_IDX)) ? ASMOP_HL : ASMOP_IY, 0);
+      PAIR_ID pair = (aopInReg (cond->aop, 0, L_IDX) || aopInReg (cond->aop, 0, H_IDX)) ? PAIR_HL : PAIR_IY;
+      emit3w (A_BOOL, pair == PAIR_HL ? ASMOP_HL : ASMOP_IY, 0);
       genIfxJump (ic, "nz");
+      _G.pairs[pair].last_type = AOP_LIT;
+      _G.pairs[pair].value = IC_TRUE (ic) ? 0x0000 : 0x0001;
       goto release;
     }
   else if (cond->aop->size == 2 && (IS_R4K || IS_R5K || IS_R6K) && (aopInReg (cond->aop, 0, BC_IDX) || aopInReg (cond->aop, 0, HL_IDX) || aopInReg (cond->aop, 0, IY_IDX))) 
@@ -18223,6 +18230,11 @@ genIfx (iCode *ic, iCode *popIc)
       emit2 ("test %s", _pairs[getPairId (cond->aop)].name);
       cost (2, 4);
       genIfxJump (ic, "nz");
+      if (IC_TRUE (ic))
+        {
+          _G.pairs[getPairId (cond->aop)].last_type = AOP_LIT;
+          _G.pairs[getPairId (cond->aop)].value = 0x0000;
+        }
       goto release;
     }
   else if (IS_RAB && cond->aop->size == 2 && !isRegDead (A_IDX, ic) &&
@@ -18244,6 +18256,13 @@ genIfx (iCode *ic, iCode *popIc)
     {
       emit3w (A_OR, ASMOP_HL, ASMOP_DE);
       genIfxJump (ic, "nz");
+      if (IC_TRUE (ic))
+        {
+          _G.pairs[PAIR_HL].last_type = AOP_LIT;
+          _G.pairs[PAIR_HL].value = 0x0000;
+        }
+      else
+        spillPair (PAIR_HL);
       goto release;
     }
   else if ((IS_R4K || IS_R5K || IS_R6K) && !IS_FLOAT(type) && cond->aop->size == 4 &&
@@ -18274,6 +18293,8 @@ genIfx (iCode *ic, iCode *popIc)
       genMove (ASMOP_HL, cond->aop, isRegDead (A_IDX, ic), true, isRegDead (DE_IDX, ic), isRegDead (IY_IDX, ic));
       emit3w (A_BOOL, ASMOP_HL, 0);
       genIfxJump (ic, "nz");
+      _G.pairs[PAIR_HL].last_type = AOP_LIT;
+      _G.pairs[PAIR_HL].value = IC_TRUE (ic) ? 0x0000 : 0x0001;
       goto release;
     }
   else if ((IS_RAB || IS_TLCS90) && !IS_FLOAT(type) && cond->aop->size == 4 && isRegDead (HL_IDX, ic) && isRegDead (DE_IDX, ic) && cond->aop->type == AOP_STK)
@@ -18281,6 +18302,13 @@ genIfx (iCode *ic, iCode *popIc)
       genMove (ASMOP_HLDE, cond->aop, isRegDead (A_IDX, ic), true, true, isRegDead (IY_IDX, ic));
       emit3w (A_OR, ASMOP_HL, ASMOP_DE);
       genIfxJump (ic, "nz");
+      if (IC_TRUE (ic))
+        {
+          _G.pairs[PAIR_HL].last_type = AOP_LIT;
+          _G.pairs[PAIR_HL].value = 0x0000;
+        }
+      else
+        spillPair (PAIR_HL);
       goto release;
     }
 
