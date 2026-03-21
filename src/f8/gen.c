@@ -4530,7 +4530,7 @@ genPlus (const iCode *ic)
          (aopOnStack (result->aop, i, 2) || result->aop->type == AOP_DIR))
          {
            wassert (!aopInReg (leftop, i, Z_IDX) || !aopInReg (rightop, i, X_IDX));
-           if (started && aopIsLitVal (leftop, i, 2, 0x0000))
+           if (started && aopIsLitVal (rightop, i, 2, 0x0000))
              emit3_o (A_ADCW, left->aop, i, 0, 0);
            else
              emit3_o (started ? A_ADCW : A_ADDW, leftop, i, rightop, i);
