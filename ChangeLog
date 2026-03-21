@@ -11,8 +11,14 @@
 	* support/regression/tests/gcc-torture-execute-20021204-1.c,
 	  support/regression/tests/gcc-torture-execute-20051104-1.c,
 	  support/regression/tests/gcc-torture-execute-950426-1.c,
-	  support/regression/tests/gcc-torture-execute-961125-1.c:
+	  support/regression/tests/gcc-torture-execute-961125-1.c,
+	  support/regression/tests/gcc-torture-execute-20010924-1.c,
+	  support/regression/tests/gcc-torture-execute-va-arg-10.c,
+	  support/regression/tests/gcc-torture-execute-va-arg-2.c,
+	  support/regression/tests/gcc-torture-execute-va-arg-9.c,
 	  Disable intentional warning in some GCC-derived tests.
+	* support/regression/tests/gcc-torture-execute-20030714-1.c:
+	  Compile a test as C11 instead of C99 that uses a feature that was an implementation extension before C11.
 
 2026-03-20 Philipp Klaus Krause <philipp@colecovision.eu>
 
