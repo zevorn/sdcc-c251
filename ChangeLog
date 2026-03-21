@@ -7,6 +7,11 @@
 
    	* src/mos6502/gen.c:
    	  Fix codegen bug exposed by [r16373]
+   	* src/mos6502/main.c,
+   	  device/mos6502/crt0.s,
+   	  device/mos6502-stack-auto/crt0.s,
+   	  device/mos65c02/crt0.s:
+   	  Completely move linker ordering to crt0.
 
 2026-03-21 Philipp Klaus Krause <philipp@colecovision.eu>
 

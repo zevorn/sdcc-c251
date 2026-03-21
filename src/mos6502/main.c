@@ -217,6 +217,7 @@ m6502_genAssemblerStart (FILE * of)
     }
   fprintf (of, "\n");
 
+#if 0
   fprintf(of, ";--------------------------------------------------------\n");
   fprintf(of, ";  Ordering of segments for the linker.\n");
   fprintf(of, ";--------------------------------------------------------\n");
@@ -237,6 +238,8 @@ m6502_genAssemblerStart (FILE * of)
   //  if(options.xdata_overlay)
   //      tfprintf (of, "\t!area    (OVR)\n", OVERLAY_NAME);
   tfprintf (of, "\t!area\n", XDATA_NAME);
+#endif
+
 }
 
 static void
