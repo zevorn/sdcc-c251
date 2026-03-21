@@ -3,6 +3,9 @@
 	* support/sdbinutils/binutils/Makefile.am,
 	  support/sdbinutils/binutils/Makefile.in:
 	  Disable build of objdump in sdbinutils.
+	* src/z80/gen.c,
+	  src/z80/peeph.def:
+	  Fix comparison code size regression, RFE #1016.
 
 2026-03-20 Philipp Klaus Krause <philipp@colecovision.eu>
 

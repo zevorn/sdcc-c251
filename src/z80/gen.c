@@ -1653,7 +1653,7 @@ emit3_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
   regalloc_dry_run_cost = cost;
   regalloc_dry_run_cost_bytes = bytecost;
   regalloc_dry_run_cost_states = statecost;
-  //emitDebug(";emit3_o cost: %d total so far: %d", (int)emit3Cost(inst, op1, offset1, op2, offset2), (int)cost);
+  // emitDebug(";emit3_o cost: total so far: cost %lu bytecost %lu", cost, bytecost);
 }
 
 static void
@@ -13178,7 +13178,7 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
                 emit3w (A_CP, ASMOP_HL, rightpairaop);
               else
                 {
-                  emit3 (A_CP, ASMOP_A, ASMOP_A);
+                  emit3 (a_dead ? A_XOR : A_CP, ASMOP_A, ASMOP_A);
                   emit3w (A_SBC, ASMOP_HL, rightpairaop);
                 }
               emitJP (lbl, "nz", 0.5f, false);
@@ -13187,7 +13187,7 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
               size--;
               continue;
             }
-          else if (!IS_SM83 && hl_dead && left->aop->type == AOP_STK && (aopInReg (right->aop, offset, DE_IDX) || aopInReg (right->aop, offset, BC_IDX)))
+          else if (!IS_SM83 && hl_dead && (left->aop->type == AOP_STK || left->aop->type == AOP_IY || left->aop->type == AOP_HL || left->aop->type == AOP_DIR) && (aopInReg (right->aop, offset, DE_IDX) || aopInReg (right->aop, offset, BC_IDX)))
             {
               genMove_o (ASMOP_HL, 0, left->aop, offset, 2, a_dead, true, de_dead, iy_dead, true);
               if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS90 || IS_TLCS870C || IS_TLCS870C1) && aopInReg (right->aop, offset, DE_IDX) ||
@@ -13195,7 +13195,7 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
                 emit3w_o (A_CP, ASMOP_HL, 0, right->aop, offset);
               else
                 {
-                  emit3 (A_CP, ASMOP_A, ASMOP_A);
+                  emit3 (a_dead ? A_XOR : A_CP, ASMOP_A, ASMOP_A);
                   emit3w_o (A_SBC, ASMOP_HL, 0, right->aop, offset);
                 }
               emitJP (lbl, "nz", 0.5f, false);
@@ -13214,7 +13214,7 @@ gencjneshort (operand *left, operand *right, symbol *lbl, const iCode *ic)
                 emit3w (A_CP, ASMOP_HL, rightpairaop);
               else
                 {
-                  emit3 (A_CP, ASMOP_A, ASMOP_A);
+                  emit3 (a_dead ? A_XOR : A_CP, ASMOP_A, ASMOP_A);
                   emit3w (A_SBC, ASMOP_HL, rightpairaop);
                 }
               emitJP (lbl, "nz", 0.5f, false);
