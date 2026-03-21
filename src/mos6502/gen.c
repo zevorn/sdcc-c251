@@ -6434,6 +6434,7 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
       loadRegFromConst(m6502_reg_y, yoff + offset);
       emit6502op ("lda", DPTRFMT_IY);
       emit6502op ("and", IMMDFMT, ((unsigned char) - 1) >> (8 - rlen));
+      m6502_useReg(m6502_reg_a);
       if (!SPEC_USIGN (etype) && !IS_BOOLEAN (etype))
 	{
 	  /* signed bitfield */

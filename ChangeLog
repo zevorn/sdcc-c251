@@ -1,3 +1,8 @@
+2026-03-14 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+   	  Fix codegen bug exposed by [r16373]
+
 2026-03-21 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/sdbinutils/binutils/Makefile.am,
