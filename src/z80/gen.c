@@ -2001,7 +2001,7 @@ aopForSym (const iCode *ic, symbol *sym, bool result, bool requires_a)
         }
       else
         {
-          emitDebug ("; AOP_STK for %s", sym->rname);
+          // emitDebug ("; AOP_STK for %s", sym->rname);
           sym->aop = aop = newAsmop (AOP_STK);
         }
 
