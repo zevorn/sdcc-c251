@@ -6,6 +6,8 @@
 	* src/z80/gen.c,
 	  src/z80/peeph.def:
 	  Fix comparison code size regression, RFE #1016.
+	* src/SDCCmem.c:
+	  Do not warn for unused parameters in functions with variable arguments, since C standards before C23 required at least one non-variable argument for va_start.
 
 2026-03-20 Philipp Klaus Krause <philipp@colecovision.eu>
 
