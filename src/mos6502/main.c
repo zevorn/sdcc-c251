@@ -5,7 +5,7 @@
 
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2025, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -216,30 +216,6 @@ m6502_genAssemblerStart (FILE * of)
       fprintf (of, "\t.optsdcc -m%s\n", port->target);
     }
   fprintf (of, "\n");
-
-#if 0
-  fprintf(of, ";--------------------------------------------------------\n");
-  fprintf(of, ";  Ordering of segments for the linker.\n");
-  fprintf(of, ";--------------------------------------------------------\n");
-  tfprintf (of, "\t!area\n", DATA_NAME);
-  tfprintf (of, "\t!area\n", OVERLAY_NAME);
-  //  if (options.xdata_overlay==0)
-  //      tfprintf (of, "\t!area    (PAG, OVR)\n", OVERLAY_NAME);
-
-  tfprintf (of, "\t!area\n", HOME_NAME);
-  tfprintf (of, "\t!area\n", STATIC_NAME);
-  tfprintf (of, "\t!area\n", GSFINAL_NAME);
-  tfprintf (of, "\t!area\n", CODE_NAME);
-  tfprintf (of, "\t!area\n", CONST_NAME);
-  tfprintf (of, "\t!area\n", XINIT_NAME);
-
-  tfprintf (of, "\t!area\n", "_DATA");
-  tfprintf (of, "\t!area\n", XIDATA_NAME);
-  //  if(options.xdata_overlay)
-  //      tfprintf (of, "\t!area    (OVR)\n", OVERLAY_NAME);
-  tfprintf (of, "\t!area\n", XDATA_NAME);
-#endif
-
 }
 
 static void

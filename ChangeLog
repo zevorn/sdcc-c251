@@ -8,7 +8,7 @@
 	* src/f8/main.c:
 	  Fix f8(l) startup code for --opt-code-speed.
 
-2026-03-14 Gabriele Gorla <gorlik@yahoo.com>
+2026-03-21 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c:
    	  Fix codegen bug exposed by [r16373]
@@ -17,6 +17,8 @@
    	  device/mos6502-stack-auto/crt0.s,
    	  device/mos65c02/crt0.s:
    	  Completely move linker ordering to crt0.
+   	* src/mos6502/main.c:
+   	  Remove dead code.
 
 2026-03-21 Philipp Klaus Krause <philipp@colecovision.eu>
 
