@@ -3037,7 +3037,7 @@ genEor (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
           emit3_o (A_CPL, result_aop, i, 0, 0);
           continue;
         }
-      else if ((aopInReg (result_aop, i, X_IDX) || aopInReg (result_aop, i, Y_IDX)) &&
+      else if (i + 1 < size && omitbyte != i + 1 && (aopInReg (result_aop, i, X_IDX) || aopInReg (result_aop, i, Y_IDX)) &&
         aopIsLitVal (right_aop, i, 2, 0xffff))
         {
           const bool x_free = regDead (X_IDX, ic) &&
@@ -3053,7 +3053,7 @@ genEor (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
           i++;
           continue;
         }
-      else if ((aopInReg (left_aop, i, X_IDX) && regDead (X_IDX, ic) || aopInReg (left_aop, i, Y_IDX) && regDead (Y_IDX, ic)) &&
+      else if (i + 1 < size && omitbyte != i + 1 && (aopInReg (left_aop, i, X_IDX) && regDead (X_IDX, ic) || aopInReg (left_aop, i, Y_IDX) && regDead (Y_IDX, ic)) &&
         aopIsLitVal (right_aop, i, 2, 0xffff))
         {
           const bool x_free = regDead (X_IDX, ic) &&
