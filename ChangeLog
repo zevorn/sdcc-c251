@@ -7,7 +7,15 @@
       src/mos6502/ralloc2.cc,      
       src/mos6502/gen.c:
       Small code cleanups.
-    
+    * device/lib/mos6502/crt0.s,
+      device/lib/mos6502/fabsf.s,
+      src/mos6502/gen.c,
+      src/mos6502/gen.h,
+      src/mos6502/genand.c,
+      src/mos6502/genrshift.c,
+      src/mos6502/genxor.c:
+      More code cleanups.
+
 2026-03-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/stm8/gen.c:

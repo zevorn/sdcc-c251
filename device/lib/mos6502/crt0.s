@@ -79,7 +79,7 @@ __sdcc_init_data:
 	ldy	#<l_ZP
 	beq	00101$
 00100$:
-	sta	*0,X
+	sta	*0,x
 	inx
 	dey
 	bne	00100$
@@ -110,7 +110,7 @@ __sdcc_init_data:
 	jsr	_memset
 
 ;--------------------------------------------------------
-;  Final Cleanup
+;  Call Main
 ;--------------------------------------------------------
 	.area GSFINAL
 __sdcc_program_startup:

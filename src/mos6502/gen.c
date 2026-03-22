@@ -221,7 +221,12 @@ dirtyRegAop(reg_info *reg, asmop *aop, int offset)
 
 }
 
-
+/**************************************************************************
+ * Returns a new temp label symbol
+ *
+ * @param a ????
+ * @return label symbol
+ *************************************************************************/
 symbol *
 safeNewiTempLabel(const char * a)
 {
@@ -232,10 +237,9 @@ safeNewiTempLabel(const char * a)
 }
 
 /**************************************************************************
- * Returns the number for the label
+ * Emit the label in the assembly
  *
  * @param a  pointer to the label symbol
- * @return label number
  *************************************************************************/
 void
 safeEmitLabel(symbol * a)
@@ -406,7 +410,6 @@ regInfoStr()
 {
   static char outstr[40];
   char regstring[3][10];
-  char *flagreg;
 
   if(m6502_reg_a->aop == &tsxaop) snprintf(regstring[0],10,"A:%c%c:S%+-3d",
 					   (m6502_reg_a->isFree)?'-':'U',
@@ -456,7 +459,7 @@ regInfoStr()
                 (m6502_reg_y->isFree)?'-':'U',
                 (m6502_reg_y->isDead)?'-':'L');
   
-  flagreg = (_S.lastflag>=0)?m6502_regWithIdx(_S.lastflag)->name:"?";
+  const char *flagreg = (_S.lastflag>=0)?m6502_regWithIdx(_S.lastflag)->name:"?";
   
   char carry = (_S.carryValid)?((_S.carry)?'1':'0'):'?';
   
