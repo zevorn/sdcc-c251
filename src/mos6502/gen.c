@@ -4582,9 +4582,9 @@ genSend (set *sendSet)
       m6502_aopOp (IC_LEFT (send2), send2);
       if (IS_AOP_A (AOP (IC_LEFT (send2))))
         {
-          loadRegFromAop (m6502_reg_x, AOP (IC_LEFT (send2)), 0);
-          loadRegFromAop (m6502_reg_a, AOP (IC_LEFT (send1)), 0);
-        }
+              loadRegFromAop (m6502_reg_x, AOP (IC_LEFT (send2)), 0);
+              loadRegFromAop (m6502_reg_a, AOP (IC_LEFT (send1)), 0);
+            }
       else
         {
           loadRegFromAop (m6502_reg_a, AOP (IC_LEFT (send1)), 0);
@@ -6365,8 +6365,8 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
   // TODO: enable restoring from DPTR
   if (!IS_AOP_XY (AOP (left)))
     {
-      needpullx = storeRegTempIfSurv (m6502_reg_x);
-      needpully = storeRegTempIfSurv (m6502_reg_y);
+          needpullx = storeRegTempIfSurv (m6502_reg_x);
+          needpully = storeRegTempIfSurv (m6502_reg_y);
     }
 
   int yoff= setupDPTR(left, litOffset, rematOffset, false);
@@ -6469,6 +6469,7 @@ static void genUnpackBits (operand * result, operand * left, operand * right, iC
 	    storeRegToAop (m6502_reg_a, AOP (result), offset++);
 	}
     }
+
   loadOrFreeRegTemp (m6502_reg_y, needpully);
   loadOrFreeRegTemp (m6502_reg_x, needpullx);
   loadOrFreeRegTemp (m6502_reg_a, needpulla);
@@ -6785,10 +6786,11 @@ static void genPointerGet (iCode * ic, iCode * ifx)
   emitComment (TRACEGEN|VVDBG, "  %s dst: %s size=%d",
                __func__, aopName(AOP(result)), AOP_SIZE(result) );
 
-  if(findRegAop (AOP(result), 0)==m6502_reg_a )
-    {
-      m6502_dirtyReg(m6502_reg_a);
-    }
+  if ( findRegAop(AOP(result), 0) == m6502_reg_a )
+    m6502_dirtyReg(m6502_reg_a);
+
+  if ( m6502_reg_y->aop && sameRegs(m6502_reg_y->aop, AOP(result)) )
+    m6502_dirtyReg(m6502_reg_y);
 
   if (AOP_TYPE (left) == AOP_REG)
     {
@@ -6800,7 +6802,7 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 
       if (AOP_SIZE(left) == 2)
 	{
-	  if(AOP(left)->aopu.aop_reg[1]->isLitConst)
+	  if (AOP(left)->aopu.aop_reg[1]->isLitConst)
 	    sprintf(hstring,"%02x",AOP(left)->aopu.aop_reg[1]->litConst);
 	  else
 	    sprintf(hstring,"??");
@@ -6895,7 +6897,7 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 	    }
 	}
       loadOrFreeRegTemp (m6502_reg_a, needpulla);
-      loadOrFreeRegTemp(m6502_reg_y, needloady);
+      loadOrFreeRegTemp (m6502_reg_y, needloady);
       goto release;
     }
 

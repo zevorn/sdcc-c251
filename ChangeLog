@@ -1,3 +1,8 @@
+2026-03-22 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+   	  Dirty Y when it is a target of a genPointerGet operation.
+
 2026-03-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/stm8/gen.c:
@@ -28,7 +33,7 @@
    	* src/mos6502/main.c:
    	  Remove dead code.
   	* src/mos6502/genplus.c:
-   	  Imnplement increment optimization when result is XY.
+   	  Implement increment optimization when result is XY.
 
 2026-03-21 Philipp Klaus Krause <philipp@colecovision.eu>
 
