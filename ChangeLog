@@ -1,7 +1,7 @@
 2026-03-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/stm8/gen.c:
-	  Fix bug #3950.
+	  Fix bugs #3950, #3951.
 
 2026-03-21 Philipp Klaus Krause <philipp@colecovision.eu>
 
