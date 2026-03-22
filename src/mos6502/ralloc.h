@@ -61,7 +61,7 @@ typedef struct reg_info
   short type;		    /* can have value 
 			       REG_GPR, REG_PTR or REG_CND */
   short rIdx;		    /* index into register table */
-  char *name;		    /* name */
+  const char *name;         /* name */
   short mask;		    /* bitmask for pair allocation */
   struct asmop *aop;	    /* last operand */
   int aopofs;		    /* last operand offset */
@@ -99,7 +99,7 @@ typedef struct m6502opcodedata
   /* info for registers used and/or modified by an instruction will be added here */
 } m6502opcodedata;
 
-extern reg_info regsm6502[];
+extern reg_info m6502_regs[];
 extern reg_info *m6502_reg_a;
 extern reg_info *m6502_reg_x;
 extern reg_info *m6502_reg_y;
@@ -120,6 +120,7 @@ bitVect *m6502_rUmaskForOp (operand * op);
 const m6502opcodedata *m6502_getOpcodeData(const char *inst);
 int m6502_opcodeSize(const m6502opcodedata *opcode, const char *arg);
 
+void m6502_spillThis (symbol * sym);
 iCode *m6502_ralloc2_cc(ebbIndex *ebbi);
 
 void m6502RegFix (eBBlock **ebbs, int count);

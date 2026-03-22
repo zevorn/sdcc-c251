@@ -2,7 +2,12 @@
 
    	* src/mos6502/gen.c:
    	  Dirty Y when it is a target of a genPointerGet operation.
-
+    * src/mos6502/ralloc.h,
+      src/mos6502/ralloc.c,      
+      src/mos6502/ralloc2.cc,      
+      src/mos6502/gen.c:
+      Small code cleanups.
+    
 2026-03-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/stm8/gen.c:
