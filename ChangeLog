@@ -2,6 +2,9 @@
 
 	* src/stm8/gen.c:
 	  Fix bugs #3950, #3951.
+	* support/valdiag/tests/bug-2773.c,
+	  support/valdiag/tests/funcdec.c:
+	  Ignore warnings about unused parameters in two tests that check for errors on function declaration.
 
 2026-03-21 Philipp Klaus Krause <philipp@colecovision.eu>
 
