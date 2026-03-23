@@ -1703,19 +1703,19 @@ storeConstToAop (int c, asmop * aop, int loffset)
     default:
       if(aop->type != AOP_SOF)
         {
+          reg_info *reg = NULL;
+
           // prefer X if literal!=0 && X does not contain tsx offset 
           if(c!=0 && m6502_reg_x->isFree && !keepTSX() )
-            {
-              loadRegFromConst (m6502_reg_x, c);
-              storeRegToAop (m6502_reg_x, aop, loffset);
-              m6502_freeReg (m6502_reg_x);
-              return;
-            }
+            reg=m6502_reg_x;
           else if(m6502_reg_y->isFree)
+            reg=m6502_reg_y;
+
+          if(reg)
             {
-              loadRegFromConst (m6502_reg_y, c);
-              storeRegToAop (m6502_reg_y, aop, loffset);
-              m6502_freeReg (m6502_reg_y);
+              loadRegFromConst (reg, c);
+              storeRegToAop (reg, aop, loffset);
+              m6502_freeReg (reg);
               return;
             }
         }
@@ -5083,13 +5083,10 @@ static void genRet (iCode * ic)
   if (AOP_TYPE (left) == AOP_LIT)
     {
       /* If returning a literal, we can load the bytes of the return value */
-      /* in any order. By loading A and X first, any other bytes that match */
-      /* can use the shorter sta and stx instructions. */
-      offset = 0;
-      while (size--)
+      /* in any order. */
+      for(offset=0; offset<size; offset++)
         {
 	  transferAopAop (AOP (left), offset, m6502_aop_pass[offset], 0);
-	  offset++;
 	}
     }
   else

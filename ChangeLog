@@ -15,6 +15,8 @@
       src/mos6502/genrshift.c,
       src/mos6502/genxor.c:
       More code cleanups.
+   	* src/mos6502/gen.c:
+   	  Refactor storeConstToAop().
 
 2026-03-22 Philipp Klaus Krause <philipp@colecovision.eu>
 
