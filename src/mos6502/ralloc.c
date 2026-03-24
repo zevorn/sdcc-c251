@@ -48,7 +48,7 @@ static struct
 } _G;
 
 /* 6502 registers */
-reg_info regsm6502[] =
+reg_info m6502_regs[] =
   {
     {REG_GPR, A_IDX,   "a",  M6502MASK_A,  NULL, 0, 1},
     {REG_GPR, X_IDX,   "x",  M6502MASK_X,  NULL, 0, 1},
@@ -63,7 +63,7 @@ reg_info regsm6502[] =
 /* Shared with gen.c */
 int m6502_ptrRegReq;             /* one byte pointer register required */
 
-int m6502_nRegs = sizeof(regsm6502)/sizeof(reg_info);
+int m6502_nRegs = sizeof(m6502_regs)/sizeof(reg_info);
 
 reg_info *m6502_reg_a;
 reg_info *m6502_reg_x;
@@ -73,7 +73,6 @@ reg_info *m6502_reg_xa;
 reg_info *m6502_reg_xy;
 reg_info *m6502_reg_sp;
 
-static void m6502SpillThis (symbol *);
 static void updateRegUsage (iCode * ic);
 extern void genm6502Code (iCode *);
 
@@ -87,8 +86,8 @@ m6502_regWithIdx (int idx)
   int i;
 
   for (i = 0; i < m6502_nRegs; i++)
-    if (regsm6502[i].rIdx == idx)
-      return &regsm6502[i];
+    if (m6502_regs[i].rIdx == idx)
+      return &m6502_regs[i];
 
   printf("error: regWithIdx %d not found\n",idx);
   exit (1);
@@ -396,8 +395,8 @@ createStackSpil (symbol * sym)
 /*-----------------------------------------------------------------*/
 /* spillThis - spills a specific operand                           */
 /*-----------------------------------------------------------------*/
-static void
-m6502SpillThis (symbol * sym)
+void
+m6502_spillThis (symbol * sym)
 {
   int i;
   /* if this is rematerializable or has a spillLocation
@@ -479,7 +478,7 @@ verifyRegsAssigned (operand *op, iCode * ic)
   if (sym->regs[0])
     return;
 
-  m6502SpillThis (sym);
+  m6502_spillThis (sym);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1439,13 +1438,13 @@ serialRegMark (eBBlock ** ebbs, int count)
                  to be safe */
               if (_G.blockSpil && sym->liveTo > ebbs[i]->lSeq)
                 {
-                  m6502SpillThis (sym);
+                  m6502_spillThis (sym);
                   continue;
                 }
 
               if (sym->remat)
                 {
-                  m6502SpillThis (sym);
+                  m6502_spillThis (sym);
                   continue;
                 }
 
@@ -1456,7 +1455,7 @@ serialRegMark (eBBlock ** ebbs, int count)
                 }
               else if (!sym->for_newralloc)
                 {
-                  m6502SpillThis (sym);
+                  m6502_spillThis (sym);
                   printf ("Spilt %s due to byte limit.\n", sym->name);
                 }
             }
@@ -1609,13 +1608,13 @@ updateRegUsage (iCode * ic)
   // update the registers in use at the start of this icode
   for (reg=0; reg<m6502_nRegs; reg++)
     {
-      if (regsm6502[reg].isFree)
+      if (m6502_regs[reg].isFree)
         {
-          ic->riu &= ~(regsm6502[reg].mask);
+          ic->riu &= ~(m6502_regs[reg].mask);
         }
       else
         {
-          ic->riu |= (regsm6502[reg].mask);
+          ic->riu |= (m6502_regs[reg].mask);
         }
     }
 }

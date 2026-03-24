@@ -830,9 +830,10 @@ deallocParms (value *val)
       if (!lval->sym->isref)
         {
           lval->sym->allocreq = 0;
+          if (!(currFunc && IFFUNC_HASVARARGS (currFunc->type))) // Do not warn for unused parameters in functions with variable arguments, since C standards before C23 required at least one non-variable argument for va_start.
             werror (W_NO_REFERENCE,
                     currFunc ? currFunc->name : "(unknown)",
-                    "function argument", lval->sym->name);
+                    "function parameter", lval->sym->name);
         }
 
       /* move the rname if any to the name for both val & sym */

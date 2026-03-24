@@ -265,6 +265,12 @@ z80MightReadFlag(const lineNode *pl, const char *what)
      lineIsInst (pl, "djnz"))
     return false;
 
+  if ((IS_Z180 || IS_EZ80) &&
+    (lineIsInst (pl, "in0") || lineIsInst (pl, "out0") ||
+    lineIsInst (pl, "otim") || lineIsInst (pl, "otimr") ||
+    lineIsInst (pl, "otdm") || lineIsInst (pl, "otdmr")))
+    return(false);
+
   if(IS_RAB &&
      (lineIsInst (pl, "bool") ||
      lineIsInst (pl, "ldf") ||
@@ -637,7 +643,7 @@ z80MightRead(const lineNode *pl, const char *what)
     lineIsInst (pl, "outi") || lineIsInst (pl, "outd") || lineIsInst (pl, "otir") || lineIsInst (pl, "otdr")))
     return(strchr("bchl", *what));
 
-  if((IS_Z180 || IS_EZ80) && lineIsInst (pl, "in0"))
+  if((IS_Z180 || IS_EZ80) && (lineIsInst (pl, "in0") || lineIsInst (pl, "out0")))
     return(false);
 
   if((IS_Z180 || IS_EZ80 || IS_Z80N) && lineIsInst (pl, "mlt"))
@@ -909,9 +915,11 @@ z80SurelyWritesFlag(const lineNode *pl, const char *what)
     return true;
 
   /* handle IN0 r,(n) and IN r,(c) instructions */
-  if(lineIsInst (pl, "in0") || (!strncmp(pl->line, "in\t", 3) &&
-     (!strcmp(pl->line+5, "(c)") || !strcmp(pl->line+5, "(bc)"))))
+  if(lineIsInst (pl, "in0") || (lineIsInst (pl, "in") && (!strcmp(pl->line+5, "(c)") || !strcmp(pl->line+5, "(bc)"))))
     return (!!strcmp(what, "cf"));
+
+  if((IS_Z180 || IS_EZ80) && lineIsInst (pl, "out0"))
+    return false;
 
   if(IS_RAB &&
     lineIsInst (pl, "bool"))
@@ -1149,7 +1157,7 @@ z80SurelyWrites (const lineNode *pl, const char *what)
 
   if(lineIsInst (pl, "bit") ||
     lineIsInst (pl, "push"))
-    return(false);
+    return (false);
 
   if (IS_Z180 || IS_EZ80 || IS_Z80N)
     if (larg && lineIsInst (pl, "mlt"))
@@ -1165,16 +1173,18 @@ z80SurelyWrites (const lineNode *pl, const char *what)
 
       if (larg && lineIsInst (pl, "in0"))
         return (!strncmp (larg, what, strlen (what)));
+      if (lineIsInst (pl, "out0"))
+        return (false);
     }
 
   if (IS_EZ80 && larg && lineIsInst (pl, "lea"))
     return (strstr (larg, what));
 
   if (IS_SM83 && lineIsInst (pl, "lda") && strncmp(pl->line + 4, "hl", 2) == 0 && (what[0] == 'h' || what[0] == 'l'))
-    return(true);
+    return (true);
 
   if (IS_SM83 && lineIsInst (pl, "ldhl") && (what[0] == 'h' || what[0] == 'l'))
-    return(true);
+    return (true);
 
   if (IS_RAB && larg && lineIsInst (pl, "bool"))
     return (!strncmp (larg, what, strlen(what)) || strchr (larg, *what));

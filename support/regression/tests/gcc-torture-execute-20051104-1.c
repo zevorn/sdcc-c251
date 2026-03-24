@@ -15,6 +15,7 @@
 #ifdef __SDCC
 #pragma std_c99
 #pragma disable_warning 196
+#pragma disable_warning 360
 #endif
 
 /* PR rtl-optimization/23567 */

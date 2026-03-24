@@ -109,6 +109,21 @@ genPlusInc (iCode * ic)
       return true;
     }
 
+  if(IS_AOP_XY (AOP (result)) && icount == 1 )
+    {
+      loadRegFromAop (m6502_reg_xy, AOP (left), 0);
+      if(icount>0)
+        {
+          tlbl = safeNewiTempLabel (NULL);
+	  rmwWithReg (OPINCDEC, m6502_reg_y);
+          m6502_emitBranch ("bne", tlbl);
+	  rmwWithReg (OPINCDEC, m6502_reg_x);
+          safeEmitLabel (tlbl);
+          m6502_dirtyReg(m6502_reg_x);
+        }
+      return true;
+    }
+
   if (!sameRegs (AOP (left), AOP (result)))
     {
       if (icount==1 && size==1 )
@@ -272,7 +287,7 @@ m6502_genPlus (iCode * ic)
     {
       symbol *skipInc = safeNewiTempLabel (NULL);
       loadRegFromAop (m6502_reg_xa, AOP(left), 0);
-      m6502_emitSetCarry(0);
+      INIT_CARRY();
       accopWithAop (OPCODE, AOP(right), 0);
       m6502_emitBranch ("bcc", skipInc);
       rmwWithAop (OPINCDEC, AOP(result), 1);
