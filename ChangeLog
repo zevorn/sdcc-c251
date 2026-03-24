@@ -1,3 +1,8 @@
+2026-03-24 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Fix bug #3959.
+
 2026-03-22 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c:
