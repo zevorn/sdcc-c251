@@ -337,7 +337,7 @@ static void assign_operand_for_cost(operand *o, const assignment &a, unsigned sh
       var_t v = oi->second;
       if(a.global[v] >= 0)
         { 
-          sym->regs[I[v].byte] = regsm6502 + a.global[v];   
+          sym->regs[I[v].byte] = m6502_regs + a.global[v];
           sym->accuse = 0;
           sym->isspilt = false;
           sym->nRegs = I[v].size;
@@ -623,7 +623,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
       if(winner.global[v] >= 0)
         { 
-          sym->regs[I[v].byte] = regsm6502 + winner.global[v];   
+          sym->regs[I[v].byte] = m6502_regs + winner.global[v];   
           sym->accuse = 0;
           sym->isspilt = false;
           sym->nRegs = I[v].size;
@@ -635,7 +635,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
           sym->accuse = 0;
           sym->nRegs = I[v].size;
           wassert (sym->nRegs);
-          //m6502SpillThis(sym); Leave it to regFix, which can do some spillocation compaction. Todo: Use Thorup instead.
+          //m6502_SpillThis(sym); Leave it to regFix, which can do some spillocation compaction. Todo: Use Thorup instead.
           sym->isspilt = false;
         }
     }

@@ -4070,9 +4070,9 @@ eBBlockFromiCode (iCode *ic)
    * receives for unused parameters.
    */
   discardDeadParamReceives (ebbi->bbOrder, ebbi->count);
-dumpEbbsToFileExt (DUMP_CUSTOM0, ebbi);
+
   narrowReads (ebbi);
-dumpEbbsToFileExt (DUMP_CUSTOM1, ebbi);
+
   checkRestartAtomic (ebbi);
 
   /* allocate registers & generate code */

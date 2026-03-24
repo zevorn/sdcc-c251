@@ -111,11 +111,10 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = $(am__EXEEXT_5) $(am__EXEEXT_6) $(am__EXEEXT_7) \
-	$(am__EXEEXT_8) $(am__EXEEXT_9) $(am__EXEEXT_10) \
-	@BUILD_SRCONV@ @BUILD_DLLTOOL@ @BUILD_WINDRES@ @BUILD_WINDMC@ \
-	$(am__EXEEXT_11) $(am__EXEEXT_12) $(am__EXEEXT_13) \
-	@BUILD_DLLWRAP@ $(am__empty)
-noinst_PROGRAMS = $(am__EXEEXT_17) $(am__EXEEXT_20) @BUILD_MISC@
+	$(am__EXEEXT_8) $(am__EXEEXT_9) @BUILD_SRCONV@ @BUILD_DLLTOOL@ \
+	@BUILD_WINDRES@ @BUILD_WINDMC@ $(am__EXEEXT_10) \
+	$(am__EXEEXT_11) $(am__EXEEXT_12) @BUILD_DLLWRAP@
+noinst_PROGRAMS = $(am__EXEEXT_16) $(am__EXEEXT_19) @BUILD_MISC@
 EXTRA_PROGRAMS = srconv$(EXEEXT) sysdump$(EXEEXT) coffdump$(EXEEXT) \
 	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 	$(am__EXEEXT_4)
@@ -166,22 +165,21 @@ am__EXEEXT_2 = windres$(EXEEXT)
 am__EXEEXT_3 = windmc$(EXEEXT)
 am__EXEEXT_4 = dllwrap$(EXEEXT)
 am__EXEEXT_5 = size$(EXEEXT)
-am__EXEEXT_6 = objdump$(EXEEXT)
-am__EXEEXT_7 = sdar$(EXEEXT)
-am__EXEEXT_8 = strings$(EXEEXT)
-am__EXEEXT_9 = sdranlib$(EXEEXT)
-am__EXEEXT_10 = sdobjcopy$(EXEEXT)
-am__EXEEXT_11 = addr2line$(EXEEXT)
-am__EXEEXT_12 = readelf$(EXEEXT)
-am__EXEEXT_13 = elfedit$(EXEEXT)
+am__EXEEXT_6 = sdar$(EXEEXT)
+am__EXEEXT_7 = strings$(EXEEXT)
+am__EXEEXT_8 = sdranlib$(EXEEXT)
+am__EXEEXT_9 = sdobjcopy$(EXEEXT)
+am__EXEEXT_10 = addr2line$(EXEEXT)
+am__EXEEXT_11 = readelf$(EXEEXT)
+am__EXEEXT_12 = elfedit$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"
-am__EXEEXT_14 = sdnm$(EXEEXT)
-am__EXEEXT_15 = strip-new$(EXEEXT)
-am__EXEEXT_16 = cxxfilt$(EXEEXT)
-am__EXEEXT_17 = $(am__EXEEXT_14) $(am__EXEEXT_15) $(am__EXEEXT_16)
-am__EXEEXT_18 = bfdtest1$(EXEEXT)
-am__EXEEXT_19 = bfdtest2$(EXEEXT)
-am__EXEEXT_20 = $(am__EXEEXT_18) $(am__EXEEXT_19)
+am__EXEEXT_13 = sdnm$(EXEEXT)
+am__EXEEXT_14 = strip-new$(EXEEXT)
+am__EXEEXT_15 = cxxfilt$(EXEEXT)
+am__EXEEXT_16 = $(am__EXEEXT_13) $(am__EXEEXT_14) $(am__EXEEXT_15)
+am__EXEEXT_17 = bfdtest1$(EXEEXT)
+am__EXEEXT_18 = bfdtest2$(EXEEXT)
+am__EXEEXT_19 = $(am__EXEEXT_17) $(am__EXEEXT_18)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__objects_1 = bucomm.$(OBJEXT) version.$(OBJEXT) filemode.$(OBJEXT)
 am_addr2line_OBJECTS = addr2line.$(OBJEXT) $(am__objects_1)
@@ -214,18 +212,11 @@ am__objects_2 = elfcomm.$(OBJEXT)
 am_elfedit_OBJECTS = elfedit.$(OBJEXT) version.$(OBJEXT) \
 	$(am__objects_2)
 elfedit_OBJECTS = $(am_elfedit_OBJECTS)
-am__objects_3 = rddbg.$(OBJEXT) debug.$(OBJEXT) stabs.$(OBJEXT) \
-	rdcoff.$(OBJEXT)
-am_objdump_OBJECTS = objdump.$(OBJEXT) dwarf.$(OBJEXT) prdbg.$(OBJEXT) \
-	demanguse.$(OBJEXT) $(am__objects_3) $(am__objects_1) \
-	$(am__objects_2)
-objdump_OBJECTS = $(am_objdump_OBJECTS)
-@ENABLE_LIBCTF_TRUE@am__DEPENDENCIES_2 = ../libctf/libctf.la
 am_readelf_OBJECTS = readelf.$(OBJEXT) version.$(OBJEXT) \
 	unwind-ia64.$(OBJEXT) dwarf.$(OBJEXT) demanguse.$(OBJEXT) \
 	$(am__objects_2)
 readelf_OBJECTS = $(am_readelf_OBJECTS)
-@ENABLE_LIBCTF_TRUE@am__DEPENDENCIES_3 = ../libctf/libctf-nobfd.la
+@ENABLE_LIBCTF_TRUE@am__DEPENDENCIES_2 = ../libctf/libctf-nobfd.la
 am_sdar_OBJECTS = arparse.$(OBJEXT) arlex.$(OBJEXT) \
 	not-ranlib.$(OBJEXT) arsup.$(OBJEXT) rename.$(OBJEXT) \
 	binemul.$(OBJEXT) emul_$(EMULATION).$(OBJEXT) $(am__objects_1)
@@ -233,6 +224,8 @@ sdar_OBJECTS = $(am_sdar_OBJECTS)
 am_sdnm_OBJECTS = nm.$(OBJEXT) demanguse.$(OBJEXT) $(am__objects_1)
 sdnm_OBJECTS = $(am_sdnm_OBJECTS)
 sdnm_LDADD = $(LDADD)
+am__objects_3 = rddbg.$(OBJEXT) debug.$(OBJEXT) stabs.$(OBJEXT) \
+	rdcoff.$(OBJEXT)
 am__objects_4 = $(am__objects_3) wrstabs.$(OBJEXT)
 am_sdobjcopy_OBJECTS = not-strip.$(OBJEXT) rename.$(OBJEXT) \
 	$(am__objects_4) $(am__objects_1)
@@ -381,12 +374,11 @@ am__v_YACC_0 = @echo "  YACC    " $@;
 am__v_YACC_1 = 
 SOURCES = $(addr2line_SOURCES) bfdtest1.c bfdtest2.c \
 	$(coffdump_SOURCES) $(cxxfilt_SOURCES) $(dlltool_SOURCES) \
-	$(dllwrap_SOURCES) $(elfedit_SOURCES) $(objdump_SOURCES) \
-	$(EXTRA_objdump_SOURCES) $(readelf_SOURCES) $(sdar_SOURCES) \
-	$(EXTRA_sdar_SOURCES) $(sdnm_SOURCES) $(sdobjcopy_SOURCES) \
-	$(sdranlib_SOURCES) $(size_SOURCES) $(srconv_SOURCES) \
-	$(strings_SOURCES) $(strip_new_SOURCES) $(sysdump_SOURCES) \
-	$(windmc_SOURCES) $(windres_SOURCES)
+	$(dllwrap_SOURCES) $(elfedit_SOURCES) $(readelf_SOURCES) \
+	$(sdar_SOURCES) $(EXTRA_sdar_SOURCES) $(sdnm_SOURCES) \
+	$(sdobjcopy_SOURCES) $(sdranlib_SOURCES) $(size_SOURCES) \
+	$(srconv_SOURCES) $(strings_SOURCES) $(strip_new_SOURCES) \
+	$(sysdump_SOURCES) $(windmc_SOURCES) $(windres_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -950,10 +942,6 @@ dllwrap$(EXEEXT): $(dllwrap_OBJECTS) $(dllwrap_DEPENDENCIES) $(EXTRA_dllwrap_DEP
 elfedit$(EXEEXT): $(elfedit_OBJECTS) $(elfedit_DEPENDENCIES) $(EXTRA_elfedit_DEPENDENCIES) 
 	@rm -f elfedit$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(elfedit_OBJECTS) $(elfedit_LDADD) $(LIBS)
-
-objdump$(EXEEXT): $(objdump_OBJECTS) $(objdump_DEPENDENCIES) $(EXTRA_objdump_DEPENDENCIES) 
-	@rm -f objdump$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(objdump_OBJECTS) $(objdump_LDADD) $(LIBS)
 
 readelf$(EXEEXT): $(readelf_OBJECTS) $(readelf_DEPENDENCIES) $(EXTRA_readelf_DEPENDENCIES) 
 	@rm -f readelf$(EXEEXT)

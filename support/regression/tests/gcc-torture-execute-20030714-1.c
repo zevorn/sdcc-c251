@@ -5,7 +5,7 @@
 #include <testfwk.h>
 
 #ifdef __SDCC
-#pragma std_c99
+#pragma std_c11
 #endif
 
 #if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // pdk needs functions called via pointer to be reentrant even for a single argument

@@ -246,8 +246,8 @@ f8_genInitStartup (FILE *of)
   if (optimize.codeSpeed)
     {
       fprintf (of, "\tld\txl, zl\n");
-      fprintf (of, "\tbool\txl\n");
-      fprintf (of, "\tjrz\t#00001$\n");
+      fprintf (of, "\tsrl\txl\n");
+      fprintf (of, "\tjrnc\t#00001$\n");
       fprintf (of, "\tclr\txl\n");
       fprintf (of, "\tld (s_DATA - 1, z), xl\n");
       fprintf (of, "\taddw z, #-1\n");
@@ -276,8 +276,8 @@ f8_genInitStartup (FILE *of)
   if (optimize.codeSpeed)
     {
       fprintf (of, "\tld\txl, zl\n");
-      fprintf (of, "\tbool\txl\n");
-      fprintf (of, "\tjrz\t#00004$\n");
+      fprintf (of, "\tsrl\txl\n");
+      fprintf (of, "\tjrnc\t#00004$\n");
       fprintf (of, "\tld\txl, (s_INITIALIZER - 1, z)\n");
       fprintf (of, "\tld\t(s_INITIALIZED - 1, z), xl\n");
       fprintf (of, "\taddw z, #-1\n");

@@ -44,5 +44,5 @@ void foo(int a=1)		/* ERROR */
 #ifdef TEST7
 void foo(static int a)		/* ERROR */
 {
-}
+} /* IGNORE */
 #endif

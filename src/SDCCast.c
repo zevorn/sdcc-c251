@@ -6064,6 +6064,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
           goto errorTreeReturn;
         }
 
+      if (IS_PTR (LTYPE (tree)) && !isConst (LTYPE (tree)->next) && IS_AST_SYM_VALUE (tree->right) && AST_SYMBOL (tree->right)->isstrlit)
+        werrorfl (tree->filename, tree->lineno, W_NONCONST_STRINGLIT);
+
       return tree;
 
       /*------------------------------------------------------------------*/

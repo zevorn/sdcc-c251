@@ -1696,6 +1696,8 @@ adjustStack (int n, bool a_free, bool x_free, bool y_free)
     }
 }
 
+static void genMove (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead);
+
 /*-----------------------------------------------------------------*/
 /* cheapMove - Copy a byte from one asmop to another               */
 /*-----------------------------------------------------------------*/
@@ -1704,16 +1706,24 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 {
   bool dummy = (result->type == AOP_DUMMY || source->type == AOP_DUMMY);
 
-  if (source->type == AOP_STL)
-    {
-      UNIMPLEMENTED;
-      return;
-    }
-
   if (aopSame (result, roffset, source, soffset, 1))
     return;
   else if (!dummy && (!aopRS (result) || aopInReg (result, roffset, A_IDX) || aopOnStack (result, roffset, 1)) && aopIsLitVal (source, soffset, 1, 0))
     emit3_o (A_CLR, result, roffset, 0, 0);
+  else if (source->type == AOP_STL && aopInReg (result, roffset, A_IDX))
+    {
+      wassert (soffset < 2);
+      push (ASMOP_X, 0, 2);
+      emit2 ("push", "cc");
+      cost (1, 1);
+      G.stack.pushed++;
+      genMove (ASMOP_X, source, true, true, false);
+      emit2 ("pop", "cc");
+      cost (1, 1);
+      G.stack.pushed--;
+      emit3_o (A_LD, ASMOP_A, 0, ASMOP_X, soffset);
+      pop (ASMOP_X, 0, 2);
+    }
   else if (!dummy && (aopInReg (result, roffset, A_IDX) || aopInReg (source, soffset, A_IDX)))
     emit3_o (A_LD, result, roffset, source, soffset);
   else if (result->type == AOP_DIR && (source->type == AOP_DIR || source->type == AOP_LIT))
@@ -3037,7 +3047,7 @@ genEor (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
           emit3_o (A_CPL, result_aop, i, 0, 0);
           continue;
         }
-      else if ((aopInReg (result_aop, i, X_IDX) || aopInReg (result_aop, i, Y_IDX)) &&
+      else if (i + 1 < size && omitbyte != i + 1 && (aopInReg (result_aop, i, X_IDX) || aopInReg (result_aop, i, Y_IDX)) &&
         aopIsLitVal (right_aop, i, 2, 0xffff))
         {
           const bool x_free = regDead (X_IDX, ic) &&
@@ -3053,7 +3063,7 @@ genEor (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
           i++;
           continue;
         }
-      else if ((aopInReg (left_aop, i, X_IDX) && regDead (X_IDX, ic) || aopInReg (left_aop, i, Y_IDX) && regDead (Y_IDX, ic)) &&
+      else if (i + 1 < size && omitbyte != i + 1 && (aopInReg (left_aop, i, X_IDX) && regDead (X_IDX, ic) || aopInReg (left_aop, i, Y_IDX) && regDead (Y_IDX, ic)) &&
         aopIsLitVal (right_aop, i, 2, 0xffff))
         {
           const bool x_free = regDead (X_IDX, ic) &&
@@ -5527,8 +5537,11 @@ genDivMod1 (const iCode *ic)
     }
   else if (aopInReg (right->aop, 0, use_y ? YL_IDX : XL_IDX) || aopInReg (right->aop, 0, use_y ? YH_IDX : XH_IDX))
     {
+      if (left->aop->regs[A_IDX] >= 0)
+        UNIMPLEMENTED;
       cheapMove (ASMOP_A, 0, right->aop, 0, false);
       genMove_o (use_y ? ASMOP_Y : ASMOP_X, 0, left->aop, 0, 2, false, false, false);
+
     }
   else
     {
@@ -8864,7 +8877,7 @@ genPointerGet (const iCode *ic)
           cost (2, 1);
         }
 
-      if (bit_field && blen < 8 && !SPEC_USIGN (getSpec (operandType (result)))) // Sign extension for partial byte of signed bit-field
+      if (bit_field && blen < 8 && !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result)))) // Sign extension for partial byte of signed bit-field
         {
           if (blen != 1) // The and above already set the z flag for blen == 1.
             {
@@ -8897,7 +8910,7 @@ genPointerGet (const iCode *ic)
 
   if (bit_field && i < size)
     {
-      if (SPEC_USIGN (getSpec (operandType (result))))
+      if (SPEC_USIGN (getSpec (operandType (result))) || IS_BOOLEAN (getSpec (operandType (result))))
         genMove_o (result->aop, i, ASMOP_ZERO, 0, bit_field ? i : size - i - 1, FALSE, FALSE, FALSE);
       else
         wassertl (0, "Unimplemented multibyte sign extension for bit-field.");

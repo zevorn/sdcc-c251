@@ -1192,7 +1192,7 @@ m6502_genRightShift (iCode * ic)
         }
       else
 	{
-	  emitComment (TRACEGEN, "  %s - other", __func__);
+	  emitComment (TRACEGEN, "  %s - XA other", __func__);
 
 	  if(msb_in_x)
 	    {

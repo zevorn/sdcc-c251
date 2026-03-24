@@ -9,6 +9,7 @@ va-arg-10.c from the execute part of the gcc torture tests.
 #ifdef __SDCC
 #pragma disable_warning 85
 #pragma disable_warning 196
+#pragma disable_warning 360
 #endif
 
 /* This is a modfied version of va-arg-9.c to test va_copy.  */
