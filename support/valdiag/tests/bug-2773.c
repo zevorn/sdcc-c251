@@ -11,7 +11,7 @@ extern void *h2 (int g2, int g2); /* ERROR */
 int i;
 
 extern void *h (int g, int g) { /* ERROR */
-	i = g;
+	i = g; /* IGNORE */
 }
 #endif
 

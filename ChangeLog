@@ -1,3 +1,101 @@
+2026-03-24 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Fix bug #3959.
+
+2026-03-22 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+   	  Dirty Y when it is a target of a genPointerGet operation.
+    * src/mos6502/ralloc.h,
+      src/mos6502/ralloc.c,      
+      src/mos6502/ralloc2.cc,      
+      src/mos6502/gen.c:
+      Small code cleanups.
+    * device/lib/mos6502/crt0.s,
+      device/lib/mos6502/fabsf.s,
+      src/mos6502/gen.c,
+      src/mos6502/gen.h,
+      src/mos6502/genand.c,
+      src/mos6502/genrshift.c,
+      src/mos6502/genxor.c:
+      More code cleanups.
+   	* src/mos6502/gen.c:
+   	  Refactor storeConstToAop().
+
+2026-03-22 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/stm8/gen.c:
+	  Fix bugs #3950, #3951.
+	* support/valdiag/tests/bug-2773.c,
+	  support/valdiag/tests/funcdec.c:
+	  Ignore warnings about unused parameters in two tests that check for errors on function declaration.
+
+2026-03-21 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/gen.c:
+	  Fix bug #3949.
+
+2026-03-21 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/main.c:
+	  Fix f8(l) startup code for --opt-code-speed.
+
+2026-03-21 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+   	  Fix codegen bug exposed by [r16373]
+   	* src/mos6502/main.c,
+   	  device/mos6502/crt0.s,
+   	  device/mos6502-stack-auto/crt0.s,
+   	  device/mos65c02/crt0.s:
+   	  Completely move linker ordering to crt0.
+   	* src/mos6502/main.c:
+   	  Remove dead code.
+  	* src/mos6502/genplus.c:
+   	  Implement increment optimization when result is XY.
+
+2026-03-21 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/sdbinutils/binutils/Makefile.am,
+	  support/sdbinutils/binutils/Makefile.in:
+	  Disable build of objdump in sdbinutils.
+	* src/z80/gen.c,
+	  src/z80/peeph.def:
+	  Fix comparison code size regression, RFE #1016.
+	* src/SDCCmem.c:
+	  Do not warn for unused parameters in functions with variable arguments, since C standards before C23 required at least one non-variable argument for va_start.
+	* support/regression/tests/gcc-torture-execute-20021204-1.c,
+	  support/regression/tests/gcc-torture-execute-20051104-1.c,
+	  support/regression/tests/gcc-torture-execute-950426-1.c,
+	  support/regression/tests/gcc-torture-execute-961125-1.c,
+	  support/regression/tests/gcc-torture-execute-20010924-1.c,
+	  support/regression/tests/gcc-torture-execute-va-arg-10.c,
+	  support/regression/tests/gcc-torture-execute-va-arg-2.c,
+	  support/regression/tests/gcc-torture-execute-va-arg-9.c,
+	  Disable intentional warning in some GCC-derived tests.
+	* support/regression/tests/gcc-torture-execute-20030714-1.c:
+	  Compile a test as C11 instead of C99 that uses a feature that was an implementation extension before C11.
+
+2026-03-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Fix bug #3946.
+
+2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  support/valdiag/tests/_Optional-draft-2026-03-06.c,
+	  support/valdiag/tests/conststringlit.c,
+	  support/regression/tests/bug-2684.c,
+	  support/regression/tests/compound-literal.c,
+	  support/regression/tests/coremark.c.in:
+	  Fix bug #3945.
+	* src/stm8/gen.c:
+	  Fix an stm8 bool bit-field codegen issue.
+
 2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:

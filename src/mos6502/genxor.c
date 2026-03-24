@@ -50,7 +50,8 @@ m6502_genXor (iCode * ic, iCode * ifx)
   unsigned int bytemask;
   int bitpos = -1;
 
-  emitComment (TRACEGEN, __func__);
+  emitComment (TRACEGEN, "%s - ifx:%d", 
+               __func__, ifx?1:0);
 
   m6502_aopOp (left, ic);
   m6502_aopOp (right, ic);

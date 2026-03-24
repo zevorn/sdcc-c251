@@ -8,6 +8,7 @@
 #pragma std_c99
 #pragma disable_warning 85
 #pragma disable_warning 196
+#pragma disable_warning 360
 #endif
 
 #include <string.h>

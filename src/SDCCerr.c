@@ -783,6 +783,8 @@ struct
      "pointer to _Optional could not be proven to be non-null at relational operator", 0 },
   {W_OPTIONAL_ARITHMETIC, ERROR_LEVEL_WARNING,
      "pointer to _Optional could not be proven to be non-null at pointer arithmetic", 0 },
+  {W_NONCONST_STRINGLIT, ERROR_LEVEL_WARNING,
+     "string literal assigned to pointer to non-const", 0 },
 };
 
 /* -------------------------------------------------------------------------------

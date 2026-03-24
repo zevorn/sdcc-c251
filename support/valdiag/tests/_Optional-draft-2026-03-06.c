@@ -1016,7 +1016,7 @@ TOFRI ofri;
 
 #ifdef TEST70
 char *npc = nullptr;            // valid but unsafe /* IGNORE */
-char *lpc = "hello";            // valid but unsafe /* IGNORE */ // TODO: Bug: Missing warning!
+char *lpc = "hello";            // valid but unsafe /* WARNING */
 
 _Optional char *npoc = nullptr; // valid and safe
 const char *lpcc = "hello";     // valid and safe
@@ -1038,7 +1038,7 @@ int main(void)
   const char *pcc;
 
   npc = nullptr; // valid but unsafe /* IGNORE */
-  lpc = "hello"; // valid but unsafe /* IGNORE */ // TODO: implement warning!
+  lpc = "hello"; // valid but unsafe /* WARNING */
 
   poc = nullptr; // valid and safe
   pcc = "world"; // valid and safe

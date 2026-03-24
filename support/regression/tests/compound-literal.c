@@ -4,6 +4,8 @@
 #include <testfwk.h>
 #include <string.h>
 
+#pragma disable_warning 360
+
 char *str1 = "aaa";
 char *str2 = (char[]){'b', 'b', 'b', '\0'};
 
