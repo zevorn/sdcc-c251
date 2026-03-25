@@ -1726,54 +1726,6 @@ _emitMove3 (asmop *to, int to_offset, asmop *from, int from_offset)
   emit3_o (A_LD, to, to_offset, from, from_offset);
 }
 
-#if 0 // todo: remove this? update it (it is out of sync with gen.h)?
-static const char *aopNames[] =
-{
-  "AOP_INVALID",
-  "AOP_LIT",
-  "AOP_REG",
-  "AOP_DIR",
-  "AOP_SFR",
-  "AOP_STK",
-  "AOP_IMMD",
-  "AOP_CRY",
-  "AOP_IY",
-  "AOP_HL",
-  "AOP_EXSTK",
-  "AOP_PAIRPT",
-  "AOP_DUMMY"
-};
-
-static void
-aopDump (const char *plabel, asmop * aop)
-{
-  int i;
-  char regbuf[9];
-  char *rbp = regbuf;
-
-  emitDebug ("; Dump of %s: type %s size %u", plabel, aopNames[aop->type], aop->size);
-  switch (aop->type)
-    {
-    case AOP_EXSTK:
-    case AOP_STK:
-      emitDebug (";  aop_stk %d", aop->aopu.aop_stk);
-      break;
-    case AOP_REG:
-      for (i = aop->size - 1; i >= 0; i--)
-        *rbp++ = *(aop->aopu.aop_reg[i]->name);
-      *rbp = '\0';
-      emitDebug (";  reg = %s", regbuf);
-      break;
-    case AOP_PAIRPTR:
-      emitDebug (";  pairptr = (%s)", _pairs[aop->aopu.aop_pairId].name);
-
-    default:
-      /* No information. */
-      break;
-    }
-}
-#endif
-
 static void
 _moveA (const char *moveFrom)
 {
@@ -3733,8 +3685,9 @@ aopGet (asmop *aop, int offset, bool bit16)
                 case 2:
                   if (aop->banked)
                     dbuf_tprintf (&dbuf, "!bankimmeds", aop->aopu.aop_immd);
+                  else if (IS_RAB || IS_TLCS90 || IS_EZ80)
+                    dbuf_tprintf (&dbuf, "#(%s >> 16)", aop->aopu.aop_immd); // Rabbit __xdata / __xconst.
                   else
-                    //dbuf_tprintf (&dbuf, "#(%s >> 16)", aop->aopu.aop_immd); // Rabbit __xdata / __xconst.
                     dbuf_tprintf (&dbuf, "#0", aop->aopu.aop_immd); // Rabbit __xdata / __xconst.
                   break;
 
@@ -4246,8 +4199,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
           else if (IS_TLCS90)
             {
               _push (PAIR_IY);
-              //emit2 ("ld (by), #(%s >> 16)", to->aopu.aop_dir, to_offset); todo: fix once 1930 is fixed!
-              emit2 ("ld (by), #0");
+              emit2 ("ld (by), #(%s >> 16)", to->aopu.aop_dir, to_offset);
               cost (3, 10);
               emit2 ("ld iy, #(%s + %d)", to->aopu.aop_dir, to_offset);
               cost (3, 6);
@@ -4285,8 +4237,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
             {
               _push (PAIR_HL);
               // No byte write instruction for far space before r4k, we need to handle this like a bit-field write, and we can't honor volatile here.
-              //emit2 ("ld a, #((%s + %d) >> 16)", to->aopu.aop_dir, to_offset); todo: fix once 1930 is fixed!
-              emit2 ("ld a, #0");
+              emit2 ("ld a, #((%s + %d) >> 16)", to->aopu.aop_dir, to_offset);
               emit2 ("ldp hl, (%s + %d)", to->aopu.aop_dir, to_offset);
               cost (6, 17);
               cheapMove (ASMOP_L, 0, from, from_offset, false);
@@ -4314,8 +4265,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
       else if (IS_TLCS90)
         {
           _push (PAIR_IY);
-          //emit2 ("ld (by), #(%s + %d) >> 16", from->aopu.aop_dir, to_offset); todo: fix once 1930 is fixed!
-          emit2 ("ld (by), #0");
+          emit2 ("ld (by), #(%s + %d) >> 16", from->aopu.aop_dir, to_offset);
           cost (3, 10);
           emit2 ("ld iy, #(%s + %d)", from->aopu.aop_dir, to_offset);
           cost (3, 6);
@@ -4333,8 +4283,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
 
           _push (PAIR_HL);
     
-          //emit2 ("ld a, #((%s + %d) >> 16)", from->aopu.aop_dir, from_offset); todo: fix once 1930 is fixed!
-          emit2 ("ld a, #0");
+          emit2 ("ld a, #((%s + %d) >> 16)", from->aopu.aop_dir, from_offset);
           emit2 ("ldp hl, (%s + %d)", from->aopu.aop_dir, from_offset);
           cost (6, 17);
           emit3 (A_LD, ASMOP_A, ASMOP_L);
@@ -5905,8 +5854,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
             {
               if (!iy_dead)
                 _push (PAIR_IY);
-              //emit2 ("ld (by), #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i); todo: fix once 1930 is fixed!
-              emit2 ("ld (by), #0");
+              emit2 ("ld (by), #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i);
               cost (3, 10);
               emit2 ("ld iy, #(%s + %d)", source->aopu.aop_dir, soffset + i);
               cost (3, 6);
@@ -5942,8 +5890,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
               wassert (getPairId_o(source, soffset + i) != PAIR_IY);
               if (!iy_dead)
                 _push (PAIR_IY);
-              //emit2 ("ld (by), #((%s + %d) >> 16)", result->aopu.aop_dir, roffset + i); todo: fix once #1930 is fixed!
-              emit2 ("ld (by), #0");
+              emit2 ("ld (by), #((%s + %d) >> 16)", result->aopu.aop_dir, roffset + i);
               cost (3, 10);
               emit2 ("ld iy, #(%s + %d)", result->aopu.aop_dir, roffset + i);
               cost (3, 6);
@@ -5967,8 +5914,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
         {
           if (!a_dead)
             _push (PAIR_AF);
-          //emit2 ("ld a, #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i); todo: fix once #1930 is fixed!
-          emit2 ("ld a, #0");
+          emit2 ("ld a, #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i);
           cost (2, 4);
           if (iy_dead && aopInReg (result, roffset + i, IYL_IDX))
             {
@@ -5993,8 +5939,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           bool via_e = aopInReg (source, soffset + i, A_IDX);
           if (via_e)
             emit3 (A_LD, ASMOP_E, ASMOP_A);
-          //emit2 ("ld a, #((%s + %d) >> 16)", result->aopu.aop_dir, soffset + i); todo: fix once #1930 is fixed!
-          emit2 ("ld a, #0");
+          emit2 ("ld a, #((%s + %d) >> 16)", result->aopu.aop_dir, soffset + i);
           cost (2, 4);
           emit2 ("ldp hl, (%s + %d)", result->aopu.aop_dir, roffset + i);
           cost (4, 13);

@@ -1,3 +1,10 @@
+2026-03-25 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  support/regression/tests/far_rabbit_fields.c,
+	  support/regression/tests/far_rabbits.c.in:
+	  Enable __far support in Rabbit codgen via ldp.
+
 2026-03-25 Janko Stamenović
 
 	* sdas/asrab/rab.h
