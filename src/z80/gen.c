@@ -3712,6 +3712,13 @@ aopGet (asmop *aop, int offset, bool bit16)
           dbuf_append_char (&dbuf, 'a');
           break;
 
+        case AOP_FDIR:
+          wassert (IS_R4K || IS_R5K || IS_R6K);
+          emit2 ("ldf a, (%s+%d)", aop->aopu.aop_dir, offset);
+          cost (4, 11);
+          dbuf_append_char (&dbuf, 'a');
+          break;
+
         case AOP_SFR:
           wassertl (!IS_TLCS90, "TLCS-90 does not have a separate I/O space");
           if (IS_SM83)
@@ -4210,7 +4217,10 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
               _pop (PAIR_IY);
             }
           else
-            emit3_o (A_LDF, to, to_offset, from, from_offset);
+            {
+              emit2 ("ldf (%s+%d), a", to->aopu.aop_dir, to_offset);
+              cost (4, 12);
+            }
         }
       else
         {
@@ -4276,7 +4286,10 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
           _pop (PAIR_IY);
         }
       else if (IS_R4K || IS_R5K || IS_R6K)
-        emit3_o (A_LDF, ASMOP_A, 0, from, from_offset);
+        {
+          emit2 ("ldf a, (%s+%d)", from->aopu.aop_dir, from_offset);
+          cost (4, 11);
+        }
       else
         {
           wassert (IS_RAB);

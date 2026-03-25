@@ -940,6 +940,7 @@ z80SurelyWritesFlag(const lineNode *pl, const char *what)
   if((IS_R4K || IS_R5K || IS_R6K) &&
     (lineIsInst (pl, "cbm") ||
     lineIsInst (pl, "clr") ||
+    lineIsInst (pl, "ldf") ||
     lineIsInst (pl, "mulu")))
     return false;
 

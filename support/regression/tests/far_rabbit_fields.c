@@ -4,13 +4,12 @@
 
 #include <stdbool.h>
 
-#if !defined(__SDCC_r2k) && !defined(__SDCC_r2ka) && !defined(__SDCC_r3ka) && /*!defined(__SDCC_r4k) && !defined(__SDCC_r5k) && !defined(__SDCC_r6k) &&*/ !defined(__SDCC_tlcs90) /*&& !defined(__SDCC_ez80) TODO bug #3882*/
+#if !defined(__SDCC_r2k) && !defined(__SDCC_r2ka) && !defined(__SDCC_r3ka) && !defined(__SDCC_r4k) && !defined(__SDCC_r5k) && !defined(__SDCC_r6k) && !defined(__SDCC_tlcs90) /*&& !defined(__SDCC_ez80) TODO bug #3882*/
 #define __far
 char farmemblock[2];
 #else
 #undef __far
 // Ensure that farmemblock and farmemblock+sizeof(farmemblock) differ in more than just the lowest 16 bits. Also gives further objects in __far an address > 2^16.
-// TODO: enable when bug #2930 is fixed!
 char memblock[6000];
 __far char farmemblock[40000];
 #endif
