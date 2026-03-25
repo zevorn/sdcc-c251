@@ -172,7 +172,7 @@ machine(struct mne *mp)
                 }
 		if (IS_MIN_4K(rab)) {
                         if (t1 == S_R32_BCDE || t1 == S_R32_JKHL) {
-				outab((t1 == S_R32_BCDE) ? BCDE_PG : JKHL_PG);
+				outab((t1 == S_R32_BCDE) ? 0xDD : 0xFD);
                                 outab(op+0x30);
                                 break;
                         }
@@ -244,7 +244,7 @@ machine(struct mne *mp)
 				comma(1);
 				t2 = addr(&e2);
 				if (t2 == S_R32_BCDE || t2 == S_R32_JKHL) {
-					outab((t2 == S_R32_BCDE) ? BCDE_PG : JKHL_PG);
+					outab((t2 == S_R32_BCDE) ? 0xDD : 0xFD);
 					outab((op == 0x17) ? 0x6F : 0x7F);
 					break;
 				}
@@ -276,7 +276,7 @@ machine(struct mne *mp)
                                 err('o');
                                 break;
                         }
-			outab((t2 == S_R32_BCDE) ? BCDE_PG : JKHL_PG);
+			outab((t2 == S_R32_BCDE) ? 0xDD : 0xFD);
                         /* op:
 			   00 rlc  08 rrc     10 rl   18 rr     
                          * 20 sla  28 sra     30 sll  38 srl */
@@ -735,7 +735,7 @@ machine(struct mne *mp)
                                 break;
                         }
                         if ((t2 == S_R16) && ((v2 == IX) || (v2 == IY))) {
-                                outab( ((v2==IX)?0xDD:0xFD) );
+                                outab((v2==IX) ? 0xDD : 0xFD);
                                 outab(0x7C);
                                 break;
                         }
@@ -752,7 +752,7 @@ machine(struct mne *mp)
                 {
                         if ((t1 == S_IDIY) || (t1 == S_IDHL) ||
                             (t1 == S_IDHL_OFFSET))
-                                outab( ((t1==S_IDIY) ? 0xFD : 0xDD) );
+                                outab((t1==S_IDIY) ? 0xFD : 0xDD);
 
                         if ((t1 == S_IDIY) || (t1 == S_IDIX) ||
                             (t1 == S_IDHL) || (t1 == S_IDHL_OFFSET)) {
@@ -762,7 +762,7 @@ machine(struct mne *mp)
                         }
 
                         if ((t1 == S_R16) && ((v1 == IX) || (v1 == IY))) {
-                                outab( ((v1==IX)?0xDD:0xFD) );
+                                outab((v1==IX) ? 0xDD : 0xFD);
                                 outab(0x7D);
 				break;
 			}
@@ -864,28 +864,28 @@ machine(struct mne *mp)
 		}
       
                 /* load/save code bank register "xpc" */
-                if ((t1 == S_RXPC) && (t2 == S_R8) && (v2 == A)) {
+                if (t1 == S_RXPC && v1 == XPC && t2 == S_R8 && v2 == A) {
                         outab(0xED);
                         outab(0x67);
                         break;
                 }
       
-                if ((t1 == S_RXPC) && IS_MODE_10_OR_11(rab) &&
-                    (t2 == S_R16) && (v2 == HL)) {
+                if (t1 == S_RXPC && v1 == XPC && IS_MODE_10_OR_11(rab) &&
+                    t2 == S_R16 && v2 == HL) {
 			if (IS_MODE_10(rab))
 				outab( 0x7F );
                         outab(0x97);
                         break;
                 }
       
-                if ((t2 == S_RXPC) && (t1 == S_R8) && (v1 == A)) {
+                if (t2 == S_RXPC && v2 == XPC && t1 == S_R8 && v1 == A) {
                         outab(0xED);
                         outab(0x77);
                         break;
                 }
       
-                if ((t2 == S_RXPC) && IS_MODE_10_OR_11(rab) &&
-                    (t1 == S_R16) && (v1 == HL)) {
+                if (t2 == S_RXPC && v2 == XPC && IS_MODE_10_OR_11(rab) &&
+                    t1 == S_R16 && v1 == HL) {
 			if (IS_MODE_10(rab))
 				outab( 0x7F );
                         outab(0x9F);
@@ -920,12 +920,12 @@ machine(struct mne *mp)
                 /* 32-bit operations valid in rabbit 4000 mode */
                 if (IS_MIN_4K(rab) && ((t1 == S_R32_JKHL) || (t1 == S_R32_BCDE))) {
                         if (t2 == S_IDHL) {
-                                outab( ((t1 == S_R32_JKHL)?JKHL_PG:BCDE_PG) );
+                                outab((t1 == S_R32_JKHL) ? 0xFD : 0xDD);
                                 outab( 0x1A );
                                 break;
                         }
                         if ((t2 == S_IDIX) || (t2 == S_IDIY) || (t2 == S_IDSP)) {
-                                outab( ((t1 == S_R32_JKHL)?JKHL_PG:BCDE_PG) );
+                                outab((t1 == S_R32_JKHL) ? 0xFD : 0xDD);
                                 if (t2 == S_IDSP)
                                         v2 = 0x20;
                                 else 
@@ -953,12 +953,12 @@ machine(struct mne *mp)
 
                 if (IS_MIN_4K(rab) && ((t2 == S_R32_JKHL) || (t2 == S_R32_BCDE))) {
                         if (t1 == S_IDHL) {
-                                outab( ((t2 == S_R32_JKHL)?JKHL_PG:BCDE_PG) );
+                                outab((t2 == S_R32_JKHL) ? 0xFD : 0xDD);
                                 outab( 0x1B );
                                 break;
                         }
                         if ((t1 == S_IDIX) || (t1 == S_IDIY) || (t1 == S_IDSP)) {
-                                outab( ((t2 == S_R32_JKHL)?JKHL_PG:BCDE_PG) );
+                                outab((t2 == S_R32_JKHL) ? 0xFD : 0xDD);
                                 if (t1 == S_IDSP)
                                         v1 = 0x20;
                                 else
@@ -1097,7 +1097,7 @@ machine(struct mne *mp)
                 if ((t1 == S_R32_JKHL || t1 == S_R32_BCDE) && 
 			IS_MIN_4K(rab)) {
                         /* neg jkhl|bcde */
-                        outab( ( (t1 == S_R32_BCDE) ? 0xDD : 0xFD ) );
+                        outab((t1 == S_R32_BCDE) ? 0xDD : 0xFD);
                         outab(0x4D);
                         break;
                 }
@@ -1445,7 +1445,7 @@ machine(struct mne *mp)
 				t1 = t2;
 			}
 			if (op > 0) {
-				outab((t1 == S_R32_BCDE) ? BCDE_PG : JKHL_PG);
+				outab((t1 == S_R32_BCDE) ? 0xDD : 0xFD);
 				outab(op);
 				outr3b(ep,0);
 				break;
@@ -1657,7 +1657,7 @@ machine(struct mne *mp)
 			v2 = (int) e2.e_addr;
 			if (t1 == S_R8 && v1 == A && 
 				(t2 == S_R32_BCDE || t2 == S_R32_JKHL)) {
-				outab((t2 == S_R32_BCDE) ? BCDE_PG : JKHL_PG);
+				outab((t2 == S_R32_BCDE) ? 0xDD : 0xFD);
 				outab(op);
 				break;
 			}

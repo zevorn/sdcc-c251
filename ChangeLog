@@ -1,3 +1,14 @@
+2026-03-25 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabadr.c
+	  sdas/asrab/rabmch.c
+	  sdas/asxxsrc/asout.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdas/asxxsrc/sdas.c
+	  sdas/asxxsrc/sdas.h
+	  sdasrab et all: enable the highest addr byte passing, prepare for P regs
+
 2026-03-24 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/peep.c:

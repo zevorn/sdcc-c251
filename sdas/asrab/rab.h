@@ -86,6 +86,14 @@
 #define IX		5
 #define IY		6
 
+#define PW		0
+#define PX		1
+#define PY		2
+#define PZ		3
+
+#define XPC		0
+#define LXPC		1
+
 #define EIR             0x47
 #define IIR             0x4f
 #define IP              0x76
@@ -147,6 +155,8 @@
 
 #define S_R16SU	        45
 
+#define S_R32_PWXYZ	46
+
 
 /*
  * Indexing modes
@@ -159,7 +169,35 @@
 #define	S_IDIX		55
 #define	S_IDIY		56
 #define	S_INDM		57
+
 #define S_IDHL_OFFSET   58
+
+#define	S_IDIX_A	59
+#define	S_IDIY_A	60
+
+#define	S_IDSP_HL	61
+#define	S_IDJKHL	62
+#define	S_IDHTR_HL	63
+
+#define	S_INDR_32	70
+#define	S_IDPW		70
+#define	S_IDPX		71
+#define	S_IDPY		72
+#define	S_IDPZ		73
+
+#define	S_INDR32_HL	80
+#define	S_IDPW_HL	80
+#define	S_IDPX_HL	81
+#define	S_IDPY_HL	82
+#define	S_IDPZ_HL	83
+
+#define	S_INDR32_BC	90
+#define	S_IDPW_BC	90
+#define	S_IDPX_BC	91
+#define	S_IDPY_BC	92
+#define	S_IDPZ_BC	93
+
+
 
 /*
  * Instruction types
@@ -210,9 +248,6 @@
 #define X_BOX		107
 #define X_RLB_RRB	108
 
-
-#define BCDE_PG           0xDD
-#define JKHL_PG           0xFD
 
 #define R_2K       0
 #define R_3KA      3
@@ -275,6 +310,9 @@ extern  struct  adsym   R6_CND[];
 extern	struct	adsym	R16_JK_OR_ALT[];
 
 extern	struct	adsym	R16SU[];
+
+extern	struct	adsym	R32_PWXYZ[];
+
 
 	/* machine dependent functions */
 
