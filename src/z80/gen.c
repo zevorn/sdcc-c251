@@ -4206,7 +4206,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
           else if (IS_TLCS90)
             {
               _push (PAIR_IY);
-              emit2 ("ld (by), #(%s >> 16)", to->aopu.aop_dir, to_offset);
+              emit2 ("ld (by), #((%s + %d) >> 16)", to->aopu.aop_dir, to_offset);
               cost (3, 10);
               emit2 ("ld iy, #(%s + %d)", to->aopu.aop_dir, to_offset);
               cost (3, 6);
@@ -4275,7 +4275,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
       else if (IS_TLCS90)
         {
           _push (PAIR_IY);
-          emit2 ("ld (by), #(%s + %d) >> 16", from->aopu.aop_dir, to_offset);
+          emit2 ("ld (by), #((%s + %d) >> 16)", from->aopu.aop_dir, to_offset);
           cost (3, 10);
           emit2 ("ld iy, #(%s + %d)", from->aopu.aop_dir, to_offset);
           cost (3, 6);

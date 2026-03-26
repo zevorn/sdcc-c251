@@ -1,7 +1,9 @@
 2026-03-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
-	* src/z80/gen.c:
-	  Improve use of 16-bit ldf for r4k/r5k/r6k __far pointer write.
+	* src/z80/gen.c,
+	  src/z80/ralloc.c,
+	  support/regression/tests/far_arithmetic.c.in:
+	  Improve Rabbit and TLCS-90 __far support.
 
 2026-03-25 Philipp Klaus Krause <philipp@colecovision.eu>
 
