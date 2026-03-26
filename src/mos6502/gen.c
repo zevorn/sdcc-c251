@@ -3992,18 +3992,19 @@ genCpl (iCode * ic)
           m6502_freeReg(m6502_reg_x);
 
 	  bool pa = pushRegIfSurv (m6502_reg_a);
-          if(AOP_TYPE(result)==AOP_REG)
-            {
-              loadRegFromConst(m6502_reg_x, ~val);
-              storeRegToAop (m6502_reg_x, AOP (result), 1);
-            }
           loadRegFromAop (m6502_reg_a, AOP (left), 0);
 	  rmwWithReg ("com", m6502_reg_a);
           storeRegToAop (m6502_reg_a, AOP (result), 0);
-          if(AOP_TYPE(result)!=AOP_REG)
+
+          if(AOP_TYPE(result)==AOP_SOF)
             {
               loadRegFromConst(m6502_reg_a, ~val);
               storeRegToAop (m6502_reg_a, AOP (result), 1);
+            }
+          else
+            {
+              loadRegFromConst(m6502_reg_x, ~val);
+              storeRegToAop (m6502_reg_x, AOP (result), 1);
             }
 	  pullOrFreeReg (m6502_reg_a, pa);
         }
@@ -4031,19 +4032,15 @@ genCpl (iCode * ic)
 	{
 	  transferRegReg (m6502_reg_x, m6502_reg_a, true);
 	  rmwWithReg ("com", m6502_reg_a);
-	  m6502_pushReg (m6502_reg_a, true);
+	  transferRegReg (m6502_reg_a, m6502_reg_x, true);
 	  transferRegReg (m6502_reg_y, m6502_reg_a, true);
 	  rmwWithReg ("com", m6502_reg_a);
-	  transferRegReg (m6502_reg_a, m6502_reg_x, true);
-	  m6502_pullReg (m6502_reg_a);
 	}
       else if(IS_AOP_XA(AOP(left)) && IS_AOP_XY(AOP(result)))
 	{
-	  m6502_pushReg (m6502_reg_a, true);
-	  transferRegReg (m6502_reg_x, m6502_reg_a, true);
 	  rmwWithReg ("com", m6502_reg_a);
 	  transferRegReg (m6502_reg_a, m6502_reg_y, true);
-	  m6502_pullReg (m6502_reg_a);
+	  transferRegReg (m6502_reg_x, m6502_reg_a, true);
 	  rmwWithReg ("com", m6502_reg_a);
 	  transferRegReg (m6502_reg_a, m6502_reg_x, true);
 	}

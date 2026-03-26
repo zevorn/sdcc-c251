@@ -4,6 +4,8 @@
    	  src/mos6502/genrshift.c,
    	  src/mos6502/genlshift.c:
    	  Fix several regression with --max-allocs-per node 100
+   	* src/mos6502/genand.c:
+   	  Optimize genCpl() for reg->reg   	  
 
 2026-03-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
