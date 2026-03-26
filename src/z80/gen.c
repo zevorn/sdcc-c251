@@ -5923,6 +5923,14 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
             }
           continue;
         }
+      else if (i + 1 < size && result->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K) && hl_dead && (source->type == AOP_LIT || source->type == AOP_IMMD || aopOnStack (source, soffset + i, 2)))
+        {
+          genMove_o (ASMOP_HL, 0, source, soffset + i, 2, a_dead, true, de_dead, iy_dead, f_dead);
+          emit2 ("ldf (%s + %d), hl", result->aopu.aop_dir, roffset + i);
+          cost (5, 17);
+          i += 2;
+          continue;
+        }
       else if (source->type == AOP_FDIR && IS_RAB && (hl_dead || iy_dead && aopInReg (result, roffset + i, IYL_IDX)))
         {
           if (!a_dead)
