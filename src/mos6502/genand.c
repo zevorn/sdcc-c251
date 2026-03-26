@@ -273,7 +273,10 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 
   if (x_zero)
     {
-      storeConstToAop(0x00, AOP(result), 1);
+      emitComment (TRACEGEN|VVDBG, "  %s: x_zero", __func__);
+      if(AOP_SIZE (result)>1)
+        storeConstToAop(0x00, AOP(result), 1);
+
       loadRegFromAop (m6502_reg_a, AOP (left), 0);
       accopWithAop (OPCODE, AOP (right), 0);
       storeRegToAop (m6502_reg_a, AOP (result), 0);

@@ -1106,15 +1106,15 @@ m6502_genRightShift (iCode * ic)
 
   bool op_is_xa = ( IS_AOP_XA (AOP (result)) || IS_AOP_XA (AOP (left)));
   bool msb_in_x = op_is_xa && AOP_TYPE(result)!=AOP_DIR;
-  bool early_load_count = (AOP_TYPE(left)==AOP_SOF || AOP_TYPE(right)==AOP_SOF || IS_AOP_WITH_A(AOP(right)));         
+  bool early_load_count = (AOP_TYPE(left)==AOP_SOF || AOP_TYPE(right)==AOP_SOF
+                          || IS_AOP_WITH_A(AOP(right))  || sameRegs (AOP(result), AOP(right)) );
   int a_loc = ( op_is_xa )? 0 : size-1;
 
-  emitComment (TRACEGEN, "  %s - enter countreg:%s",
-               __func__, countreg->name);
+  emitComment (TRACEGEN, "  %s - enter size:%d xa:%d xy:%d xmsb:%d countreg:%s",
+               __func__, size, op_is_xa, false, msb_in_x, countreg->name);
 
   if(size==1)
     {
-      emitComment (TRACEGEN, "  %s - size==1", __func__);
       if(IS_AOP_Y(AOP(left)) && IS_AOP_A(AOP(right)) && countreg==m6502_reg_x)
         early_load_count = true;
       else if(IS_AOP_Y(AOP(left)))
@@ -1343,10 +1343,17 @@ m6502_genRightShift (iCode * ic)
 	storeRegToAop (m6502_reg_x, AOP(result) , 1);
     }
 
-  // After loop, countreg is always 0
-  m6502_dirtyReg (countreg);
-  countreg->isLitConst = 1;
-  countreg->litConst = 0;
+  if(IS_AOP_WITH_REG(AOP(result), countreg))
+    {
+      m6502_dirtyReg(countreg);
+    }
+  else
+    {
+      // After loop, countreg is always 0
+      m6502_dirtyReg (countreg);
+      countreg->isLitConst = 1;
+      countreg->litConst = 0;
+    }
 
   if(restore_y)
     loadRegTemp (m6502_reg_y);
