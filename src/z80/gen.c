@@ -20039,7 +20039,7 @@ static void
 genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
 {
   operand *dst, *src;
-  bool saved_BC = FALSE, saved_DE = FALSE, saved_HL = FALSE;
+  bool saved_BC = false, saved_DE = false, saved_HL = false, saved_a = false;
   int i;
   bool SomethingReturned;
 
@@ -20055,17 +20055,22 @@ genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
   for (i = 0; i < nParams; i++)
     aopOp (pparams[i], ic, FALSE, FALSE);
 
-  if (!isPairDead (PAIR_HL, ic))
+  if (!isRegDead (A_IDX, ic))
+    {
+      _push (PAIR_AF);
+      saved_a = true;
+    }
+  if (!isRegDead (HL_IDX, ic))
     {
       _push (PAIR_HL);
       saved_HL = true;
     }
-  if (!isPairDead (PAIR_DE, ic))
+  if (!isRegDead (DE_IDX, ic))
     {
       _push (PAIR_DE);
       saved_DE = true;
     }
-  if (!isPairDead (PAIR_BC, ic))
+  if (!isRegDead (BC_IDX, ic))
     {
       _push (PAIR_BC);
       saved_BC = true;
@@ -20109,9 +20114,11 @@ genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
 
       restoreRegs (false, false, false, saved_DE, saved_BC, saved_HL, IC_RESULT (ic), ic);
     }
+  if (saved_a)
+    _pop (PAIR_AF);
 
   if (SomethingReturned)
-    freeAsmop (IC_RESULT (ic), NULL);
+    freeAsmop (ic->result, NULL);
   freeAsmop (src, NULL);
   freeAsmop (dst, NULL);
 }
