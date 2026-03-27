@@ -1242,7 +1242,7 @@ m6502_genRightShift (iCode * ic)
       m6502_emitCmp(countreg, 8);
       m6502_emitBranch ("bcc", skiplbl);
       safeEmitLabel (looplbl);
-      m6502_dirtyReg(m6502_reg_x);
+      m6502_dirtyAllRegs();
 
       loadRegFromAop (m6502_reg_a, AOP (result), 1);
       storeRegToAop (m6502_reg_a, AOP(result) , 0);

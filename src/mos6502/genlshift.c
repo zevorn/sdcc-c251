@@ -978,6 +978,7 @@ m6502_genLeftShift (iCode * ic)
       m6502_emitCmp(countreg, 8);
       m6502_emitBranch ("bcc", skiplbl);
       safeEmitLabel (looplbl);
+      m6502_dirtyAllRegs();
 
       if(size==8)
 	{
