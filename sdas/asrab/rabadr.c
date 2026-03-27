@@ -94,11 +94,17 @@ addr(struct expr *esp)
            *     ref to memory, scan the next 'symbol' to see if
            *     it is a register or an absolute address
            */
+                if ((indx = admode(R32_PWXYZ)) != 0) {
+                        mode = S_R32_PWXYZ;
+			aerr();
+		} else
                 if ((indx = admode(R32_JKHL)) != 0) {
                         mode = S_R32_JKHL;
+			aerr();
 		} else
                 if ((indx = admode(R32_BCDE)) != 0) {
                         mode = S_R32_BCDE;
+			aerr();
 		} else
 		if ((indx = admode(R8X)) != 0) {
 			mode = S_R8X;
@@ -173,6 +179,9 @@ addr(struct expr *esp)
                 if ((indx = admode(R16_JK_OR_ALT)) != 0) {
                         mode = S_R16_JK_OR_ALT;
 		} else
+                if ((indx = admode(R32_PWXYZ)) != 0) {
+                        mode = S_R32_PWXYZ;
+		} else
                 if ((indx = admode(R8IP)) != 0) {
                         mode = S_R8IP;
 		} else
@@ -184,20 +193,25 @@ addr(struct expr *esp)
 			esp->e_mode = mode;
 		}
 		if (indx) {
-			esp->e_addr = indx&0xFF;
+			esp->e_addr = indx & 0xFF;
 			esp->e_mode = mode;
 			esp->e_base.e_ap = NULL;
 		}
 		if ((c = getnb()) == LFIND) {		  
-			indx = admode(R16);
-                        if ((indx&0xFF)==IX || (indx&0xFF)==IY ||
-                            (indx&0xFF)==SP)
-                        {
-                          esp->e_mode = S_INDR + (indx&0xFF);
-                        } else if ( (indx&0xFF)==HL ) {
-                          esp->e_mode = S_IDHL_OFFSET;
-			} else {
-				xerr('a', "BC, DE, HL, SP, IX, or IY required.");
+			if ((indx = admode(R16)) != 0) {
+				if ((indx&0xFF)==IX || (indx&0xFF)==IY ||
+				    (indx&0xFF)==SP)
+				{
+				  esp->e_mode = S_INDR + (indx&0xFF);
+				} else if ( (indx&0xFF)==HL ) {
+				  esp->e_mode = S_IDHL_OFFSET;
+				} else {
+					xerr('a', "HL, SP, IX, or IY required.");
+				}
+			} else
+			if ((indx = admode(R32_PWXYZ)) != 0) {
+				// TODO_JS 
+				xerr('a',"TODO");
 			}
 			if ((c = getnb()) != RTIND)
 				xerr('q', "Missing ')'.");
@@ -350,12 +364,21 @@ struct  adsym   R32_JKHL[] = {
 };
 
 struct  adsym   RXPC[] = {
-  {   "xpc",    1|0400  },
+  {   "xpc",    XPC|0400  },
+  {   "lxpc",   LXPC|0400  },
   {   "",       0000    }
 };
 
 struct  adsym   R16SU[] = {
   {   "su",     1|0400  },
+  {   "",       0000    }
+};
+
+struct  adsym   R32_PWXYZ[] = {
+  {   "pw",     PW|0400  },
+  {   "px",     PX|0400  },
+  {   "py",     PY|0400  },
+  {   "pz",     PZ|0400  },
   {   "",       0000    }
 };
 

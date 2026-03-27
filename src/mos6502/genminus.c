@@ -325,7 +325,7 @@ m6502_genMinus (iCode * ic)
       goto release;
     }
 
-  if (IS_AOP_Y (AOP(result)))
+  if (IS_AOP_WITH_Y (AOP(result)))
     m6502_useReg(m6502_reg_y);
 
   savea = fastSaveAIfSurv ();

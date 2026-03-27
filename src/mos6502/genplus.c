@@ -124,6 +124,23 @@ genPlusInc (iCode * ic)
       return true;
     }
 
+  if(IS_AOP_XY (AOP (result)) && icount >=0 && m6502_reg_a->isDead)
+    {
+      loadRegFromAop (m6502_reg_xa, AOP (left), 0);
+      if(icount)
+        {
+          tlbl = safeNewiTempLabel (NULL);
+	  INIT_CARRY();
+          accopWithAop (OPCODE, AOP (right), 0);
+          m6502_emitBranch ("bcc", tlbl);
+	  rmwWithReg (OPINCDEC, m6502_reg_x);
+          safeEmitLabel (tlbl);
+          transferRegReg(m6502_reg_a, m6502_reg_y, true);
+          m6502_dirtyReg(m6502_reg_x);
+        }
+      return true;
+    }
+
   if (!sameRegs (AOP (left), AOP (result)))
     {
       if (icount==1 && size==1 )
@@ -362,7 +379,7 @@ m6502_genPlus (iCode * ic)
   if(!m6502_reg_a->isDead)
     m6502_dirtyReg(m6502_reg_a);
 
-  if(IS_AOP_XY (AOP(result)))
+  if (IS_AOP_WITH_Y (AOP(result)))
     m6502_useReg(m6502_reg_y);
 
   savea = fastSaveAIfSurv ();

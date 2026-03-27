@@ -1,3 +1,37 @@
+2026-03-26 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/genand.c,
+   	  src/mos6502/genrshift.c,
+   	  src/mos6502/genlshift.c:
+   	  Fix several regression with --max-allocs-per node 100
+   	* src/mos6502/gen.c:
+   	  Optimize genCpl() for reg->reg
+   	* src/mos6502/gen.c:
+   	  Optimize asmopToBool()
+   	* src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c,
+   	  src/mos6502/peeph.def:
+   	  Fix several regression with --max-allocs-per node 10
+   	* src/mos6502/genrshift.c,
+   	  src/mos6502/genlshift.c:
+   	  Fix more regression with --max-allocs-per node 10
+   	  
+2026-03-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Fix bug #3965.
+
+2026-03-25 Janko Stamenović
+
+	* sdas/asrab/rab.h
+	  sdas/asrab/rabadr.c
+	  sdas/asrab/rabmch.c
+	  sdas/asxxsrc/asout.c
+	  sdas/asxxsrc/asxxxx.h
+	  sdas/asxxsrc/sdas.c
+	  sdas/asxxsrc/sdas.h
+	  sdasrab et all: enable the highest addr byte passing, prepare for P regs
+
 2026-03-24 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/peep.c:
