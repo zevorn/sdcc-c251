@@ -337,27 +337,27 @@ replace restart {
 	sta %2
 }
 
-replace restart {
-	lda %1
-	sta %2
-	lda %3
-	sta %4
-	lda %5
-	sta %6
-	lda %7
-	sta %8
-        lda %2
-} by {
-	; Peephole reorder long
-	lda %3
-	sta %4
-	lda %5
-	sta %6
-	lda %7
-	sta %8
-	lda %1
-	sta %2
-}
+//replace restart {
+//	lda %1
+//	sta %2
+//	lda %3
+//	sta %4
+//	lda %5
+//	sta %6
+//	lda %7
+//	sta %8
+//	lda %2
+//} by {
+//	; Peephole reorder long
+//	lda %3
+//	sta %4
+//	lda %5
+//	sta %6
+//	lda %7
+//	sta %8
+//	lda %1
+//	sta %2
+//}
 
 
 ////////////////////////////////////////////////////////
@@ -1105,6 +1105,19 @@ replace restart {
 	%1	%2,%3
 	; Peephole store 8a - removed redundant %1 %2,%3
 } if same(%1 'sta' 'stx' 'sty'), notVolatile(%2)
+
+////////////////////////////////////////////////////////
+// Remove duplicate branches
+////////////////////////////////////////////////////////
+
+replace restart {
+	%1	%2
+	%1	%2
+} by {
+	%1	%2
+	; Peephole dup branch 1 - removed %1
+} if same(%1 'bne' 'beq' 'bra'), labelRefCountChange(%2 -1)
+
 
 ////////////////////////////////////////////////////////
 // Replace jmp with branch

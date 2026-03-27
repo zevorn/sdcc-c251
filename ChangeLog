@@ -8,7 +8,11 @@
    	  Optimize genCpl() for reg->reg
    	* src/mos6502/gen.c:
    	  Optimize asmopToBool()
-
+   	* src/mos6502/genplus.c,
+   	  src/mos6502/genminus.c,
+   	  src/mos6502/peeph.def:
+   	  Fix several regression with --max-allocs-per node 10
+   	  
 2026-03-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:
