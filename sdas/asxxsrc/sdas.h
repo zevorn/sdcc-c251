@@ -22,6 +22,7 @@ enum sdas_target_e {
   TARGET_ID_UNKNOWN,
   TARGET_ID_GB,
   TARGET_ID_Z80,
+  TARGET_ID_RAB,
   TARGET_ID_8051,
   TARGET_ID_DS390,
   TARGET_ID_6808,
@@ -39,6 +40,7 @@ void set_sdas_target(enum sdas_target_e);
 int is_sdas_target_z80_like(void);
 int is_sdas_target_8051_like(void);
 int is_sdas_target_stm8(void);
+int is_sdas_target_rab(void);
 int is_sdas_target_pdk(void);
 
 #endif  /* __SDAS_H */
