@@ -3671,6 +3671,25 @@ asmopToBool (asmop *aop, bool resultInA)
 	  m6502_emitCmp(aop->aopu.aop_reg[0], 0);
           return;
         }
+      else if(size==2 && m6502_reg_x->isLitConst)
+        {
+          if(m6502_reg_x->litConst!=0)
+            {
+              if(resultInA)
+                loadRegFromConst (m6502_reg_a, 1);
+              else
+                m6502_emitCmp(m6502_reg_x, 0);
+
+              return;
+            }
+          else
+            {
+              if (IS_AOP_XA (aop))
+                m6502_emitCmp(m6502_reg_a, 0);
+              if (IS_AOP_XY (aop))
+                m6502_emitCmp(m6502_reg_y, 0);
+            }
+        }
       else if (IS_AOP_XA (aop))
         {
 #if 0
@@ -3680,7 +3699,7 @@ asmopToBool (asmop *aop, bool resultInA)
 	  if(m6502_reg_a->isDead && _S.lastflag!=A_IDX && _S.lastflag!=X_IDX)
 	    {
 	      storeRegTemp(m6502_reg_x, false);
-	      emitRegTempOp( "ora", getLastTempOfs() );
+	      emitRegTempOp("ora", getLastTempOfs() );
 	      loadRegTemp (NULL);
 	    }
 	  else
@@ -3688,23 +3707,18 @@ asmopToBool (asmop *aop, bool resultInA)
 
 	    if(_S.lastflag==X_IDX) 
 	      {
-		if (!(m6502_reg_x->isLitConst && m6502_reg_x->litConst==0 ) )
-		  m6502_emitBranch ("bne", tlbl);
-
+		m6502_emitBranch ("bne", tlbl);
 		m6502_emitCmp(m6502_reg_a, 0);
 	      }
 	    else
 	      {
 		m6502_emitCmp(m6502_reg_a, 0);
-		if( !(m6502_reg_x->isLitConst && m6502_reg_x->litConst==0))
-		  {
-                    m6502_emitBranch ("bne", tlbl);
-		    // FIXME: this optimization makes the code smaller (expected) and slower (unexpected)
-		    //          if(m6502_reg_a->isDead) 
-		    //            transferRegReg(m6502_reg_x, m6502_reg_a, true);
-		    //          else 
-		    m6502_emitCmp(m6502_reg_x, 0);
-		  }
+                m6502_emitBranch ("bne", tlbl);
+		// FIXME: this optimization makes the code smaller (expected) and slower (unexpected)
+		//          if(m6502_reg_a->isDead) 
+		//            transferRegReg(m6502_reg_x, m6502_reg_a, true);
+		//          else 
+		m6502_emitCmp(m6502_reg_x, 0);
 	      }
         }
       else if (IS_AOP_XY (aop))
