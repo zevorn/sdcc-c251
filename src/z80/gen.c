@@ -5888,6 +5888,15 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           spillPair (getPairId_o (result, roffset + i));
           continue;
         }
+      else if (i + 1 < size && source->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K) && hl_dead && (result->type == AOP_STK || result->type == AOP_DIR))
+        {
+          emit2 ("ldf hl, (%s + %d)", source->aopu.aop_dir, soffset + i);
+          cost (5, 15);
+          spillPair (PAIR_HL);
+          genMove_o (result, roffset + i, ASMOP_HL, 0, 2, a_dead, true, de_dead, iy_dead, f_dead);
+          i += 2;
+          continue;
+        }
       else if (i + 1 < size && result->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K /*|| IS_TLCS90 && getPairId_o (source, soffset + i) != PAIR_IY alignment issue - see above*/) && getPairId_o (source, soffset + i) != PAIR_INVALID && getPairId_o (source, soffset + i) != PAIR_JK)
         {
           if (i + 3 < size && (IS_R4K || IS_R5K || IS_R6K) &&
@@ -5941,16 +5950,25 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
             {
               emit2 ("ldp iy, (%s + %d)", source->aopu.aop_dir, soffset + i);
               cost (4, 13);
+              spillPair (PAIR_IY);
             }
           else
             {
               emit2 ("ldp hl, (%s + %d)", source->aopu.aop_dir, soffset + i);
               cost (4, 13);
+              spillPair (PAIR_HL);
               genMove_o (result, roffset + i, ASMOP_L, 0, 1, true, true, de_dead, iy_dead, f_dead);
             }
           if (!a_dead)
             _pop (PAIR_AF);
           i++; // Can only get one byte at a time, since ldp might get the wrong upper byte when the source is not even-aligned.
+          continue;
+        }
+      else if (result->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K) && aopInReg (source, soffset + i, A_IDX))
+        {
+          emit2 ("ldf (%s + %d), a", result->aopu.aop_dir, roffset + i);
+          cost (5, 15);
+          i++;
           continue;
         }
       else if (result->type == AOP_FDIR && IS_RAB && hl_dead &&
@@ -5964,10 +5982,12 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           cost (2, 4);
           emit2 ("ldp hl, (%s + %d)", result->aopu.aop_dir, roffset + i);
           cost (4, 13);
+          spillPair (PAIR_HL);
           if (via_e)
             emit3 (A_LD, ASMOP_L, ASMOP_E);
           else
             emit3_o (A_LD, ASMOP_L, 0, source, soffset + i);
+          spillPair (PAIR_HL);
           emit2 ("ldp (%s + %d), hl", result->aopu.aop_dir, roffset + i);
           cost (4, 15);
           i++;

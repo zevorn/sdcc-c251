@@ -1,3 +1,8 @@
+2026-03-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Fixes and improvements for Rabbit __far.
+
 2026-03-26 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/genand.c,
