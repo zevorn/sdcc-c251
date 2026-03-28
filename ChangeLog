@@ -1,4 +1,9 @@
-2026-03-26 Philipp Klaus Krause <philipp@colecovision.eu>
+2026-03-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve codegen for calls through function pointers.
+
+2026-03-28 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c:
 	  Fixes and improvements for Rabbit __far.

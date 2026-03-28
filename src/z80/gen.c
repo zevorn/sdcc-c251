@@ -7820,8 +7820,8 @@ genCall (const iCode *ic)
 
   if (bigreturn && !IFFUNC_ISDYNAMICC (ftype))
     {
-      PAIR_ID pair;
       int fp_offset, sp_offset;
+      PAIR_ID pair = (ic->op == PCALL && !IS_SM83 && !IY_RESERVED) ? PAIR_IY : PAIR_HL;
 
       if (ic->op == PCALL && IS_SM83 || !hl_free)
         _push (PAIR_HL);
@@ -7831,7 +7831,6 @@ genCall (const iCode *ic)
         IC_RESULT (ic)->aop->aopu.aop_stk + (IC_RESULT (ic)->aop->aopu.aop_stk >
             0 ? _G.stack.param_offset : 0);
       sp_offset = fp_offset + _G.stack.pushed + _G.stack.offset;
-      pair = (ic->op == PCALL && !IS_SM83 && !IY_RESERVED) ? PAIR_IY : PAIR_HL;
       if (IS_SM83 && sp_offset <= 127 && sp_offset >= -128)
         {
           emit2 ("!ldahlsp", sp_offset);
@@ -7852,21 +7851,20 @@ genCall (const iCode *ic)
         }
       if (ic->op == PCALL && IS_SM83 || !hl_free)
         {
-          if (de_free)
+          if (pair == PAIR_HL && de_free)
             {
               emit3 (A_LD, ASMOP_E, ASMOP_L);
               emit3 (A_LD, ASMOP_D, ASMOP_H);
-              _pop (PAIR_HL);
               pair = PAIR_DE;
             }
-          else
+          else if (pair == PAIR_HL)
             {
               wassert (bc_free);
               emit3 (A_LD, ASMOP_C, ASMOP_L);
               emit3 (A_LD, ASMOP_B, ASMOP_H);
-              _pop (PAIR_HL);
               pair = PAIR_BC;           
             }
+          _pop (PAIR_HL);
         }
       emit2 ("push %s", _pairs[pair].name);
       if (pair == PAIR_IY)
@@ -7996,9 +7994,8 @@ genCall (const iCode *ic)
           else
             cost2 (3, 3, 3, 3, 17, 16, 12, 13, 24, 14, 6, 6, 6, 5, 3);
         }
-      else if (!rab_lcall && !rab_llcall && getPairId (ic->left->aop) != PAIR_IY && hl_free)
+      else if (!rab_lcall && !rab_llcall && !aopInReg (ic->left->aop, 0, IY_IDX) && (aopInReg (ic->left->aop, 0, HL_IDX) || hl_free))
         {
-          spillPair (PAIR_HL);
           genMove (ASMOP_HL, ic->left->aop, a_free, hl_free, de_free, true);
           adjustStack (prestackadjust, a_not_parm, bc_not_parm, de_not_parm, false, false);
           if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS) && !jump)
@@ -8020,7 +8017,6 @@ genCall (const iCode *ic)
         }
       else if (!rab_lcall && !rab_llcall && !IS_SM83 && !IY_RESERVED && !z80IsParmInCall (ftype, "iy")) // Ensure that we don't access the stack via iy when reading IC_LEFT (ic).
         {
-          spillPair (PAIR_IY);
           if (ic->left->aop->type == AOP_EXSTK) // Ensure that we don't directly overwrite iyl while accessing the stack via iy.
             {
               _push (PAIR_HL);
