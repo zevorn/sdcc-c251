@@ -1,3 +1,9 @@
+2026-03-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/ds390/gen.c,
+	  support/sdbinutils/bfd/asxxxx.c:
+	  Fix bug #3967 via patch from Thomas Ilnseher with minor improvements.
+
 2026-03-26 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/genand.c,
