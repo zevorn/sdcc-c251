@@ -1,3 +1,8 @@
+2026-03-28 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+   	  Improve findRegAop()
+   	  
 2026-03-28 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/ds390/gen.c,

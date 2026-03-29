@@ -99,18 +99,18 @@ findRegAop (asmop * aop, int loffset)
 {
   reg_info *ret=NULL;
 
-  if (m6502_reg_a->aop && m6502_reg_a->aop->op && aop->op
-      && operandsEqu (m6502_reg_a->aop->op, aop->op) && (m6502_reg_a->aopofs == loffset))
+  if (m6502_reg_a->aop
+      && sameRegs(m6502_reg_a->aop, aop) && (m6502_reg_a->aopofs == loffset))
     {
       ret=m6502_reg_a;
     }
-  else if (m6502_reg_x->aop && m6502_reg_x->aop->op && aop->op
-	   && operandsEqu (m6502_reg_x->aop->op, aop->op) && (m6502_reg_x->aopofs == loffset))
+  else if (m6502_reg_x->aop
+	   && sameRegs(m6502_reg_x->aop, aop) && (m6502_reg_x->aopofs == loffset))
     {
       ret=m6502_reg_x;
     }
-  else if (m6502_reg_y->aop && m6502_reg_y->aop->op && aop->op
-	   && operandsEqu (m6502_reg_y->aop->op, aop->op) && (m6502_reg_y->aopofs == loffset))
+  else if (m6502_reg_y->aop
+	   && sameRegs(m6502_reg_y->aop, aop) && (m6502_reg_y->aopofs == loffset))
     {
       ret=m6502_reg_y;
     }
@@ -181,6 +181,13 @@ dirtyRegAop(reg_info *reg, asmop *aop, int offset)
       return;
     }
 
+  if(reg==m6502_reg_xy)
+    {
+      dirtyRegAop(m6502_reg_y, aop, offset);
+      dirtyRegAop(m6502_reg_x, aop, offset+1);
+      return;
+    }
+
   if(reg!=m6502_reg_a && m6502_reg_a->aop)
     {
       if(sameRegs (m6502_reg_a->aop, aop) 
@@ -190,6 +197,7 @@ dirtyRegAop(reg_info *reg, asmop *aop, int offset)
           m6502_reg_a->aop = NULL;
         }
     }
+
   if(reg!=m6502_reg_x && m6502_reg_x->aop)
     {
       if(sameRegs (m6502_reg_x->aop, aop) 
@@ -199,6 +207,7 @@ dirtyRegAop(reg_info *reg, asmop *aop, int offset)
           m6502_reg_x->aop = NULL;
         }
     }
+
   if(reg!=m6502_reg_y && m6502_reg_y->aop)
     {
       if(sameRegs (m6502_reg_y->aop, aop) 
@@ -1005,8 +1014,8 @@ transferRegReg (reg_info *sreg, reg_info *dreg, bool freesrc)
           }
           else if(m6502_reg_a->isFree)
             {
-              emit6502op ("txa", "");
-              emit6502op ("tay", "");
+              transferRegReg(m6502_reg_x, m6502_reg_a, freesrc);
+              transferRegReg(m6502_reg_a, m6502_reg_y, true);
             }
           else
             {
@@ -1431,13 +1440,13 @@ storeRegToAop (reg_info *reg, asmop * aop, int loffset)
           emit6502op ("sty", aopAdrStr (aop, loffset, true));
           break;
         case XA_IDX:
-          emit6502op ("sta", aopAdrStr (aop, loffset, true));
-          emit6502op ("stx", aopAdrStr (aop, loffset+1, true));
-          break;
+          storeRegToAop (m6502_reg_a, aop, loffset);
+          storeRegToAop (m6502_reg_x, aop, loffset+1);
+          return;
         case XY_IDX:
-          emit6502op ("sty", aopAdrStr (aop, loffset, true));
-          emit6502op ("stx", aopAdrStr (aop, loffset+1, true));
-          break;
+          storeRegToAop (m6502_reg_y, aop, loffset);
+          storeRegToAop (m6502_reg_x, aop, loffset+1);
+          return;
         }
     }
   else if (aop->type == AOP_SOF)
@@ -1497,12 +1506,13 @@ storeRegToAop (reg_info *reg, asmop * aop, int loffset)
         }
     }
 
+  dirtyRegAop(reg, aop, loffset);
+
   if(!reg->isLitConst)
     {
       //      emitComment (ALWAYS /*TRACE_AOP|VVDBG*/, " %s - looking for stale reg", __func__);
       //      emitComment (ALWAYS /*TRACE_AOP|VVDBG*/, " %s - reg_a->aop=%08x aop=%08x aop->op=%08x", 
       //                   __func__, m6502_reg_a->aop, aop, aop->op);
-      dirtyRegAop(reg, aop, loffset);
       regTrackAop(reg, aop, loffset);
     }
 }
@@ -6868,6 +6878,9 @@ static void genPointerGet (iCode * ic, iCode * ifx)
       else
         {
 	  // otherwise use [aa],y
+          if (!IS_AOP_WITH_A(AOP(result)))
+            needpulla = storeRegTempIfSurv (m6502_reg_a);
+
 	  if (IS_AOP_XA(AOP(result)) || IS_AOP_XY(AOP(result)))
 	    {
 	      // reverse order so A is last
@@ -6883,7 +6896,6 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 	    {
 	      // forward order
 	      emitComment (TRACEGEN|VVDBG, "    %s: dest generic", __func__);
-	      if (!IS_AOP_WITH_A(AOP(result))) needpulla = storeRegTempIfSurv (m6502_reg_a);
 	      for (int i=0; i<size; i++)
 		{
 		  loadRegFromConst(m6502_reg_y, litOffset + i);
