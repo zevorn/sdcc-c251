@@ -3876,6 +3876,21 @@ genCopy (operand * result, operand * source)
       return;
     }
 
+  if(srcsize==1 && AOP_TYPE(result) != AOP_SOF)
+    {
+      reg_info *reg0=findRegAop(AOP(source), 0);
+      if(reg0)
+        {
+          int i;
+          emitComment (TRACEGEN|VVDBG, "      %s (srcsize = 1)", __func__);
+	  storeRegToAop (reg0, AOP(result), 0);
+          for(i=1;i<size;i++)
+            storeConstToAop(0,AOP(result),i);
+
+          return;
+        }
+    }
+
   if(size==2 && AOP_TYPE(result) != AOP_SOF)
     {
       reg_info *reg0=findRegAop(AOP(source), 0);
@@ -3925,34 +3940,22 @@ genCopy (operand * result, operand * source)
   emitComment (TRACEGEN|VVDBG, "      %s (general case)", __func__);
 
 #if 0
-  while (srcsize && size)
+  if(findRegAop (AOP(source), 0))
     {
+      for(offset=0; offset<srcsize; offset++)
       transferAopAop (AOP (source), offset, AOP (result), offset);
-      offset++;
-      srcsize--;
-      size--;
-    }
-  while (size)
-    {
+      for( ; offset<size; offset++)
       storeConstToAop (0, AOP (result), offset);
-      offset++;
-      size--;
     }
-#else 
-  // reverse order
-  offset=size-1;
-
-  while ( offset >= srcsize )
-    {
-      storeConstToAop (0, AOP (result), offset);
-      offset--;
-    }
-  while (offset>=0)
-    {
-      transferAopAop (AOP (source), offset, AOP (result), offset);
-      offset--;
-    }
+  else
 #endif
+    {
+      for(offset=size-1; offset>=srcsize; offset--)
+      storeConstToAop (0, AOP (result), offset);
+      for( ; offset>=0; offset--)
+      transferAopAop (AOP (source), offset, AOP (result), offset);
+    }
+
 }
 
 /**************************************************************************
