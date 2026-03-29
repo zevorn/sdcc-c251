@@ -7445,7 +7445,7 @@ static void genPackBitsImmed (operand * result, operand * left, sym_link * etype
  *************************************************************************/
 static void genDataPointerSet (operand * left, operand * right, operand * result, iCode * ic)
 {
-  int size;
+  int size, offset;
   asmop *derefaop;
   int litOffset = 0;
   char *rematOffset = NULL;
@@ -7461,8 +7461,16 @@ static void genDataPointerSet (operand * left, operand * right, operand * result
   m6502_freeAsmop (result, NULL);
   derefaop->size = size;
 
-  while (size--)
-    transferAopAop (AOP (right), size, derefaop, size);
+  if(findRegAop (AOP(right), 0))
+    {
+      for(offset=0; offset<size; offset++)
+        transferAopAop (AOP (right), offset, derefaop, offset);
+    }
+  else
+    {
+      for(offset=size-1; offset>=0; offset--)
+        transferAopAop (AOP (right), offset, derefaop, offset);
+    }
 
   m6502_freeAsmop (right, NULL);
   m6502_freeAsmop (NULL, derefaop);
