@@ -986,7 +986,7 @@ replace {
 	mov	a,@%2
 	add	a,@%2
 	mov	r%1,a
-}
+} if notVolatile
 
 replace {
 	mov	r%1,a
@@ -1010,7 +1010,7 @@ replace {
 	rrc	a
 	mov	acc.7,c
 } by {
-	;	Peephole 143.b	converted rrc to rc
+	;	Peephole 143.b	converted rrc to rr
 	rr	a
 }
 
@@ -2191,7 +2191,7 @@ replace {
 	pop	%1
 } by {
 	;	Peephole 211	removed redundant push %1 pop %1
-}
+} if notVolatile %1
 
 // Does not seem to be triggered anymore
 //replace {
@@ -3515,7 +3515,7 @@ replace {
 	orl	a,#%3
 	mov	@r%5,a
 	mov	r%5,#%1
-	mov	a,@r%4
+	mov	a,@r%5
 	orl	a,#%4
 	mov	@r%5,a
 } by {
