@@ -7028,6 +7028,9 @@ genPointerGet (const iCode *ic, iCode *ifx)
       genMove_o (result->aop, i, ASMOP_XL, 0, 1, true, false, false, false, true);
     }
 
+  if (!use_z && !regDead (Y_IDX, ic) && last_oi)
+    addwConst (ASMOP_Y, 0, -last_oi);
+
 extend_bitfield:
   if (bit_field && i < size)
     {

@@ -1,7 +1,12 @@
+2026-04-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/gen.c:
+	  f8(l) codegen fix.
+
 2026-03-31 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/f8/peeph.def:
-	  f8/l) peephole rule fix.
+	  f8(l) peephole rule fix.
 
 2026-03-28 Gabriele Gorla <gorlik@yahoo.com>
 
