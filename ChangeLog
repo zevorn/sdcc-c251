@@ -7,6 +7,9 @@
 	* src/SDCCsymt.c,
 	  support/valdiag/tests/bug-3969.c:
 	  Fix bug #3969.
+	* src/SDCCmain.c,
+	  support/valdiag/tests/bug-3970.c:
+	  Fix bug #3970.
 
 2026-03-31 Philipp Klaus Krause <philipp@colecovision.eu>
 
