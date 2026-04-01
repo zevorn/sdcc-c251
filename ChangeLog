@@ -4,6 +4,9 @@
 	  f8(l) codegen fix.
 	* src/z80/gen.c:
 	  Fix bug #3968.
+	* src/SDCCsymt.c,
+	  support/valdiag/tests/bug-3969.c:
+	  Fix bug #3969.
 
 2026-03-31 Philipp Klaus Krause <philipp@colecovision.eu>
 
