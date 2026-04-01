@@ -10,6 +10,8 @@
 	* src/SDCCmain.c,
 	  support/valdiag/tests/bug-3970.c:
 	  Fix bug #3970.
+	* device/lib/printf_fast.c:
+	  const correctness fix, patch #496 by Oleg Endo.
 
 2026-03-31 Philipp Klaus Krause <philipp@colecovision.eu>
 
