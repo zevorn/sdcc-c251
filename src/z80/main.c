@@ -1110,15 +1110,15 @@ const char *rab_int_names[32] = {
   "sys/user mode violation", "quadrature decoder", "input capture", "stack limit violation", "serial port E", "serial port F", "network port B (Ethernet)", "timer C"};
 
 static int
-rab_genIVT(struct dbuf_s *oBuf, symbol **intTable, int intCount)
+rab_genIVT (struct dbuf_s *oBuf, symbol **intTable, int intCount)
 {
   dbuf_tprintf (oBuf, "\tGCSR\t.equ\t0x00 ; Global control / status register\n");
   dbuf_tprintf (oBuf, "\t.area	_IIVT (ABS)\n");
   dbuf_printf (oBuf, "\n");
 
-  if(intCount > RAB_INTERRUPTS_COUNT)
+  if (intCount > RAB_INTERRUPTS_COUNT)
     {
-      werror(E_INT_BAD_INTNO, intCount - 1);
+      werror (E_INT_BAD_INTNO, intCount - 1);
       intCount = RAB_INTERRUPTS_COUNT;
     }
     

@@ -25153,6 +25153,38 @@ out (c),a
 \end_layout
 
 \begin_layout Subsubsection
+__far
+\begin_inset Index idx
+range none
+pageformat default
+status open
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+_
+\end_layout
+
+\end_inset
+
+far
+\end_layout
+
+\end_inset
+
+ (eZ80 only)
+\end_layout
+
+\begin_layout Standard
+The ez80 port supports a 1 MB __far address space that contains the generic address space.
+ Support for __far is still very incomplete and should be considered experimental.
+\end_layout
+
+\begin_layout Subsubsection
 __sfr
 \begin_inset Index idx
 range none
@@ -25543,8 +25575,6 @@ far
 The Rabbit ports supports a 1 MB __far address space that contains the generic address space.
  Due to limitations of the Rabbit ldp instructions,
  variables declared as __far can be neither volatile nor atomic.
- Note:
- This support is still very incomplete and should be considered experimental.
 \end_layout
 
 \begin_layout Subsection
