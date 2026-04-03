@@ -2,6 +2,10 @@
 
 	* src/z80/peep.c:
 	  Fix distance calculation across Rabbit ldf.
+	* src/z80/gen.c:
+	  Improve rabbit __far codegen.
+	* doc/sdccman.lyx:
+	  Improve __far documentation.
 
 2026-04-01 Philipp Klaus Krause <philipp@colecovision.eu>
 

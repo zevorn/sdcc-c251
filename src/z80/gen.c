@@ -5823,7 +5823,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           spillPair (pair);
           continue;
         }
-#if 0 // Looks like by just supplies the upper address bits, i.e. we could do a 16-bit read only if the destination is 16-bit aligned.
+#if 0 // Looks like by just supplies the upper address bits, i.e. we could do a 16-bit read only if the destination is known to be 16-bit aligned.
       else if (i + 1 < size && IS_TLCS90 && result->type == AOP_FDIR && source->type == AOP_FDIR && (hl_dead || de_dead || bc_dead))
         {
           PAIR_ID pair = hl_dead ? PAIR_HL : de_dead ? PAIR_DE : PAIR_BC;
@@ -5972,7 +5972,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           continue;
         }
       else if (result->type == AOP_FDIR && IS_RAB && hl_dead &&
-        (aopInReg (source, soffset + i, B_IDX) || aopInReg (source, soffset + i, C_IDX) || aopInReg (source, soffset + i, D_IDX) || aopInReg (source, soffset + i, E_IDX) || aopInReg (source, soffset + i, A_IDX) && de_dead))
+        (source->type == AOP_LIT || source->type == AOP_IMMD || aopInReg (source, soffset + i, B_IDX) || aopInReg (source, soffset + i, C_IDX) || aopInReg (source, soffset + i, D_IDX) || aopInReg (source, soffset + i, E_IDX) || aopInReg (source, soffset + i, A_IDX) && de_dead))
         {
           // Need to do this bitfield-write-style. Can't honor volatile.
           bool via_e = aopInReg (source, soffset + i, A_IDX);
