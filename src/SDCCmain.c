@@ -2952,7 +2952,7 @@ main (int argc, char **argv, char **envp)
               if (sym->level)
                 continue;
               // Check for arrays of unknown size that get size 1 due to an implicit initializer.
-              if (IS_ARRAY (sym->type) && DCL_ARRAY_LENGTH_TYPE (sym->type) == ARRAY_LENGTH_UNKNOWN)
+              if (IS_ARRAY (sym->type) && !IS_EXTERN (sym->etype) && DCL_ARRAY_LENGTH_TYPE (sym->type) == ARRAY_LENGTH_UNKNOWN)
                 {
                   wassert (!DCL_ELEM (sym->type));
                   werrorfl (sym->fileDef, sym->lineDef, W_INCOMPLETE_ARRAY_IMPLICIT_1, sym->name);
