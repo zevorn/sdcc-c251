@@ -940,6 +940,7 @@ z80SurelyWritesFlag(const lineNode *pl, const char *what)
   if((IS_R4K || IS_R5K || IS_R6K) &&
     (lineIsInst (pl, "cbm") ||
     lineIsInst (pl, "clr") ||
+    lineIsInst (pl, "ldf") ||
     lineIsInst (pl, "mulu")))
     return false;
 
@@ -1959,6 +1960,9 @@ int z80instructionSize (lineNode *pl)
       return(2);
     }
 
+  if(lineIsInst (pl, "lddr") || lineIsInst (pl, "ldir") || lineIsInst (pl, "cpir") || lineIsInst (pl, "cpdr"))
+    return(2);
+
   if((IS_Z180 || IS_EZ80) && (lineIsInst (pl, "in0") || lineIsInst (pl, "out0")))
     return(3);
 
@@ -1992,14 +1996,14 @@ int z80instructionSize (lineNode *pl)
   if((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "mulu"))
     return(2);
 
-  if(lineIsInst (pl, "lddr") || lineIsInst (pl, "ldir") || lineIsInst (pl, "cpir") || lineIsInst (pl, "cpdr"))
-    return(2);
-
   if((IS_R3KA || IS_R4K || IS_R5K || IS_R6K) &&
     (lineIsInst (pl, "lddsr") || lineIsInst (pl, "ldisr") ||
      lineIsInst (pl, "lsdr")  || lineIsInst (pl, "lsir")  ||
      lineIsInst (pl, "lsddr") || lineIsInst (pl, "lsidr")))
     return(2);
+
+  if((IS_R4K || IS_R5K || IS_R6K) && lineIsInst (pl, "ldf"))
+    return(5);
 
   if((IS_R3KA || IS_R4K || IS_R5K || IS_R6K) &&
     (lineIsInst (pl, "uma") || lineIsInst (pl, "ums")))

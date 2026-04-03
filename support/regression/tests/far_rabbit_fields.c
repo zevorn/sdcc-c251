@@ -10,9 +10,8 @@ char farmemblock[2];
 #else
 #undef __far
 // Ensure that farmemblock and farmemblock+sizeof(farmemblock) differ in more than just the lowest 16 bits. Also gives further objects in __far an address > 2^16.
-// TODO: enable when bug #2930 is fixed!
-char memblock[60/*00*/];
-__far char farmemblock[40/*000*/];
+char memblock[6000];
+__far char farmemblock[40000];
 #endif
 
 struct sb

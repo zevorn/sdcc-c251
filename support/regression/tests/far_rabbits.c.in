@@ -10,17 +10,14 @@ char farmemblock[2];
 #else
 #undef __far
 // Ensure that farmemblock and farmemblock+sizeof(farmemblock) differ in more than just the lowest 16 bits. Also gives further objects in __far an address > 2^16.
-// TODO: enable when bug #2930 is fixed!
-char memblock[60/*00*/];
-__far char farmemblock[40/*000*/];
+char memblock[6000];
+__far char farmemblock[40000];
 #endif
 
 __far {type} i;
-#ifdef __SDCC_tlcs90 // todo: enable for all when bug #2930 is fixed!
 __far {type} ii = 0x55;
 __far {type} j;
 const __far {type} ci = 0xaa;
-#endif
 
 {type} readfarptr(__far {type} *p)
 {
@@ -34,16 +31,13 @@ void writefarptr(__far {type} *p, {type} i)
 
 void testFarObj(void)
 {
-#ifdef __SDCC_tlcs90 // todo: enable for all when bug #2930 is fixed!
 	// Read initialized variable in __far
 	ASSERT(ii == 0x55);
 	ASSERT(ci == 0xaa);
-#endif
 }
 
 void testFarPtr(void)
 {
-#ifdef __SDCC_tlcs90 // todo: enable for all when bug #2930 is fixed!
 	// Write variable in __far
 	i = 0xa5;
 	ASSERT(i == 0xa5);
@@ -52,7 +46,7 @@ void testFarPtr(void)
 	ASSERT(readfarptr(&i) == 0xa5);
 	writefarptr(&i, 0x5a);
 	ASSERT(i == 0x5a);
-#endif
+
 	// generic space is in __far
 	{type} k = 23;
 #if 0 // Doesn't work yet.
@@ -67,18 +61,15 @@ void testFarPtr(void)
 
 void testFarArith(void)
 {
-#ifdef __SDCC_tlcs90 // todo: enable for all when bug #2930 is fixed!
 	i = 23;
 	j = 42;
 	ASSERT(i + j == 23 + 42);
 	i += j;
 	ASSERT(readfarptr(&i) == 23 + 42);
-#endif
 }
 
 void testFarPtrArith(void)
 {
-#ifdef __SDCC_tlcs90 // todo: enable for all when bug #2930 is fixed!
 	__far char *p = farmemblock;
 	__far char *volatile q = farmemblock;
 	ASSERT(p + sizeof(farmemblock) == farmemblock + sizeof(farmemblock));
@@ -91,6 +82,5 @@ void testFarPtrArith(void)
 	q[sizeof(farmemblock) - 1] = 23;
 	ASSERT(farmemblock[0] == 42);
 	ASSERT(farmemblock[sizeof(farmemblock) - 1] == 23);
-#endif
 }
 
