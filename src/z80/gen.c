@@ -1726,54 +1726,6 @@ _emitMove3 (asmop *to, int to_offset, asmop *from, int from_offset)
   emit3_o (A_LD, to, to_offset, from, from_offset);
 }
 
-#if 0 // todo: remove this? update it (it is out of sync with gen.h)?
-static const char *aopNames[] =
-{
-  "AOP_INVALID",
-  "AOP_LIT",
-  "AOP_REG",
-  "AOP_DIR",
-  "AOP_SFR",
-  "AOP_STK",
-  "AOP_IMMD",
-  "AOP_CRY",
-  "AOP_IY",
-  "AOP_HL",
-  "AOP_EXSTK",
-  "AOP_PAIRPT",
-  "AOP_DUMMY"
-};
-
-static void
-aopDump (const char *plabel, asmop * aop)
-{
-  int i;
-  char regbuf[9];
-  char *rbp = regbuf;
-
-  emitDebug ("; Dump of %s: type %s size %u", plabel, aopNames[aop->type], aop->size);
-  switch (aop->type)
-    {
-    case AOP_EXSTK:
-    case AOP_STK:
-      emitDebug (";  aop_stk %d", aop->aopu.aop_stk);
-      break;
-    case AOP_REG:
-      for (i = aop->size - 1; i >= 0; i--)
-        *rbp++ = *(aop->aopu.aop_reg[i]->name);
-      *rbp = '\0';
-      emitDebug (";  reg = %s", regbuf);
-      break;
-    case AOP_PAIRPTR:
-      emitDebug (";  pairptr = (%s)", _pairs[aop->aopu.aop_pairId].name);
-
-    default:
-      /* No information. */
-      break;
-    }
-}
-#endif
-
 static void
 _moveA (const char *moveFrom)
 {
@@ -3733,8 +3685,9 @@ aopGet (asmop *aop, int offset, bool bit16)
                 case 2:
                   if (aop->banked)
                     dbuf_tprintf (&dbuf, "!bankimmeds", aop->aopu.aop_immd);
+                  else if (IS_RAB || IS_TLCS90 || IS_EZ80)
+                    dbuf_tprintf (&dbuf, "#(%s >> 16)", aop->aopu.aop_immd); // Rabbit __xdata / __xconst.
                   else
-                    //dbuf_tprintf (&dbuf, "#(%s >> 16)", aop->aopu.aop_immd); // Rabbit __xdata / __xconst.
                     dbuf_tprintf (&dbuf, "#0", aop->aopu.aop_immd); // Rabbit __xdata / __xconst.
                   break;
 
@@ -3756,6 +3709,13 @@ aopGet (asmop *aop, int offset, bool bit16)
           wassert (!IS_TLCS870);
           emit2 ("ld a, (%s+%d)", aop->aopu.aop_dir, offset);
           cost2 (3, 4, -1, 4, 13, 12, 9, 9, 16, 10, -1, 5, 5, 4, 4);
+          dbuf_append_char (&dbuf, 'a');
+          break;
+
+        case AOP_FDIR:
+          wassert (IS_R4K || IS_R5K || IS_R6K);
+          emit2 ("ldf a, (%s+%d)", aop->aopu.aop_dir, offset);
+          cost (4, 11);
           dbuf_append_char (&dbuf, 'a');
           break;
 
@@ -4227,7 +4187,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
 
       bool pushed_a = false;
       
-      if (IS_EZ80 || IS_TLCS90 || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET)
+      if (IS_EZ80 || IS_TLCS90 || IS_R4K || IS_R5K || IS_R6K)
         {
           if (!aopInReg (from, from_offset, A_IDX))
             {
@@ -4246,8 +4206,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
           else if (IS_TLCS90)
             {
               _push (PAIR_IY);
-              //emit2 ("ld (by), #(%s >> 16)", to->aopu.aop_dir, to_offset); todo: fix once 1930 is fixed!
-              emit2 ("ld (by), #0");
+              emit2 ("ld (by), #((%s + %d) >> 16)", to->aopu.aop_dir, to_offset);
               cost (3, 10);
               emit2 ("ld iy, #(%s + %d)", to->aopu.aop_dir, to_offset);
               cost (3, 6);
@@ -4258,7 +4217,10 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
               _pop (PAIR_IY);
             }
           else
-            emit3_o (A_LDF, to, to_offset, from, from_offset);
+            {
+              emit2 ("ldf (%s+%d), a", to->aopu.aop_dir, to_offset);
+              cost (4, 12);
+            }
         }
       else
         {
@@ -4285,8 +4247,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
             {
               _push (PAIR_HL);
               // No byte write instruction for far space before r4k, we need to handle this like a bit-field write, and we can't honor volatile here.
-              //emit2 ("ld a, #((%s + %d) >> 16)", to->aopu.aop_dir, to_offset); todo: fix once 1930 is fixed!
-              emit2 ("ld a, #0");
+              emit2 ("ld a, #((%s + %d) >> 16)", to->aopu.aop_dir, to_offset);
               emit2 ("ldp hl, (%s + %d)", to->aopu.aop_dir, to_offset);
               cost (6, 17);
               cheapMove (ASMOP_L, 0, from, from_offset, false);
@@ -4314,8 +4275,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
       else if (IS_TLCS90)
         {
           _push (PAIR_IY);
-          //emit2 ("ld (by), #(%s + %d) >> 16", from->aopu.aop_dir, to_offset); todo: fix once 1930 is fixed!
-          emit2 ("ld (by), #0");
+          emit2 ("ld (by), #((%s + %d) >> 16)", from->aopu.aop_dir, to_offset);
           cost (3, 10);
           emit2 ("ld iy, #(%s + %d)", from->aopu.aop_dir, to_offset);
           cost (3, 6);
@@ -4325,16 +4285,18 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
           cost (3, 10);
           _pop (PAIR_IY);
         }
-      else if (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET)
-        emit3_o (A_LDF, ASMOP_A, 0, from, from_offset);
+      else if (IS_R4K || IS_R5K || IS_R6K)
+        {
+          emit2 ("ldf a, (%s+%d)", from->aopu.aop_dir, from_offset);
+          cost (4, 11);
+        }
       else
         {
           wassert (IS_RAB);
 
           _push (PAIR_HL);
     
-          //emit2 ("ld a, #((%s + %d) >> 16)", from->aopu.aop_dir, from_offset); todo: fix once 1930 is fixed!
-          emit2 ("ld a, #0");
+          emit2 ("ld a, #((%s + %d) >> 16)", from->aopu.aop_dir, from_offset);
           emit2 ("ldp hl, (%s + %d)", from->aopu.aop_dir, from_offset);
           cost (6, 17);
           emit3 (A_LD, ASMOP_A, ASMOP_L);
@@ -5861,7 +5823,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           spillPair (pair);
           continue;
         }
-#if 0 // Looks like by just supplies the upper address bits, i.e. we could do a 16-bit read only if the destination is 16-bit aligned.
+#if 0 // Looks like by just supplies the upper address bits, i.e. we could do a 16-bit read only if the destination is known to be 16-bit aligned.
       else if (i + 1 < size && IS_TLCS90 && result->type == AOP_FDIR && source->type == AOP_FDIR && (hl_dead || de_dead || bc_dead))
         {
           PAIR_ID pair = hl_dead ? PAIR_HL : de_dead ? PAIR_DE : PAIR_BC;
@@ -5890,9 +5852,9 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           continue;
         }
 #endif
-      else if (i + 1 < size && source->type == AOP_FDIR && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET /*|| IS_TLCS90 alignment issue - see above*/) && getPairId_o (result, roffset + i) != PAIR_INVALID && getPairId_o (result, roffset + i) != PAIR_JK)
+      else if (i + 1 < size && source->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K /*|| IS_TLCS90 alignment issue - see above*/) && getPairId_o (result, roffset + i) != PAIR_INVALID && getPairId_o (result, roffset + i) != PAIR_JK)
         {
-          if (i + 3 < size && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) &&
+          if (i + 3 < size && (IS_R4K || IS_R5K || IS_R6K) &&
             (getPairId_o (result, roffset + i) == PAIR_DE && getPairId_o (result, roffset + i + 2) == PAIR_BC ||
               getPairId_o (result, roffset + i) == PAIR_HL && getPairId_o (result, roffset + i + 2) == PAIR_JK))
             {
@@ -5905,8 +5867,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
             {
               if (!iy_dead)
                 _push (PAIR_IY);
-              //emit2 ("ld (by), #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i); todo: fix once 1930 is fixed!
-              emit2 ("ld (by), #0");
+              emit2 ("ld (by), #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i);
               cost (3, 10);
               emit2 ("ld iy, #(%s + %d)", source->aopu.aop_dir, soffset + i);
               cost (3, 6);
@@ -5927,9 +5888,18 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           spillPair (getPairId_o (result, roffset + i));
           continue;
         }
-      else if (i + 1 < size && result->type == AOP_FDIR && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET /*|| IS_TLCS90 && getPairId_o (source, soffset + i) != PAIR_IY alignment issue - see above*/) && getPairId_o (source, soffset + i) != PAIR_INVALID && getPairId_o (source, soffset + i) != PAIR_JK)
+      else if (i + 1 < size && source->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K) && hl_dead && (result->type == AOP_STK || result->type == AOP_DIR))
         {
-          if (i + 3 < size && (IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET) &&
+          emit2 ("ldf hl, (%s + %d)", source->aopu.aop_dir, soffset + i);
+          cost (5, 15);
+          spillPair (PAIR_HL);
+          genMove_o (result, roffset + i, ASMOP_HL, 0, 2, a_dead, true, de_dead, iy_dead, f_dead);
+          i += 2;
+          continue;
+        }
+      else if (i + 1 < size && result->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K /*|| IS_TLCS90 && getPairId_o (source, soffset + i) != PAIR_IY alignment issue - see above*/) && getPairId_o (source, soffset + i) != PAIR_INVALID && getPairId_o (source, soffset + i) != PAIR_JK)
+        {
+          if (i + 3 < size && (IS_R4K || IS_R5K || IS_R6K) &&
             (getPairId_o (source, soffset + i) == PAIR_DE && getPairId_o (source, soffset + i + 2) == PAIR_BC ||
               getPairId_o (source, soffset + i) == PAIR_HL && getPairId_o (source, soffset + i + 2) == PAIR_JK))
             {
@@ -5942,8 +5912,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
               wassert (getPairId_o(source, soffset + i) != PAIR_IY);
               if (!iy_dead)
                 _push (PAIR_IY);
-              //emit2 ("ld (by), #((%s + %d) >> 16)", result->aopu.aop_dir, roffset + i); todo: fix once #1930 is fixed!
-              emit2 ("ld (by), #0");
+              emit2 ("ld (by), #((%s + %d) >> 16)", result->aopu.aop_dir, roffset + i);
               cost (3, 10);
               emit2 ("ld iy, #(%s + %d)", result->aopu.aop_dir, roffset + i);
               cost (3, 6);
@@ -5963,22 +5932,31 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
             }
           continue;
         }
+      else if (i + 1 < size && result->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K) && hl_dead && (source->type == AOP_LIT || source->type == AOP_IMMD || aopOnStack (source, soffset + i, 2)))
+        {
+          genMove_o (ASMOP_HL, 0, source, soffset + i, 2, a_dead, true, de_dead, iy_dead, f_dead);
+          emit2 ("ldf (%s + %d), hl", result->aopu.aop_dir, roffset + i);
+          cost (5, 17);
+          i += 2;
+          continue;
+        }
       else if (source->type == AOP_FDIR && IS_RAB && (hl_dead || iy_dead && aopInReg (result, roffset + i, IYL_IDX)))
         {
           if (!a_dead)
             _push (PAIR_AF);
-          //emit2 ("ld a, #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i); todo: fix once #1930 is fixed!
-          emit2 ("ld a, #0");
+          emit2 ("ld a, #((%s + %d) >> 16)", source->aopu.aop_dir, soffset + i);
           cost (2, 4);
           if (iy_dead && aopInReg (result, roffset + i, IYL_IDX))
             {
               emit2 ("ldp iy, (%s + %d)", source->aopu.aop_dir, soffset + i);
               cost (4, 13);
+              spillPair (PAIR_IY);
             }
           else
             {
               emit2 ("ldp hl, (%s + %d)", source->aopu.aop_dir, soffset + i);
               cost (4, 13);
+              spillPair (PAIR_HL);
               genMove_o (result, roffset + i, ASMOP_L, 0, 1, true, true, de_dead, iy_dead, f_dead);
             }
           if (!a_dead)
@@ -5986,22 +5964,30 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           i++; // Can only get one byte at a time, since ldp might get the wrong upper byte when the source is not even-aligned.
           continue;
         }
+      else if (result->type == AOP_FDIR && (IS_R4K || IS_R5K || IS_R6K) && aopInReg (source, soffset + i, A_IDX))
+        {
+          emit2 ("ldf (%s + %d), a", result->aopu.aop_dir, roffset + i);
+          cost (5, 15);
+          i++;
+          continue;
+        }
       else if (result->type == AOP_FDIR && IS_RAB && hl_dead &&
-        (aopInReg (source, soffset + i, B_IDX) || aopInReg (source, soffset + i, C_IDX) || aopInReg (source, soffset + i, D_IDX) || aopInReg (source, soffset + i, E_IDX) || aopInReg (source, soffset + i, A_IDX) && de_dead))
+        (source->type == AOP_LIT || source->type == AOP_IMMD || aopInReg (source, soffset + i, B_IDX) || aopInReg (source, soffset + i, C_IDX) || aopInReg (source, soffset + i, D_IDX) || aopInReg (source, soffset + i, E_IDX) || aopInReg (source, soffset + i, A_IDX) && de_dead))
         {
           // Need to do this bitfield-write-style. Can't honor volatile.
           bool via_e = aopInReg (source, soffset + i, A_IDX);
           if (via_e)
             emit3 (A_LD, ASMOP_E, ASMOP_A);
-          //emit2 ("ld a, #((%s + %d) >> 16)", result->aopu.aop_dir, soffset + i); todo: fix once #1930 is fixed!
-          emit2 ("ld a, #0");
+          emit2 ("ld a, #((%s + %d) >> 16)", result->aopu.aop_dir, soffset + i);
           cost (2, 4);
           emit2 ("ldp hl, (%s + %d)", result->aopu.aop_dir, roffset + i);
           cost (4, 13);
+          spillPair (PAIR_HL);
           if (via_e)
             emit3 (A_LD, ASMOP_L, ASMOP_E);
           else
             emit3_o (A_LD, ASMOP_L, 0, source, soffset + i);
+          spillPair (PAIR_HL);
           emit2 ("ldp (%s + %d), hl", result->aopu.aop_dir, roffset + i);
           cost (4, 15);
           i++;
@@ -7834,8 +7820,8 @@ genCall (const iCode *ic)
 
   if (bigreturn && !IFFUNC_ISDYNAMICC (ftype))
     {
-      PAIR_ID pair;
       int fp_offset, sp_offset;
+      PAIR_ID pair = (ic->op == PCALL && !IS_SM83 && !IY_RESERVED) ? PAIR_IY : PAIR_HL;
 
       if (ic->op == PCALL && IS_SM83 || !hl_free)
         _push (PAIR_HL);
@@ -7845,7 +7831,6 @@ genCall (const iCode *ic)
         IC_RESULT (ic)->aop->aopu.aop_stk + (IC_RESULT (ic)->aop->aopu.aop_stk >
             0 ? _G.stack.param_offset : 0);
       sp_offset = fp_offset + _G.stack.pushed + _G.stack.offset;
-      pair = (ic->op == PCALL && !IS_SM83 && !IY_RESERVED) ? PAIR_IY : PAIR_HL;
       if (IS_SM83 && sp_offset <= 127 && sp_offset >= -128)
         {
           emit2 ("!ldahlsp", sp_offset);
@@ -7866,21 +7851,20 @@ genCall (const iCode *ic)
         }
       if (ic->op == PCALL && IS_SM83 || !hl_free)
         {
-          if (de_free)
+          if (pair == PAIR_HL && de_free)
             {
               emit3 (A_LD, ASMOP_E, ASMOP_L);
               emit3 (A_LD, ASMOP_D, ASMOP_H);
-              _pop (PAIR_HL);
               pair = PAIR_DE;
             }
-          else
+          else if (pair == PAIR_HL)
             {
               wassert (bc_free);
               emit3 (A_LD, ASMOP_C, ASMOP_L);
               emit3 (A_LD, ASMOP_B, ASMOP_H);
-              _pop (PAIR_HL);
               pair = PAIR_BC;           
             }
+          _pop (PAIR_HL);
         }
       emit2 ("push %s", _pairs[pair].name);
       if (pair == PAIR_IY)
@@ -8010,9 +7994,8 @@ genCall (const iCode *ic)
           else
             cost2 (3, 3, 3, 3, 17, 16, 12, 13, 24, 14, 6, 6, 6, 5, 3);
         }
-      else if (!rab_lcall && !rab_llcall && getPairId (ic->left->aop) != PAIR_IY && hl_free)
+      else if (!rab_lcall && !rab_llcall && !aopInReg (ic->left->aop, 0, IY_IDX) && (aopInReg (ic->left->aop, 0, HL_IDX) || hl_free))
         {
-          spillPair (PAIR_HL);
           genMove (ASMOP_HL, ic->left->aop, a_free, hl_free, de_free, true);
           adjustStack (prestackadjust, a_not_parm, bc_not_parm, de_not_parm, false, false);
           if ((IS_R4K || IS_R5K || IS_R6K || IS_TLCS) && !jump)
@@ -8034,7 +8017,6 @@ genCall (const iCode *ic)
         }
       else if (!rab_lcall && !rab_llcall && !IS_SM83 && !IY_RESERVED && !z80IsParmInCall (ftype, "iy")) // Ensure that we don't access the stack via iy when reading IC_LEFT (ic).
         {
-          spillPair (PAIR_IY);
           if (ic->left->aop->type == AOP_EXSTK) // Ensure that we don't directly overwrite iyl while accessing the stack via iy.
             {
               _push (PAIR_HL);
@@ -16482,7 +16464,7 @@ genPointerGet (const iCode *ic)
       goto release;
     }
   if ((left->aop->type == AOP_IMMD || left->aop->type == AOP_LIT && !rightval) && size == 1 && aopInReg (result->aop, 0, A_IDX) &&
-    (!from_far || IS_EZ80 || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET))
+    (!from_far || IS_EZ80 || IS_R4K || IS_R5K || IS_R6K))
     {
       if (surviving_a)
         _push (PAIR_AF), pushed_a = true;
@@ -16509,7 +16491,7 @@ genPointerGet (const iCode *ic)
       goto release;
     }
   else if (!IS_SM83 && (left->aop->type == AOP_IMMD || left->aop->type == AOP_LIT && !rightval) && isPair (result->aop) && !bit_field  &&
-    (!from_far || IS_EZ80 || IS_R4K_NOTYET || IS_R5K_NOTYET || IS_R6K_NOTYET))
+    (!from_far || IS_EZ80 || IS_R4K || IS_R5K || IS_R6K))
     {
       PAIR_ID pair = getPairId (result->aop);
       if (from_far)

@@ -1,3 +1,16 @@
+2026-04-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge rabbit branch.
+
+2026-04-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/peep.c:
+	  Fix distance calculation across Rabbit ldf.
+	* src/z80/gen.c:
+	  Improve rabbit __far codegen.
+	* doc/sdccman.lyx:
+	  Improve __far documentation.
+
 2026-04-01 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/f8/gen.c:
@@ -33,6 +46,16 @@
 	  support/sdbinutils/bfd/asxxxx.c:
 	  Fix bug #3967 via patch from Thomas Ilnseher with minor improvements.
 
+2026-03-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Improve codegen for calls through function pointers.
+
+2026-03-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Fixes and improvements for Rabbit __far.
+
 2026-03-26 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/genand.c,
@@ -55,6 +78,21 @@
 
 	* src/z80/gen.c:
 	  Fix bug #3965.
+
+2026-03-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/ralloc.c,
+	  support/regression/tests/far_arithmetic.c.in:
+	  Improve Rabbit and TLCS-90 __far support.
+
+2026-03-25 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c,
+	  support/regression/tests/far_rabbit_fields.c,
+	  support/regression/tests/far_rabbits.c.in:
+	  Enable __far support in Rabbit codgen via ldp and ldf.
 
 2026-03-25 Janko Stamenović
 
@@ -164,6 +202,11 @@
 	  Fix bug #3945.
 	* src/stm8/gen.c:
 	  Fix an stm8 bool bit-field codegen issue.
+
+2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c:
+	  Enable use of R4K ldf for __far access.
 
 2026-03-18 Philipp Klaus Krause <philipp@colecovision.eu>
 
