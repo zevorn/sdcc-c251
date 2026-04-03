@@ -5372,15 +5372,19 @@ newEnumType (symbol *enumlist, sym_link *userRequestedType)
         max = v;
     }
 
-  /* Figure out if everything fits in the user requested (or default int) type */
-  if (!llFitsInIntType (min, type) || !llFitsInIntType (max, type))
-    werror (userRequestedType ? E_ENUM_TYPE_RANGE_TOO_SMALL : W_ENUM_INT_RANGE_C23);
-
-  /* It does: If the type was explicitly requested, return it! */
+  // If the type was explicitly requested, return it!
   if (userRequestedType)
-    return type;
+    {
+      if (!llFitsInIntType (min, type) || !llFitsInIntType (max, type))
+        werror (E_ENUM_TYPE_RANGE_TOO_SMALL);
+      return type;
+    }
 
-  // Otherwise: use the smallest integer type that is compatible with this range that i neither bool nor a bit-precise type (both bool and bit-prcise types are disallowed here by ISO C23).
+  // Before C23, enumeration constants were required to fit into an int.
+  if (!options.std_c23 && (!llFitsInIntType (min, type) || !llFitsInIntType (max, type)))
+    werror (W_ENUM_INT_RANGE_C23);
+
+  // Otherwise: use the smallest integer type that is compatible with this range that is neither bool nor a bit-precise type (both bool and bit-prcise types are disallowed here by ISO C23).
   if (min >= 0 && max <= 255)
     {
       SPEC_NOUN (type) = V_CHAR;
@@ -5418,6 +5422,9 @@ newEnumType (symbol *enumlist, sym_link *userRequestedType)
       if (min >= 0)
         SPEC_USIGN (type) = 1;
     }
+
+  if (!llFitsInIntType (min, type) || !llFitsInIntType (max, type))
+    werror (E_ENUM_TYPE_RANGE_TOO_SMALL);
 
   return type;
 }

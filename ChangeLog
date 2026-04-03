@@ -1,3 +1,38 @@
+2026-04-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/gen.c:
+	  f8(l) codegen fix.
+	* src/z80/gen.c:
+	  Fix bug #3968.
+	* src/SDCCsymt.c,
+	  support/valdiag/tests/bug-3969.c:
+	  Fix bug #3969.
+	* src/SDCCmain.c,
+	  support/valdiag/tests/bug-3970.c:
+	  Fix bug #3970.
+	* device/lib/printf_fast.c:
+	  const correctness fix, patch #496 by Oleg Endo.
+	* src/mcs51/peeph.def:
+	  mcs51 peephole rule fixes, part of patch #493 by Konstantin Kim.
+
+2026-03-31 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/f8/peeph.def:
+	  f8(l) peephole rule fix.
+
+2026-03-28 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+   	  Improve findRegAop()
+   	  reverse order for genDataPointerSet() when useful.
+   	  genCopy() improvements.
+   	  
+2026-03-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/ds390/gen.c,
+	  support/sdbinutils/bfd/asxxxx.c:
+	  Fix bug #3967 via patch from Thomas Ilnseher with minor improvements.
+
 2026-03-26 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/genand.c,
