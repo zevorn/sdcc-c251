@@ -338,21 +338,30 @@ replace restart {
 } if isPort('f8'), notUsed('cf' 'of')
 
 replace restart {
-	ldw	%1, #%2
+	ldw	y, #%2
 	ld	%3, %2
 } by {
-	ldw	%1, #%2
-	; peephole 19 reused adddress in %1.
-	ld	%3, (%1)
-}
+	ldw	y, #%2
+	; peephole 19a reused adddress in y.
+	ld	%3, (y)
+} if same(%3 'xl' 'xh' 'zh')
 
 replace restart {
-	ldw	%1, sp
-	ldw	y, sp
+	ldw	z, #%2
+	ld	%3, %2
 } by {
-	ldw	y, sp
-	; peephole 20 used sp from y.
-	ldw	%1, y
+	ldw	z, #%2
+	; peephole 19b reused adddress in z.
+	ld	%3, (z)
+} if same(%3 'yl' 'yh')
+
+replace restart {
+	ldw	x, #%2
+	ld	zl, %2
+} by {
+	ldw	x, #%2
+	; peephole 19c reused adddress in x.
+	ld	zl, (x)
 }
 
 replace restart {

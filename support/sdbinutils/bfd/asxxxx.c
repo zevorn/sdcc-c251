@@ -1149,16 +1149,16 @@ const bfd_target asxxxx_vec =
     _bfd_dummy_target,          /* core */
   },
   {     /* Set the format of a file being written.  */
-    false,
+    NULL,
     asxxxx_mkobject,            /* object */
     _bfd_generic_mkarchive,     /* archive */
-    false,                  /* core */
+    NULL,                  /* core */
   },
   {     /* Write cached information into a file being written, at <<bfd_close>>.  */
-    false,
-    false, /*    asxxxx_write_object_contents, object */
+    NULL,
+    NULL, /*    asxxxx_write_object_contents, object */
     _bfd_write_archive_contents,  /* archive */
-    false,                    /* core */
+    NULL,                    /* core */
   },
 
   BFD_JUMP_TABLE_GENERIC (asxxxx),

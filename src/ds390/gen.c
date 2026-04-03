@@ -14025,7 +14025,7 @@ genDummyRead (iCode * ic)
           offset = 0;
           while (size--)
             {
-              MOVA (aopGet (op, offset, FALSE, FALSE, FALSE));
+              MOVA (aopGet (op, offset, false, false, NULL));
               offset++;
             }
         }
@@ -14049,7 +14049,7 @@ genDummyRead (iCode * ic)
           offset = 0;
           while (size--)
             {
-              MOVA (aopGet (op, offset, FALSE, FALSE, FALSE));
+              MOVA (aopGet (op, offset, false, false, NULL));
               offset++;
             }
         }
@@ -14105,7 +14105,7 @@ genEndCritical (iCode * ic)
         }
       else
         {
-          MOVA (aopGet (IC_RIGHT (ic), 0, FALSE, FALSE, FALSE));
+          MOVA (aopGet (IC_RIGHT (ic), 0, false, false, NULL));
           emitcode ("rrc", "a");
           emitcode ("mov", "ea,c");
         }

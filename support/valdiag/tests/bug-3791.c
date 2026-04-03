@@ -1,6 +1,6 @@
 /* bug-3890.c
 
-   Initalization of extern variableat block scope was treated as assignment.
+   Initalization of extern variable at block scope was treated as assignment.
  */
 
 #ifdef TEST1
