@@ -1,3 +1,8 @@
+2026-04-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/far_arithmetic.c.in:
+	  Disable multiplication part of far arithmtic test for pdk targets, which don't have enough memory.
+
 2026-04-03 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge rabbit branch.
