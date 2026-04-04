@@ -73,6 +73,7 @@ cl_app::cl_app(void)
   in_files= new cl_ustrings(2, 2, "input files");
   options= new cl_options();
   quiet= false;
+  nowelcome= false;
   if (app_start_at == 0)
     app_start_at= dnow();
   srnd(0);
@@ -224,6 +225,7 @@ cl_app::check_start_options(void)
 int
 cl_app::run(void)
 {
+  int ret= 0;
   int done= 0;
 
   cperiod.set(cperiod_value());
@@ -246,7 +248,10 @@ cl_app::run(void)
 	{
 	  acyc++;
 	  if (sim->state & SIM_QUIT)
-	    done= 1;
+	    {
+	      ret= sim->retval;
+	      done= 1;
+	    }
 	  else if (sim->state & SIM_GO)
 	    done= run_go();
 	  else if (sim->state & SIM_STARTEMU)
@@ -263,7 +268,7 @@ cl_app::run(void)
       //commander->check();
     }
     
-  return(0);
+  return ret;
 }
 
 int
@@ -343,7 +348,7 @@ print_help(const char *name)
 #define DOPT
 #endif
   printf("%s: %s\n", name, VERSIONSTR);
-  printf("Usage: %s [-bBEgGhHlPqVvw] [-a nr] [-c file] [-C cfg_file] " DOPT "\n"
+  printf("Usage: %s [-AbBEgGhHlPqVvw] [-a nr] [-c file] [-C cfg_file] " DOPT "\n"
 	 "       [-e command] [-I if_optionlist] " KOPT " [-o colorlist]\n"
 	 "       [-p prompt] [-R seed] [-s file] [-S optionlist]\n"
 	 "       [-t CPU] [-U uartnr] [-u hw] [-X freq[k|M]] " ZOPT "\n"
@@ -361,6 +366,7 @@ print_help(const char *name)
       */
      "Options:\n"
      "  -a nr        Specify size of variable space (default=256)\n"
+     "  -A           Force use colored output\n"
      "  -b           Black & white (non-color) theme\n"
      "  -B           Beep on breakpoints\n"
      "  -c file      Open command console on `file' (use `-' for std in/out)\n"
@@ -447,11 +453,13 @@ static const char *I_opts[]= {
 
 enum {
   DOPT_CPU_SPEED= 0,
+  DOPT_NOWELCOME= 1,
   DOPT_ERROR
 };
 
 static const char *D_opts[]= {
-  /*DOPT_CPU_SPPED*/	"cpu_speed",
+  /*DOPT_CPU_SPEED*/	"cpu_speed",
+  /*DOPT_NOWELCOME*/    "nowelcome",
   NULL
 };
 
@@ -461,11 +469,12 @@ cl_app::proc_arguments(int argc, char *argv[])
 {
   int i, c;
   char opts[100], *cp, *subopts, *value;
-  char *cpu_type= NULL;
+  chars cpu_type;
   bool /*s_done= false,*/ k_done= false;
   //bool S_i_done= false, S_o_done= false;
-
-  strcpy(opts, "qc:C:D:e:p:PX:vVt:s:S:I:a:whHgGEJo:blBR:U:u:_");
+  bool force_colors= false;
+  
+  strcpy(opts, "Aqc:C:D:e:p:PX:vVt:s:S:I:a:whHgGEJo:blBR:U:u:_");
 #ifdef SOCKET_AVAIL
   strcat(opts, "Z:r:k:z:d:");
 #endif
@@ -564,6 +573,10 @@ cl_app::proc_arguments(int argc, char *argv[])
 		    "parameter of -p as default prompt\n");
 	  break;
 	}
+      case 'A':
+	options->set_value("force_colors", this, bool(true));
+	force_colors= true;
+	break;
       case 'b':
 	{
 	  if (!options->set_value("black_and_white", this, bool(true)))
@@ -614,17 +627,16 @@ cl_app::proc_arguments(int argc, char *argv[])
 	break;
       case 't':
 	{
-	  if (cpu_type)
-	    free(cpu_type);
-	  cpu_type= case_string(case_upper, optarg);
-	  if (!options->set_value("cpu_type", this, /*optarg*/cpu_type))
+	  cpu_type= optarg;
+	  cpu_type.uppercase();
+	  if (!options->set_value("cpu_type", this, cpu_type.cstr()))
 	    fprintf(stderr, "Warning: No \"cpu_type\" option found to set "
 		    "parameter of -t as type of controller\n");
 	  if (cpus)
 	    {
 	      int i= 0;
 	      while ((cpus[i].type_str != NULL) &&
-		     (strcasecmp(cpu_type, cpus[i].type_str) != 0))
+		     !cpu_type.iequal(cpus[i].type_str))
 		i++;
 	      if (cpus[i].type_str == NULL)
 		{
@@ -699,6 +711,9 @@ cl_app::proc_arguments(int argc, char *argv[])
 		  break;
 		case DOPT_CPU_SPEED:
 		  measure_speed= 1;
+		  break;
+		case DOPT_NOWELCOME:
+		  nowelcome= true;
 		  break;
 		default:
 		  /* Unknown suboption. */
@@ -930,7 +945,7 @@ cl_app::proc_arguments(int argc, char *argv[])
 	}
       case 'o':
 	{
-	  const chars s= optarg;
+	  chars s= optarg;
 	  chars opt= s.token(",");
 	  while (opt.nempty())
 	    {
@@ -1021,7 +1036,9 @@ cl_app::proc_arguments(int argc, char *argv[])
       default:
 	exit(c);
       }
-
+  if (force_colors)
+    options->set_value("black_and_white", this, bool(false));
+  
   for (i= optind; i < argc; i++)
     in_files->add(argv[i]);
 
@@ -1274,6 +1291,12 @@ cl_app::mk_options(void)
 					    "Use writable flash chip (-w)"));
   o->init();
   o->set_value((bool)false);
+  
+  options->new_option(o= new cl_bool_option(this, "force_colors",
+					    "Force use colored output (-A)"));
+  o->init();
+  bool fc= false;
+  o->set_value((bool)fc);
   
   options->new_option(o= new cl_bool_option(this, "black_and_white",
 					    "Non-color console (-b)"));
