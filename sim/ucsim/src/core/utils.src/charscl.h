@@ -69,6 +69,7 @@ public:
   void uppercase(void);
   void lowercase(void);
   void replace(const char *any_in_set, char with);
+  void replace(chars what, chars with);
   void keep(int start, int maxlen);
   void ltrim(void);
   void rtrim(void);
@@ -78,17 +79,19 @@ public:
   void rrip(int nuof_chars);
   void rip(const char *cset) { lrip(cset); rrip(cset); }
   /* parsing */
-  void start_parse(void) const { start_parse(0); }
-  void start_parse(int at) const { pars_pos= at; }
-  chars token(const char *delims) const;
-  chars substr(int start, int len);
-  unsigned int htoi(void) const;
-  unsigned long long int htoll(void) const;
-  long int lint(void) const;
-  long int lint(int base) const;
+  void start_parse(void) { start_parse(0); }
+  void start_parse(int at) { pars_pos= at; }
+  chars token(const char *delims);
+  chars substr(int start, int len) const;
+  unsigned int htoi(void) const; // hex string to int
+  unsigned long long int htoll(void) const; // hex string to Lint
+  long int toi(void) const; // c-style + 0{b,o,d,x} prefixes
+  long int lint(void) const; // decimal number to int
+  long int lint(int base) const; // number to int (0=c-style)
   // search
   bool starts_with(const char *x) const;
   bool starts_with(chars x) const;
+  bool ends_with(chars x) const;
   bool contains(const char *x) const;
   bool contains(chars x) const;
   bool icontains(const char *x) const;

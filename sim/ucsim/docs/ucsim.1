@@ -16,6 +16,8 @@ uCsim \- Micro\-controller simulator
 .br
 .B ucsim_rxk
 .br
+.B ucsim_i8048
+.br
 .B ucsim_i8085
 .br
 .B ucsim_avr
@@ -48,6 +50,7 @@ uCsim \- Micro\-controller simulator
 .br
 .RS
 .B \-a nr
+.B \-A
 .B \-b
 .B \-B
 .B \-c file
@@ -65,6 +68,7 @@ uCsim \- Micro\-controller simulator
 .B \-o colors
 .B \-p prompt
 .B \-P
+.B \-q
 .B \-R seed
 .B \-s file
 .B \-S options
@@ -96,6 +100,10 @@ starts Zilog Z80 microprocessor simulator, etc.
 .TP
 .B \-a nr
 Specify size of variable space (default=256).
+
+.TP
+.B \-A
+Force use colored output, remove effect of -b and -q on colors.
 
 .TP
 .B \-b
@@ -188,7 +196,7 @@ Prompt is a null ('\\0') character.
 
 .TP
 .B \-q
-Quiet mode (implies -b).
+Quiet mode, print less information (implies -b).
 
 .TP
 .B \-R seed

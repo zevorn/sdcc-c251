@@ -307,6 +307,23 @@ chars::replace(const char *any_in_set, char with)
 }
 
 void
+chars::replace(chars what, chars with)
+{
+  int p= pos(what);
+  if (p < 0)
+    return;
+  int e= p+what.len();
+  int nl= chars_length - what.len()+with.len();
+  char *b= (char*)malloc(nl+1);
+  strcpy(b, chars_string);
+  b[p]= 0;
+  strcat(b, with.cstr());
+  strcat(b, &chars_string[e]);
+  allocate_string(b);
+  free(b);
+}
+
+void
 chars::keep(int start, int maxlen)
 {
   if (!chars_string)
@@ -407,7 +424,7 @@ chars::rrip(int nuof_chars)
  */
 
 chars
-chars::token(const char *delims) const
+chars::token(const char *delims)
 {
   chars c= (char*)NULL;
 
@@ -443,7 +460,7 @@ chars::token(const char *delims) const
 }
 
 chars
-chars::substr(int start, int len)
+chars::substr(int start, int len) const
 {
   chars c= (char*)NULL;
   if (empty() || (start >= chars_length))
@@ -514,6 +531,32 @@ chars::lint(int base) const
   return l;
 }
 
+long int
+chars::toi(void) const
+{
+  long int v= 0;
+  int p= 0, s= +1, b= 10;
+  if (empty())
+    return 0;
+  if (chars_string[0] == '+') p= 1;
+  if (chars_string[0] == '-') p= 1, s= -1;
+  if (chars_string[p] == '0')
+    {
+      p++;
+      b= 8;
+      switch (chars_string[p])
+	{
+	case 'b': case 'B': p++; b=  2; break;
+	case 'o': case 'O': p++; b=  8; break;
+	case 'd': case 'D': p++; b= 10; break;
+	case 'x': case 'X': p++; b= 16; break;
+	}
+    }
+  v= strtol(&chars_string[p], NULL, b);
+  v*= s;
+  return v;
+}
+
 
 /*
  * Search text/char in the object
@@ -538,6 +581,20 @@ chars::starts_with(chars x) const
       x.empty())
     return false;
   if (strstr(chars_string, x.c_str()) == chars_string)
+    return true;
+  return false;
+}
+
+bool
+chars::ends_with(chars x) const
+{
+  if (empty() ||
+      x.empty())
+    return false;
+  const char *start= strstr(chars_string, x.cstr());
+  if (start == NULL)
+    return false;
+  if (start[x.len()] == '\0')
     return true;
   return false;
 }
