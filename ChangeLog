@@ -1,3 +1,8 @@
+2026-04-06 Daniel Drotos <dr.dkdb@gmail.com>
+
+	* src/SDCCglue.c
+	  Apply patch #497 by Oleg Endo to emit __sdcc_program_exit label.
+
 2026-04-04 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/far_arithmetic.c.in:

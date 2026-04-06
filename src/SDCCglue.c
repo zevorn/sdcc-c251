@@ -2585,7 +2585,19 @@ glue (void)
       else if(TARGET_PDK_LIKE)
         fprintf (asmFile, "\tgoto\t_main\n");
       else
-        fprintf (asmFile, "\t%cjmp\t_main\n", options.acall_ajmp ? 'a' : 'l');        /* needed? */
+        {
+          if (IFFUNC_ISNORETURN (mainf->type))
+            fprintf (asmFile, "\t%cjmp\t_main\n", options.acall_ajmp ? 'a' : 'l');
+          else
+            {
+              /* for simulator runs it can be useful to have a main function that
+                 actually returns.  uCsim should break on following label and
+		 return value of main(). */
+              fprintf (asmFile, "\t%ccall\t_main\n", options.acall_ajmp ? 'a' : 'l');
+              fprintf (asmFile, "__sdcc_program_exit:\n");
+              fprintf (asmFile, "\tsjmp\t.\n");
+            }
+        }
       fprintf (asmFile, ";\treturn from main will return to caller\n");
     }
   /* copy over code */
