@@ -6749,7 +6749,7 @@ static void genPointerGet (iCode * ic, iCode * ifx)
   int size, offset;
   int litOffset = 0;
   char * rematOffset = NULL;
-  sym_link *retype = getSpec (operandType (result));
+  bool bit_field = IS_BITVAR (operandType (result)) && (SPEC_BLEN (operandType (result))%8);
   bool needpulla = false;
 
   emitComment (TRACEGEN, __func__);
@@ -6766,16 +6766,17 @@ static void genPointerGet (iCode * ic, iCode * ifx)
   /* if left is rematerialisable */
   if (AOP_TYPE (left) == AOP_IMMD || AOP_TYPE (left) == AOP_LIT)
     {
-      /* if result is not bit variable type */
-      if (!IS_BITVAR (retype))
-	genDataPointerGet (left, right, result, ic, ifx);
-      else
+      /* if result is bit variable type */
+      if (bit_field)
 	genUnpackBitsImmed (left, right, result, ic, ifx);
+      else
+	genDataPointerGet (left, right, result, ic, ifx);
+
       goto release;
     }
 
   /* if bit then unpack */
-  if (IS_BITVAR (retype))
+  if (bit_field)
     {
       genUnpackBits (result, left, right, ifx);
       goto release;
@@ -7182,13 +7183,11 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
 	  emit6502op ("lda", DPTRFMT_IY);
 	  if ((mask | litval) != 0xff)
-            {
 	      emit6502op ("and", IMMDFMT, (unsigned int)mask);
-	    }
+
 	  if (litval)
-	    {
 	      emit6502op ("ora", IMMDFMT, (unsigned int)litval);
-	    }
+
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
 	  emit6502op ("sta", DPTRFMT_IY);
 	  loadOrFreeRegTemp (m6502_reg_a, needpulla);
@@ -7200,6 +7199,7 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
 	m6502_pullReg (m6502_reg_a);
       else
 	loadRegFromAop (m6502_reg_a, AOP (right), 0);
+
       // shift and mask source value
       m6502_AccLsh (bstr);
       emit6502op ("and", IMMDFMT, (unsigned int)(~mask) & 0xffu);
@@ -7248,13 +7248,11 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
 	  emit6502op ("lda", DPTRFMT_IY);
 	  if ((mask | litval) != 0xff)
-	    {
 	      emit6502op ("and", IMMDFMT, (unsigned int)mask);
-	    }
+
 	  if (litval)
-	    {
 	      emit6502op ("ora", IMMDFMT, (unsigned int)litval);
-	    }
+
 	  m6502_dirtyReg (m6502_reg_a);
 	  //          storeRegIndexed (m6502_reg_a, litOffset+offset, rematOffset);
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
@@ -7498,7 +7496,7 @@ genPointerSet (iCode * ic)
   int litOffset = 0;
   char *rematOffset = NULL;
   wassert (operandType (result)->next);
-  bool bit_field = IS_BITVAR (operandType (result)->next);
+  bool bit_field = IS_BITVAR (operandType (result)->next) && (SPEC_BLEN (operandType (result)->next)%8);
 
   emitComment (TRACEGEN, __func__);
 
