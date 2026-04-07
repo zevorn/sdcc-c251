@@ -1,7 +1,15 @@
+2026-03-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/sdbinutils/binutils/Makefile.am,
+	  support/sdbinutils/binutils/Makefile.in,
+	  support/sdbinutils/binutils/configure,
+	  support/sdbinutils/configure:
+	  Fixes for binutils merge in early March (bug #3972).
+
 2026-04-07 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c,
-      src/mos6502/gen.h:
+	  src/mos6502/gen.h:
    	  Reverse order of genCopy if saves a load.
 
 2026-04-06 Gabriele Gorla <gorlik@yahoo.com>
