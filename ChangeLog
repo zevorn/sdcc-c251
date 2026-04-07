@@ -1,4 +1,10 @@
-2026-03-28 Gabriele Gorla <gorlik@yahoo.com>
+2026-04-07 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c,
+      src/mos6502/gen.h:
+   	  Reverse order of genCopy if saves a load.
+
+2026-04-06 Gabriele Gorla <gorlik@yahoo.com>
 
    	* src/mos6502/gen.c:
    	  Optimize loading/storing bitfiels when size is multiple of 8 bits.

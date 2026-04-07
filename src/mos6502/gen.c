@@ -94,8 +94,8 @@ const char m6502_cmp[3][4] = { "cmp", "cpx", "cpy" };
  * @param offset offset of the aop
  * @return reg pointer or NULL if not found
  *************************************************************************/
-static reg_info*
-findRegAop (asmop * aop, int loffset)
+reg_info*
+m6502_findRegAop (asmop * aop, int loffset)
 {
   reg_info *ret=NULL;
 
@@ -1177,7 +1177,7 @@ loadRegFromAop (reg_info * reg, asmop * aop, int loffset)
   /* check to see if we can transfer from another register */
   if(reg!=m6502_reg_xa && reg!=m6502_reg_xy)
     {
-      reg_info *srcreg=findRegAop(aop, loffset);
+      reg_info *srcreg=m6502_findRegAop(aop, loffset);
       if(srcreg)
 	{
 	  emitComment (REGOPS, "  found correct value for %s in %s", reg->name, srcreg->name);
@@ -2452,8 +2452,8 @@ setupDPTR(operand *op, int offset, char * rematOfs, bool savea)
   if (!rematOfs && offset >= 0 && offset <= 0xff)
     {
       // no remat and 8-bit offset
-      reg_info *reg0=findRegAop(AOP(op), 0);
-      reg_info *reg1=findRegAop(AOP(op), 1);
+      reg_info *reg0=m6502_findRegAop(AOP(op), 0);
+      reg_info *reg1=m6502_findRegAop(AOP(op), 1);
 
       if ( IS_SAME_DPTR_OP(op) )
         {
@@ -3878,7 +3878,7 @@ genCopy (operand * result, operand * source)
 
   if(srcsize==1 && AOP_TYPE(result) != AOP_SOF)
     {
-      reg_info *reg0=findRegAop(AOP(source), 0);
+      reg_info *reg0=m6502_findRegAop(AOP(source), 0);
       if(reg0)
         {
           int i;
@@ -3893,8 +3893,8 @@ genCopy (operand * result, operand * source)
 
   if(size==2 && AOP_TYPE(result) != AOP_SOF)
     {
-      reg_info *reg0=findRegAop(AOP(source), 0);
-      reg_info *reg1=findRegAop(AOP(source), 1);
+      reg_info *reg0=m6502_findRegAop(AOP(source), 0);
+      reg_info *reg1=m6502_findRegAop(AOP(source), 1);
       if(reg0&&reg1)
         {
           emitComment (TRACEGEN|VVDBG, "      %s (regtrack)", __func__);
@@ -3939,8 +3939,8 @@ genCopy (operand * result, operand * source)
   /* general case */
   emitComment (TRACEGEN|VVDBG, "      %s (general case)", __func__);
 
-#if 0
-  if(findRegAop (AOP(source), 0))
+#if 1
+  if(m6502_findRegAop (AOP(source), 0))
     {
       for(offset=0; offset<srcsize; offset++)
       transferAopAop (AOP (source), offset, AOP (result), offset);
@@ -6796,7 +6796,7 @@ static void genPointerGet (iCode * ic, iCode * ifx)
   emitComment (TRACEGEN|VVDBG, "  %s dst: %s size=%d",
                __func__, aopName(AOP(result)), AOP_SIZE(result) );
 
-  if ( findRegAop(AOP(result), 0) == m6502_reg_a )
+  if ( m6502_findRegAop(AOP(result), 0) == m6502_reg_a )
     m6502_dirtyReg(m6502_reg_a);
 
   if ( m6502_reg_y->aop && sameRegs(m6502_reg_y->aop, AOP(result)) )
@@ -7462,7 +7462,7 @@ static void genDataPointerSet (operand * left, operand * right, operand * result
   m6502_freeAsmop (result, NULL);
   derefaop->size = size;
 
-  if(findRegAop (AOP(right), 0))
+  if(m6502_findRegAop (AOP(right), 0))
     {
       for(offset=0; offset<size; offset++)
         transferAopAop (AOP (right), offset, derefaop, offset);
