@@ -269,7 +269,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 
   unsigned int bmask0 = (isLit) ? ((lit >> (0 * 8)) & 0xff) : 0x100;
   unsigned int bmask1 = (isLit) ? ((lit >> (1 * 8)) & 0xff) : 0x100;
-  bool x_zero = (IS_AOP_XA(AOP(left)) || IS_AOP_XY(AOP(left)))&& (m6502_reg_x->isLitConst) && (m6502_reg_x->litConst==0);
+  bool x_zero = (IS_AOP_XA(AOP(left)) || IS_AOP_XY(AOP(left))) && (m6502_reg_x->isLitConst) && (m6502_reg_x->litConst==0);
 
   if (x_zero)
     {
@@ -334,7 +334,11 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 
   emitComment (TRACEGEN|VVDBG, "  %s: general path", __func__);
 
-  for(offset=0; offset<size; offset++)
+  int incdec;
+  incdec = m6502_findRegAop (AOP(left), size-1) ? -1 : 1;
+  offset = incdec>0 ? 0 : size-1;
+
+  for( ; offset>=0 && offset<size; offset+=incdec)
     {
       bytemask = (isLit) ? ((lit >> (offset * 8)) & 0xff) : 0x100;
 

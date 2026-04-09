@@ -3939,21 +3939,19 @@ genCopy (operand * result, operand * source)
   /* general case */
   emitComment (TRACEGEN|VVDBG, "      %s (general case)", __func__);
 
-#if 1
   if(m6502_findRegAop (AOP(source), 0))
     {
       for(offset=0; offset<srcsize; offset++)
-      transferAopAop (AOP (source), offset, AOP (result), offset);
+	transferAopAop (AOP (source), offset, AOP (result), offset);
       for( ; offset<size; offset++)
-      storeConstToAop (0, AOP (result), offset);
+	storeConstToAop (0, AOP (result), offset);
     }
   else
-#endif
     {
       for(offset=size-1; offset>=srcsize; offset--)
-      storeConstToAop (0, AOP (result), offset);
+	storeConstToAop (0, AOP (result), offset);
       for( ; offset>=0; offset--)
-      transferAopAop (AOP (source), offset, AOP (result), offset);
+	transferAopAop (AOP (source), offset, AOP (result), offset);
     }
 
 }
@@ -7183,10 +7181,10 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
 	  emit6502op ("lda", DPTRFMT_IY);
 	  if ((mask | litval) != 0xff)
-	      emit6502op ("and", IMMDFMT, (unsigned int)mask);
+	    emit6502op ("and", IMMDFMT, (unsigned int)mask);
 
 	  if (litval)
-	      emit6502op ("ora", IMMDFMT, (unsigned int)litval);
+	    emit6502op ("ora", IMMDFMT, (unsigned int)litval);
 
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
 	  emit6502op ("sta", DPTRFMT_IY);
@@ -7248,10 +7246,10 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
 	  emit6502op ("lda", DPTRFMT_IY);
 	  if ((mask | litval) != 0xff)
-	      emit6502op ("and", IMMDFMT, (unsigned int)mask);
+	    emit6502op ("and", IMMDFMT, (unsigned int)mask);
 
 	  if (litval)
-	      emit6502op ("ora", IMMDFMT, (unsigned int)litval);
+	    emit6502op ("ora", IMMDFMT, (unsigned int)litval);
 
 	  m6502_dirtyReg (m6502_reg_a);
 	  //          storeRegIndexed (m6502_reg_a, litOffset+offset, rematOffset);
