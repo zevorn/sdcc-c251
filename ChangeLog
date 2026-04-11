@@ -1,3 +1,8 @@
+2026-04-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCgenconstprop.cc:
+	  Enable narrowing of multiplications to 8x8->16.
+
 2026-04-09 Gabriele Gorla <gorlik@yahoo.com>
    	* src/mos6502/gen.c,
    	  src/mos6502/genand.c,
@@ -5,12 +10,12 @@
    	  src/mos6502/genxor.c:
       Reverse order for bitwise operators if saves a load.
 
-2026-03-08 Philipp Klaus Krause <philipp@colecovision.eu>
+2026-04-08 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/Makefile.in:
 	  Fix bug #3975.
 
-2026-03-07 Philipp Klaus Krause <philipp@colecovision.eu>
+2026-04-07 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/sdbinutils/binutils/Makefile.am,
 	  support/sdbinutils/binutils/Makefile.in,
