@@ -94,8 +94,8 @@ const char m6502_cmp[3][4] = { "cmp", "cpx", "cpy" };
  * @param offset offset of the aop
  * @return reg pointer or NULL if not found
  *************************************************************************/
-static reg_info*
-findRegAop (asmop * aop, int loffset)
+reg_info*
+m6502_findRegAop (asmop * aop, int loffset)
 {
   reg_info *ret=NULL;
 
@@ -1177,7 +1177,7 @@ loadRegFromAop (reg_info * reg, asmop * aop, int loffset)
   /* check to see if we can transfer from another register */
   if(reg!=m6502_reg_xa && reg!=m6502_reg_xy)
     {
-      reg_info *srcreg=findRegAop(aop, loffset);
+      reg_info *srcreg=m6502_findRegAop(aop, loffset);
       if(srcreg)
 	{
 	  emitComment (REGOPS, "  found correct value for %s in %s", reg->name, srcreg->name);
@@ -2452,8 +2452,8 @@ setupDPTR(operand *op, int offset, char * rematOfs, bool savea)
   if (!rematOfs && offset >= 0 && offset <= 0xff)
     {
       // no remat and 8-bit offset
-      reg_info *reg0=findRegAop(AOP(op), 0);
-      reg_info *reg1=findRegAop(AOP(op), 1);
+      reg_info *reg0=m6502_findRegAop(AOP(op), 0);
+      reg_info *reg1=m6502_findRegAop(AOP(op), 1);
 
       if ( IS_SAME_DPTR_OP(op) )
         {
@@ -3878,7 +3878,7 @@ genCopy (operand * result, operand * source)
 
   if(srcsize==1 && AOP_TYPE(result) != AOP_SOF)
     {
-      reg_info *reg0=findRegAop(AOP(source), 0);
+      reg_info *reg0=m6502_findRegAop(AOP(source), 0);
       if(reg0)
         {
           int i;
@@ -3893,8 +3893,8 @@ genCopy (operand * result, operand * source)
 
   if(size==2 && AOP_TYPE(result) != AOP_SOF)
     {
-      reg_info *reg0=findRegAop(AOP(source), 0);
-      reg_info *reg1=findRegAop(AOP(source), 1);
+      reg_info *reg0=m6502_findRegAop(AOP(source), 0);
+      reg_info *reg1=m6502_findRegAop(AOP(source), 1);
       if(reg0&&reg1)
         {
           emitComment (TRACEGEN|VVDBG, "      %s (regtrack)", __func__);
@@ -3939,21 +3939,19 @@ genCopy (operand * result, operand * source)
   /* general case */
   emitComment (TRACEGEN|VVDBG, "      %s (general case)", __func__);
 
-#if 0
-  if(findRegAop (AOP(source), 0))
+  if(m6502_findRegAop (AOP(source), 0))
     {
       for(offset=0; offset<srcsize; offset++)
-      transferAopAop (AOP (source), offset, AOP (result), offset);
+	transferAopAop (AOP (source), offset, AOP (result), offset);
       for( ; offset<size; offset++)
-      storeConstToAop (0, AOP (result), offset);
+	storeConstToAop (0, AOP (result), offset);
     }
   else
-#endif
     {
       for(offset=size-1; offset>=srcsize; offset--)
-      storeConstToAop (0, AOP (result), offset);
+	storeConstToAop (0, AOP (result), offset);
       for( ; offset>=0; offset--)
-      transferAopAop (AOP (source), offset, AOP (result), offset);
+	transferAopAop (AOP (source), offset, AOP (result), offset);
     }
 
 }
@@ -6749,7 +6747,7 @@ static void genPointerGet (iCode * ic, iCode * ifx)
   int size, offset;
   int litOffset = 0;
   char * rematOffset = NULL;
-  sym_link *retype = getSpec (operandType (result));
+  bool bit_field = IS_BITVAR (operandType (result)) && (SPEC_BLEN (operandType (result))%8);
   bool needpulla = false;
 
   emitComment (TRACEGEN, __func__);
@@ -6766,16 +6764,17 @@ static void genPointerGet (iCode * ic, iCode * ifx)
   /* if left is rematerialisable */
   if (AOP_TYPE (left) == AOP_IMMD || AOP_TYPE (left) == AOP_LIT)
     {
-      /* if result is not bit variable type */
-      if (!IS_BITVAR (retype))
-	genDataPointerGet (left, right, result, ic, ifx);
-      else
+      /* if result is bit variable type */
+      if (bit_field)
 	genUnpackBitsImmed (left, right, result, ic, ifx);
+      else
+	genDataPointerGet (left, right, result, ic, ifx);
+
       goto release;
     }
 
   /* if bit then unpack */
-  if (IS_BITVAR (retype))
+  if (bit_field)
     {
       genUnpackBits (result, left, right, ifx);
       goto release;
@@ -6795,7 +6794,7 @@ static void genPointerGet (iCode * ic, iCode * ifx)
   emitComment (TRACEGEN|VVDBG, "  %s dst: %s size=%d",
                __func__, aopName(AOP(result)), AOP_SIZE(result) );
 
-  if ( findRegAop(AOP(result), 0) == m6502_reg_a )
+  if ( m6502_findRegAop(AOP(result), 0) == m6502_reg_a )
     m6502_dirtyReg(m6502_reg_a);
 
   if ( m6502_reg_y->aop && sameRegs(m6502_reg_y->aop, AOP(result)) )
@@ -7182,13 +7181,11 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
 	  emit6502op ("lda", DPTRFMT_IY);
 	  if ((mask | litval) != 0xff)
-            {
-	      emit6502op ("and", IMMDFMT, (unsigned int)mask);
-	    }
+	    emit6502op ("and", IMMDFMT, (unsigned int)mask);
+
 	  if (litval)
-	    {
-	      emit6502op ("ora", IMMDFMT, (unsigned int)litval);
-	    }
+	    emit6502op ("ora", IMMDFMT, (unsigned int)litval);
+
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
 	  emit6502op ("sta", DPTRFMT_IY);
 	  loadOrFreeRegTemp (m6502_reg_a, needpulla);
@@ -7200,6 +7197,7 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
 	m6502_pullReg (m6502_reg_a);
       else
 	loadRegFromAop (m6502_reg_a, AOP (right), 0);
+
       // shift and mask source value
       m6502_AccLsh (bstr);
       emit6502op ("and", IMMDFMT, (unsigned int)(~mask) & 0xffu);
@@ -7248,13 +7246,11 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
 	  emit6502op ("lda", DPTRFMT_IY);
 	  if ((mask | litval) != 0xff)
-	    {
-	      emit6502op ("and", IMMDFMT, (unsigned int)mask);
-	    }
+	    emit6502op ("and", IMMDFMT, (unsigned int)mask);
+
 	  if (litval)
-	    {
-	      emit6502op ("ora", IMMDFMT, (unsigned int)litval);
-	    }
+	    emit6502op ("ora", IMMDFMT, (unsigned int)litval);
+
 	  m6502_dirtyReg (m6502_reg_a);
 	  //          storeRegIndexed (m6502_reg_a, litOffset+offset, rematOffset);
 	  loadRegFromConst(m6502_reg_y, yoff + offset);
@@ -7464,7 +7460,7 @@ static void genDataPointerSet (operand * left, operand * right, operand * result
   m6502_freeAsmop (result, NULL);
   derefaop->size = size;
 
-  if(findRegAop (AOP(right), 0))
+  if(m6502_findRegAop (AOP(right), 0))
     {
       for(offset=0; offset<size; offset++)
         transferAopAop (AOP (right), offset, derefaop, offset);
@@ -7498,7 +7494,7 @@ genPointerSet (iCode * ic)
   int litOffset = 0;
   char *rematOffset = NULL;
   wassert (operandType (result)->next);
-  bool bit_field = IS_BITVAR (operandType (result)->next);
+  bool bit_field = IS_BITVAR (operandType (result)->next) && (SPEC_BLEN (operandType (result)->next)%8);
 
   emitComment (TRACEGEN, __func__);
 

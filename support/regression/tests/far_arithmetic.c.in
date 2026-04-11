@@ -99,7 +99,7 @@ void testSub (void)
 
 void testShift (void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
 	i = ii >> RIGHT;
 	j = ci >> RIGHT;
 	dummy ();
@@ -115,7 +115,7 @@ void testShift (void)
 
 void testMul (void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
 	ASSERT (ii * RIGHT == LEFT1 * RIGHT);
 	ASSERT (ci * RIGHT == LEFT2 * RIGHT);
 #endif

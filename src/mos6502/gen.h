@@ -104,7 +104,7 @@ typedef struct asmop
   {
     value *aop_lit;		/* if literal */
     reg_info *aop_reg[4];	/* array of registers */
-    char *aop_dir;		/* if direct  */
+    char *aop_dir;		/* if direct/ext  */
     char *aop_immd;         /* if immediate */
     int aop_stk;		/* stack offset when AOP_STK */
   } aopu;
@@ -163,6 +163,7 @@ unsigned long long litmask (int size);
 
 void m6502_aopOp (operand *op, const iCode * ic);
 void m6502_freeAsmop (operand * op, asmop * aaop);
+reg_info* m6502_findRegAop (asmop * aop, int loffset);
 
 // code emit
 void m6502_emitDebuggerSymbol (const char *);
