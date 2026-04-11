@@ -1563,9 +1563,6 @@ optimizeMult (iCode *ic)
   if (bitsForType (oldresulttype) <= 16 && (leftv.max > 0xff || rightv.max > 0xff))
     return;
 
-  if (ic->op == '*' && bitsForType (oldresulttype) <= 16)
-    return;
-
   sym_link *newoptype;
   sym_link *newresulttype;
   if (leftv.max <= 0xff && rightv.max <= 0xff) // Use unsigned char, as that allows 8x8->16 multiplication.

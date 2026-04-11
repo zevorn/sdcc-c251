@@ -1,3 +1,49 @@
+2026-04-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCgenconstprop.cc:
+	  Enable narrowing of multiplications to 8x8->16.
+
+2026-04-09 Gabriele Gorla <gorlik@yahoo.com>
+   	* src/mos6502/gen.c,
+   	  src/mos6502/genand.c,
+   	  src/mos6502/genor.c,
+   	  src/mos6502/genxor.c:
+      Reverse order for bitwise operators if saves a load.
+
+2026-04-08 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/Makefile.in:
+	  Fix bug #3975.
+
+2026-04-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/sdbinutils/binutils/Makefile.am,
+	  support/sdbinutils/binutils/Makefile.in,
+	  support/sdbinutils/binutils/configure,
+	  support/sdbinutils/configure:
+	  Fixes for binutils merge in early March (bug #3972).
+
+2026-04-07 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c,
+	  src/mos6502/gen.h:
+   	  Reverse order of genCopy if saves a load.
+
+2026-04-06 Gabriele Gorla <gorlik@yahoo.com>
+
+   	* src/mos6502/gen.c:
+   	  Optimize loading/storing bitfiels when size is multiple of 8 bits.
+
+2026-04-06 Daniel Drotos <dr.dkdb@gmail.com>
+
+	* src/SDCCglue.c
+	  Apply patch #497 by Oleg Endo to emit __sdcc_program_exit label.
+
+2026-04-04 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/far_arithmetic.c.in:
+	  Disable multiplication part of far arithmtic test for pdk targets, which don't have enough memory.
+
 2026-04-03 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge rabbit branch.

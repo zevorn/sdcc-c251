@@ -124,7 +124,6 @@ public:
   
   virtual void   reset(void);
   virtual void   clear_sfr(void);
-  virtual void   analyze(t_addr addr);
 
   virtual int    do_inst(void);
   virtual int    do_emu(void);
@@ -135,6 +134,8 @@ public:
   virtual int  do_interrupt(void);
   virtual int  accept_it(class it_level *il);
   virtual bool it_enabled(void);
+
+  virtual int sim_stop_result(void);
 
   virtual void stack_check_overflow(class cl_stack_op *op);
   
