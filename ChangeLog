@@ -1,3 +1,7 @@
+2026-04-11 Gabriele Gorla <gorlik@yahoo.com>
+   	* src/mos6502/gen.c:
+      Fix bug in setupDPTR.
+
 2026-04-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCgenconstprop.cc:
