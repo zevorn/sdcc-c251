@@ -3044,6 +3044,7 @@ m6502_aopCanShift (asmop * aop)
     return ((aop->size == 1) && (aop->aopu.aop_reg[0]->rIdx == A_IDX));
   case AOP_DIR:
   case AOP_EXT:
+  case AOP_SOF:
     return true;
   default:
     break;

@@ -1,6 +1,8 @@
 2026-04-18 Gabriele Gorla <gorlik@yahoo.com>
    	* src/mos6502/genlshift.c:
-      Fix regression failure exposed by r16454
+      Fix regression failure exposed by r16454.
+   	* src/mos6502/gen.c:
+      Add AOP_SOF to m6502_aopCanShift().
 
 2026-04-11 Gabriele Gorla <gorlik@yahoo.com>
    	* src/mos6502/gen.c:
