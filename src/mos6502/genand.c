@@ -171,6 +171,16 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 	    }
 	}
 
+      // bit 7 can just load and then bpl/bmi (cannot bit SOF on nmos 6502)
+      if ((bitpos >= 0) && ((bitpos & 7) == 7) && m6502_reg_a->isDead )
+	{
+	  loadRegFromAop (m6502_reg_a, AOP(left), bitpos>>3);
+          m6502_emitCmp(m6502_reg_a, 0);
+	  genIfxJump (ifx, "n");
+	  goto release;
+        }
+
+
       // test A for flags only
       if (IS_AOP_A (AOP (left)))
 	{
