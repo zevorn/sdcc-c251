@@ -716,7 +716,7 @@ genLeftShiftLiteral (operand * left, operand * result, int shCount)
     {
       // FIXME: should move this to each genlsh
       if(AOP_TYPE(left)==AOP_SOF || AOP_TYPE(result)==AOP_SOF)
-	restore_x=storeRegTempIfUsed(m6502_reg_x);
+	restore_x=storeRegTempIfSurv(m6502_reg_x);
 
       switch (size)
 	{

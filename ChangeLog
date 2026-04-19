@@ -7,6 +7,8 @@
       Add special case for bit 7 on the stack.
    	* device/lib/mos6502-stack-auto/_muluchar.s:
       Implement muluchar in assembly.
+   	* src/mos6502/genlshift.c:
+      Only save X when not dead.
 
 2026-04-11 Gabriele Gorla <gorlik@yahoo.com>
    	* src/mos6502/gen.c:
