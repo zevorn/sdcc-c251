@@ -276,6 +276,7 @@ struct options
     char *peep_file;            /* additional rules for peep hole */
     int nostdlib;               /* Don't use standard lib files */
     int nostdinc;               /* Don't use standard include files */
+    bool norestartseqatomics;   /* Don't omit retsratable sequence support routines for atomics */
     int noRegParams;            /* Disable passing some parameters in registers */
     int verbose;                /* Show what the compiler is doing */
     int lessPedantic;           /* disable some warnings */
