@@ -908,11 +908,13 @@ addPostLoopBlock (region * loopReg, ebbIndex * ebbi, iCode * ic)
                 {
                   /* insert goto to old predecessor of eblock */
                   newic = newiCodeLabelGoto (GOTO, eblock->entryLabel);
+                  hTabAddItem (&iCodehTab, newic->key, newic);
                   addiCodeToeBBlock (ebpi, newic, NULL);
                   /* Make sure the GOTO has a target */
                   if (eblock->sch->op != LABEL)
                     {
                       newic = newiCodeLabelGoto (LABEL, eblock->entryLabel);
+                      hTabAddItem (&iCodehTab, newic->key, newic);
                       addiCodeToeBBlock (eblock, newic, eblock->sch);
                     }
                   break;        /* got it, only one is possible */
@@ -925,6 +927,7 @@ addPostLoopBlock (region * loopReg, ebbIndex * ebbi, iCode * ic)
 
       /* create the definition in postLoopBlk */
       newic = newiCode ('=', NULL, operandFromOperand (IC_RIGHT (ic)));
+      hTabAddItem (&iCodehTab, newic->key, newic);
       IC_RESULT (newic) = operandFromOperand (IC_RESULT (ic));
       /* maintain data flow */
       OP_DEFS (IC_RESULT (newic)) = bitVectSetBit (OP_DEFS (IC_RESULT (newic)), newic->key);
@@ -1078,6 +1081,7 @@ basicInduction (region * loopReg, ebbIndex * ebbi)
           /* whew !! that was a lot of work to find the definition */
           /* create an induction object */
           indIc = newiCode ('=', NULL, IC_RESULT (ic));
+          hTabAddItem (&iCodehTab, indIc->key, indIc);
           indIc->filename = ic->filename;
           indIc->lineno = ic->lineno;
           IC_RESULT (indIc) = operandFromOperand (IC_RIGHT (ic));
@@ -1205,6 +1209,7 @@ loopInduction (region * loopReg, ebbIndex * ebbi)
           /* create an instruction */
           /* this will be put on the loop header */
           indIc = newiCode (ic->op, operandFromOperand (aSym), operandFromOperand (litSym));
+          hTabAddItem (&iCodehTab, indIc->key, indIc);
           indIc->filename = ic->filename;
           indIc->lineno = ic->lineno;
           IC_RESULT (indIc) = operandFromOperand (IC_RESULT (ic));
@@ -1225,6 +1230,7 @@ loopInduction (region * loopReg, ebbIndex * ebbi)
           /* Insert an update of the induction variable just before */
           /* the update of the basic induction variable. */
           indIc = newiCode (ip->op, operandFromOperand (IC_RESULT (ic)), operandFromLit (litVal));
+          hTabAddItem (&iCodehTab, indIc->key, indIc);
           IC_RESULT (indIc) = operandFromOperand (IC_RESULT (ic));
           owner = NULL;
           dic = findDefInRegion (setFromSet (loopReg->regBlocks), aSym, &owner);

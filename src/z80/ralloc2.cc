@@ -1612,7 +1612,7 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   iCode *ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
 
   if (optimize.genconstprop)
-    recomputeValinfos (ic, ebbi, "_2");
+    recomputeValinfos (ic, ebbi, "_3");
 
   should_omit_frame_ptr = omit_frame_ptr(control_flow_graph);
   move_parms();
