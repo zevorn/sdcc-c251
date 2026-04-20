@@ -3472,7 +3472,7 @@ mcs51_assignRegisters (ebbIndex * ebbi)
   ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbs, count));
 
   /* Redo generalized constant propagation */
-  recomputeValinfos (ic, ebbi, "_2");
+  recomputeValinfos (ic, ebbi, "_3");
 
   gen51Code (ic);
 

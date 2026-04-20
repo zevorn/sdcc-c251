@@ -1,3 +1,13 @@
+2026-04-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCBBlock.c,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCglobl.h,
+	  src/SDCCloop.c,
+	  src/SDCCopt.c,
+	  src/*/ralloc2.cc:
+	  Fix bug #3978.
+
 2026-04-18 Gabriele Gorla <gorlik@yahoo.com>
    	* src/mos6502/genlshift.c:
       Fix regression failure exposed by r16454.
@@ -24,7 +34,7 @@
    	  src/mos6502/genand.c,
    	  src/mos6502/genor.c,
    	  src/mos6502/genxor.c:
-      Reverse order for bitwise operators if saves a load.
+	  Reverse order for bitwise operators if saves a load.
 
 2026-04-08 Philipp Klaus Krause <philipp@colecovision.eu>
 

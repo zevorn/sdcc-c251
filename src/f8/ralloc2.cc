@@ -495,7 +495,7 @@ iCode *f8_ralloc2_cc(ebbIndex *ebbi)
   iCode *ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
 
   if(optimize.genconstprop)
-    recomputeValinfos(ic, ebbi, "_2");
+    recomputeValinfos(ic, ebbi, "_3");
 
   guessCounts(ic, ebbi);
 
