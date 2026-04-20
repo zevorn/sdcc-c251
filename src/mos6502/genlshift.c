@@ -146,7 +146,8 @@ genlsh8 (operand * result, operand * left, int shCount)
 static void
 genlsh16 (operand * result, operand * left, int shCount)
 {
-  bool needpulla, needpullx;
+  bool needpulla = false;
+  bool needpullx = false;
 
   sym_link *resulttype = operandType (result);
   unsigned topbytemask = (IS_BITINT (resulttype) && SPEC_USIGN (resulttype) && (SPEC_BITINTWIDTH (resulttype) % 8)) ?
@@ -203,10 +204,16 @@ genlsh16 (operand * result, operand * left, int shCount)
       else
 	{
 	  needpulla = storeRegTempIfSurv (m6502_reg_a);
+          if(IS_AOP_WITH_X(AOP(left)) && AOP_TYPE(result)==AOP_SOF)
+            needpullx = storeRegTemp(m6502_reg_x, true);
 	  loadRegFromAop (m6502_reg_a, AOP (left), 0);
 	  emit6502op ("asl", "a");
 	  storeRegToAop (m6502_reg_a, AOP (result), 0);
-	  loadRegFromAop (m6502_reg_a, AOP (left), 1);
+          if(needpullx)
+            loadRegTemp(m6502_reg_a);
+          else
+	    loadRegFromAop (m6502_reg_a, AOP (left), 1);
+
 	  emit6502op ("rol", "a");
 	  while(--shCount)
 	    {
@@ -707,8 +714,9 @@ genLeftShiftLiteral (operand * left, operand * result, int shCount)
     } 
   else
     {
+      // FIXME: should move this to each genlsh
       if(AOP_TYPE(left)==AOP_SOF || AOP_TYPE(result)==AOP_SOF)
-	restore_x=storeRegTempIfUsed(m6502_reg_x);
+	restore_x=storeRegTempIfSurv(m6502_reg_x);
 
       switch (size)
 	{

@@ -1719,6 +1719,26 @@ storeConstToAop (int c, asmop * aop, int loffset)
           if(c!=0 && m6502_reg_x->isFree && !keepTSX() )
             reg=m6502_reg_x;
           else if(m6502_reg_y->isFree)
+#if 0
+	    // prefer X if literal!=0 && X does not contain tsx offset
+	    // try not to overwrite literal zero
+	    // search for +/-1
+	    if(c==0 && loffset==0 && m6502_reg_y->isFree)
+	      reg=m6502_reg_y;
+	    else if(c==0 && m6502_reg_x->isFree)
+	      reg=m6502_reg_x;
+	    else if(m6502_reg_y->isFree && m6502_reg_y->isLitConst && (m6502_reg_y->litConst!=0))
+	      reg=m6502_reg_y;
+	    else if(m6502_reg_x->isFree && !keepTSX() && !m6502_reg_x->isLitConst)
+	      reg=m6502_reg_x;
+	    else if(m6502_reg_y->isFree && !m6502_reg_y->isLitConst)
+	      reg=m6502_reg_y;
+	    else if(m6502_reg_x->isFree && !keepTSX() && m6502_reg_x->isLitConst && (m6502_reg_x->litConst!=0))
+	      reg=m6502_reg_x;
+	    else if(m6502_reg_x->isFree && !keepTSX() && m6502_reg_x->isLitConst && (abs(m6502_reg_x->litConst-c) < 2))
+	      reg=m6502_reg_x;
+	    else if(m6502_reg_y->isFree && m6502_reg_y->isLitConst && !m6502_reg_a->isFree)
+#endif
             reg=m6502_reg_y;
 
           if(reg)
@@ -2499,13 +2519,15 @@ setupDPTR(operand *op, int offset, char * rematOfs, bool savea)
 	      loadRegFromAop(reg, AOP(op), 0);
 	      storeRegToDPTR(reg, 0);
 	    }
+
 	  if(!reg1)
 	    {
 	      loadRegFromAop(reg, AOP(op), 1);
 	      storeRegToDPTR(reg, 1);
             }
+
           if(savea && reg==m6502_reg_a)
-            transferRegReg(m6502_reg_y, savereg, true);
+            transferRegReg(savereg, m6502_reg_a, true);
           else
 	    m6502_freeReg(m6502_reg_a);
 	}
@@ -2923,6 +2945,10 @@ operandsEqu (operand *op1, operand *op2)
   sym1 = OP_SYMBOL (op1);
   sym2 = OP_SYMBOL (op2);
 
+  emitComment (TRACEGEN|VVDBG, "%s: sym1:%s(%d) sym2:%s(%d)", 
+	       __func__, sym1->name, IS_ITEMP(op1),
+	       sym2->name, IS_ITEMP(op2));
+
   /* if both are itemps & one is spilt
      and the other is not then false */
   if (IS_ITEMP (op1) && IS_ITEMP (op2) && sym1->isspilt != sym2->isspilt)
@@ -3018,6 +3044,7 @@ m6502_aopCanShift (asmop * aop)
     return ((aop->size == 1) && (aop->aopu.aop_reg[0]->rIdx == A_IDX));
   case AOP_DIR:
   case AOP_EXT:
+  case AOP_SOF:
     return true;
   default:
     break;
@@ -5612,8 +5639,8 @@ genCmp (iCode * ic, iCode * ifx)
       needloada = storeRegTempIfSurv (m6502_reg_a);
       for( ; offset<size; offset++)
         {
-          emitComment (TRACEGEN|VVDBG, "   %s - size counter = %d",
-                       __func__, size);
+          emitComment (TRACEGEN|VVDBG, "   %s - size = %d offset = %d",
+                       __func__, size, offset);
 
           if (AOP_TYPE (right) == AOP_REG && AOP(right)->aopu.aop_reg[offset]->rIdx == A_IDX)
             {
@@ -7151,7 +7178,10 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
   blen = SPEC_BLEN (etype);
   bstr = SPEC_BSTR (etype);
 
+  emitComment (TRACEGEN, "%s - blen:%d bstr:%d", __func__, blen, bstr);
+
   needpulla = storeRegTempIfSurv (m6502_reg_a);
+
   if (AOP_TYPE (right) == AOP_REG)
     {
       /* Not optimal, but works for any register sources. */

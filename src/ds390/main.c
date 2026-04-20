@@ -493,7 +493,8 @@ _ds390_genIVT (struct dbuf_s * oBuf, symbol ** interrupts, int maxInterrupts)
       nextbyteaddr += options.model == MODEL_FLAT24 ? 4 : 3;
     }
 
-  ds390_genAtomicSupport (oBuf, nextbyteaddr);
+  if (!options.norestartseqatomics)
+    ds390_genAtomicSupport (oBuf, nextbyteaddr);
 
   return true;
 }

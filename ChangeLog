@@ -1,3 +1,42 @@
+2026-04-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge atomic branch.
+
+2026-04-20 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCBBlock.c,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCglobl.h,
+	  src/SDCCloop.c,
+	  src/SDCCopt.c,
+	  src/*/ralloc2.cc:
+	  Fix bug #3978.
+
+2026-04-18 Gabriele Gorla <gorlik@yahoo.com>
+   	* src/mos6502/genlshift.c:
+      Fix regression failure exposed by r16454.
+   	* src/mos6502/gen.c:
+      Add AOP_SOF to m6502_aopCanShift().
+   	* src/mos6502/genand.c:
+      Add special case for bit 7 on the stack.
+   	* device/lib/mos6502-stack-auto/_muluchar.s:
+      Implement muluchar in assembly.
+   	* src/mos6502/genlshift.c:
+      Only save X when not dead.
+
+2026-04-17 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx,
+	  src/SDCCglobl.h,
+	  src/SDCCmain.c,
+	  src/ds390/main.c,
+	  src/mcs51/main.c:
+	  --norestartseqatomics option, RFE #1015.
+
+2026-04-11 Gabriele Gorla <gorlik@yahoo.com>
+   	* src/mos6502/gen.c:
+	  Fix bug in setupDPTR.
+
 2026-04-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCgenconstprop.cc:
@@ -8,7 +47,7 @@
    	  src/mos6502/genand.c,
    	  src/mos6502/genor.c,
    	  src/mos6502/genxor.c:
-      Reverse order for bitwise operators if saves a load.
+	  Reverse order for bitwise operators if saves a load.
 
 2026-04-08 Philipp Klaus Krause <philipp@colecovision.eu>
 

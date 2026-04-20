@@ -374,7 +374,8 @@ _mcs51_genIVT (struct dbuf_s *oBuf, symbol **interrupts, int maxInterrupts)
         }
     }
 
-  mcs51_genAtomicSupport (oBuf, nextbyteaddr);
+  if (!options.norestartseqatomics)
+    mcs51_genAtomicSupport (oBuf, nextbyteaddr);
 
   return true;
 }

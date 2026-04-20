@@ -298,7 +298,7 @@ valinfo_union (struct valinfo *v0, const struct valinfo v1)
 }
 
 bool
-valinfos_union (iCode *ic, int key, const struct valinfo &v)
+valinfos_union (iCode *ic, const int key, const struct valinfo &v)
 {
   if (!ic /*|| !bitVectBitValue(ic->rlive, key)*/) // Unfortunately, rlive info is inaccurate, so we can't rely on it.
     return (false);
@@ -907,12 +907,14 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
         resultvalinfo.anything = true;
 
 #ifdef DEBUG_GCP_ANALYSIS
+      std::cout << "Recompute node " << i << " ic " << ic->key << "\n";
       if (localchange && resultsym)
-        {
-          std::cout << "Recompute node " << i << " ic " << ic->key << "\n";
+        { 
           std::cout << "getTypeValinfo: resultvalinfo anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << std::dec << " min " << resultvalinfo.min << "\n";
+          if (ic->left)
+            std::cout << "leftvalinfo op " << ic->left->key << " anything " << rightvalinfo.anything << " min " << rightvalinfo.min << " max " << rightvalinfo.max << "\n";
           if (ic->right)
-            std::cout << "rightvalinfo anything " << rightvalinfo.anything << " min " << rightvalinfo.min << " max " << rightvalinfo.max << "\n";
+            std::cout << "rightvalinfo op " << ic->right->key << " anything " << rightvalinfo.anything << " min " << rightvalinfo.min << " max " << rightvalinfo.max << "\n";
         }
 #endif
 
@@ -1310,7 +1312,7 @@ optimizeNarrowOpNet (iCode *ic)
   unsigned int ptropwidth = 0; // Width of pointers that an integer net is added to (only bits within address space count, not tag bits).
 
 #if 0
-  std::cout << "optimizeNarrowOpNet at ic " << ic->key << ": " << OP_SYMBOL (ic->result)->name << "\n"; std::cout.flush();
+  std::cout << "optimizeNarrowOpNet op " << ic->result->key << " at ic " << ic->key << ": " << OP_SYMBOL (ic->result)->name << " uses " << bitVectnBitsOn (OP_USES (ic->result)) << "\n"; std::cout.flush();
 #endif
 
   while (!checknet.empty())
@@ -1361,8 +1363,9 @@ optimizeNarrowOpNet (iCode *ic)
       for (int key = bitVectFirstBit (uses); bitVectnBitsOn (uses); bitVectUnSetBit (uses, key), key = bitVectFirstBit (uses))
         {
           iCode *uic = (iCode *)hTabItemWithKey (iCodehTab, key);
+          wassert (uic || TARGET_IS_MCS51 && (options.model == MODEL_LARGE || options.model == MODEL_HUGE)); // Shouldn't happen, but does for some mcs51 models.
           if (!uic)
-            bitVectUnSetBit (OP_USES (op), key); // Looks like some earlier optimization didn't clean up properly. Do it now.
+            bitVectUnSetBit (OP_USES (op), key); // Looks like some earlier optimization didn't clean up properly. Do it now. Shouldn't happen, see lines above.
           else if (uic->op == CAST && !IS_FLOAT (operandType (uic->result)))
             valinfo_union (&v, getOperandValinfo (uic, uic->right));
           else if (uic->op == EQ_OP || uic->op == NE_OP || uic->op == '<' || uic->op == LE_OP || uic->op == '>' || uic->op == GE_OP)

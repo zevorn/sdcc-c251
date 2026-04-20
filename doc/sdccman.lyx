@@ -17120,6 +17120,54 @@ status collapsed
 
 \end_inset
 
+-norestartseqatomics
+\begin_inset Index idx
+range none
+pageformat default
+status open
+
+\begin_layout Plain Layout
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-norestartseqatomics
+\end_layout
+
+\end_inset
+
+
+\series default
+ Omit restartable sequence support routines for atomics;
+ can reduce code size,
+ but disables support for atomic that use these support routines;
+ trying to use such atomics will then result in a diagnostic.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+\series bold
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
 -verbose
 \begin_inset Index idx
 range none
