@@ -194,9 +194,8 @@ m6502_genXor (iCode * ic, iCode * ifx)
 	if(needpulla)
 	  fastRestoreA();
 	else
-	  {
-	    loadRegFromAop (m6502_reg_a, AOP (left), 0);
-	  }
+	  loadRegFromAop (m6502_reg_a, AOP (left), 0);
+
 	if(bmask0!=NOP_MASK)
 	  accopWithAop (OPCODE, AOP (right), 0);
       }
@@ -231,6 +230,7 @@ m6502_genXor (iCode * ic, iCode * ifx)
 	  loadRegFromAop (m6502_reg_a, AOP (left), offset);
 	  accopWithAop (OPCODE, AOP (right), offset);
 	  storeRegToAop (m6502_reg_a, AOP (result), offset);
+          m6502_freeReg(m6502_reg_a);
 	}
     }
 
