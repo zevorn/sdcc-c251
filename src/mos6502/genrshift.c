@@ -267,7 +267,9 @@ genrsh8 (operand * result, operand * left, int shCount, int sign)
 static void
 genrsh16 (operand * result, operand * left, int shCount, int sign)
 {
-  bool needpulla, needpullx;
+  bool needpulla = false;
+  bool needpullx = false;
+
   emitComment (TRACEGEN, "  %s - shift=%d", __func__, shCount);
 
   if (shCount >= 8)
@@ -995,8 +997,9 @@ genRightShiftLiteral (operand * left, operand * result, int shCount, int sign)
     }
   else
     {
+      // FIXME: should move this to each genrsh
       if(AOP_TYPE(left)==AOP_SOF || AOP_TYPE(result)==AOP_SOF)
-	restore_x = storeRegTempIfUsed(m6502_reg_x);
+	restore_x=storeRegTempIfSurv(m6502_reg_x);
 
       switch (size)
 	{
@@ -1080,6 +1083,17 @@ m6502_genRightShift (iCode * ic)
   loop_label = safeNewiTempLabel (NULL);
   skip_label = safeNewiTempLabel (NULL);
 
+  if(IS_AOP_A(AOP(right)) && IS_AOP_Y(AOP(left)) && !m6502_reg_x->isDead)
+    {
+      operand *temp;
+      temp = right;
+      right = left;
+      left = temp;
+      storeRegTemp(m6502_reg_a, true);
+      transferRegReg(m6502_reg_y, m6502_reg_a, true);
+      loadRegTemp(m6502_reg_y);
+    }
+
   if (!m6502_reg_a->isDead && !IS_AOP_WITH_A (AOP (result)))
     {
       storeRegTemp(m6502_reg_a, true);
@@ -1105,13 +1119,14 @@ m6502_genRightShift (iCode * ic)
     }
 
   bool op_is_xa = ( IS_AOP_XA (AOP (result)) || IS_AOP_XA (AOP (left)));
-  bool msb_in_x = op_is_xa && AOP_TYPE(result)!=AOP_DIR;
+  bool op_is_xy = ( IS_AOP_XY (AOP (result)) || IS_AOP_XY (AOP (left)));
+  bool msb_in_x = (op_is_xa || op_is_xy) && AOP_TYPE(result)!=AOP_DIR;
   bool early_load_count = (AOP_TYPE(left)==AOP_SOF || AOP_TYPE(right)==AOP_SOF
-                          || IS_AOP_WITH_A(AOP(right))  || sameRegs (AOP(result), AOP(right)) );
-  int a_loc = ( op_is_xa )? 0 : size-1;
+			   || IS_AOP_WITH_A(AOP(right))  || sameRegs (AOP(result), AOP(right)) );
+  int a_loc = ( op_is_xa | op_is_xy )? 0 : size-1;
 
   emitComment (TRACEGEN, "  %s - enter size:%d xa:%d xy:%d xmsb:%d countreg:%s",
-               __func__, size, op_is_xa, false, msb_in_x, countreg->name);
+               __func__, size, op_is_xa, op_is_xy, msb_in_x, countreg->name);
 
   if(size==1)
     {
@@ -1119,7 +1134,6 @@ m6502_genRightShift (iCode * ic)
         early_load_count = true;
       else if(IS_AOP_Y(AOP(left)))
 	early_load_count = false;
-        
     }
 
   if(IS_AOP_XY(AOP(left)))
@@ -1136,38 +1150,60 @@ m6502_genRightShift (iCode * ic)
       // do nothing
       loadRegFromAop (m6502_reg_a, AOP (left), a_loc);
     }
-  else if(IS_AOP_XY (AOP(left)) && IS_AOP_A(AOP(right)))
+  else if(op_is_xy)
     {
-      emitComment (TRACEGEN, "  %s - op is XY", __func__);
+      if(IS_AOP_XY (AOP(left)) && IS_AOP_A(AOP(right)))
+	{
+	  emitComment (TRACEGEN, "  %s - op is XY", __func__);
 
-      transferAopAop (AOP (left), 1, AOP (result), 1);
+	  transferAopAop (AOP (left), 1, AOP (result), 1);
 
-      storeRegTempAlways(m6502_reg_x, true);
-      dirtyRegTemp (getLastTempOfs());
-      //              m6502_dirtyReg(m6502_reg_x);
-      x_in_regtemp = true;
-      transferRegReg(m6502_reg_a, m6502_reg_x, true);
-      transferRegReg(m6502_reg_y, m6502_reg_a, true);
-      countreg = m6502_reg_x;
-      early_load_count = true;
+	  storeRegTempAlways(m6502_reg_x, true);
+	  dirtyRegTemp (getLastTempOfs());
+	  //              m6502_dirtyReg(m6502_reg_x);
+	  x_in_regtemp = true;
+	  transferRegReg(m6502_reg_a, m6502_reg_x, true);
+	  transferRegReg(m6502_reg_y, m6502_reg_a, true);
+	  countreg = m6502_reg_x;
+	  early_load_count = true;
       
-    }
-  else if(IS_AOP_XY (AOP(result)))
-    {
-      emitComment (TRACEGEN, "  %s - result is XY", __func__);
+	}
+      else if(IS_AOP_XY (AOP(result)))
+	{
+	  emitComment (TRACEGEN, "  %s - result is XY", __func__);
 
-      transferAopAop (AOP (left), 1, AOP (result), 1);
-      storeRegTempAlways(m6502_reg_x, true);
-      dirtyRegTemp (getLastTempOfs());
-      loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	  transferAopAop (AOP (left), 1, AOP (result), 1);
+	  storeRegTempAlways(m6502_reg_x, true);
+	  dirtyRegTemp (getLastTempOfs());
+	  loadRegFromAop (m6502_reg_a, AOP (left), 0);
 
-      //              m6502_dirtyReg(m6502_reg_x);
-      x_in_regtemp = true;
-      //              transferRegReg(m6502_reg_a, m6502_reg_x, true);
-      //              transferRegReg(m6502_reg_y, m6502_reg_a, true);
-      countreg = m6502_reg_y;
-      //        early_load_count = true;
+	  //              m6502_dirtyReg(m6502_reg_x);
+	  x_in_regtemp = true;
+	  //              transferRegReg(m6502_reg_a, m6502_reg_x, true);
+	  //              transferRegReg(m6502_reg_y, m6502_reg_a, true);
+	  countreg = m6502_reg_y;
+	  //        early_load_count = true;
       
+	}
+      else
+	{
+	  emitComment (TRACEGEN, "  %s - XY other", __func__);
+
+	  if(msb_in_x)
+	    {
+	      loadRegFromAop (m6502_reg_x, AOP (left), 1);
+	      storeRegTempAlways(m6502_reg_x, true);
+	      dirtyRegTemp (getLastTempOfs());
+	      x_in_regtemp = true;
+	      if(AOP_TYPE(right)==AOP_SOF)
+		m6502_emitTSX();
+	    }
+	  else
+	    {
+	      transferAopAop (AOP (left), 1, AOP (result), 1);
+	    }
+	  loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	}
     }
   else if(op_is_xa)
     {
@@ -1200,6 +1236,8 @@ m6502_genRightShift (iCode * ic)
 	      storeRegTempAlways(m6502_reg_x, true);
 	      dirtyRegTemp (getLastTempOfs());
 	      x_in_regtemp = true;
+	      if(AOP_TYPE(right)==AOP_SOF)
+		m6502_emitTSX();
 	    }
 	  else
             {
