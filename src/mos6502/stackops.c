@@ -39,23 +39,23 @@ m6502_pushReg (reg_info * reg, bool freereg)
 {
   int regidx = reg->rIdx;
 
-  emitComment (REGOPS, "  pushReg(%s) %s %s", reg->name, reg->isFree?"free":"", reg->isDead?"dead":"");
+  m6502_emitComment (REGOPS, "  pushReg(%s) %s %s", reg->name, reg->isFree?"free":"", reg->isDead?"dead":"");
 
   switch (regidx)
     {
     case A_IDX:
-      emit6502op ("pha", "");
+      m6502_emitOp ("pha", "");
       updateCFA ();
       break;
     case X_IDX:
       if (IS_MOS65C02)
         {
-          emit6502op ("phx", "");
+          m6502_emitOp ("phx", "");
         }
       else
         {
           bool needloada = storeRegTempIfUsed (m6502_reg_a);
-          transferRegReg (m6502_reg_x, m6502_reg_a, false);
+          m6502_transferRegReg (m6502_reg_x, m6502_reg_a, false);
           m6502_pushReg (m6502_reg_a, true);
           loadOrFreeRegTemp (m6502_reg_a, needloada);
         }
@@ -64,12 +64,12 @@ m6502_pushReg (reg_info * reg, bool freereg)
     case Y_IDX:
       if (IS_MOS65C02)
         {
-          emit6502op ("phy", "");
+          m6502_emitOp ("phy", "");
         }
       else
         {
           bool needloada = storeRegTempIfUsed (m6502_reg_a);
-          transferRegReg (m6502_reg_y, m6502_reg_a, true);
+          m6502_transferRegReg (m6502_reg_y, m6502_reg_a, true);
           m6502_pushReg (m6502_reg_a, true);
           loadOrFreeRegTemp (m6502_reg_a, needloada);
         }
@@ -79,10 +79,10 @@ m6502_pushReg (reg_info * reg, bool freereg)
     case XA_IDX:
       if(m6502_reg_y->isFree && !IS_MOS65C02)
         {
-          transferRegReg (m6502_reg_a, m6502_reg_y, freereg);
-          transferRegReg (m6502_reg_x, m6502_reg_a, freereg);
+          m6502_transferRegReg (m6502_reg_a, m6502_reg_y, freereg);
+          m6502_transferRegReg (m6502_reg_x, m6502_reg_a, freereg);
           m6502_pushReg(m6502_reg_a, freereg);
-          transferRegReg (m6502_reg_y, m6502_reg_a, true);
+          m6502_transferRegReg (m6502_reg_y, m6502_reg_a, true);
           m6502_pushReg(m6502_reg_a, freereg);
         }
       else
@@ -113,24 +113,24 @@ m6502_pullReg (reg_info * reg)
 {
   int regidx = reg->rIdx;
 
-  emitComment (REGOPS, __func__ );
+  m6502_emitComment (REGOPS, __func__ );
 
   switch (regidx) {
   case A_IDX:
-    emit6502op ("pla", "");
+    m6502_emitOp ("pla", "");
     updateCFA ();
     break;
   case X_IDX:
     if (IS_MOS65C02)
       {
-        emit6502op ("plx", "");
+        m6502_emitOp ("plx", "");
       }
     else
       {
         // FIXME: saving A makes regression fail
         //      bool needloada = storeRegTempIfUsed (m6502_reg_a);
         m6502_pullReg (m6502_reg_a);
-        transferRegReg (m6502_reg_a, m6502_reg_x, true);
+        m6502_transferRegReg (m6502_reg_a, m6502_reg_x, true);
         //      loadOrFreeRegTemp (m6502_reg_a, needloada);
       }
     updateCFA ();
@@ -138,14 +138,14 @@ m6502_pullReg (reg_info * reg)
   case Y_IDX:
     if (IS_MOS65C02)
       {
-        emit6502op ("ply", "");
+        m6502_emitOp ("ply", "");
       }
     else
       {
         // FIXME: saving A makes regression fail
         //      bool needloada = storeRegTempIfUsed (m6502_reg_a);
         m6502_pullReg (m6502_reg_a);
-        transferRegReg (m6502_reg_a, m6502_reg_y, true);
+        m6502_transferRegReg (m6502_reg_a, m6502_reg_y, true);
         //      loadOrFreeRegTemp (m6502_reg_a, needloada);
       }
     updateCFA ();
@@ -182,8 +182,8 @@ adjustStack (int n)
   int sx_cycle = (m6502_reg_x->isFree)?0:6;
   int abs_n = (n>0)?n:-n;
 
-  emitComment (TRACEGEN, "%s - adjust: %d", __func__, n );
-  emitComment (REGOPS, "  %s reg:  %s", __func__, regInfoStr());
+  m6502_emitComment (TRACEGEN, "%s - adjust: %d", __func__, n );
+  m6502_emitComment (REGOPS, "  %s reg:  %s", __func__, regInfoStr());
 
   // unrolled PHA      1b, 3c x n
   // unrolled PLA      1b, 4c x n + 4b, 6c if A is used
@@ -201,7 +201,7 @@ adjustStack (int n)
       incdec-=2;
     }
 
-  emitComment (REGOPS|VVDBG, "  %s : cycles stk:%d  incdec:%d  adc:%d", __func__,
+  m6502_emitComment (REGOPS|VVDBG, "  %s : cycles stk:%d  incdec:%d  adc:%d", __func__,
                stack, incdec, adc);
 
   if(stack<=incdec && stack<=adc)
@@ -211,7 +211,7 @@ adjustStack (int n)
 	restore_a=storeRegTempIfUsed (m6502_reg_a);
 
       while((abs_n--)>0)
-        emit6502op(inst, "");
+        m6502_emitOp(inst, "");
 
       loadOrFreeRegTemp(m6502_reg_a, restore_a);
     }
@@ -225,20 +225,20 @@ adjustStack (int n)
           m6502_emitTSX();
 
           while((abs_n--)>0)
-            emit6502op(inst, "");
+            m6502_emitOp(inst, "");
         }
       else
         {
           restore_a = storeRegTempIfUsed(m6502_reg_a);
           m6502_emitTSX();
-          transferRegReg (m6502_reg_x, m6502_reg_a, true);
+          m6502_transferRegReg (m6502_reg_x, m6502_reg_a, true);
           m6502_emitSetCarry(0);
-          emit6502op ("adc", IMMDFMT, (unsigned int)(n & 0xff));
-          transferRegReg (m6502_reg_a, m6502_reg_x, true);
+          m6502_emitOp ("adc", IMMDFMT, (unsigned int)(n & 0xff));
+          m6502_transferRegReg (m6502_reg_a, m6502_reg_x, true);
         }
 
       _S.stackPushes -= n;
-      emit6502op ("txs", "");
+      m6502_emitOp ("txs", "");
       loadOrFreeRegTemp(m6502_reg_a, restore_a);
       loadOrFreeRegTemp(m6502_reg_x, restore_x);
     }

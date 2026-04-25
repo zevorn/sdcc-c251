@@ -167,8 +167,8 @@ reg_info* m6502_findRegAop (asmop * aop, int loffset);
 
 // code emit
 void m6502_emitDebuggerSymbol (const char *);
-void emit6502op (const char *inst, const char *fmt, ...);
-void emitComment (unsigned int level, const char *fmt, ...);
+void m6502_emitOp (const char *inst, const char *fmt, ...);
+void m6502_emitComment (unsigned int level, const char *fmt, ...);
 bool m6502_emitCmp (reg_info *reg, unsigned char v);
 void m6502_emitBranch (char *branchop, symbol * tlbl);
 void m6502_emitTSX(void);
@@ -181,7 +181,7 @@ int safeLabelNum(symbol * a);
 
 void genIfxJump (iCode * ic, char *jval);
 
-void transferRegReg (reg_info *sreg, reg_info *dreg, bool freesrc);
+void m6502_transferRegReg (reg_info *sreg, reg_info *dreg, bool freesrc);
 void loadRegFromConst (reg_info * reg, int c);
 void loadRegFromAop (reg_info * reg, asmop * aop, int loffset);
 void storeRegToFullAop (reg_info *reg, asmop *aop, bool isSigned);
@@ -201,11 +201,11 @@ void updateCFA (void);
 bool m6502_aopCanIncDec (asmop *aop);
 bool m6502_aopCanBit (asmop *aop);
 bool m6502_aopCanShift (asmop * aop);
-bool sameRegs (asmop *aop1, asmop *aop2);
+bool m6502_sameRegs (asmop *aop1, asmop *aop2);
 reg_info* getDeadByteReg();
 reg_info* getFreeByteReg();
 reg_info* getFreeIdxReg();
-void genCopy (operand * result, operand * source);
+void m6502_genCopy (operand * result, operand * source);
 
 // stack
 bool m6502_pushReg (reg_info * reg, bool freereg);

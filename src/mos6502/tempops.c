@@ -37,7 +37,7 @@ fastSaveAi(reg_info *reg)
 {
   if(reg->isFree && reg->isDead)
     {
-      transferRegReg(m6502_reg_a, reg, true);
+      m6502_transferRegReg(m6502_reg_a, reg, true);
       save_reg = reg;
     }
   else
@@ -58,7 +58,7 @@ bool
 fastRestoreA()
 {
   if(save_reg)
-    transferRegReg(save_reg, m6502_reg_a, true);
+    m6502_transferRegReg(save_reg, m6502_reg_a, true);
   else
     loadRegTemp(m6502_reg_a);
 
@@ -76,7 +76,7 @@ fastRestoreA()
 bool
 m6502_storeRegTempi(reg_info * reg, bool freereg, bool force)
 {
-  emitComment (REGOPS, "  storeRegTemp(%s) %s", reg ? reg->name : "-", freereg ? "free" : "");
+  m6502_emitComment (REGOPS, "  storeRegTemp(%s) %s", reg ? reg->name : "-", freereg ? "free" : "");
 
   int regidx = reg->rIdx;
   char storeOp[4] = "st?";
@@ -94,17 +94,17 @@ m6502_storeRegTempi(reg_info * reg, bool freereg, bool force)
       _S.tempAttr[_S.tempOfs].stackOffset=reg->stackOffset;
       if(reg->isLitConst && !force)
         {
-	  emitComment(REGOPS|VVDBG, "  %s: virtual store literal 0x%02x",__func__,
+	  m6502_emitComment(REGOPS|VVDBG, "  %s: virtual store literal 0x%02x",__func__,
                       reg->litConst);
         }
       else if(reg->aop && !force && (reg->aop->type==AOP_DIR || reg->aop->type==AOP_EXT) )
         {
-          emitComment(REGOPS|VVDBG, "  %s: virtual store %s+%d",__func__,
+          m6502_emitComment(REGOPS|VVDBG, "  %s: virtual store %s+%d",__func__,
                       reg->aop->aopu.aop_dir, reg->aopofs);
         }
       else 
         {    
-	  emit6502op (storeOp, TEMPFMT, _S.tempOfs);
+	  m6502_emitOp (storeOp, TEMPFMT, _S.tempOfs);
         }
       _S.tempOfs++;
       break;
@@ -162,18 +162,18 @@ loadRegTempAt (reg_info * reg, int offset)
       loadOp[2]=reg->name[0];
       if(_S.tempAttr[offset].aop && (_S.tempAttr[offset].aop->type==AOP_DIR || _S.tempAttr[offset].aop->type==AOP_EXT))
         {
-          emitComment(REGOPS|VVDBG, "  %s: should load from %s+%d", __func__,
+          m6502_emitComment(REGOPS|VVDBG, "  %s: should load from %s+%d", __func__,
                       _S.tempAttr[offset].aop->aopu.aop_dir, _S.tempAttr[offset].aopofs);
           if(_S.tempAttr[offset].aop->type==AOP_DIR)
-	    emit6502op (loadOp, "*(%s+%d)",
+	    m6502_emitOp (loadOp, "*(%s+%d)",
 			_S.tempAttr[offset].aop->aopu.aop_dir, _S.tempAttr[offset].aopofs );
           else
-	    emit6502op (loadOp, "(%s+%d)",
+	    m6502_emitOp (loadOp, "(%s+%d)",
 			_S.tempAttr[offset].aop->aopu.aop_dir, _S.tempAttr[offset].aopofs );
         }
       else
         {
-          emit6502op (loadOp, TEMPFMT, offset);
+          m6502_emitOp (loadOp, TEMPFMT, offset);
         }
       break;
     default:
@@ -262,9 +262,9 @@ loadRegTempNoFlags (reg_info * reg, bool needpull)
   if (needpull)
     {
       int tempflag=_S.lastflag;
-      emit6502op("php", "");
+      m6502_emitOp("php", "");
       loadRegTemp (reg);
-      emit6502op("plp", "");
+      m6502_emitOp("plp", "");
       _S.lastflag=tempflag;
     }
   else
@@ -285,18 +285,18 @@ emitRegTempOp(const char *op, int offset)
 
   if(_S.tempAttr[offset].isLiteral)
     {
-      emit6502op(op, IMMDFMT, _S.tempAttr[offset].literalValue );
+      m6502_emitOp(op, IMMDFMT, _S.tempAttr[offset].literalValue );
     }
   else if(_S.tempAttr[offset].aop && (_S.tempAttr[offset].aop->type==AOP_DIR || _S.tempAttr[offset].aop->type==AOP_EXT))
     {
-      emitComment(REGOPS|VVDBG, "  %s: %s with %s+%d", __func__,
+      m6502_emitComment(REGOPS|VVDBG, "  %s: %s with %s+%d", __func__,
 		  op, _S.tempAttr[offset].aop->aopu.aop_dir, _S.tempAttr[offset].aopofs);
-      emit6502op (op, "%s(%s+%d)", (_S.tempAttr[offset].aop->type==AOP_DIR)?"*":"",
+      m6502_emitOp (op, "%s(%s+%d)", (_S.tempAttr[offset].aop->type==AOP_DIR)?"*":"",
 		  _S.tempAttr[offset].aop->aopu.aop_dir, _S.tempAttr[offset].aopofs );
     }
   else
     {
-      emit6502op(op, TEMPFMT, offset);
+      m6502_emitOp(op, TEMPFMT, offset);
     }
 }
 
