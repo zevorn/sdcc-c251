@@ -1,3 +1,10 @@
+2026-04-26 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genand.c,
+	  src/mos6502/genlshift.c,
+	  src/mos6502/genrshift.c:
+	  Refactor genlshift and genrshift.
+
 2026-04-24 Gabriele Gorla <gorlik@yahoo.com>
 
 	* src/mos6502/gen.c,

@@ -53,7 +53,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
   int bitpos = -1;
 
   m6502_emitComment (TRACEGEN, "%s - ifx:%d", 
-               __func__, ifx?1:0);
+		     __func__, ifx?1:0);
 
   m6502_aopOp (left, ic);
   m6502_aopOp (right, ic);
@@ -335,7 +335,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
   if(IS_AOP_Y(AOP(result)))
     m6502_reg_y->isFree=false;
 
-  needpulla = fastSaveAIfSurv();
+  needpulla = storeRegTempIfSurv (m6502_reg_a);
 
   // prevent from saving A again
   if(needpulla)
@@ -368,7 +368,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 	}
     }
 
-  fastRestoreOrFreeA(needpulla);
+  loadOrFreeRegTemp(m6502_reg_a, needpulla);
 
  release:
   m6502_freeAsmop (left, NULL);
