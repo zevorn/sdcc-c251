@@ -132,9 +132,6 @@ __code const char *__getSuiteName (void);
 void __runSuite (void);
 
 #define ASSERT(_a)  (++__numTests, (_a) ? (void)0 : __fail ("Assertion failed", #_a, __FILE__, __LINE__))
-#define ASSERTFALSE(_a)  ASSERT(!(_a))
-#define FAIL()      FAILM("Failure")
-#define FAILM(_a)   __fail(_a, #_a, __FILE__, __LINE__)
 
 #define UNUSED(_a)  if (_a) { }
 

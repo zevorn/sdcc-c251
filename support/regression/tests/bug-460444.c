@@ -11,7 +11,7 @@ testXOR(void)
     // Good.
   }
   else {
-    FAIL();
+    ASSERT (0);
   }
 
   /* Test is to see if it compiles. */
@@ -24,21 +24,21 @@ testXOR(void)
     // Good.
   }
   else {
-    FAIL();
+    ASSERT (0);
   }
 
   if (p & 0x4324) {
     // Good
   }
   else {
-    FAIL();
+    ASSERT (0);
   }
 
   if (p | 0x1279) {
     // Good
   }
   else {
-    FAIL();
+    ASSERT (0);
   }
 }
 
@@ -54,20 +54,20 @@ testLeftRightXor(void)
     // Good
   }
   else {
-    FAIL();
+    ASSERT (0);
   }
 
   if (left & right) {
     // Good
   }
   else {
-    FAIL();
+    ASSERT (0);
   }
 
   if (left | right) {
     // Good
   }
   else {
-    FAIL();
+    ASSERT (0);
   }
 }

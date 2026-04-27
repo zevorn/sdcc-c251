@@ -34,7 +34,7 @@ testTortureExecute (void)
   memset(&foo, 37, sizeof(t));
   foo.size=sizeof(t);
   bar=f(&foo,sizeof(t));
-  ASSERTFALSE (bar->super!=&foo||bar->name!=0||bar->size!=sizeof(t));
+  ASSERT (!(bar->super!=&foo||bar->name!=0||bar->size!=sizeof(t)));
   return;
 #endif
 }

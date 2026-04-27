@@ -67,7 +67,7 @@ testDivNearOne (void)
     }
   else
     {
-      FAIL ();
+      ASSERT (0);
     }
   if (result < 1.00001)
     {
@@ -75,7 +75,7 @@ testDivNearOne (void)
     }
   else
     {
-      FAIL ();
+      ASSERT (0);
     }
   if (result > 0.999999 && result < 1.00001)
     {
@@ -83,7 +83,7 @@ testDivNearOne (void)
     }
   else
     {
-      FAIL ();
+      ASSERT (0);
     }
 #endif
 }

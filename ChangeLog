@@ -2,6 +2,14 @@
 
 	* support/regression/MakeList:
 	  Disable a test for uc6502-stack-auto target, where it would overflow the stack.
+	* support/regression/fwk/include/testfwk.h,
+	  support/regression/tests/bug-460444.c,
+	  support/regression/tests/gcc-torture-execute-20050826-1.c,
+	  support/regression/tests/gcc-torture-execute-920810-1.c,
+	  support/regression/tests/logic.c.in,
+	  support/regression/tests/simplefloat.c,
+	  support/regression/README-tests:
+	  Fix bug #3893.
 
 2026-04-26 Gabriele Gorla <gorlik@yahoo.com>
 
