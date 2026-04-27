@@ -10,6 +10,8 @@
 	  support/regression/tests/simplefloat.c,
 	  support/regression/README-tests:
 	  Fix bug #3893.
+	* support/valdiag/tests/_Optional.c:
+	  Disable a check on a line in preparation for rework of _Optional warnings.
 
 2026-04-26 Gabriele Gorla <gorlik@yahoo.com>
 
