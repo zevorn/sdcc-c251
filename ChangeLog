@@ -1,3 +1,8 @@
+2026-04-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/MakeList:
+	  Disable a test for uc6502-stack-auto target, where it would overflow the stack.
+
 2026-04-26 Gabriele Gorla <gorlik@yahoo.com>
 
 	* src/mos6502/genand.c,

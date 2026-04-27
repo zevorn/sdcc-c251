@@ -358,7 +358,9 @@ EXCLUDE_pdk15 += \
 EXCLUDE_mcs51-small += \
 	qct_0080-arrays
 EXCLUDE_mcs51-medium += \
-	qct_0080-arrays	
+	qct_0080-arrays
+EXCLUDE_uc6502-stack-auto += \
+	qct_0080-arrays
 
 # Target too slow (fails with timeout)
 #EXCLUDE_ARCH_pdk += \
