@@ -1784,10 +1784,18 @@ structElemType (sym_link * stype, value * id)
               t = type;
               while (IS_ARRAY (t))
                 t = t->next;
-              if (IS_SPEC (t))
-                SPEC_CONST (t) |= SPEC_CONST (stype);
+              if (IS_SPEC (t)) // TODO: how about restrict, address spaces? Looks like the latter is handled by the caller in SDDCast.c?
+                {
+                  SPEC_CONST (t) |= SPEC_CONST (stype);
+                  SPEC_VOLATILE (t) |= SPEC_VOLATILE (stype);
+                  SPEC_OPTIONAL (t) |= SPEC_OPTIONAL (stype);
+                }
               else
-                DCL_PTR_CONST (t) |= SPEC_CONST (stype);
+                {
+                  DCL_PTR_CONST (t) |= SPEC_CONST (stype);
+                  DCL_PTR_VOLATILE (t) |= SPEC_VOLATILE (stype);
+                  DCL_PTR_OPTIONAL (t) |= SPEC_OPTIONAL (stype);
+                }
               return type;
             }
           fields = fields->next;

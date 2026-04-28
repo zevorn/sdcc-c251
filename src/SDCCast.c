@@ -4022,15 +4022,6 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
     case DEC_OP:
       {
         sym_link *ltc = (tree->right ? RTYPE (tree) : LTYPE (tree));
-        // Drop _Optional on pointer target
-        if (IS_PTR (ltc) && isOptional (ltc->next))
-          {
-            ltc = copyLinkChain (ltc);
-            if (IS_SPEC (ltc->next))
-              SPEC_OPTIONAL (ltc->next) = false;
-            else
-              DCL_PTR_OPTIONAL (ltc->next) = false;
-          }
         COPYTYPE (TTYPE (tree), TETYPE (tree), ltc);
         if (!tree->initMode && IS_CONSTANT (TTYPE (tree)))
           werrorfl (tree->filename, tree->lineno, E_CODE_WRITE, tree->opval.op == INC_OP ? "++" : "--");

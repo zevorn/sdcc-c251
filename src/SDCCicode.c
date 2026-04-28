@@ -2783,13 +2783,15 @@ geniCodeStruct (operand * left, operand * right, bool islval)
       DCL_PTR_CONST (rtype) |= DCL_PTR_CONST (element->type);
       DCL_PTR_VOLATILE (rtype) |= DCL_PTR_VOLATILE (element->type);
       DCL_PTR_RESTRICT (rtype) |= DCL_PTR_RESTRICT (element->type);
+      DCL_PTR_OPTIONAL (rtype) |= DCL_PTR_OPTIONAL(element->type);
       setOperandType (IC_RESULT (ic), aggrToPtr (operandType (IC_RESULT (ic)), TRUE));
     }
   else
     {
       SPEC_CONST (retype) |= SPEC_CONST (etype);
-      /*Do not preserve volatile */
+      // Do not preserve volatile.
       SPEC_RESTRICT (retype) |= SPEC_RESTRICT (etype);
+      SPEC_OPTIONAL (retype) |= SPEC_OPTIONAL (etype);
     }
 
   IC_RESULT (ic)->isaddr = (!IS_AGGREGATE (element->type));
@@ -3079,6 +3081,10 @@ geniCodeAddressOf (operand *op)
   DCL_TYPE (p) = PTR_TYPE (SPEC_OCLS (opetype));
 
   p->next = copyLinkChain (optype);
+  if (IS_SPEC (p->next))
+    SPEC_OPTIONAL (p->next) = false;
+  else
+    DCL_PTR_OPTIONAL (p->next) = false;
 
   /* if already a temp */
   if (IS_ITEMP (op))
