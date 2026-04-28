@@ -1224,7 +1224,7 @@ void chandler(_Optional int **ppoi)
 
   *poi = 1;   // no recommended diagnostic
   *ppoi = &i; // non-null constraint on poi is unaffected
-  *poi = 2;   // no recommended diagnostic /* IGNORE */ TODO: improve analysis
+  *poi = 2;   // no recommended diagnostic
 }
 #endif
 
@@ -1246,7 +1246,7 @@ void monica(_Optional int **ppoi, _Optional int *lpoi)
 
   *poi = 1;     // no recommended diagnostic
   *ppoi = lpoi; // non-null constraint on poi is unaffected
-  *poi = 2;     // no recommended diagnostic /* IGNORE */ TODO: improve analysis
+  *poi = 2;     // no recommended diagnostic
 }
 #endif
 

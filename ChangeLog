@@ -3,6 +3,7 @@
 	* src/SDCCast.c,
 	  src/SDCCicode.c,
 	  src/SDCCsymt.c,
+	  src/SDCCgenconstprop.cc,
 	  support/valdiag/tests/_Optional.c,#
 	  support/valdiag/tests/_Optional-draft-2026-04-17.c:
 	  Bring _Optional semantics closer to latest TS draft.

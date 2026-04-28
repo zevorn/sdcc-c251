@@ -898,7 +898,10 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
       if (ic->op == SET_VALUE_AT_ADDRESS || POINTER_SET (ic) || ic->op == FUNCTION || (ic->op == CALL || ic->op == PCALL) && (!IS_SYMOP (ic->left) || !OP_SYMBOL (ic->left)->funcPure))
         {
           for (std::map <int, struct valinfo>::const_iterator i = global_operands.map.begin(); i != global_operands.map.end(); ++i)
-            G[*out].map[i->first] = i->second;
+            if (ic->op == SET_VALUE_AT_ADDRESS || POINTER_SET (ic))
+              valinfo_union (&G[*out].map[i->first], rightvalinfo);
+            else
+              G[*out].map[i->first] = i->second;
         }
 
       if (resultsym)
