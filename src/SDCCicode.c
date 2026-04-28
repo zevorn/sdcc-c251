@@ -2888,16 +2888,7 @@ geniCodePreInc (operand * op, bool lvalue)
     ic = newiCode ('=', NULL, operandFromLit (1));
   else
     ic = newiCode ('+', rop, operandFromLit (size));
-  // Drop _Optional on pointer target,
-  if (IS_PTR (roptype) && isOptional (roptype->next))
-    {
-      roptype = copyLinkChain (roptype);
-      if IS_SPEC (roptype->next)
-        SPEC_OPTIONAL (roptype->next) = false;
-      else
-        DCL_PTR_OPTIONAL (roptype->next) = false;
-      optional_target = true;
-    }
+
   IC_RESULT (ic) = result = newiTempOperand (roptype, 0);
   ADDTOCHAIN (ic);
 
@@ -3006,16 +2997,7 @@ geniCodePreDec (operand * op, bool lvalue)
     ic = newiCode ('!', rop, 0);
   else
     ic = newiCode ('-', rop, operandFromLit (size));
-  // Drop _Optional on pointer target,
-  if (IS_PTR (roptype) && isOptional (roptype->next))
-    {
-      roptype = copyLinkChain (roptype);
-      if IS_SPEC (roptype->next)
-        SPEC_OPTIONAL (roptype->next) = false;
-      else
-        DCL_PTR_OPTIONAL (roptype->next) = false;
-      optional_target = true;
-    }
+
   IC_RESULT (ic) = result = newiTempOperand (roptype, 0);
   ADDTOCHAIN (ic);
 

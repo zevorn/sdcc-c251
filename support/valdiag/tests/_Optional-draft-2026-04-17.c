@@ -26,7 +26,7 @@ char *str_from_struct(_Optional const struct S *pocs)
                          default: 0)); /* IGNORE */ // TODO: implement!
 
   // constraint violation: decayed type is pointer to const char
-  return pocs->m; // todo: implement warning!
+  return pocs->m; // TODO: implement warning!
 }
 
 char *str_from_array(_Optional const char (*paocc)[64])
@@ -43,7 +43,7 @@ char *str_from_array(_Optional const char (*paocc)[64])
                          default: 0)); /* IGNORE */ // TODO: implement!
 
   // constraint violation: decayed type is pointer to const char
-  return *paocc; // todo: implement warning!
+  return *paocc; // TODO: implement warning!
 }
 #endif
 
@@ -167,7 +167,7 @@ typeof(pos->i) *poi;
 
 static_assert(_Generic(poi,
                        _Optional int *: 1,
-                       default: 0)); /* IGNORE */ // todo: implement this!
+                       default: 0)); /* IGNORE */ // TODO: implement this!
 #endif
 
 // EXAMPLE 2 An implementation that performs data-flow analysis is encouraged to produce a
@@ -216,13 +216,13 @@ void squirrel(_Optional char *poi)
 
   static_assert(_Generic(poi++,
                          _Optional char *: 1,
-                          default: 0)); // passes /* IGNORE */ // todo: implement this!
+                          default: 0)); // passes /* IGNORE */ // TODO: implement this!
   // constraint violation: optional qualifier is lost
   puts(poi++); /* WARNING */
 
   static_assert(_Generic(poi--,
                          _Optional char *: 1,
-                         default: 0)); // passes /* IGNORE */ // todo: implement this!
+                         default: 0)); // passes /* IGNORE */ // TODO: implement this!
   // constraint violation: optional qualifier is lost
   puts(poi--); /* WARNING */
 }
@@ -281,19 +281,19 @@ void arthur(_Optional char *poi)
 
   static_assert(_Generic(++poi,
                          _Optional char *: 1,
-                         default: 0)); // passes /* IGNORE */ // todo: implement this!
+                         default: 0)); // passes /* IGNORE */ // TODO: implement this!
 
   // constraint violation: optional qualifier is lost
-  puts(++poi); // todo: should be warning!
+  puts(++poi); /* WARNING */
   puts(poi += 1); /* WARNING */
   puts(poi = poi + 1); /* WARNING */
 
   static_assert(_Generic(--poi,
                          _Optional char *: 1,
-                         default: 0)); // passes /* IGNORE */ // todo: implement this!
+                         default: 0)); // passes /* IGNORE */ // TODO: implement this!
 
   // constraint violation: optional qualifier is lost
-  puts(--poi); // todo: should be warning!
+  puts(--poi); /* WARNING */
   puts(poi -= 1); /* WARNING */
   puts(poi = poi - 1); /* WARNING */
 }
@@ -1350,9 +1350,9 @@ static_assert(_Generic(fofri,
               default:0));
 
 // constraint violation: parameter type is optional-qualified
-void foi(_Optional int oi); // todo: error, but we currently never get here due to stopping at bug above.
-void fopi(int *_Optional opi); // todo: error, but we currently never get here due to stopping at bug above.
-void fopaai(int (*_Optional opaai)[2][3]); // todo: error, but we currently never get here due to stopping at bug above.
+void foi(_Optional int oi); // TODO: error, but we currently never get here due to stopping at bug above.
+void fopi(int *_Optional opi); // TODO: error, but we currently never get here due to stopping at bug above.
+void fopaai(int (*_Optional opaai)[2][3]); // TODO: error, but we currently never get here due to stopping at bug above.
 #endif
 
 // EXAMPLE 2 The following declarations of an identifier for a function are valid because the
@@ -1410,7 +1410,7 @@ int galileo(_Optional int aoi[1])
 
 int gold(_Optional typeof(int (float)) ofri) /* IGNORE */ // TODO: Implement!
 {
-  return ofri(3.14); // recommended diagnostic // todo: warning, but we currently never get here due to bug above.
+  return ofri(3.14); // recommended diagnostic // TODO: warning, but we currently never get here due to bug above.
 }
 #endif
 
