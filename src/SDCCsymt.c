@@ -593,7 +593,7 @@ addDecl (symbol *sym, int type, sym_link *p)
   // if there is a function in this type chain
   if (p && funcInChain (sym->type))
     {
-      processFuncArgs (sym, NULL);
+      processFunc (sym, NULL);
     }
 
   return;
@@ -3798,7 +3798,7 @@ checkFunction (symbol * sym, symbol * csym)
           return 0;
         }
     }
-  else if (compareType (csym->type, sym->type, false) <= 0)
+  else if (compareType (csym->type, sym->type, false) <= 0) // todo: needs tigther checking!
     {
       werrorfl (sym->fileDef, sym->lineDef, E_PREV_DECL_CONFLICT, csym->name, "type", csym->fileDef, csym->lineDef);
       printFromToType (csym->type, sym->type);
@@ -3942,21 +3942,21 @@ cdbStructBlock (int block)
 }
 
 /*-----------------------------------------------------------------*/
-/* processFuncPtrArgs - does some processing with args of func ptrs*/
+/* processFuncPtr - does some processing with function pointers    */
 /*-----------------------------------------------------------------*/
 void
-processFuncPtrArgs (sym_link * funcType)
+processFuncPtr (sym_link * funcType)
 {
-  processFuncArgs (NULL, funcType);
+  processFunc (NULL, funcType);
 }
 
 /*-----------------------------------------------------------------*/
-/* processFuncArgs - does some processing with function args       */
+/* processFunc - does some processing with function (types)        */
 /*                                                                 */
 /*   Leave func NULL if processing a type rather than a symbol     */
 /*-----------------------------------------------------------------*/
 void
-processFuncArgs (symbol *func, sym_link *funcType)
+processFunc (symbol *func, sym_link *funcType)
 {
   value *val;
   int pNum = 1;
@@ -3977,7 +3977,7 @@ processFuncArgs (symbol *func, sym_link *funcType)
     }
 
   if (getenv ("SDCC_DEBUG_FUNCTION_POINTERS"))
-    fprintf (stderr, "SDCCsymt.c:processFuncArgs(%s)\n", funcName);
+    fprintf (stderr, "SDCCsymt.c:processFunc(%s)\n", funcName);
 
   /* find the function declaration within the type */
   while (funcType && !IS_FUNC (funcType))
@@ -3989,7 +3989,16 @@ processFuncArgs (symbol *func, sym_link *funcType)
 
   // Also do return type.
   if (funcType->next)
-    processFuncArgs (0, funcType->next);
+    {
+      processFunc (0, funcType->next);
+      
+      // TODO: we probably should remove named address space qualifiers for intrinsic named address spaces, too.
+      if (isConst (funcType->next) || isVolatile (funcType->next) || isRestrict (funcType->next) || isAtomic (funcType->next) || isOptional (funcType->next) || getAddrspace (funcType->next))
+      {
+        werror (W_QUALIFIED_RETURN);
+        removeQualifiers (funcType->next);
+      }
+    }
 
   /* if this function has variable argument list */
   /* then make the function a reentrant one    */

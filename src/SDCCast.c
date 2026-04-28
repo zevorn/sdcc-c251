@@ -1078,7 +1078,7 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
 
   if (FUNC_NOPROTOTYPE (functype))
     {
-      // Todo: implement this! Idea: build a temporarty function type that can be used for processFuncArgs, which then can be used here.
+      // Todo: implement this! Idea: build a temporarty function type that can be used for processFunc, which then can be used here.
       wassertl (0, "Setting of register parameter vs. other parameter not yet implemented for functions without prototype.");
       return 0;
     }
@@ -6109,7 +6109,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
           if (IS_FUNCPTR (LTYPE (tree)))
             {
               functype = LTYPE (tree)->next;
-              processFuncPtrArgs (functype);
+              processFuncPtr (functype);
             }
           else
             functype = LTYPE (tree);

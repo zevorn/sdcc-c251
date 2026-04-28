@@ -785,6 +785,8 @@ struct
      "pointer to _Optional could not be proven to be non-null at pointer arithmetic", 0 },
   {W_NONCONST_STRINGLIT, ERROR_LEVEL_WARNING,
      "string literal assigned to pointer to non-const", 0 },
+  {W_QUALIFIED_RETURN, ERROR_LEVEL_WARNING,
+     "qualifier on return type has no effect", 0},
 };
 
 /* -------------------------------------------------------------------------------

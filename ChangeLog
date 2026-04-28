@@ -1,3 +1,14 @@
+2026-04-28 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCast.c,
+	  src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCmem.c,
+	  src/SDCCsymt.c,
+	  src/SDCCsymt.h,
+	  support/valdiag/tests/bug-3964.c:
+	  Fix bug #3964.
+
 2026-04-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/MakeList:
