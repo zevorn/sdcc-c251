@@ -1094,7 +1094,7 @@ allocVariables (symbol *symChain)
       /* function then do args processing        */
       if (funcInChain (csym->type))
         {
-          processFuncArgs (csym, NULL);
+          processFunc (csym, NULL);
         }
 
       /* if this is an extern variable then change */

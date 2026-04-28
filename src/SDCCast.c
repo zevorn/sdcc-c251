@@ -1078,7 +1078,7 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
 
   if (FUNC_NOPROTOTYPE (functype))
     {
-      // Todo: implement this! Idea: build a temporarty function type that can be used for processFuncArgs, which then can be used here.
+      // Todo: implement this! Idea: build a temporarty function type that can be used for processFunc, which then can be used here.
       wassertl (0, "Setting of register parameter vs. other parameter not yet implemented for functions without prototype.");
       return 0;
     }
@@ -4022,15 +4022,6 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
     case DEC_OP:
       {
         sym_link *ltc = (tree->right ? RTYPE (tree) : LTYPE (tree));
-        // Drop _Optional on pointer target
-        if (IS_PTR (ltc) && isOptional (ltc->next))
-          {
-            ltc = copyLinkChain (ltc);
-            if (IS_SPEC (ltc->next))
-              SPEC_OPTIONAL (ltc->next) = false;
-            else
-              DCL_PTR_OPTIONAL (ltc->next) = false;
-          }
         COPYTYPE (TTYPE (tree), TETYPE (tree), ltc);
         if (!tree->initMode && IS_CONSTANT (TTYPE (tree)))
           werrorfl (tree->filename, tree->lineno, E_CODE_WRITE, tree->opval.op == INC_OP ? "++" : "--");
@@ -6109,7 +6100,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
           if (IS_FUNCPTR (LTYPE (tree)))
             {
               functype = LTYPE (tree)->next;
-              processFuncPtrArgs (functype);
+              processFuncPtr (functype);
             }
           else
             functype = LTYPE (tree);
