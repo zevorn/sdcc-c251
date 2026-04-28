@@ -2174,9 +2174,10 @@ geniCodeRValue (operand * op, bool force)
 /* checkPtrQualifiers - check for lost pointer qualifiers          */
 /*-----------------------------------------------------------------*/
 static void
-checkPtrQualifiers (sym_link * ltype, sym_link * rtype, operand *op)
+checkPtrQualifiers (sym_link *ltype, sym_link *rtype, operand *op)
 {
-  if (IS_PTR (ltype) && IS_PTR (rtype) && !IS_FUNCPTR (ltype) && !op->isConstEliminated)
+  // Also checking array rtypes is a hack (workaround for pointer decay not having happened earlier).
+  if (IS_PTR (ltype) && (IS_PTR (rtype) || IS_ARRAY (rtype)) && !IS_FUNCPTR (ltype) && !op->isConstEliminated)
     {
       if (!isConst (ltype->next) && isConst (rtype->next))
         werror (W_TARGET_LOST_QUALIFIER, "const");

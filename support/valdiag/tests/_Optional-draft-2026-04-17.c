@@ -26,7 +26,7 @@ char *str_from_struct(_Optional const struct S *pocs)
                          default: 0)); /* IGNORE */ // TODO: implement!
 
   // constraint violation: decayed type is pointer to const char
-  return pocs->m; // TODO: implement warning!
+  return pocs->m; /* WARNING */
 }
 
 char *str_from_array(_Optional const char (*paocc)[64])
@@ -603,7 +603,7 @@ _Optional int oi; // constraint violation /* ERROR */
 // function declarations
 const typeof(int (float)) cfri;     // undefined behavior /* IGNORE */
 volatile typeof(int (float)) vfri;  // undefined behavior
-_Optional typeof(int (float)) ofri; // constraint violation
+_Optional typeof(int (float)) ofri; // constraint violation // compilation already stops two lines above here, so we never get to emit a diagnostic for this line
 
 // typedef declares neither an object nor a function
 typedef _Optional int TOI;                   // valid
