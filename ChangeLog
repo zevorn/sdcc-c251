@@ -1,3 +1,53 @@
+2026-04-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/MakeList:
+	  Disable a test for uc6502-stack-auto target, where it would overflow the stack.
+	* support/regression/fwk/include/testfwk.h,
+	  support/regression/tests/bug-460444.c,
+	  support/regression/tests/gcc-torture-execute-20050826-1.c,
+	  support/regression/tests/gcc-torture-execute-920810-1.c,
+	  support/regression/tests/logic.c.in,
+	  support/regression/tests/simplefloat.c,
+	  support/regression/README-tests:
+	  Fix bug #3893.
+	* support/valdiag/tests/_Optional.c:
+	  Disable a check on a line in preparation for rework of _Optional warnings.
+
+2026-04-26 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genand.c,
+	  src/mos6502/genlshift.c,
+	  src/mos6502/genrshift.c:
+	  Refactor genlshift and genrshift.
+
+2026-04-24 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/gen.c,
+          src/mos6502/gen.h,
+          src/mos6502/genand.c,
+          src/mos6502/genlshift.c,
+          src/mos6502/genminus.c,
+          src/mos6502/genor.c,
+          src/mos6502/genplus.c,
+          src/mos6502/genrot.c,
+          src/mos6502/genrshift.c,
+          src/mos6502/genxor.c,
+          src/mos6502/stackops.c,
+          src/mos6502/tempops.c:
+          Add m6502_ prefix to several non static functions.
+
+2026-04-22 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genrshift.c:
+        Small right shift improvements.
+
+2026-04-21 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/genand.c,
+        src/mos6502/genor.c,
+        src/mos6502/genxor.c:
+        Free accumulator in the generic loop.
+
 2026-04-20 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge atomic branch.
@@ -13,16 +63,17 @@
 	  Fix bug #3978.
 
 2026-04-18 Gabriele Gorla <gorlik@yahoo.com>
-   	* src/mos6502/genlshift.c:
-      Fix regression failure exposed by r16454.
-   	* src/mos6502/gen.c:
-      Add AOP_SOF to m6502_aopCanShift().
+
+	* src/mos6502/genlshift.c:
+	  Fix regression failure exposed by r16454.
+ 	* src/mos6502/gen.c:
+ 	  Add AOP_SOF to m6502_aopCanShift().
    	* src/mos6502/genand.c:
-      Add special case for bit 7 on the stack.
+          Add special case for bit 7 on the stack.
    	* device/lib/mos6502-stack-auto/_muluchar.s:
-      Implement muluchar in assembly.
+          Implement muluchar in assembly.
    	* src/mos6502/genlshift.c:
-      Only save X when not dead.
+          Only save X when not dead.
 
 2026-04-17 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -34,7 +85,8 @@
 	  --norestartseqatomics option, RFE #1015.
 
 2026-04-11 Gabriele Gorla <gorlik@yahoo.com>
-   	* src/mos6502/gen.c:
+
+	* src/mos6502/gen.c:
 	  Fix bug in setupDPTR.
 
 2026-04-11 Philipp Klaus Krause <philipp@colecovision.eu>
@@ -42,8 +94,9 @@
 	* src/SDCCgenconstprop.cc:
 	  Enable narrowing of multiplications to 8x8->16.
 
-2026-04-09 Gabriele Gorla <gorlik@yahoo.com>
-   	* src/mos6502/gen.c,
+26-04-09 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/gen.c,
    	  src/mos6502/genand.c,
    	  src/mos6502/genor.c,
    	  src/mos6502/genxor.c:
@@ -64,13 +117,13 @@
 
 2026-04-07 Gabriele Gorla <gorlik@yahoo.com>
 
-   	* src/mos6502/gen.c,
+	* src/mos6502/gen.c,
 	  src/mos6502/gen.h:
    	  Reverse order of genCopy if saves a load.
 
 2026-04-06 Gabriele Gorla <gorlik@yahoo.com>
 
-   	* src/mos6502/gen.c:
+	* src/mos6502/gen.c:
    	  Optimize loading/storing bitfiels when size is multiple of 8 bits.
 
 2026-04-06 Daniel Drotos <dr.dkdb@gmail.com>

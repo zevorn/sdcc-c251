@@ -181,7 +181,7 @@ void jim(_Optional int *i)
 	} else {
 		*i = 8; /* IGNORE */
 	foo(&*i);
-	foo(&i[15]);
+	foo(&i[15]); /* IGNORE */ // TODO: Unwnted diagnostic for -mmcs51 --model-large here!
 	}
 	k = i ? *i : 0; /* IGNORE */
 }

@@ -22,21 +22,21 @@ alwaysFalse(void)
 static {type}
 neverGetHere1(void)
 {
-    FAILM("Shouldn't get here 1");
+    ASSERT (0);
     return 0;
 }
 
 static {type}
 neverGetHere2(void)
 {
-    FAILM("Shouldn't get here 2");
+    ASSERT (0);
     return 0;
 }
 
 static {type}
 neverGetHere3(void)
 {
-    FAILM("Shouldn't get here 3");
+    ASSERT (0);
     return 0;
 }
 
