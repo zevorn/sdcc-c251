@@ -53,7 +53,7 @@ SDCC_AS        += sdas/asz80
 SDCC_LD        += sdcc-ldz80
 endif
 
-ifneq ($(OPT_DISABLE_R2K)$(OPT_DISABLE_R2KA)$(OPT_DISABLE_R3KA), 111)
+ifneq ($(OPT_DISABLE_R2K)$(OPT_DISABLE_R2KA)$(OPT_DISABLE_R3KA)$(OPT_DISABLE_R4K)$(OPT_DISABLE_R5K)$(OPT_DISABLE_R6K), 11111)
 SDCC_AS        += sdas/asrab
 SDCC_LD        += sdcc-ldz80
 endif

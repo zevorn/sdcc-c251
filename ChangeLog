@@ -1,3 +1,8 @@
+2026-05-01 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Makefile.in:
+	  Fix bug #3980.
+
 2026-04-28 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* Merge _Optional branch.
