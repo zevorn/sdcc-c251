@@ -9514,14 +9514,26 @@ genPlusIncr (const iCode *ic)
   /* we can if the aops of the left & result match or
      if they are in registers and the registers are the
      same */
-  if (sameRegs (IC_LEFT (ic)->aop, IC_RESULT (ic)->aop))
+  if (sameRegs (ic->left->aop, ic->result->aop))
     {
+      bool save_iy = false;
+      if (ic->left->aop->type == AOP_IY)
+        {
+          if (isRegDead (HL_IDX, ic))
+            ic->left->aop->type = AOP_HL;
+          else
+            save_iy = !isRegDead (IY_IDX, ic);
+        }
+      if (save_iy)
+        _push (PAIR_IY);
       while (icount--)
-        emit3 (A_INC, IC_LEFT (ic)->aop, 0);
-      return TRUE;
+        emit3 (A_INC, ic->left->aop, 0);
+      if (save_iy)
+        _pop (PAIR_IY);
+      return true;
     }
 
-  return FALSE;
+  return false;
 }
 
 static bool

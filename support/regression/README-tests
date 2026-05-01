@@ -22,7 +22,7 @@ The file shall include the test framework early:
 
 #include <testfwk.h>
 
-There should be at least one test function. Test functions take no parameters and return void and their names start with "test", and the function name shall be at the start of the line.
+There should be at least one test function. Test functions have a single void parameter and return void and their names start with "test", and the function name shall be at the start of the line.
 
 Example:
 void
