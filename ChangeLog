@@ -3,6 +3,9 @@
 	* Makefile.in,
 	  Makefile.common.in:
 	  Fix build issue introduced by [r16487]
+	* src/mos6502/ralloc2.cc,
+	  src/hc08/ralloc2.cc:
+      Fix several typos.
 
 2026-05-01 Philipp Klaus Krause <philipp@colecovision.eu>
 
