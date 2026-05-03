@@ -6,6 +6,8 @@
 	* src/mos6502/ralloc2.cc,
 	  src/hc08/ralloc2.cc:
       Fix several typos.
+	* src/mos6502/genplus.c:
+      Fix corner case in genPulsInc().
 
 2026-05-01 Philipp Klaus Krause <philipp@colecovision.eu>
 

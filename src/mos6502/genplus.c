@@ -44,7 +44,7 @@ genPlusInc (iCode * ic)
   operand *left   = IC_LEFT (ic);
   operand *result = IC_RESULT (ic);
 
-  int icount;
+  unsigned int icount;
   unsigned int size = AOP_SIZE (result);
   symbol *tlbl = NULL;
   bool needpullx = false;
@@ -109,7 +109,7 @@ genPlusInc (iCode * ic)
       return true;
     }
 
-  if(IS_AOP_XY (AOP (result)) && icount == 1 )
+  if(IS_AOP_XY (AOP (result)) && icount <= 1 )
     {
       loadRegFromAop (m6502_reg_xy, AOP (left), 0);
       if(icount>0)
