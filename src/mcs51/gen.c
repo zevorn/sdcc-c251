@@ -2651,7 +2651,7 @@ release:
 /*-----------------------------------------------------------------*/
 /* genCpl - generate code for complement                           */
 /* no longer used; todo: chekc if something from here could still  */
-/* be useful in genXor, then remove genCpl!                        */
+/* be useful in genXor for AOP_CRY, then remove genCpl!            */
 /*-----------------------------------------------------------------*/
 static void
 genCpl (iCode * ic)
@@ -8852,13 +8852,16 @@ genXor (iCode * ic, iCode * ifx)
               if (aopIsLitVal (right->aop, offset, 1, 0x00))
                 {
                   opPut (result, opGet (left, offset, FALSE, FALSE), offset);
-                   continue;
+                  continue;
                 }
               else if (AOP_TYPE (right) == AOP_LIT && AOP_TYPE (left) == AOP_ACC)
                 {
                   // this should be the only use of left so A,B can be overwritten
                   char *l = Safe_strdup (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("xrl", "%s,%s", l, opGet (right, offset, FALSE, FALSE));
+                  if (aopIsLitVal (right->aop, offset, 1, 0xff))
+                    emitcode ("cpl", "a");
+                  else
+                    emitcode ("xrl", "%s,%s", l, opGet (right, offset, FALSE, FALSE));
                   opPut (result, l, offset);
                   Safe_free (l);
                   continue;
@@ -8898,7 +8901,10 @@ genXor (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  if (aopIsLitVal (right->aop, offset, 1, 0xff))
+                    emitcode ("cpl", "a");
+                  else
+                    emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
                 }
               else
                 {

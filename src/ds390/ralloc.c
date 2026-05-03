@@ -3486,6 +3486,9 @@ ds390_assignRegisters (ebbIndex * ebbi)
   /* now get back the chain */
   ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbs, count));
 
+  /* Redo generalized constant propagation */
+  recomputeValinfos (ic, ebbi, "_3");
+
   gen390Code (ic);
 
   /* free up any _G.stackSpil locations allocated */

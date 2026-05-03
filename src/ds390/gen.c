@@ -546,6 +546,38 @@ _endLazyDPSEvaluation (void)
     }
 }
 
+/*-----------------------------------------------------------------*/
+/* aopIsLitVal - asmop from offset is val                          */
+/*-----------------------------------------------------------------*/
+static bool
+aopIsLitVal (const asmop *aop, int offset, int size, unsigned long long int val)
+{
+  wassert_bt (size <= sizeof (unsigned long long int)); // Make sure we are not testing outside of argument val.
+
+  for(; size; size--, offset++)
+    {
+      unsigned char b = val & 0xff;
+      val >>= 8;
+
+      // Leading zeroes
+      if (aop->size <= offset && !b && aop->type != AOP_LIT)
+        continue;
+
+      // Information from generalized constant propagation analysis
+      if (!aop->valinfo.anything && (offset * 8 < sizeof (aop->valinfo.knownbitsmask) * CHAR_BIT) &&
+        ((aop->valinfo.knownbitsmask >> (offset * 8)) & 0xff) == 0xff &&
+        ((aop->valinfo.knownbits >> (offset * 8)) & 0xff) == b)
+        continue;
+
+      if (aop->type != AOP_LIT)
+        return (false);
+
+      if (byteOfVal (aop->aopu.aop_lit, offset) != b)
+        return (false);
+    }
+
+  return (true);
+}
 
 /*-----------------------------------------------------------------*/
 /* newAsmop - creates a new asmOp                                  */
@@ -558,6 +590,7 @@ newAsmop (short type)
   aop = Safe_calloc (1, sizeof (asmop));
   aop->type = type;
   aop->allocated = 1;
+  aop->valinfo.anything = true;
   return aop;
 }
 
@@ -1062,6 +1095,7 @@ aopOp (operand * op, iCode * ic, bool result, bool useDP2)
       op->aop = aop = newAsmop (AOP_LIT);
       aop->aopu.aop_lit = OP_VALUE (op);
       aop->size = getSize (operandType (op));
+      aop->valinfo = getOperandValinfo (ic, op);
       return;
     }
 
@@ -1094,6 +1128,8 @@ aopOp (operand * op, iCode * ic, bool result, bool useDP2)
   if (IS_TRUE_SYMOP (op))
     {
       op->aop = aopForSym (ic, OP_SYMBOL (op), result, useDP2);
+      if (!result)
+        op->aop->valinfo = getOperandValinfo (ic, op);
       return;
     }
 
@@ -1177,6 +1213,8 @@ aopOp (operand * op, iCode * ic, bool result, bool useDP2)
               sym->usl.spillLoc->aop = NULL;
             }
           sym->aop = op->aop = aop = aopForSym (ic, sym->usl.spillLoc, result, useDP2);
+          if (!result)
+            aop->valinfo = getOperandValinfo (ic, op);
           if (getSize (sym->type) != getSize (sym->usl.spillLoc->type))
             {
               /* Don't reuse the new aop, go with the last one */
@@ -2295,7 +2333,7 @@ release:
 /*-----------------------------------------------------------------*/
 /* genCpl - generate code for complement                           */
 /* no longer used; todo: chekc if something from here could still  */
-/* be useful in genXor, then remove genCpl!                        */
+/* be useful in genXor for AOP_CRY, then remove genCpl!            */
 /*-----------------------------------------------------------------*/
 static void
 genCpl (iCode * ic)
@@ -8489,7 +8527,10 @@ genXor (iCode *ic, iCode *ifx)
               else if (IS_AOP_PREG (left))
                 {
                   MOVA (aopGet (left, offset, FALSE, FALSE, NULL));
-                  emitcode ("xrl", "a,%s", aopGet (right, offset, FALSE, TRUE, DP2_RESULT_REG));
+                  if (aopIsLitVal (right->aop, offset, 1, 0xff))
+                    emitcode ("cpl", "a");
+                  else
+                    emitcode ("xrl", "a,%s", aopGet (right, offset, FALSE, TRUE, DP2_RESULT_REG));
                   aopPut (result, "a", offset);
                 }
               else
@@ -8519,7 +8560,10 @@ genXor (iCode *ic, iCode *ifx)
               else if (aopGetUsesAcc (left, offset))
                 {
                   MOVA (aopGet (left, offset, FALSE, FALSE, NULL));
-                  emitcode ("xrl", "a,%s", aopGet (right, offset, FALSE, FALSE, DP2_RESULT_REG));
+                  if (aopIsLitVal (right->aop, offset, 1, 0xff))
+                    emitcode ("cpl", "a");
+                  else
+                    emitcode ("xrl", "a,%s", aopGet (right, offset, FALSE, FALSE, DP2_RESULT_REG));
                   aopPut (result, "a", offset);
                 }
               else
