@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc supports struct!
-#if 0
 struct blah {
     int m1, m2;
 };
@@ -25,16 +23,13 @@ void die(struct blah arg)
         ASSERT (0);
     }
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
     struct blah s = { 1, 2 };
 
     die(s);
     return;
-#endif
 }
 

@@ -8,7 +8,7 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc can pass struct!
+// TODO: Enable when sdcc supports this!
 #if 0
 typedef unsigned long int st;
 typedef unsigned long long dt;

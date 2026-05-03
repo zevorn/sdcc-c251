@@ -4,7 +4,8 @@ dbra-1.c from the execute part of the gcc torture tests.
 
 #include <testfwk.h>
 
-#if 0 // TODO: enable when SDCC supprots K&R-style
+#pragma disable_warning 278
+
 f1 (a)
      long a;
 {
@@ -76,12 +77,11 @@ f6 (a)
     }
   return -1;
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
+#if 0 // TODO: Fix the abort stuff, enable!
   if (f1 (5L) != 5)
     abort ();
   if (f2 (1L) != 0)

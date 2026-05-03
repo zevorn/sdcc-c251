@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc supports passing of structs!
-#if 0
 struct foo { int a, b, c; };
 
 void
@@ -24,15 +22,12 @@ sister (struct foo f, int b, int c)
 {
   brother ((f.b == b), b, c);
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   struct foo f = { 7, 8, 9 };
   sister (f, 1, 2);
   return;
-#endif
 }
 

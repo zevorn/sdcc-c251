@@ -1,3 +1,11 @@
+2026-05-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* doc/sdccman.lyx:
+	  Document lack of #embed in C23 mode.
+	* support/regression/MakeList,
+	  support/regression/tests/gcc-torture-execute-*.c:
+	  Enable test cases from GCC for features that have since been implemented in SDCC.
+
 2026-05-02 Gabriele Gorla <gorlik@yahoo.com>
 
 	* Makefile.in,
@@ -5,7 +13,7 @@
 	  Fix build issue introduced by [r16487]
 	* src/mos6502/ralloc2.cc,
 	  src/hc08/ralloc2.cc:
-      Fix several typos.
+	  Fix several typos.
 	* src/mos6502/genplus.c:
       Fix corner case in genPlusInc().
 	* src/mos6502/gen.c:

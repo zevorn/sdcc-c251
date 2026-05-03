@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc can return struct!
-#if 0
 typedef struct {
     int v[4];
 } Test1;
@@ -40,14 +38,11 @@ Test1 func2()
     tmp.v[3] = 40;
     return tmp;
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
     func1();
     return;
-#endif
 }
 

@@ -6,7 +6,6 @@ inst-check.c from the execute part of the gcc torture tests.
 
 #include <stdarg.h>
 
-#if 0 // TODO: EMable when SDCC supports K&R-style
 f(m)
 {
   int i,s=0;
@@ -14,7 +13,6 @@ f(m)
     s+=i;
   return s;
 }
-#endif
 
 void
 testTortureExecute (void)

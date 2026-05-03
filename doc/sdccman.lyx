@@ -10747,6 +10747,10 @@ long long
 .
 \end_layout
 
+\begin_layout Itemize
+#embed is not supported
+\end_layout
+
 \begin_layout Subsubsection*
 Features missing in some ports
 \end_layout

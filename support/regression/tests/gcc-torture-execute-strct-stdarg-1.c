@@ -58,8 +58,6 @@ testTortureExecute (void)
   x[0].g = 50;
   x[1].g = 51;
   x[2].g = 52;
-#if 0 // TODO: Enable when bug #3365 (passign array element as struct param) is fixed
   f (3, x[0], x[1], x[2], (long) 123);
-#endif
   return;
 }

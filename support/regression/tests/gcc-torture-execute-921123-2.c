@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc supports struct passing!
-#if 0
 typedef struct
 {
   unsigned short b0, b1, b2, b3;
@@ -23,12 +21,10 @@ void f (four_quarters j)
   b = j.b2;
   a = j.b3;
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   four_quarters x;
   x.b0 = x.b1 = x.b2 = 0;
   x.b3 = 38;
@@ -36,6 +32,5 @@ testTortureExecute (void)
   if (a != 38)
     ASSERT(0);
   return;
-#endif
 }
 

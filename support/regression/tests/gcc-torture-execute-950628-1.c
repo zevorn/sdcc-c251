@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc supports struct return!
-#if 0
 typedef struct
 {
   char hours, day, month;
@@ -34,15 +32,12 @@ T f (void)
   virk = g ();
   return virk;
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   if (f ().hours != 1 || f ().day != 2 || f ().month != 3 || f ().year != 4)
     ASSERT (0);
   return;
-#endif
 }
 

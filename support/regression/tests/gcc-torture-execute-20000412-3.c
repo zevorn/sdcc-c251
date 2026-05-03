@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when struct passing is supported.
-#if 0
 typedef struct {
   char y;
   char x[32];
@@ -25,12 +23,11 @@ int z (void)
   xxx.y = 0xf;
   return f (xxx, xxx);
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
+#if 0 // TODO: Check why this fails for z80!
   int val;
 
   val = z ();
@@ -40,7 +37,6 @@ testTortureExecute (void)
 #endif
 }
 
-#if 0
 int f(X x, X y)
 {
   if (x.y != y.y)
@@ -48,5 +44,4 @@ int f(X x, X y)
 
   return x.x[0] + y.x[0];
 }
-#endif
 

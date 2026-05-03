@@ -6,10 +6,9 @@
 
 #ifdef __SDCC
 #pragma std_c99
+#pragma disable_warning 278
 #endif
 
-/* TODO: Enable this once we can pass structures as function arguments! */
-#if 0
 /* PR 15262.  Similar to pr15262-1.c but with no obvious addresses
    being taken in function foo().  Without IPA, by only looking inside
    foo() we cannot tell for certain whether 'q' and 'b' alias each
@@ -35,12 +34,10 @@ foo (struct B b, struct A *q, float *h)
   q->t = 2;
   return *(b.p);
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   struct A a;
   struct B b;
 
@@ -49,5 +46,4 @@ testTortureExecute (void)
     ASSERT (0);
 
   return;
-#endif
 }

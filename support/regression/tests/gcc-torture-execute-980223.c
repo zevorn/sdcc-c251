@@ -6,10 +6,9 @@
 
 #ifdef __SDCC
 #pragma std_c99
+#pragma disable_warning 85
 #endif
 
-// TODO: Enable when sdcc can return struct!
-#if 0
 typedef struct { char *addr; long type; } object;
 
 object bar (object blah)
@@ -33,16 +32,13 @@ object foo (object x, object y)
 int nil;
 object cons1[2] = { {(char *) &nil, 0}, {(char *) &nil, 0} };
 object cons2[2] = { {(char *) &cons1, 64}, {(char *) &nil, 0} };
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   object x = {(char *) &cons2, 64};
   object y = {(char *) &nil, 0};
   object three = foo(x,y);
   return;
-#endif
 }
 

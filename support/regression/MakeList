@@ -227,26 +227,30 @@ EXCLUDE_mcs51-large-stack-auto += \
 	EXCLUDE_mcs51-small-stack-auto += \
 	gte_pr58365
 
+# SDCC bug #3982
+	EXCLUDE_ARCH_mos6502 += \
+	gte_pr30185 \
+	gte_pr58365 \
+	tst_gcc-torture-execute-20001026-1
+
 # Target does not yet support struct/union return
-EXCLUDE_hc08 += \
+EXCLUDE_nostructret = \
 	gte_991019-1 \
 	gte_pr30185 \
-	gte_pr58365
-EXCLUDE_s08 += \
-	gte_991019-1 \
-	gte_pr30185 \
-	gte_pr58365
-EXCLUDE_s08-stack-auto += \
-	gte_991019-1 \
-	gte_pr30185 \
-	gte_pr58365
-EXCLUDE_ds390 += \
-	gte_991019-1 \
-	gte_pr30185 \
-	gte_pr58365
-EXCLUDE_ARCH_mos6502 += \
-	gte_pr30185 \
-	gte_pr58365
+	gte_pr58365 \
+	tst_gcc-torture-execute-20001026-1 \
+	tst_gcc-torture-execute-931005-1 \
+	tst_gcc-torture-execute-950628-1 \
+	tst_gcc-torture-execute-950710-1 \
+	tst_gcc-torture-execute-961223-1 \
+	tst_gcc-torture-execute-980223 \
+	tst_gcc-torture-execute-990525-2 \
+	tst_gcc-torture-execute-pr39120
+
+EXCLUDE_hc08 += $(EXCLUDE_nostructret)
+EXCLUDE_s08 += $(EXCLUDE_nostructret)
+EXCLUDE_s08-stack-auto += $(EXCLUDE_nostructret)
+EXCLUDE_ds390 += $(EXCLUDE_nostructret)
 
 # TODO: Check these
 EXCLUDE_ARCH_pdk += \
@@ -291,7 +295,10 @@ EXCLUDE_pdk13 += \
 	gte_pr57860 \
 	gte_pr58365 \
 	gte_pr58640-2 \
-	gte_shiftdi
+	gte_shiftdi \
+	tst_gcc-torture-execute-20000412-3 \
+	tst_gcc-torture-execute-961223-1 \
+	tst_gcc-torture-execute-pr15262-2
 EXCLUDE_pdk14 += \
 	gte_align-2 \
 	gte_pr102134 \
@@ -300,7 +307,10 @@ EXCLUDE_pdk14 += \
 	gte_pr33669 \
 	gte_pr50865 \
 	gte_20001124-1 \
-	gte_991019-1
+	gte_991019-1 \
+	tst_gcc-torture-execute-20000412-3 \
+	tst_gcc-torture-execute-961223-1 \
+	tst_gcc-torture-execute-pr15262-2
 EXCLUDE_pdk15 += \
 	gte_20001124-1
 EXCLUDE_pdk15-stack-auto += \
