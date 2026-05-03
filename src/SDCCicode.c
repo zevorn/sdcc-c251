@@ -1323,7 +1323,7 @@ extern bool regalloc_dry_run;
 /* getBuiltInParms - returns parameters to a builtin function      */
 /*-----------------------------------------------------------------*/
 iCode *
-getBuiltinParms (iCode * fic, int *pcount, operand ** parms)
+getBuiltinParms (iCode *fic, int *pcount, operand **parms)
 {
   sym_link *ftype;
   iCode *ic = fic;
@@ -1343,9 +1343,9 @@ getBuiltinParms (iCode * fic, int *pcount, operand ** parms)
 
   ic->generated = 1;
   /* make sure this is a builtin function call */
-  assert (IS_SYMOP (IC_LEFT (ic)));
+  wassert (IS_SYMOP (IC_LEFT (ic)));
   ftype = operandType (IC_LEFT (ic));
-  assert (IFFUNC_ISBUILTIN (ftype));
+  wassert (IFFUNC_ISBUILTIN (ftype));
   return ic;
 }
 

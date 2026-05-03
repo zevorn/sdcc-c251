@@ -1215,7 +1215,7 @@ optimizeValinfoConst (iCode *sic)
             }
           else
             {
-              if (left && IS_ITEMP (left) && !vleft.anything && vleft.min == vleft.max)
+              if (left && IS_SYMOP (left) && ic->op != ADDRESS_OF && ic->op != CALL && !vleft.anything && vleft.min == vleft.max) // TODO: Why doesn't CALL work here? It makes a tinyaes test fail for z80, where the memcpy of symbol gets replaced?
                 {
 #ifdef DEBUG_GCP_OPT
                   std::cout << "Replace left (" << OP_SYMBOL(left)->name << "), key " << left->key << " at " << ic->key << "\n";
@@ -1227,7 +1227,7 @@ optimizeValinfoConst (iCode *sic)
                   attachiCodeOperand (operandFromValue (valCastLiteral (operandType (left), vleft.min, vleft.min), false), &ic->left, ic);
                   ic->left->isaddr = isaddr;
                 }
-              if (right && IS_ITEMP (right) && !vright.anything && vright.min == vright.max)
+              if (right && IS_SYMOP (right) && !vright.anything && vright.min == vright.max)
                 {
 #ifdef DEBUG_GCP_OPT
                   std::cout << "Replace right at " << ic->key << "\n";
