@@ -27,14 +27,12 @@ int z (void)
 void
 testTortureExecute (void)
 {
-#if 0 // TODO: Check why this fails for z80!
   int val;
 
   val = z ();
   if (val != 0x60)
     ASSERT (0);
   return;
-#endif
 }
 
 int f(X x, X y)

@@ -7624,10 +7624,20 @@ genPointerPush (const iCode *ic)
   if (!isRegDead (HL_IDX, ic) && !(isRegDead (DE_IDX, ic) && !IS_SM83) || !isRegDead (A_IDX, ic))
     UNIMPLEMENTED;
 
-  bool swap_de = !isRegDead (HL_IDX, ic);
-
-  if (swap_de && !IS_SM83)
-    emit3w (A_EX, ASMOP_DE, ASMOP_HL);
+   bool swap_de = false;
+  if (!isRegDead (HL_IDX, ic) && !IS_SM83)
+    {
+      if (aopInReg (ic->left->aop, 0, HL_IDX))
+        {
+          emit3 (A_LD, ASMOP_E, ASMOP_L);
+          emit3 (A_LD, ASMOP_D, ASMOP_H);
+        }
+      else if (ic->left->aop->regs[L_IDX] >= 0 || ic->left->aop->regs[H_IDX] >= 0)
+        UNIMPLEMENTED;
+      else
+        emit3w (A_EX, ASMOP_DE, ASMOP_HL);
+      swap_de = true;
+    }
 
   genMove (ASMOP_HL, IC_LEFT (ic)->aop, true, true, swap_de ? false : isRegDead (DE_IDX, ic), isRegDead (IY_IDX, ic));
 

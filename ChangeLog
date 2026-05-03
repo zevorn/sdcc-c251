@@ -1,5 +1,12 @@
 2026-05-03 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/z80/gen.c,
+	  src/z80/peeph.def,
+	  support/regression/tests/gcc-torture-execute-20000412-3.c:
+	  Fix bug #3983.
+
+2026-05-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* doc/sdccman.lyx:
 	  Document lack of #embed in C23 mode.
 	* support/regression/MakeList,

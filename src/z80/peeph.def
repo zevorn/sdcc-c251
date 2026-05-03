@@ -160,6 +160,15 @@ replace restart {
 } if notVolatile(%1), notSame(%1 '(hl+)' '(hl-)')
 
 replace restart {
+	ld	%1, hl
+	ld	hl, #0
+	add	hl, %1
+} by {
+	ld	%1, hl
+	; common peephole 9c reused value still in hl.
+} if notUsed('hf'), notUsed('cf')
+
+replace restart {
 	ld	%1, %2
 	ld	%3, %4
 	ld	%5, %1
