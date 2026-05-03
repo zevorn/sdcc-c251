@@ -5035,8 +5035,17 @@ genEndFunction (iCode * ic)
     {
       //  if (sym->regsUsed && sym->regsUsed->size)
       // FIXME: need to figure out how to get the exact registers needed by the function return
-      m6502_useReg(m6502_reg_a);
-      m6502_useReg(m6502_reg_x);
+      if(IS_VOID(sym->type->next))
+        {
+          m6502_freeReg(m6502_reg_a);
+          m6502_freeReg(m6502_reg_x);
+          m6502_freeReg(m6502_reg_y);
+        }
+      else
+        {
+          m6502_useReg(m6502_reg_a);
+          m6502_useReg(m6502_reg_x);
+        }
       _S.stackPushes += sym->stack;
       adjustStack (sym->stack);
     }

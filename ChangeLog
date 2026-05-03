@@ -7,7 +7,9 @@
 	  src/hc08/ralloc2.cc:
       Fix several typos.
 	* src/mos6502/genplus.c:
-      Fix corner case in genPulsInc().
+      Fix corner case in genPlusInc().
+	* src/mos6502/gen.c:
+      Free registers in genEndFunction for void functions.
 
 2026-05-01 Philipp Klaus Krause <philipp@colecovision.eu>
 
