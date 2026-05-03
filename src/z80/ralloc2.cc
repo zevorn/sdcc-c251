@@ -554,7 +554,7 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
     return(false);
 
   // For some iCodes, we can handle anything.
-  if(ic->op == '~' || ic->op == IPUSH || ic->op == SEND || ic->op == LABEL || ic->op == GOTO ||
+  if(ic->op == IPUSH || ic->op == SEND || ic->op == LABEL || ic->op == GOTO ||
     ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND || ic->op == UNARYMINUS && IS_FLOAT (operandType (ic->left)) || ic->op == '!' ||
     ic->op == EQ_OP || ic->op == NE_OP ||
     ic->op == GETABIT || ic->op == GETBYTE || ic->op == GETWORD ||
@@ -718,7 +718,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 #endif
 
   // For some iCodes, code generation can handle anything.
-  if(ic->op == '~' || ic->op == CALL || ic->op == RETURN || ic->op == LABEL || ic->op == GOTO ||
+  if(ic->op == CALL || ic->op == RETURN || ic->op == LABEL || ic->op == GOTO ||
     ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND ||
     ic->op == ADDRESS_OF ||
     ic->op == GETBYTE || ic->op == GETWORD ||
@@ -991,7 +991,6 @@ static bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     !(IC_LEFT(ic) && IS_TRUE_SYMOP(IC_LEFT(ic))) &&
     (ic->op == '|' ||
     ic->op == '^' ||
-    ic->op == '~' ||
     ic->op == BITWISEAND))
     return(true);
 
@@ -1204,7 +1203,6 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
       
     // Exact cost:
     case '!':
-    case '~':
     case UNARYMINUS:
     case '+':
     case '-':

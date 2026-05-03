@@ -14388,23 +14388,6 @@ genXor (const iCode *ic, iCode *ifx)
 }
 
 /*-----------------------------------------------------------------*/
-/* genCpl - generate code for complement                           */
-/*-----------------------------------------------------------------*/
-static void
-genCpl (const iCode *ic)
-{
-  /* assign asmOps to operand & result */
-  aopOp (IC_LEFT (ic), ic, false, false);
-  aopOp (IC_RESULT (ic), ic, true, false);
-
-  genEor (ic, 0, IC_RESULT (ic)->aop, IC_LEFT (ic)->aop, ASMOP_MONE);
-
-  /* release the aops */
-  freeAsmop (IC_LEFT (ic), 0);
-  freeAsmop (IC_RESULT (ic), 0);
-}
-
-/*-----------------------------------------------------------------*/
 /* genGetByte - generates code to get a single byte                */
 /*-----------------------------------------------------------------*/
 static void
@@ -20380,11 +20363,6 @@ genZ80iCode (iCode * ic)
     case '!':
       emitDebug ("; genNot");
       genNot (ic);
-      break;
-
-    case '~':
-      emitDebug ("; genCpl");
-      genCpl (ic);
       break;
 
     case UNARYMINUS:

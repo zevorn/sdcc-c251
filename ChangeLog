@@ -1,5 +1,17 @@
 2026-05-03 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/SDCCcse.c,
+	  src/SDCCgenconstprop.cc,
+	  src/SDCCicode.c,
+	  src/SDCClospre.cc,
+	  src/*/gen.c,
+	  src/*/ralloc.c,
+	  src/*/ralloc2.cc,
+	  src/pic16/genutils.c:
+	  Remove ~ iCode, RFE #971.
+
+2026-05-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/gen.c,
 	  src/z80/peeph.def,
 	  support/regression/tests/gcc-torture-execute-20000412-3.c:

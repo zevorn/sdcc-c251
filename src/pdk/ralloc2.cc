@@ -44,7 +44,7 @@ static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
     return;
 
   // Todo: More fine-grained control for these.
-  if (!(ic->op == '-' || ic->op == UNARYMINUS && !IS_FLOAT (operandType (left)) || ic->op == '~' ||
+  if (!(ic->op == '-' || ic->op == UNARYMINUS && !IS_FLOAT (operandType (left)) ||
     ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND))
     return;
 
@@ -140,7 +140,7 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
   bool right_dir = IS_TRUE_SYMOP (right) || IS_ITEMP (right) && !(options.stackAuto || reentrant) && !right_in_A;
 
   // For some iCodes, code generation can handle anything.
-  if (ic->op == GETBYTE || ic->op == '=' || ic->op == DUMMY_READ_VOLATILE || ic->op == CAST || ic->op == GET_VALUE_AT_ADDRESS || ic->op == SET_VALUE_AT_ADDRESS || ic->op == '~' || ic->op == '|' || ic->op == '^' || ic->op == BITWISEAND)
+  if (ic->op == GETBYTE || ic->op == '=' || ic->op == DUMMY_READ_VOLATILE || ic->op == CAST || ic->op == GET_VALUE_AT_ADDRESS || ic->op == SET_VALUE_AT_ADDRESS || ic->op == '|' || ic->op == '^' || ic->op == BITWISEAND)
     return(true);
 
   if(result && IS_ITEMP(result) && OP_SYMBOL_CONST(result)->remat && !operand_in_reg(result, REG_A, ia, i, G) && !operand_in_reg(result, REG_P, ia, i, G))
@@ -409,7 +409,6 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 #endif
       return(0.0f);
     case '!':
-    case '~':
     case UNARYMINUS:
     case '+':
     case '-':

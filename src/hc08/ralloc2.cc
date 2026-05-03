@@ -136,7 +136,6 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   // Instructions that can handle anything.
   if(ic->op == '!' ||
-    ic->op == '~' ||
     ic->op == UNARYMINUS ||
     ic->op == CALL ||
     ic->op == PCALL ||
@@ -240,7 +239,6 @@ static bool AXinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   const i_assignment_t &ia = a.i_assignment;
 
   if(ic->op == '!' ||
-    ic->op == '~' ||
     ic->op == IPUSH ||
     ic->op == CALL ||
     ic->op == FUNCTION ||
@@ -457,7 +455,6 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case INLINEASM:
       return(0.0f);
     case '!':
-    case '~':
     case UNARYMINUS:
     case '+':
     case '-':

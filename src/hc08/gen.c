@@ -3395,6 +3395,8 @@ genNot (iCode * ic)
 
 /*-----------------------------------------------------------------*/
 /* genCpl - generate code for complement                           */
+/* no longer used; todo: chekc if something from here could still  */
+/* be useful in genXor, then remove genCpl!                        */
 /*-----------------------------------------------------------------*/
 static void
 genCpl (iCode * ic)
@@ -10958,10 +10960,6 @@ genhc08iCode (iCode *ic)
     {
     case '!':
       genNot (ic);
-      break;
-
-    case '~':
-      genCpl (ic);
       break;
 
     case UNARYMINUS:

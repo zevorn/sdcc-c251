@@ -2144,7 +2144,6 @@ static int isSignedOp (iCode *ic)
 {
     switch (ic->op) {
     case '!':
-    case '~':
     case UNARYMINUS:
     case IPUSH:
     case IPUSH_VALUE_AT_ADDRESS:

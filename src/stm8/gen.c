@@ -3124,26 +3124,6 @@ genEor (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
 }
 
 /*-----------------------------------------------------------------*/
-/* genCpl - generate code for complement                           */
-/*-----------------------------------------------------------------*/
-static void
-genCpl (const iCode *ic)
-{
-  operand *result = IC_RESULT (ic);
-  operand *left = IC_LEFT (ic);
-
-  D (emit2 ("; genCpl", ""));
-
-  aopOp (left, ic, false);
-  aopOp (result, ic, true);
-
-  genEor (ic, result->aop, left->aop, ASMOP_MONE);
-
-  freeAsmop (left);
-  freeAsmop (result);
-}
-
-/*-----------------------------------------------------------------*/
 /* genSub - generates code for subtraction                         */
 /*-----------------------------------------------------------------*/
 static void
@@ -10031,10 +10011,6 @@ genSTM8iCode (iCode *ic)
     {
     case '!':
       genNot (ic);
-      break;
-
-    case '~':
-      genCpl (ic);
       break;
 
     case UNARYMINUS:

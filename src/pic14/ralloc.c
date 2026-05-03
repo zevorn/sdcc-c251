@@ -1794,7 +1794,6 @@ deassignLRs (iCode * ic, eBBlock * ebp)
                         case BITWISEAND: /* bitwise AND */
                         case '|':       /* bitwise OR */
                         case '^':       /* bitwise XOR */
-                        case '~':       /* bitwise negate */
                         case ROT:       /* rotate */
                         case UNARYMINUS:
                         case '+':       /* addition */

@@ -80,7 +80,6 @@ PRINTFUNC (picEndCritical);
 
 iCodeTable codeTable[] = {
   {'!', "not", picGenericOne, NULL},
-  {'~', "~", picGenericOne, NULL},
   {GETABIT, "gabit", picGenericOne, NULL},
   {GETBYTE, "gbyte", picGenericOne, NULL},
   {GETWORD, "gword", picGenericOne, NULL},
@@ -1609,10 +1608,6 @@ operandOperation (operand * left, operand * right, int op, sym_link * type)
       retval = operandFromValue (valCastLiteral (type, -1 * operandLitValue (left), (-1ll) * operandLitValueUll (left)), false);
       break;
 
-    case '~':
-      retval = operandFromValue (valCastLiteral (type, ~((TYPE_TARGET_ULONG) double2ul (operandLitValue (left))), ~((TYPE_TARGET_ULONGLONG) operandLitValueUll (left))), false);
-      break;
-
     case '!':
       retval = operandFromLit (!operandLitValue (left));
       break;
@@ -2920,16 +2915,6 @@ geniCodePostDec (operand * op)
     {
       werror (E_LVALUE_REQUIRED, "--");
       return op;
-    }
-
-  // Drop _Optional on pointer target,
-  if (IS_PTR (rvtype) && isOptional (rvtype->next))
-    {
-      rvtype = copyLinkChain (rvtype);
-      if IS_SPEC (rvtype->next)
-        SPEC_OPTIONAL (rvtype->next) = false;
-      else
-        DCL_PTR_OPTIONAL (rvtype->next) = false;
     }
 
   rOp = newiTempOperand (rvtype, 0);
@@ -4768,7 +4753,7 @@ ast2iCode (ast * tree, int lvl)
 #endif
 
     case '~':
-      return geniCodeUnary (geniCodeRValue (left, FALSE), tree->opval.op, tree->ftype);
+      return geniCodeBitwise (geniCodeRValue (left, false), operandFromValue (valCastLiteral (operandType (left), ~0ull, ~0ull), false), '^', tree->ftype);
 
     case '!':
       {

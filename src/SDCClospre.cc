@@ -72,7 +72,6 @@ candidate_expression (const iCode *const ic, int lkey)
 
   if (
     ic->op != '!' &&
-    ic->op != '~' &&
     ic->op != UNARYMINUS &&
     ic->op != '+' &&
     ic->op != '-' &&
