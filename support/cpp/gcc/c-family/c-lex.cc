@@ -31,7 +31,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "file-prefix-map.h" /* remap_macro_filename()  */
 #include "langhooks.h"
 #include "attribs.h"
-#include "real.h" // sdcpp
 
 
 /* We may keep statistics about how long which files took to compile.  */

@@ -1,5 +1,5 @@
 /* Handle #pragma, system V.4 style.  Supports #pragma weak and #pragma pack.
-   Copyright (C) 1992-2022 Free Software Foundation, Inc.
+   Copyright (C) 1992-2023 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -1242,6 +1242,9 @@ handle_pragma_message (cpp_reader *)
     }
   else if (token == CPP_STRING)
     message = x;
+  else if (token == CPP_STRING_USERDEF)
+    GCC_BAD ("string literal with user-defined suffix is invalid in this "
+	     "context");
   else
     GCC_BAD ("expected a string after %<#pragma message%>");
 
@@ -1253,6 +1256,12 @@ handle_pragma_message (cpp_reader *)
   if (TREE_STRING_LENGTH (message) > 1)
     inform (input_location, "%<#pragma message: %s%>",
 	    TREE_STRING_POINTER (message));
+}
+
+/* Ignore a no-op pragma that GCC recognizes, but which has no effect.  */
+static void
+handle_pragma_ignore (cpp_reader *)
+{
 }
 
 /* Mark whether the current location is valid for a STDC pragma.  */
@@ -1374,14 +1383,15 @@ handle_pragma_float_const_decimal64 (cpp_reader *)
 
 static vec<internal_pragma_handler> registered_pragmas;
 
-struct pragma_ns_name
+struct pragma_pp_data
 {
   const char *space;
   const char *name;
+  pragma_handler_1arg early_handler;
 };
 
 
-static vec<pragma_ns_name> registered_pp_pragmas;
+static vec<pragma_pp_data> registered_pp_pragmas;
 
 struct omp_pragma_def { const char *name; unsigned int id; };
 static const struct omp_pragma_def oacc_pragmas[] = {
@@ -1402,14 +1412,16 @@ static const struct omp_pragma_def oacc_pragmas[] = {
 };
 static const struct omp_pragma_def omp_pragmas[] = {
   { "allocate", PRAGMA_OMP_ALLOCATE },
+  { "assumes", PRAGMA_OMP_ASSUMES },
   { "atomic", PRAGMA_OMP_ATOMIC },
   { "barrier", PRAGMA_OMP_BARRIER },
+  { "begin", PRAGMA_OMP_BEGIN },
   { "cancel", PRAGMA_OMP_CANCEL },
   { "cancellation", PRAGMA_OMP_CANCELLATION_POINT },
   { "critical", PRAGMA_OMP_CRITICAL },
   { "depobj", PRAGMA_OMP_DEPOBJ },
   { "error", PRAGMA_OMP_ERROR },
-  { "end", PRAGMA_OMP_END_DECLARE_TARGET },
+  { "end", PRAGMA_OMP_END },
   { "flush", PRAGMA_OMP_FLUSH },
   { "nothing", PRAGMA_OMP_NOTHING },
   { "requires", PRAGMA_OMP_REQUIRES },
@@ -1424,6 +1436,7 @@ static const struct omp_pragma_def omp_pragmas[] = {
   { "threadprivate", PRAGMA_OMP_THREADPRIVATE }
 };
 static const struct omp_pragma_def omp_pragmas_simd[] = {
+  { "assume", PRAGMA_OMP_ASSUME },
   { "declare", PRAGMA_OMP_DECLARE },
   { "distribute", PRAGMA_OMP_DISTRIBUTE },
   { "for", PRAGMA_OMP_FOR },
@@ -1442,8 +1455,8 @@ static const struct omp_pragma_def omp_pragmas_simd[] = {
 void
 c_pp_lookup_pragma (unsigned int id, const char **space, const char **name)
 {
-  const int n_oacc_pragmas = sizeof (oacc_pragmas) / sizeof (*oacc_pragmas);
-  const int n_omp_pragmas = sizeof (omp_pragmas) / sizeof (*omp_pragmas);
+  const int n_oacc_pragmas = ARRAY_SIZE (oacc_pragmas);
+  const int n_omp_pragmas = ARRAY_SIZE (omp_pragmas);
   const int n_omp_pragmas_simd = sizeof (omp_pragmas_simd)
 				 / sizeof (*omp_pragmas);
   int i;
@@ -1494,14 +1507,15 @@ c_register_pragma_1 (const char *space, const char *name,
 
   if (flag_preprocess_only)
     {
-      pragma_ns_name ns_name;
-
-      if (!allow_expansion)
+      if (cpp_get_options (parse_in)->directives_only
+	  || !(allow_expansion || ihandler.early_handler.handler_1arg))
 	return;
 
-      ns_name.space = space;
-      ns_name.name = name;
-      registered_pp_pragmas.safe_push (ns_name);
+      pragma_pp_data pp_data;
+      pp_data.space = space;
+      pp_data.name = name;
+      pp_data.early_handler = ihandler.early_handler.handler_1arg;
+      registered_pp_pragmas.safe_push (pp_data);
       id = registered_pp_pragmas.length ();
       id += PRAGMA_FIRST_EXTERNAL - 1;
     }
@@ -1527,9 +1541,16 @@ void
 c_register_pragma (const char *space, const char *name,
                    pragma_handler_1arg handler)
 {
+  c_register_pragma_with_early_handler (space, name, handler, nullptr);
+}
+void c_register_pragma_with_early_handler (const char *space, const char *name,
+					   pragma_handler_1arg handler,
+					   pragma_handler_1arg early_handler)
+{
   internal_pragma_handler ihandler;
 
   ihandler.handler.handler_1arg = handler;
+  ihandler.early_handler.handler_1arg = early_handler;
   ihandler.extra_data = false;
   ihandler.data = NULL;
   c_register_pragma_1 (space, name, ihandler, false);
@@ -1546,6 +1567,7 @@ c_register_pragma_with_data (const char *space, const char *name,
   internal_pragma_handler ihandler;
 
   ihandler.handler.handler_2arg = handler;
+  ihandler.early_handler.handler_2arg = nullptr;
   ihandler.extra_data = true;
   ihandler.data = data;
   c_register_pragma_1 (space, name, ihandler, false);
@@ -1565,6 +1587,7 @@ c_register_pragma_with_expansion (const char *space, const char *name,
   internal_pragma_handler ihandler;
 
   ihandler.handler.handler_1arg = handler;
+  ihandler.early_handler.handler_1arg = nullptr;
   ihandler.extra_data = false;
   ihandler.data = NULL;
   c_register_pragma_1 (space, name, ihandler, true);
@@ -1586,6 +1609,7 @@ c_register_pragma_with_expansion_and_data (const char *space, const char *name,
   internal_pragma_handler ihandler;
 
   ihandler.handler.handler_2arg = handler;
+  ihandler.early_handler.handler_2arg = nullptr;
   ihandler.extra_data = true;
   ihandler.data = data;
   c_register_pragma_1 (space, name, ihandler, true);
@@ -1612,39 +1636,75 @@ c_invoke_pragma_handler (unsigned int id)
     }
 }
 
+/* In contrast to the normal handler, the early handler is optional.  */
+void
+c_invoke_early_pragma_handler (unsigned int id)
+{
+  internal_pragma_handler *ihandler;
+  pragma_handler_1arg handler_1arg;
+  pragma_handler_2arg handler_2arg;
+
+  id -= PRAGMA_FIRST_EXTERNAL;
+  ihandler = &registered_pragmas[id];
+  if (ihandler->extra_data)
+    {
+      handler_2arg = ihandler->early_handler.handler_2arg;
+      if (handler_2arg)
+	handler_2arg (parse_in, ihandler->data);
+    }
+  else
+    {
+      handler_1arg = ihandler->early_handler.handler_1arg;
+      if (handler_1arg)
+	handler_1arg (parse_in);
+    }
+}
+
+void
+c_pp_invoke_early_pragma_handler (unsigned int id)
+{
+  const auto data = &registered_pp_pragmas[id - PRAGMA_FIRST_EXTERNAL];
+  if (data->early_handler)
+    data->early_handler (parse_in);
+}
+
 /* Set up front-end pragmas.  */
 void
 init_pragma (void)
 {
-  if (flag_openacc)
+
+  if (!cpp_get_options (parse_in)->directives_only)
     {
-      const int n_oacc_pragmas
-	= sizeof (oacc_pragmas) / sizeof (*oacc_pragmas);
-      int i;
+      if (flag_openacc)
+	{
+	  const int n_oacc_pragmas = ARRAY_SIZE (oacc_pragmas);
+	  int i;
 
-      for (i = 0; i < n_oacc_pragmas; ++i)
-	cpp_register_deferred_pragma (parse_in, "acc", oacc_pragmas[i].name,
-				      oacc_pragmas[i].id, true, true);
-    }
+	  for (i = 0; i < n_oacc_pragmas; ++i)
+	    cpp_register_deferred_pragma (parse_in, "acc", oacc_pragmas[i].name,
+					  oacc_pragmas[i].id, true, true);
+	}
 
-  if (flag_openmp)
-    {
-      const int n_omp_pragmas = sizeof (omp_pragmas) / sizeof (*omp_pragmas);
-      int i;
+      if (flag_openmp)
+	{
+	  const int n_omp_pragmas = ARRAY_SIZE (omp_pragmas);
+	  int i;
 
-      for (i = 0; i < n_omp_pragmas; ++i)
-	cpp_register_deferred_pragma (parse_in, "omp", omp_pragmas[i].name,
-				      omp_pragmas[i].id, true, true);
-    }
-  if (flag_openmp || flag_openmp_simd)
-    {
-      const int n_omp_pragmas_simd = sizeof (omp_pragmas_simd)
-				     / sizeof (*omp_pragmas);
-      int i;
+	  for (i = 0; i < n_omp_pragmas; ++i)
+	    cpp_register_deferred_pragma (parse_in, "omp", omp_pragmas[i].name,
+					  omp_pragmas[i].id, true, true);
+	}
+      if (flag_openmp || flag_openmp_simd)
+	{
+	  const int n_omp_pragmas_simd
+	    = sizeof (omp_pragmas_simd) / sizeof (*omp_pragmas);
+	  int i;
 
-      for (i = 0; i < n_omp_pragmas_simd; ++i)
-	cpp_register_deferred_pragma (parse_in, "omp", omp_pragmas_simd[i].name,
-				      omp_pragmas_simd[i].id, true, true);
+	  for (i = 0; i < n_omp_pragmas_simd; ++i)
+	    cpp_register_deferred_pragma (parse_in, "omp",
+					  omp_pragmas_simd[i].name,
+					  omp_pragmas_simd[i].id, true, true);
+	}
     }
 
   if (!flag_preprocess_only)

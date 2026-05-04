@@ -1,5 +1,5 @@
 /* Target definitions for Darwin (Mac OS X) systems.
-   Copyright (C) 1989-2022 Free Software Foundation, Inc.
+   Copyright (C) 1989-2023 Free Software Foundation, Inc.
    Contributed by Apple Computer Inc.
 
 This file is part of GCC.
@@ -143,10 +143,7 @@ extern GTY(()) int darwin_ms_struct;
    Right now there's no mechanism to split up the "variable portion" (%*) of
    the matched spec string, so where we have some driver specs that take 2
    or 3 arguments, these cannot be processed here, but are deferred until the
-   LINK_SPEC, where they are copied verbatim.
-   We have a "safe" version of the MacOS version string, that's been sanity-
-   checked and truncated to minor version.  If the 'tiny' (3rd) portion of the
-   value is not significant, it's better to use this in version-compare().  */
+   LINK_SPEC, where they are copied verbatim.  */
 
 #undef SUBTARGET_DRIVER_SELF_SPECS
 #define SUBTARGET_DRIVER_SELF_SPECS					\
@@ -220,13 +217,7 @@ extern GTY(()) int darwin_ms_struct;
   "%{image_base*:-Xlinker -image_base -Xlinker %*} %<image_base*",	\
   "%{init*:-Xlinker -init -Xlinker %*} %<init*",			\
   "%{multi_module:-Xlinker -multi_module} %<multi_module",		\
-  "%{multiply_defined*:-Xlinker -multiply_defined -Xlinker %*; \
-     :%{shared-libgcc: \
-       %:version-compare(< 10.5 asm_macosx_version_min= -Xlinker) \
-       %:version-compare(< 10.5 asm_macosx_version_min= -multiply_defined) \
-       %:version-compare(< 10.5 asm_macosx_version_min= -Xlinker) \
-       %:version-compare(< 10.5 asm_macosx_version_min= suppress)}} \
-     %<multiply_defined*",						\
+  "%{multiply_defined*:-Xlinker -multiply_defined -Xlinker %*} ",	\
   "%{multiplydefinedunused*:\
      -Xlinker -multiply_defined_unused -Xlinker %*} \
      %<multiplydefinedunused* ",					\
@@ -285,6 +276,19 @@ extern GTY(()) int darwin_ms_struct;
 #define DARWIN_RDYNAMIC "%{rdynamic:%nrdynamic is not supported}"
 #endif
 
+#if LD64_HAS_MACOS_VERSION_MIN
+# define DARWIN_PLATFORM_ID \
+  "%{mmacosx-version-min=*:-macos_version_min %*} "
+#else
+# if LD64_HAS_PLATFORM_VERSION
+#  define DARWIN_PLATFORM_ID \
+  "%{mmacosx-version-min=*: -platform_version macos %* 0.0} "
+# else
+#  define DARWIN_PLATFORM_ID \
+  "%{mmacosx-version-min=*:-macosx_version_min %*} "
+# endif
+#endif
+
 /* Code built with mdynamic-no-pic does not support PIE/PIC, so  we disallow
    these combinations; we also ensure that the no_pie option is passed to
    ld64 on system versions that default to PIE when mdynamic-no-pic is given.
@@ -302,7 +306,7 @@ extern GTY(()) int darwin_ms_struct;
    %:version-compare(>= 10.7 mmacosx-version-min= -no_pie) }"
 
 #define DARWIN_CC1_SPEC							\
-  "%<dynamic %<dynamiclib %<force_cpusubtype_ALL "
+  "%<dynamic %<dynamiclib %<force_cpusubtype_ALL %<multiply_defined* "
 
 #define SUBSUBTARGET_OVERRIDE_OPTIONS					\
   do {									\
@@ -360,12 +364,16 @@ extern GTY(()) int darwin_ms_struct;
     LINK_PLUGIN_SPEC \
     "%{flto*:%<fcompare-debug*} \
      %{flto} %{fno-lto} %{flto=*} \
-    %l " LINK_COMPRESS_DEBUG_SPEC \
+    %l " \
+    DARWIN_PLATFORM_ID \
+    LINK_COMPRESS_DEBUG_SPEC \
    "%X %{s} %{t} %{Z} %{u*} \
     %{e*} %{r} \
     %{o*}%{!o:-o a.out} \
     %{!r:%{!nostdlib:%{!nostartfiles:%S}}} \
-    %{L*} %(link_libgcc) %o \
+    %{L*} %(link_libgcc) \
+    %{!r:%{!nostdlib:%{!nodefaultlibs: " DARWIN_WEAK_CRTS "}}} \
+    %o \
     %{!r:%{!nostdlib:%{!nodefaultlibs:\
       %{fprofile-arcs|fprofile-generate*|coverage:-lgcov} \
       %{fopenacc|fopenmp|%:gt(%{ftree-parallelize-loops=*:%*} 1): \
@@ -379,15 +387,15 @@ extern GTY(()) int darwin_ms_struct;
       %(link_ssp) \
       %:version-compare(>< 10.6 10.7 mmacosx-version-min= -ld10-uwfef) \
       %(link_gcc_c_sequence) \
-      %{!nodefaultexport:%{dylib|dynamiclib|bundle: \
-	%:version-compare(>= 10.11 asm_macosx_version_min= -U) \
-	%:version-compare(>= 10.11 asm_macosx_version_min= ___emutls_get_address) \
-	%:version-compare(>= 10.11 asm_macosx_version_min= -exported_symbol) \
-	%:version-compare(>= 10.11 asm_macosx_version_min= ___emutls_get_address) \
-	%:version-compare(>= 10.11 asm_macosx_version_min= -U) \
-	%:version-compare(>= 10.11 asm_macosx_version_min= ___emutls_register_common) \
-	%:version-compare(>= 10.11 asm_macosx_version_min= -exported_symbol) \
-	%:version-compare(>= 10.11 asm_macosx_version_min= ___emutls_register_common) \
+      %{!nodefaultexport: \
+	%{%:version-compare(>= 10.11 asm_macosx_version_min= -U): \
+	   ___emutls_get_address -exported_symbol ___emutls_get_address \
+	  -U ___emutls_register_common \
+	  -exported_symbol ___emutls_register_common \
+	  -U ___gcc_nested_func_ptr_created \
+	  -exported_symbol ___gcc_nested_func_ptr_created \
+	  -U ___gcc_nested_func_ptr_deleted \
+	  -exported_symbol ___gcc_nested_func_ptr_deleted \
       }} \
     }}}\
     %{!r:%{!nostdlib:%{!nostartfiles:%E}}} %{T*} %{F*} "\
@@ -404,10 +412,10 @@ extern GTY(()) int darwin_ms_struct;
 
 #define DSYMUTIL_SPEC \
   "%{!c:%{!E:%{!S:%{!r:%{!M:%{!MM:%{!fsyntax-only:%{!fdump=*:\
-     %{g*:%{!gctf:%{!gbtf:%{!gstabs*:%{%:debug-level-gt(0): -idsym \
+     %{g*:%{!gctf:%{!gbtf:%{%:debug-level-gt(0): -idsym \
        %{.c|.cc|.C|.cpp|.cp|.c++|.cxx|.CPP|.m|.mm|.s|.f|.f90|\
 	 .f95|.f03|.f77|.for|.F|.F90|.F95|.F03|.d: -dsym }\
-      }}}}}\
+      }}}}\
    }}}}}}}}"
 
 #define LINK_COMMAND_SPEC LINK_COMMAND_SPEC_A DSYMUTIL_SPEC
@@ -451,13 +459,21 @@ extern GTY(()) int darwin_ms_struct;
                      %:replace-outfile(-lobjc libobjc-gnu.a%s); \
                     :%:replace-outfile(-lobjc -lobjc-gnu )}}\
    %{static|static-libgcc|static-libgfortran:%:replace-outfile(-lgfortran libgfortran.a%s)}\
+   %{static|static-libgcc|static-libquadmath:%:replace-outfile(-lquadmath libquadmath.a%s)}\
    %{static|static-libgcc|static-libphobos:%:replace-outfile(-lgphobos libgphobos.a%s)}\
    %{static|static-libgcc|static-libstdc++|static-libgfortran:%:replace-outfile(-lgomp libgomp.a%s)}\
    %{static|static-libgcc|static-libstdc++:%:replace-outfile(-lstdc++ libstdc++.a%s)}\
-   %{force_cpusubtype_ALL:-arch %(darwin_arch)} \
+   %{static|static-libgm2:%:replace-outfile(-lm2pim libm2pim.a%s)}\
+   %{static|static-libgm2:%:replace-outfile(-lm2iso libm2iso.a%s)}\
+   %{static|static-libgm2:%:replace-outfile(-lm2min libm2min.a%s)}\
+   %{static|static-libgm2:%:replace-outfile(-lm2log libm2log.a%s)}\
+   %{static|static-libgm2:%:replace-outfile(-lm2cor libm2cor.a%s)}\
+  %{force_cpusubtype_ALL:-arch %(darwin_arch)} \
    %{!force_cpusubtype_ALL:-arch %(darwin_subarch)} "\
    LINK_SYSROOT_SPEC \
-  "%{mmacosx-version-min=*:-macosx_version_min %*} \
+   "%{!multiply_defined*:%{shared-libgcc: \
+     %:version-compare(< 10.5 mmacosx-version-min= -multiply_defined) \
+     %:version-compare(< 10.5 mmacosx-version-min= suppress) }} \
    %{sectalign*} %{sectcreate*} %{sectobjectsymbols*}  %{sectorder*} \
    %{segaddr*} %{segcreate*} %{segprot*} "
 
@@ -465,62 +481,55 @@ extern GTY(()) int darwin_ms_struct;
 
 #define LIB_SPEC "%{!static:-lSystem}"
 
-/*
-   Note that by default, -lgcc_eh is not linked against.
-   This is because,in general, we need to unwind through system libraries that
-   are linked with the shared unwinder in libunwind (or libgcc_s for 10.4/5).
+/* Note that by default, -lgcc_eh (which provides a statically-linked unwinder)
+   is not used. This is because, in general, we need to unwind through system
+   libraries that are linked with the shared unwinder in libunwind (or libgcc_s
+   for OSX 10.4/5 [darwin8/9]).
 
-   For -static-libgcc: < 10.6, use the unwinder in libgcc_eh (and find
-   the emultls impl. there too).
+   When -static-libgcc is forced: < 10.6, use the unwinder in libgcc_eh (and
+   find the emultls impl. there too).
 
    For -static-libgcc: >= 10.6, the unwinder *still* comes from libSystem and
    we find the emutls impl from lemutls_w. In either case, the builtins etc.
-   are linked from -lgcc.
+   are linked from -lgcc.  The eh library is still available so that it could
+   be specified explicitly if there is some reason to do so.
 
    When we have specified shared-libgcc or any case that might require
    exceptions, we pull the libgcc content (including emulated tls) from
-   -lgcc_s.1 in GCC and the unwinder from /usr/lib/libgcc_s.1 for < 10.6 and
+   -lgcc_s.1.1 in GCC and the unwinder from /usr/lib/libgcc_s.1 for < 10.6 and
    libSystem for >= 10.6 respectively.
    Otherwise, we just link the emutls/builtins from convenience libs.
-
-   If we need exceptions, prior to 10.3.9, then we have to link the static
-   eh lib, since there's no shared version on the system.
-
-   In all cases, libgcc_s.1 will be installed with the compiler, or any app
-   built using it, so we can link the builtins and emutls shared on all.
 
    We have to work around that DYLD_XXXX are disabled in macOS 10.11+ which
    means that any bootstrap trying to use a shared libgcc with a bumped SO-
    name will fail.  This means that we do not accept shared libgcc for these
-   versions.
+   versions (the primary reason for forcing a shared libgcc was that it
+   contained the unwinder on Darwin8 and 9).
 
-   For -static-libgcc: >= 10.6, the unwinder *still* comes from libSystem and
-   we find the emutls impl from lemutls_w. In either case, the builtins etc.
-   are linked from -lgcc.
->
-   Otherwise, we just link the shared version of gcc_s.1.1 and pick up
-   exceptions:
+   When using the shared version of gcc_s.1.1 the unwinder is provided by:
      * Prior to 10.3.9, then we have to link the static eh lib, since there
-       is no shared version on the system.
+       is no shared unwinder version on the system.
      * from 10.3.9 to 10.5, from /usr/lib/libgcc_s.1.dylib
      * from 10.6 onwards, from libSystem.dylib
-
-   In all cases, libgcc_s.1.1 will be installed with the compiler, or any app
-   built using it, so we can link the builtins and emutls shared on all.
 */
 #undef REAL_LIBGCC_SPEC
 #define REAL_LIBGCC_SPEC \
 "%{static-libgcc|static:						  \
-    %:version-compare(!> 10.6 mmacosx-version-min= -lgcc_eh)		  \
-    %:version-compare(>= 10.6 mmacosx-version-min= -lemutls_w);		  \
+    %:version-compare(!> 10.6 mmacosx-version-min= -lgcc_eh);		  \
    shared-libgcc|fexceptions|fobjc-exceptions|fgnu-runtime:		  \
     %:version-compare(!> 10.11 mmacosx-version-min= -lgcc_s.1.1)	  \
-    %:version-compare(>= 10.11 mmacosx-version-min= -lemutls_w)		  \
     %:version-compare(!> 10.3.9 mmacosx-version-min= -lgcc_eh)		  \
     %:version-compare(>< 10.3.9 10.5 mmacosx-version-min= -lgcc_s.10.4)   \
-    %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lgcc_s.10.5);	  \
-   : -lemutls_w								  \
+    %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lgcc_s.10.5)	  \
   } -lgcc "
+
+#define DARWIN_WEAK_CRTS \
+"%{static-libgcc|static:						  \
+   %:version-compare(>= 10.6 mmacosx-version-min= -lemutls_w) ; \
+   shared-libgcc|fexceptions|fobjc-exceptions|fgnu-runtime: \
+     %:version-compare(>= 10.11 mmacosx-version-min= -lemutls_w) ; \
+   : -lemutls_w \
+  }"
 
 /* We specify crt0.o as -lcrt0.o so that ld will search the library path.  */
 
@@ -599,14 +608,7 @@ extern GTY(()) int darwin_ms_struct;
 "%{static} -arch %(darwin_arch) " \
 ASM_OPTIONS ASM_MMACOSX_VERSION_MIN_SPEC
 
-#ifdef HAVE_AS_STABS_DIRECTIVE
-/* We only pass a debug option to the assembler if that supports stabs, since
-   dwarf is not uniformly supported in the assemblers.  */
-#define ASM_DEBUG_SPEC  "%{g*:%{%:debug-level-gt(0):%{!gdwarf*:--gstabs}}}"
-#else
 #define ASM_DEBUG_SPEC  ""
-#endif
-
 #undef  ASM_DEBUG_OPTION_SPEC
 #define ASM_DEBUG_OPTION_SPEC	""
 
@@ -619,10 +621,6 @@ ASM_OPTIONS ASM_MMACOSX_VERSION_MIN_SPEC
 
 #define DWARF2_DEBUGGING_INFO 1
 #define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG
-
-#ifdef HAVE_AS_STABS_DIRECTIVE
-#define DBX_DEBUGGING_INFO 1
-#endif
 
 #define DEBUG_FRAME_SECTION	  "__DWARF,__debug_frame,regular,debug"
 #define DEBUG_INFO_SECTION	  "__DWARF,__debug_info,regular,debug"
@@ -654,18 +652,6 @@ ASM_OPTIONS ASM_MMACOSX_VERSION_MIN_SPEC
 #define DEBUG_PUBTYPES_SECTION   ((debug_generate_pub_sections == 2) \
                                ? "__DWARF,__debug_gnu_pubt,regular,debug" \
                                : "__DWARF,__debug_pubtypes,regular,debug")
-
-/* When generating stabs debugging, use N_BINCL entries.  */
-
-#define DBX_USE_BINCL
-
-/* There is no limit to the length of stabs strings.  */
-
-#define DBX_CONTIN_LENGTH 0
-
-/* gdb needs a null N_SO at the end of each file for scattered loading.  */
-
-#define DBX_OUTPUT_NULL_N_SO_AT_MAIN_SOURCE_FILE_END
 
 /* GCC's definition of 'one_only' is the same as its definition of 'weak'.  */
 #define MAKE_DECL_ONE_ONLY(DECL) (DECL_WEAK (DECL) = 1)
@@ -849,7 +835,9 @@ int darwin_label_is_anonymous_local_objc_name (const char *name);
        else if (xname[0] == '+' || xname[0] == '-')			     \
          fprintf (FILE, "\"%s\"", xname);				     \
        else if (darwin_label_is_anonymous_local_objc_name (xname))	     \
-         fprintf (FILE, "L%s", xname);					     \
+	fprintf (FILE, "%c%s", flag_next_runtime ? 'L' : 'l', xname);	     \
+       else if (strncmp (xname, "__anon_cfstring", 15) == 0)		     \
+	fprintf (FILE, "L%s", xname);					     \
        else if (xname[0] != '"' && name_needs_quotes (xname))		     \
 	 asm_fprintf (FILE, "\"%U%s\"", xname);				     \
        else								     \
@@ -1108,7 +1096,7 @@ enum machopic_addr_class {
 
 #undef ASM_PREFERRED_EH_DATA_FORMAT
 #define ASM_PREFERRED_EH_DATA_FORMAT(CODE,GLOBAL)  \
-  (((CODE) == 2 && (GLOBAL) == 1) \
+  (((CODE) == 2 && (GLOBAL) == 1) || ((CODE) == 0 && (GLOBAL) == 1) \
    ? (DW_EH_PE_pcrel | DW_EH_PE_indirect | DW_EH_PE_sdata4) : \
      ((CODE) == 1 || (GLOBAL) == 0) ? DW_EH_PE_pcrel : DW_EH_PE_absptr)
 

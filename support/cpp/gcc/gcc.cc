@@ -1,5 +1,5 @@
 /* Compiler driver program that can handle many languages.
-   Copyright (C) 1987-2022 Free Software Foundation, Inc.
+   Copyright (C) 1987-2023 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -27,9 +27,12 @@ CC recognizes how to compile each input file by suffixes in the file names.
 Once it knows which kind of compilation to perform, the procedure for
 compilation is specified by a string called a "spec".  */
 
-
+#define INCLUDE_STRING
 #include "config.h"
 #include "system.h"
+#ifdef HOST_HAS_PERSONALITY_ADDR_NO_RANDOMIZE
+#include <sys/personality.h>
+#endif
 #include "coretypes.h"
 #include "multilib.h" /* before tm.h */
 #include "tm.h"
@@ -44,6 +47,8 @@ compilation is specified by a string called a "spec".  */
 #include "opts.h"
 #include "filenames.h"
 #include "spellcheck.h"
+//sdcpp #include "opts-jobserver.h"
+#include "common/common-target.h"
 
 #define untested() { fprintf (stderr, "@@#\n@@@:%s:%d:%s\n", __FILE__, __LINE__, __func__); }
 
@@ -171,6 +176,8 @@ env_manager::restore ()
 #if (GCC_VERSION >= 3000)
 #pragma GCC poison getenv putenv
 #endif
+
+
 
 /* By default there is no special suffix for target executables.  */
 #ifdef TARGET_EXECUTABLE_SUFFIX
@@ -448,6 +455,7 @@ static char *quote_spec (char *);
 static char *quote_spec_arg (char *);
 static bool not_actual_file_p (const char *);
 
+
 /* The Specs Language
 
 Specs are strings containing lines, each of which (if not blank)
@@ -677,7 +685,7 @@ to tell which compilers to run.
 GCC also knows implicitly that arguments starting in `-l' are to be
 treated as compiler output files, and passed to the linker in their
 proper position among the other output files.  */
-
+
 /* Define the macros used for specs %a, %l, %L, %S, %C, %1.  */
 
 /* config.h can define ASM_SPEC to provide extra args to the assembler
@@ -703,6 +711,13 @@ proper position among the other output files.  */
    or extra switch-translations.  */
 #ifndef CPP_SPEC
 #define CPP_SPEC ""
+#endif
+
+/* Operating systems can define OS_CC1_SPEC to provide extra args to cc1 and
+   cc1plus or extra switch-translations.  The OS_CC1_SPEC is appended
+   to CC1_SPEC in the initialization of cc1_spec.  */
+#ifndef OS_CC1_SPEC
+#define OS_CC1_SPEC ""
 #endif
 
 /* config.h can define CC1_SPEC to provide extra args to cc1 and cc1plus
@@ -830,21 +845,19 @@ proper position among the other output files.  */
 #define LINK_COMPRESS_DEBUG_SPEC \
 	" %{gz*:%e-gz is not supported in this configuration} "
 #elif HAVE_LD_COMPRESS_DEBUG == 1
-/* GNU style on input, GNU ld options.  Reject, not useful.  */
-#define LINK_COMPRESS_DEBUG_SPEC \
-	" %{gz*:%e-gz is not supported in this configuration} "
-#elif HAVE_LD_COMPRESS_DEBUG == 2
-/* GNU style, GNU gold options.  */
-#define LINK_COMPRESS_DEBUG_SPEC \
-	" %{gz|gz=zlib-gnu:" LD_COMPRESS_DEBUG_OPTION "=zlib}" \
-	" %{gz=none:"        LD_COMPRESS_DEBUG_OPTION "=none}" \
-	" %{gz=zlib:%e-gz=zlib is not supported in this configuration} "
-#elif HAVE_LD_COMPRESS_DEBUG == 3
 /* ELF gABI style.  */
 #define LINK_COMPRESS_DEBUG_SPEC \
 	" %{gz|gz=zlib:"  LD_COMPRESS_DEBUG_OPTION "=zlib}" \
 	" %{gz=none:"	  LD_COMPRESS_DEBUG_OPTION "=none}" \
-	" %{gz=zlib-gnu:" LD_COMPRESS_DEBUG_OPTION "=zlib-gnu} "
+	" %{gz=zstd:%e-gz=zstd is not supported in this configuration} " \
+	" %{gz=zlib-gnu:}" /* Ignore silently zlib-gnu option value.  */
+#elif HAVE_LD_COMPRESS_DEBUG == 2
+/* ELF gABI style and ZSTD.  */
+#define LINK_COMPRESS_DEBUG_SPEC \
+	" %{gz|gz=zlib:"  LD_COMPRESS_DEBUG_OPTION "=zlib}" \
+	" %{gz=none:"	  LD_COMPRESS_DEBUG_OPTION "=none}" \
+	" %{gz=zstd:"	  LD_COMPRESS_DEBUG_OPTION "=zstd}" \
+	" %{gz=zlib-gnu:}" /* Ignore silently zlib-gnu option value.  */
 #else
 #error Unknown value for HAVE_LD_COMPRESS_DEBUG.
 #endif
@@ -878,37 +891,38 @@ proper position among the other output files.  */
 #endif
 
 #ifdef HAVE_AS_DEBUG_PREFIX_MAP
-#define ASM_MAP " %{fdebug-prefix-map=*:--debug-prefix-map %*}"
+#define ASM_MAP " %{ffile-prefix-map=*:--debug-prefix-map %*} %{fdebug-prefix-map=*:--debug-prefix-map %*}"
 #else
 #define ASM_MAP ""
 #endif
 
 /* Assembler options for compressed debug sections.  */
-#if HAVE_LD_COMPRESS_DEBUG < 2
+#if HAVE_LD_COMPRESS_DEBUG == 0
 /* Reject if the linker cannot write compressed debug sections.  */
 #define ASM_COMPRESS_DEBUG_SPEC \
 	" %{gz*:%e-gz is not supported in this configuration} "
-#else /* HAVE_LD_COMPRESS_DEBUG >= 2 */
+#else /* HAVE_LD_COMPRESS_DEBUG >= 1 */
 #if HAVE_AS_COMPRESS_DEBUG == 0
 /* No assembler support.  Ignore silently.  */
 #define ASM_COMPRESS_DEBUG_SPEC \
 	" %{gz*:} "
 #elif HAVE_AS_COMPRESS_DEBUG == 1
-/* GNU style, GNU as options.  */
-#define ASM_COMPRESS_DEBUG_SPEC \
-	" %{gz|gz=zlib-gnu:" AS_COMPRESS_DEBUG_OPTION "}" \
-	" %{gz=none:"        AS_NO_COMPRESS_DEBUG_OPTION "}" \
-	" %{gz=zlib:%e-gz=zlib is not supported in this configuration} "
-#elif HAVE_AS_COMPRESS_DEBUG == 2
 /* ELF gABI style.  */
 #define ASM_COMPRESS_DEBUG_SPEC \
 	" %{gz|gz=zlib:"  AS_COMPRESS_DEBUG_OPTION "=zlib}" \
 	" %{gz=none:"	  AS_COMPRESS_DEBUG_OPTION "=none}" \
-	" %{gz=zlib-gnu:" AS_COMPRESS_DEBUG_OPTION "=zlib-gnu} "
+	" %{gz=zlib-gnu:}" /* Ignore silently zlib-gnu option value.  */
+#elif HAVE_AS_COMPRESS_DEBUG == 2
+/* ELF gABI style and ZSTD.  */
+#define ASM_COMPRESS_DEBUG_SPEC \
+	" %{gz|gz=zlib:"  AS_COMPRESS_DEBUG_OPTION "=zlib}" \
+	" %{gz=none:"	  AS_COMPRESS_DEBUG_OPTION "=none}" \
+	" %{gz=zstd:"	  AS_COMPRESS_DEBUG_OPTION "=zstd}" \
+	" %{gz=zlib-gnu:}" /* Ignore silently zlib-gnu option value.  */
 #else
 #error Unknown value for HAVE_AS_COMPRESS_DEBUG.
 #endif
-#endif /* HAVE_LD_COMPRESS_DEBUG >= 2 */
+#endif /* HAVE_LD_COMPRESS_DEBUG >= 1 */
 
 /* Define ASM_DEBUG_SPEC to be a spec suitable for translating '-g'
    to the assembler, when compiling assembly sources only.  */
@@ -920,33 +934,18 @@ proper position among the other output files.  */
    compilations.  */
 #  define ASM_DEBUG_DWARF_OPTION ""
 # elif defined(HAVE_AS_GDWARF_5_DEBUG_FLAG) && !defined(HAVE_LD_BROKEN_PE_DWARF5)
-#  define ASM_DEBUG_DWARF_OPTION "%{%:dwarf-version-gt(4):--gdwarf-5;"	\
+#  define ASM_DEBUG_DWARF_OPTION "%{%:dwarf-version-gt(4):--gdwarf-5;" \
 	"%:dwarf-version-gt(3):--gdwarf-4;"				\
 	"%:dwarf-version-gt(2):--gdwarf-3;"				\
 	":--gdwarf2}"
 # else
 #  define ASM_DEBUG_DWARF_OPTION "--gdwarf2"
 # endif
-# if defined(DBX_DEBUGGING_INFO) && defined(DWARF2_DEBUGGING_INFO) \
-     && defined(HAVE_AS_GDWARF2_DEBUG_FLAG) && defined(HAVE_AS_GSTABS_DEBUG_FLAG)
-#  define ASM_DEBUG_SPEC						\
-      (PREFERRED_DEBUGGING_TYPE == DBX_DEBUG				\
-       ? "%{%:debug-level-gt(0):"					\
-	 "%{gdwarf*:" ASM_DEBUG_DWARF_OPTION "};"			\
-	 ":%{g*:--gstabs}}" ASM_MAP					\
-       : "%{%:debug-level-gt(0):"					\
-	 "%{gstabs*:--gstabs;"						\
-	 ":%{g*:" ASM_DEBUG_DWARF_OPTION "}}}" ASM_MAP)
-# else
-#  if defined(DBX_DEBUGGING_INFO) && defined(HAVE_AS_GSTABS_DEBUG_FLAG)
-#   define ASM_DEBUG_SPEC "%{g*:%{%:debug-level-gt(0):--gstabs}}" ASM_MAP
-#  endif
 #  if defined(DWARF2_DEBUGGING_INFO) && defined(HAVE_AS_GDWARF2_DEBUG_FLAG)
 #   define ASM_DEBUG_SPEC "%{g*:%{%:debug-level-gt(0):" \
 	ASM_DEBUG_DWARF_OPTION "}}" ASM_MAP
 #  endif
 # endif
-#endif
 #ifndef ASM_DEBUG_SPEC
 # define ASM_DEBUG_SPEC ""
 #endif
@@ -960,14 +959,7 @@ proper position among the other output files.  */
 	"%:dwarf-version-gt(3):--gdwarf-4 ;"				\
 	"%:dwarf-version-gt(2):--gdwarf-3 ;"				\
 	":--gdwarf2 }"
-#  if defined(DBX_DEBUGGING_INFO) && defined(DWARF2_DEBUGGING_INFO)
-#  define ASM_DEBUG_OPTION_SPEC						\
-      (PREFERRED_DEBUGGING_TYPE == DBX_DEBUG				\
-       ? "%{%:debug-level-gt(0):"					\
-	 "%{gdwarf*:" ASM_DEBUG_OPTION_DWARF_OPT "}}" 			\
-       : "%{%:debug-level-gt(0):"					\
-	 "%{!gstabs*:%{g*:" ASM_DEBUG_OPTION_DWARF_OPT "}}}")
-# elif defined(DWARF2_DEBUGGING_INFO)
+# if defined(DWARF2_DEBUGGING_INFO)
 #   define ASM_DEBUG_OPTION_SPEC "%{g*:%{%:debug-level-gt(0):" \
 	ASM_DEBUG_OPTION_DWARF_OPT "}}"
 #  endif
@@ -1196,7 +1188,7 @@ proper position among the other output files.  */
 static const char *asm_debug = ASM_DEBUG_SPEC;
 static const char *asm_debug_option = ASM_DEBUG_OPTION_SPEC;
 static const char *cpp_spec = CPP_SPEC;
-static const char *cc1_spec = CC1_SPEC;
+static const char *cc1_spec = CC1_SPEC OS_CC1_SPEC;
 static const char *cc1plus_spec = CC1PLUS_SPEC;
 static const char *link_gcc_c_sequence_spec = LINK_GCC_C_SEQUENCE_SPEC;
 static const char *link_ssp_spec = LINK_SSP_SPEC;
@@ -1349,7 +1341,11 @@ static const char *const multilib_defaults_raw[] = MULTILIB_DEFAULTS;
 
 static const char *const driver_self_specs[] = {
   "%{fdump-final-insns:-fdump-final-insns=.} %<fdump-final-insns",
-  DRIVER_SELF_SPECS, CONFIGURE_SPECS, GOMP_SELF_SPECS, GTM_SELF_SPECS
+  DRIVER_SELF_SPECS, CONFIGURE_SPECS, GOMP_SELF_SPECS, GTM_SELF_SPECS,
+  /* This discards -fmultiflags at the end of self specs processing in the
+     driver, so that it is effectively Ignored, without actually marking it as
+     Ignored, which would get it discarded before self specs could remap it.  */
+  "%<fmultiflags"
 };
 
 #ifndef OPTION_DEFAULT_SPECS
@@ -1373,6 +1369,7 @@ struct user_specs
 
 static struct user_specs *user_specs_head, *user_specs_tail;
 
+
 /* Record the mapping from file suffixes for compilation specs.  */
 
 struct compiler
@@ -1433,6 +1430,7 @@ static const struct compiler default_compilers[] =
   {".r", "#Ratfor", 0, 0, 0},
   {".go", "#Go", 0, 1, 0},
   {".d", "#D", 0, 1, 0}, {".dd", "#D", 0, 1, 0}, {".di", "#D", 0, 1, 0},
+  {".mod", "#Modula-2", 0, 0, 0}, {".m2i", "#Modula-2", 0, 0, 0},
   /* Next come the entries for C.  */
   {".c", "@c", 0, 0, 1},
   {"@c",
@@ -1463,13 +1461,13 @@ static const struct compiler default_compilers[] =
 		    cc1 -fpreprocessed %{save-temps*:%b.i} %{!save-temps*:%g.i} \
 			%(cc1_options)\
 			%{!fsyntax-only:%{!S:-o %g.s} \
-			    %{!fdump-ada-spec*:%{!o*:--output-pch=%i.gch}\
-					       %W{o*:--output-pch=%*}}%V}}\
+			    %{!fdump-ada-spec*:%{!o*:--output-pch %i.gch}\
+					       %W{o*:--output-pch %*}}%V}}\
 	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
 		cc1 %(cpp_unique_options) %(cc1_options)\
 		    %{!fsyntax-only:%{!S:-o %g.s} \
-		        %{!fdump-ada-spec*:%{!o*:--output-pch=%i.gch}\
-					   %W{o*:--output-pch=%*}}%V}}}}}}}", 0, 0, 0},
+		        %{!fdump-ada-spec*:%{!o*:--output-pch %i.gch}\
+					   %W{o*:--output-pch %*}}%V}}}}}}}", 0, 0, 0},
   {".i", "@cpp-output", 0, 0, 0},
   {"@cpp-output",
    "%{!M:%{!MM:%{!E:cc1 -fpreprocessed %i %(cc1_options) %{!fsyntax-only:%(invoke_as)}}}}", 0, 0, 0},
@@ -1517,7 +1515,7 @@ static vec<char_p> assembler_options;
    These options are accumulated by -Wp,
    and substituted into the preprocessor command with %Z.  */
 static vec<char_p> preprocessor_options;
-
+
 static char *
 skip_whitespace (char *p)
 {
@@ -1660,7 +1658,7 @@ static const char *multilib_os_dir;
    set_multilib_dir based on the compilation options.  */
 
 static const char *multiarch_dir;
-
+
 /* Structure to keep track of the specs that have been defined so far.
    These are accessed using %(specname) in a compiler or link
    spec.  */
@@ -1752,7 +1750,7 @@ static struct spec_list *extra_specs = (struct spec_list *) 0;
 /* List of dynamically allocates specs that have been defined so far.  */
 
 static struct spec_list *specs = (struct spec_list *) 0;
-
+
 /* List of static spec functions.  */
 
 static const struct spec_function static_spec_functions[] =
@@ -1784,7 +1782,7 @@ static const struct spec_function static_spec_functions[] =
 };
 
 static int processing_spec_function;
-
+
 /* Add appropriate libgcc specs to OBSTACK, taking into account
    various permutations of -shared-libgcc, -shared, and such.  */
 
@@ -2039,6 +2037,7 @@ static void set_static_spec_shared (const char **spec, const char *val)
   return set_static_spec (spec, val, false);
 }
 
+
 /* Change the value of spec NAME to SPEC.  If SPEC is empty, then the spec is
    removed; If the spec starts with a + then SPEC is added to the end of the
    current spec.  */
@@ -2100,7 +2099,7 @@ set_spec (const char *name, const char *spec, bool user_p)
   sl->user_p = user_p;
   sl->alloc_p = true;
 }
-
+
 /* Accumulate a command (program name and args), and run it.  */
 
 typedef const char *const_char_p; /* For DEF_VEC_P.  */
@@ -2146,7 +2145,7 @@ static int execution_count;
 /* Number of commands that exited with a signal.  */
 
 static int signal_count;
-
+
 /* Allocate the argument vector.  */
 
 static void
@@ -2278,7 +2277,7 @@ close_at_file (void)
 
   record_temp_file (temp_file, !save_temps_flag, !save_temps_flag);
 }
-
+
 /* Load specs from a file name named FILENAME, replacing occurrences of
    various different types of line-endings, \r\n, \n\r and just \r, with
    a single \n.  */
@@ -2603,7 +2602,7 @@ read_specs (const char *filename, bool main_p, bool user_p)
 
   XDELETEVEC (buffer);
 }
-
+
 /* Record the names of temporary files we tell compilers to write,
    and delete them at the end of the run.  */
 
@@ -2743,7 +2742,7 @@ clear_failure_queue (void)
 {
   failure_delete_queue = 0;
 }
-
+
 /* Call CALLBACK for each path in PATHS, breaking out early if CALLBACK
    returns non-NULL.
    If DO_MULTI is true iterate over the paths twice, first with multilib
@@ -2986,7 +2985,7 @@ putenv_from_prefixes (const struct path_prefix *paths, const char *env_var,
 {
   xputenv (build_search_list (paths, env_var, true, do_multi));
 }
-
+
 /* Check whether NAME can be accessed in MODE.  This is like access,
    except that it never considers directories to be executable.  */
 
@@ -3228,6 +3227,7 @@ add_sysrooted_hdrs_prefix (struct path_prefix *pprefix, const char *prefix,
 	      require_machine_suffix, os_multilib);
 }
 
+
 /* Execute the command specified by the arguments on the current line of spec.
    When using pipes, this includes several piped-together commands
    with `|' between them.
@@ -3581,43 +3581,7 @@ execute (void)
     return ret_code;
   }
 }
-
-/* Find all the switches given to us
-   and make a vector describing them.
-   The elements of the vector are strings, one per switch given.
-   If a switch uses following arguments, then the `part1' field
-   is the switch itself and the `args' field
-   is a null-terminated vector containing the following arguments.
-   Bits in the `live_cond' field are:
-   SWITCH_LIVE to indicate this switch is true in a conditional spec.
-   SWITCH_FALSE to indicate this switch is overridden by a later switch.
-   SWITCH_IGNORE to indicate this switch should be ignored (used in %<S).
-   SWITCH_IGNORE_PERMANENTLY to indicate this switch should be ignored.
-   SWITCH_KEEP_FOR_GCC to indicate that this switch, otherwise ignored,
-   should be included in COLLECT_GCC_OPTIONS.
-   in all do_spec calls afterwards.  Used for %<S from self specs.
-   The `known' field describes whether this is an internal switch.
-   The `validated' field describes whether any spec has looked at this switch;
-   if it remains false at the end of the run, the switch must be meaningless.
-   The `ordering' field is used to temporarily mark switches that have to be
-   kept in a specific order.  */
-
-#define SWITCH_LIVE    			(1 << 0)
-#define SWITCH_FALSE   			(1 << 1)
-#define SWITCH_IGNORE			(1 << 2)
-#define SWITCH_IGNORE_PERMANENTLY	(1 << 3)
-#define SWITCH_KEEP_FOR_GCC		(1 << 4)
-
-struct switchstr
-{
-  const char *part1;
-  const char **args;
-  unsigned int live_cond;
-  bool known;
-  bool validated;
-  bool ordering;
-};
-
+
 static struct switchstr *switches;
 
 static int n_switches;
@@ -3691,7 +3655,7 @@ static int added_libraries;
 /* And a vector of corresponding output files is made up later.  */
 
 const char **outfiles;
-
+
 #if defined(HAVE_TARGET_OBJECT_SUFFIX) || defined(HAVE_TARGET_EXECUTABLE_SUFFIX)
 
 /* Convert NAME to a new name if it is the standard suffix.  DO_EXE
@@ -3747,7 +3711,7 @@ convert_filename (const char *name, int do_exe ATTRIBUTE_UNUSED,
   return name;
 }
 #endif
-
+
 /* Display the command line switches accepted by gcc.  */
 static void
 display_help (void)
@@ -3844,7 +3808,7 @@ add_linker_option (const char *option, int len)
 {
   linker_options.safe_push (save_string (option, len));
 }
-
+
 /* Allocate space for an input file in infiles.  */
 
 static void
@@ -3982,7 +3946,7 @@ driver_wrong_lang_callback (const struct cl_decoded_option *decoded,
   const struct cl_option *option = &cl_options[decoded->opt_index];
 
   if (option->cl_reject_driver)
-    error ("aaunrecognized command-line option %qs",
+    error ("unrecognized command-line option %qs",
 	   decoded->orig_option_with_args_text);
   else
     save_switch (decoded->canonical_option[0],
@@ -4176,8 +4140,8 @@ driver_handle_option (struct gcc_options *opts,
   size_t opt_index = decoded->opt_index;
   const char *arg = decoded->arg;
   const char *compare_debug_replacement_opt;
-  const char* orig = decoded->orig_option_with_args_text;
   int value = decoded->value;
+  const char* orig = decoded->orig_option_with_args_text; //sdcpp
   bool validated = false;
   bool do_save = true;
 
@@ -4241,10 +4205,12 @@ driver_handle_option (struct gcc_options *opts,
       print_subprocess_help = 2;
       break;
 
+// SDCPP
     case OPT__obj_ext_:
       validated = true;
       add_preprocessor_option (orig, strlen (orig));
       break;
+// /SDCPP
 
     case OPT__target_help:
       print_subprocess_help = 1;
@@ -4340,9 +4306,13 @@ driver_handle_option (struct gcc_options *opts,
       break;
 
     case OPT_fdiagnostics_format_:
-      diagnostic_output_format_init (dc,
-				     (enum diagnostics_output_format)value);
-      break;
+	{
+	  const char *basename = (opts->x_dump_base_name ? opts->x_dump_base_name
+				  : opts->x_main_input_basename);
+	  diagnostic_output_format_init (dc, basename,
+					 (enum diagnostics_output_format)value);
+	  break;
+	}
 
     case OPT_Wa_:
       {
@@ -4588,12 +4558,16 @@ driver_handle_option (struct gcc_options *opts,
     case OPT_static_libgcc:
     case OPT_shared_libgcc:
     case OPT_static_libgfortran:
+    case OPT_static_libquadmath:
     case OPT_static_libphobos:
+    case OPT_static_libgm2:
     case OPT_static_libstdc__:
-      /* These are always valid, since gcc.cc itself understands the
-	 first two, gfortranspec.cc understands -static-libgfortran,
-	 d-spec.cc understands -static-libphobos, and g++spec.cc
-	 understands -static-libstdc++ */
+      /* These are always valid; gcc.cc itself understands the first two
+	 gfortranspec.cc understands -static-libgfortran,
+	 libgfortran.spec handles -static-libquadmath,
+	 d-spec.cc understands -static-libphobos,
+	 gm2spec.cc understands -static-libgm2,
+	 and g++spec.cc understands -static-libstdc++.  */
       validated = true;
       break;
 
@@ -5574,7 +5548,7 @@ set_collect_gcc_options (void)
   obstack_grow (&collect_obstack, "\0", 1);
   xputenv (XOBFINISH (&collect_obstack, char *));
 }
-
+
 /* Process a spec string, accumulating and running commands.  */
 
 /* These variables describe the input file name.
@@ -6474,6 +6448,18 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	      if (*sysroot_hdrs_suffix_spec)
 		info.append = concat (info.append, dir_separator_str,
 				      multilib_dir, NULL);
+	      else if (multiarch_dir)
+		{
+		  /* For multiarch, search include-fixed/<multiarch-dir>
+		     before include-fixed.  */
+		  info.append = concat (info.append, dir_separator_str,
+					multiarch_dir, NULL);
+		  info.append_len = strlen (info.append);
+		  for_each_path (&include_prefixes, false, info.append_len,
+				 spec_path, &info);
+
+		  info.append = "include-fixed";
+		}
 	      info.append_len = strlen (info.append);
 	      for_each_path (&include_prefixes, false, info.append_len,
 			     spec_path, &info);
@@ -6759,7 +6745,7 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 		     "%{foo=*:bar%*}%{foo=*:one%*two}"
 
 		   matches -foo=hello then it will produce:
-
+		   
 		     barhello onehellotwo
 		*/
 		if (*p == 0 || *p == '}')
@@ -7408,7 +7394,7 @@ process_brace_body (const char *p, const char *atom, const char *end_atom,
  invalid:
   fatal_error (input_location, "braced spec body %qs is invalid", body);
 }
-
+
 /* Return 0 iff switch number SWITCHNUM is obsoleted by a later switch
    on the command line.  PREFIX_LENGTH is the length of XXX in an {XXX*}
    spec, or -1 if either exact match or %* is used.
@@ -7489,7 +7475,7 @@ check_live_switch (int switchnum, int prefix_length)
   switches[switchnum].live_cond |= SWITCH_LIVE;
   return 1;
 }
-
+
 /* Pass a switch to the current accumulating command
    in the same form that we received it.
    SWITCHNUM identifies the switch; it is an index into
@@ -7543,7 +7529,7 @@ give_switch (int switchnum, int omit_first_word)
   do_spec_1 (" ", 0, NULL);
   switches[switchnum].validated = true;
 }
-
+
 /* Print GCC configuration (e.g. version, thread model, target,
    configuration_arguments) to a given FILE.  */
 
@@ -7594,55 +7580,58 @@ print_configuration (FILE *file)
 
 #define RETRY_ICE_ATTEMPTS 3
 
-/* Returns true if FILE1 and FILE2 contain equivalent data, 0 otherwise.  */
+/* Returns true if FILE1 and FILE2 contain equivalent data, 0 otherwise.
+   If lines start with 0x followed by 1-16 lowercase hexadecimal digits
+   followed by a space, ignore anything before that space.  These are
+   typically function addresses from libbacktrace and those can differ
+   due to ASLR.  */
 
 static bool
 files_equal_p (char *file1, char *file2)
 {
-  struct stat st1, st2;
-  off_t n, len;
-  int fd1, fd2;
-  const int bufsize = 8192;
-  char *buf = XNEWVEC (char, bufsize);
+  FILE *f1 = fopen (file1, "rb");
+  FILE *f2 = fopen (file2, "rb");
+  char line1[256], line2[256];
 
-  fd1 = open (file1, O_RDONLY);
-  fd2 = open (file2, O_RDONLY);
-
-  if (fd1 < 0 || fd2 < 0)
-    goto error;
-
-  if (fstat (fd1, &st1) < 0 || fstat (fd2, &st2) < 0)
-    goto error;
-
-  if (st1.st_size != st2.st_size)
-    goto error;
-
-  for (n = st1.st_size; n; n -= len)
+  bool line_start = true;
+  while (fgets (line1, sizeof (line1), f1))
     {
-      len = n;
-      if ((int) len > bufsize / 2)
-	len = bufsize / 2;
-
-      if (read (fd1, buf, len) != (int) len
-	  || read (fd2, buf + bufsize / 2, len) != (int) len)
-	{
-	  goto error;
-	}
-
-      if (memcmp (buf, buf + bufsize / 2, len) != 0)
+      if (!fgets (line2, sizeof (line2), f2))
 	goto error;
+      char *p1 = line1, *p2 = line2;
+      if (line_start
+	  && line1[0] == '0'
+	  && line1[1] == 'x'
+	  && line2[0] == '0'
+	  && line2[1] == 'x')
+	{
+	  int i, j;
+	  for (i = 0; i < 16; ++i)
+	    if (!ISXDIGIT (line1[2 + i]) || ISUPPER (line1[2 + i]))
+	      break;
+	  for (j = 0; j < 16; ++j)
+	    if (!ISXDIGIT (line2[2 + j]) || ISUPPER (line2[2 + j]))
+	      break;
+	  if (i && line1[2 + i] == ' ' && j && line2[2 + j] == ' ')
+	    {
+	      p1 = line1 + i + 3;
+	      p2 = line2 + j + 3;
+	    }
+	}
+      if (strcmp (p1, p2) != 0)
+	goto error;
+      line_start = strchr (line1, '\n') != NULL;
     }
+  if (fgets (line2, sizeof (line2), f2))
+    goto error;
 
-  free (buf);
-  close (fd1);
-  close (fd2);
-
+  fclose (f1);
+  fclose (f2);
   return 1;
 
 error:
-  free (buf);
-  close (fd1);
-  close (fd2);
+  fclose (f1);
+  fclose (f2);
   return 0;
 }
 
@@ -7776,18 +7765,16 @@ do_report_bug (const char **new_argv, const int nargs,
 	       char **out_file, char **err_file)
 {
   int i, status;
-  ssize_t ret;
   int fd = open (*out_file, O_RDWR | O_APPEND);
   if (fd < 0)
     return;
-  ret = write (fd, "\n//", 3);
+  write (fd, "\n//", 3);
   for (i = 0; i < nargs; i++)
     {
-      ret = write (fd, " ", 1);
-      ret = write (fd, new_argv[i], strlen (new_argv[i]));
+      write (fd, " ", 1);
+      write (fd, new_argv[i], strlen (new_argv[i]));
     }
-  ret = write (fd, "\n\n", 2);
-  (void)ret;
+  write (fd, "\n\n", 2);
   close (fd);
   new_argv[nargs] = "-E";
   new_argv[nargs + 1] = NULL;
@@ -7851,6 +7838,10 @@ try_generate_repro (const char **argv)
     new_argv[out_arg + 1] = "-";
   else
     new_argv[out_arg] = "-o-";
+
+#ifdef HOST_HAS_PERSONALITY_ADDR_NO_RANDOMIZE
+  personality (personality (0xffffffffU) | ADDR_NO_RANDOMIZE);
+#endif
 
   int status;
   for (attempt = 0; attempt < RETRY_ICE_ATTEMPTS; ++attempt)
@@ -7981,7 +7972,7 @@ set_input (const char *filename)
      INPUT_STAT_SET signals that the stat is needed.  */
   input_stat_set = 0;
 }
-
+
 /* On fatal signals, delete all the temporary files.  */
 
 static void
@@ -8630,15 +8621,12 @@ driver::handle_unrecognized_options ()
       {
 	const char *hint = 0; // sdcpp m_option_proposer.suggest_option (switches[i].part1);
 	if (hint)
-	  error ("bbunrecognized command-line option %<-%s%>;"
+	  error ("unrecognized command-line option %<-%s%>;"
 		 " did you mean %<-%s%>?",
 		 switches[i].part1, hint);
 	else
-	  error ("ccunrecognized command-line option %<-%s%>",
+	  error ("unrecognized command-line option %<-%s%>",
 		 switches[i].part1);
-      }
-    else
-      {
       }
 }
 
@@ -8790,7 +8778,7 @@ driver::maybe_print_and_exit () const
     {
       printf (_("%s %s%s\n"), progname, pkgversion_string,
 	      version_string);
-      printf ("Copyright %s 2022 Free Software Foundation, Inc.\n",
+      printf ("Copyright %s 2023 Free Software Foundation, Inc.\n",
 	      _("(C)"));
       fputs (_("This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"),
@@ -9188,38 +9176,11 @@ driver::final_actions () const
 void
 driver::detect_jobserver () const
 {
-  /* Detect jobserver and drop it if it's not working.  */
-  const char *makeflags = env.get ("MAKEFLAGS");
-  if (makeflags != NULL)
-    {
-      const char *needle = "--jobserver-auth=";
-      const char *n = strstr (makeflags, needle);
-      if (n != NULL)
-	{
-	  int rfd = -1;
-	  int wfd = -1;
-
-	  bool jobserver
-	    = (sscanf (n + strlen (needle), "%d,%d", &rfd, &wfd) == 2
-	       && rfd > 0
-	       && wfd > 0
-	       && is_valid_fd (rfd)
-	       && is_valid_fd (wfd));
-
-	  /* Drop the jobserver if it's not working now.  */
-	  if (!jobserver)
-	    {
-	      unsigned offset = n - makeflags;
-	      char *dup = xstrdup (makeflags);
-	      dup[offset] = '\0';
-
-	      const char *space = strchr (makeflags + offset, ' ');
-	      if (space != NULL)
-		strcpy (dup + offset, space);
-	      xputenv (concat ("MAKEFLAGS=", dup, NULL));
-	    }
-	}
-    }
+#if 0 // sdcpp
+  jobserver_info jinfo;
+  if (!jinfo.is_active && !jinfo.skipped_makeflags.empty ())
+    xputenv (xstrdup (jinfo.skipped_makeflags.c_str ()));
+#endif // sdcpp
 }
 
 /* Determine what the exit code of the driver should be.  */
@@ -9311,7 +9272,7 @@ lookup_compiler (const char *name, size_t length, const char *language)
     }
   return 0;
 }
-
+
 static char *
 save_string (const char *s, int len)
 {
@@ -9323,6 +9284,7 @@ save_string (const char *s, int len)
   return result;
 }
 
+
 static inline void
 validate_switches_from_spec (const char *spec, bool user)
 {
@@ -9368,12 +9330,15 @@ validate_switches (const char *start, bool user_spec, bool braced)
   const char *atom;
   size_t len;
   int i;
-  bool suffix = false;
-  bool starred = false;
+  bool suffix;
+  bool starred;
 
 #define SKIP_WHITE() do { while (*p == ' ' || *p == '\t') p++; } while (0)
 
 next_member:
+  suffix = false;
+  starred = false;
+
   SKIP_WHITE ();
 
   if (*p == '!')
@@ -9400,9 +9365,8 @@ next_member:
       for (i = 0; i < n_switches; i++)
 	if (!strncmp (switches[i].part1, atom, len)
 	    && (starred || switches[i].part1[len] == '\0')
-	    && (switches[i].known || user_spec)){
+	    && (switches[i].known || user_spec))
 	      switches[i].validated = true;
-	}
     }
 
   if (!braced)
@@ -9438,7 +9402,7 @@ next_member:
   return p;
 #undef SKIP_WHITE
 }
-
+
 struct mdswitchstr
 {
   const char *str;
@@ -9884,6 +9848,19 @@ set_multilib_dir (void)
       ++p;
     }
 
+#if 0 // sdcpp
+  multilib_dir =
+    targetm_common.compute_multilib (
+      switches,
+      n_switches,
+      multilib_dir,
+      multilib_defaults,
+      multilib_select,
+      multilib_matches,
+      multilib_exclusions,
+      multilib_reuse);
+#endif
+
   if (multilib_dir == NULL && multilib_os_dir != NULL
       && strcmp (multilib_os_dir, ".") == 0)
     {
@@ -10182,7 +10159,7 @@ print_multilib_info (void)
       ++p;
     }
 }
-
+
 /* getenv built-in spec function.
 
    Returns the value of the environment variable given by its first argument,
@@ -10323,8 +10300,9 @@ sanitize_spec_function (int argc, const char **argv)
     return (flag_sanitize & SANITIZE_THREAD) ? "" : NULL;
   if (strcmp (argv[0], "undefined") == 0)
     return ((flag_sanitize
-	     & (SANITIZE_UNDEFINED | SANITIZE_UNDEFINED_NONDEFAULT))
-	    && !flag_sanitize_undefined_trap_on_error) ? "" : NULL;
+	     & ~flag_sanitize_trap
+	     & (SANITIZE_UNDEFINED | SANITIZE_UNDEFINED_NONDEFAULT)))
+	   ? "" : NULL;
   if (strcmp (argv[0], "leak") == 0)
     return ((flag_sanitize
 	     & (SANITIZE_ADDRESS | SANITIZE_LEAK | SANITIZE_THREAD))
@@ -10563,14 +10541,14 @@ static unsigned HOST_WIDE_INT
 get_random_number (void)
 {
   unsigned HOST_WIDE_INT ret = 0;
-  int fd;
+  int fd; 
 
-  fd = open ("/dev/urandom", O_RDONLY);
+  fd = open ("/dev/urandom", O_RDONLY); 
   if (fd >= 0)
     {
-      ssize_t r = read (fd, &ret, sizeof (HOST_WIDE_INT));
+      read (fd, &ret, sizeof (HOST_WIDE_INT));
       close (fd);
-      if (ret && r == sizeof (HOST_WIDE_INT))
+      if (ret)
         return ret;
     }
 
@@ -10996,16 +10974,16 @@ whitespace_to_convert_p (char c, void *)
   return (c == ' ' || c == '\t');
 }
 
-/* Insert backslash before spaces in ORIG (usually a file path), to
+/* Insert backslash before spaces in ORIG (usually a file path), to 
    avoid being broken by spec parser.
 
    This function is needed as do_spec_1 treats white space (' ' and '\t')
    as the end of an argument. But in case of -plugin /usr/gcc install/xxx.so,
    the file name should be treated as a single argument rather than being
-   broken into multiple. Solution is to insert '\\' before the space in a
+   broken into multiple. Solution is to insert '\\' before the space in a 
    file name.
-
-   This function converts and only converts all occurrence of ' '
+   
+   This function converts and only converts all occurrence of ' ' 
    to '\\' + ' ' and '\t' to '\\' + '\t'.  For example:
    "a b"  -> "a\\ b"
    "a  b" -> "a\\ \\ b"

@@ -1,5 +1,5 @@
 /* Simple garbage collection for the GNU compiler.
-   Copyright (C) 1999-2022 Free Software Foundation, Inc.
+   Copyright (C) 1999-2023 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -177,8 +177,8 @@ ggc_cleared_alloc_htab_ignore_args (size_t c ATTRIBUTE_UNUSED,
 void *
 ggc_cleared_alloc_ptr_array_two_args (size_t c, size_t n)
 {
-  gcc_assert (sizeof (PTR *) == n);
-  return ggc_cleared_vec_alloc<PTR *> (c);
+  gcc_assert (sizeof (void **) == n);
+  return ggc_cleared_vec_alloc<void **> (c);
 }
 
 /* These are for splay_tree_new_ggc.  */
@@ -256,7 +256,8 @@ static vec<void *> callback_vec;
 #if 0 // sdcpp
 int
 gt_pch_note_object (void *obj, void *note_ptr_cookie,
-		    gt_note_pointers note_ptr_fn)
+		    gt_note_pointers note_ptr_fn,
+		    size_t length_override)
 {
   struct ptr_data **slot;
 
@@ -276,7 +277,9 @@ gt_pch_note_object (void *obj, void *note_ptr_cookie,
   (*slot)->obj = obj;
   (*slot)->note_ptr_fn = note_ptr_fn;
   (*slot)->note_ptr_cookie = note_ptr_cookie;
-  if (note_ptr_fn == gt_pch_p_S)
+  if (length_override != (size_t)-1)
+    (*slot)->size = length_override;
+  else if (note_ptr_fn == gt_pch_p_S)
     (*slot)->size = strlen ((const char *)obj) + 1;
   else
     (*slot)->size = ggc_get_size (obj);
@@ -611,7 +614,7 @@ gt_pch_save (FILE *f)
 	 temporarily defined and then restoring previous state.  */
       int get_vbits = 0;
       size_t valid_size = state.ptrs[i]->size;
-      if (__builtin_expect (RUNNING_ON_VALGRIND, 0))
+      if (UNLIKELY (RUNNING_ON_VALGRIND))
 	{
 	  if (vbits.length () < valid_size)
 	    vbits.safe_grow (valid_size, true);
@@ -663,7 +666,7 @@ gt_pch_save (FILE *f)
       if (state.ptrs[i]->note_ptr_fn != gt_pch_p_S)
 	memcpy (state.ptrs[i]->obj, this_object, state.ptrs[i]->size);
 #if defined ENABLE_VALGRIND_ANNOTATIONS && defined VALGRIND_GET_VBITS
-      if (__builtin_expect (get_vbits == 1, 0))
+      if (UNLIKELY (get_vbits == 1))
 	{
 	  (void) VALGRIND_SET_VBITS (state.ptrs[i]->obj, vbits.address (),
 				     valid_size);
@@ -689,7 +692,7 @@ gt_pch_save (FILE *f)
     {
       gcc_assert ((uintptr_t) addr >= (uintptr_t) mmi.preferred_base
 		  && ((uintptr_t) addr + sizeof (void *)
-		      < (uintptr_t) mmi.preferred_base + mmi.size));
+		      <= (uintptr_t) mmi.preferred_base + mmi.size));
       if (addr == last_addr)
 	continue;
       if (last_addr == NULL)
