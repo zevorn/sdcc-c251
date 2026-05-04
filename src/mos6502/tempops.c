@@ -148,7 +148,7 @@ loadRegTempAt (reg_info * reg, int offset)
 
   if(_S.tempAttr[offset].isLiteral)
     {
-      loadRegFromConst(reg, _S.tempAttr[offset].literalValue);
+      m6502_loadRegFromConst(reg, _S.tempAttr[offset].literalValue);
       return;
     }
 

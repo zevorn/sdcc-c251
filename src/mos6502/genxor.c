@@ -102,12 +102,12 @@ m6502_genXor (iCode * ic, iCode * ifx)
 	  m6502_emitComment (TRACEGEN|VVDBG, "  %s: test A for flags", __func__);
 
 	  if (m6502_reg_a->isDead)
-	    accopWithAop (OPCODE, AOP (right), 0);
+	    m6502_accopWithAop (OPCODE, AOP (right), 0);
 	  else
 	    {
 	      // no dead register available
 	      storeRegTemp(m6502_reg_a, true);
-	      accopWithAop (OPCODE, AOP(right), 0);
+	      m6502_accopWithAop (OPCODE, AOP(right), 0);
 	      loadRegTempNoFlags(m6502_reg_a, true); // preserve flags
 	    }
 	  genIfxJump (ifx, "z");
@@ -123,9 +123,9 @@ m6502_genXor (iCode * ic, iCode * ifx)
 	{
           bytemask = (isLit) ? (lit >> (offset * 8)) & 0xff : 0x100;
 
-	  loadRegFromAop (m6502_reg_a, AOP (left), offset);
+	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), offset);
 	  if (bytemask != NOP_MASK)
-	    accopWithAop (OPCODE, AOP (right), offset);
+	    m6502_accopWithAop (OPCODE, AOP (right), offset);
 
 	  if (offset<size-1)
 	    m6502_emitBranch ("bne", tlbl);
@@ -160,11 +160,11 @@ m6502_genXor (iCode * ic, iCode * ifx)
   if (x_zero)
     {
       if(AOP_SIZE (result)>1)
-        transferAopAop(AOP(right), 1, AOP(result), 1);
+        m6502_transferAopAop(AOP(right), 1, AOP(result), 1);
 
-      loadRegFromAop (m6502_reg_a, AOP (left), 0);
-      accopWithAop (OPCODE, AOP (right), 0);
-      storeRegToAop (m6502_reg_a, AOP (result), 0);
+      m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
+      m6502_accopWithAop (OPCODE, AOP (right), 0);
+      m6502_storeRegToAop (m6502_reg_a, AOP (result), 0);
       goto release;
     }
 
@@ -173,11 +173,11 @@ m6502_genXor (iCode * ic, iCode * ifx)
       m6502_emitComment (TRACEGEN|VVDBG, "  %s: XA", __func__);
 
       if (IS_AOP_A(AOP(left)))
-	storeConstToAop(0x00, AOP(result), 1);
+	m6502_storeConstToAop(0x00, AOP(result), 1);
       else if (bmask1==NOP_MASK)
-	transferAopAop(AOP(left), 1, AOP(result), 1);
+	m6502_transferAopAop(AOP(left), 1, AOP(result), 1);
       else if(IS_AOP_XA(AOP(left)) && m6502_reg_x->isLitConst && m6502_reg_x->litConst==NOP_MASK)
-	transferAopAop(AOP(right), 1, AOP(result), 1);
+	m6502_transferAopAop(AOP(right), 1, AOP(result), 1);
       else
 	{
 	  if(IS_AOP_XA(AOP(left)))
@@ -185,19 +185,19 @@ m6502_genXor (iCode * ic, iCode * ifx)
 	      fastSaveA();
 	      needpulla=true;
 	    }
-	  loadRegFromAop (m6502_reg_a, AOP (left), 1);
-	  accopWithAop (OPCODE, AOP (right), 1);
-	  storeRegToAop (m6502_reg_a, AOP (result), 1);          
+	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 1);
+	  m6502_accopWithAop (OPCODE, AOP (right), 1);
+	  m6502_storeRegToAop (m6502_reg_a, AOP (result), 1);          
 	}
 
       {
 	if(needpulla)
 	  fastRestoreA();
 	else
-	  loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
 
 	if(bmask0!=NOP_MASK)
-	  accopWithAop (OPCODE, AOP (right), 0);
+	  m6502_accopWithAop (OPCODE, AOP (right), 0);
       }
       goto release;
     }
@@ -223,13 +223,13 @@ m6502_genXor (iCode * ic, iCode * ifx)
 
       if ( bytemask==NOP_MASK )
 	{
-	  transferAopAop(AOP(left), offset, AOP(result), offset);
+	  m6502_transferAopAop(AOP(left), offset, AOP(result), offset);
 	}
       else
 	{
-	  loadRegFromAop (m6502_reg_a, AOP (left), offset);
-	  accopWithAop (OPCODE, AOP (right), offset);
-	  storeRegToAop (m6502_reg_a, AOP (result), offset);
+	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), offset);
+	  m6502_accopWithAop (OPCODE, AOP (right), offset);
+	  m6502_storeRegToAop (m6502_reg_a, AOP (result), offset);
           m6502_freeReg(m6502_reg_a);
 	}
     }

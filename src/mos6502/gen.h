@@ -182,16 +182,16 @@ int safeLabelNum(symbol * a);
 void genIfxJump (iCode * ic, char *jval);
 
 void m6502_transferRegReg (reg_info *sreg, reg_info *dreg, bool freesrc);
-void loadRegFromConst (reg_info * reg, int c);
-void loadRegFromAop (reg_info * reg, asmop * aop, int loffset);
-void storeRegToFullAop (reg_info *reg, asmop *aop, bool isSigned);
-void rmwWithReg (char *rmwop, reg_info * reg);
+void m6502_loadRegFromConst (reg_info * reg, int c);
+void m6502_loadRegFromAop (reg_info * reg, asmop * aop, int loffset);
+void m6502_storeRegToFullAop (reg_info *reg, asmop *aop, bool isSigned);
+void m6502_rmwWithReg (char *rmwop, reg_info * reg);
 
-void storeConstToAop (int c, asmop * aop, int loffset);
-void transferAopAop (asmop * srcaop, int srcofs, asmop * dstaop, int dstofs);
-void storeRegToAop (reg_info *reg, asmop * aop, int loffset);
-void accopWithAop (const char *accop, asmop *aop, int loffset);
-void rmwWithAop (char *rmwop, asmop * aop, int loffset);
+void m6502_storeConstToAop (int c, asmop * aop, int loffset);
+void m6502_transferAopAop (asmop * srcaop, int srcofs, asmop * dstaop, int dstofs);
+void m6502_storeRegToAop (reg_info *reg, asmop * aop, int loffset);
+void m6502_accopWithAop (const char *accop, asmop *aop, int loffset);
+void m6502_rmwWithAop (char *rmwop, asmop * aop, int loffset);
 
 void m6502_signExtendReg(reg_info *reg);
 //void m6502_addSign (operand * result, int offset, int sign);
