@@ -1,3 +1,8 @@
+2026-05-04 Felix Salfelder <felix AT salfelder.org>
+
+	* support/cpp
+      Bump to release/gcc-13.
+
 2026-05-03 Gabriele Gorla <gorlik@yahoo.com>
 
 	* src/mos6502/gen.h,
