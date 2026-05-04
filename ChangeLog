@@ -2,6 +2,12 @@
 
 	* support/cpp
       Bump to release/gcc-13.
+	* support/cpp/gcc/config/i386/xm-cygwin.h,
+      support/cpp/gcc/config/i386/xm-djgpp.h,
+      support/cpp/gcc/config/i386/xm-mingw32.h,
+      support/cpp/gcc/config/i386/xmmintrin.h
+      Add various config/i386/xm*h,
+      in an attempt to fix mingw build etc.
 
 2026-05-03 Gabriele Gorla <gorlik@yahoo.com>
 
