@@ -12,6 +12,8 @@
       src/mos6502/genxor.c,
       src/mos6502/tempops.c:
       Add m6502_ prefix to several non static functions.
+	* src/mos6502/stackops.c:
+      Small stack operations optimizations.
 
 2026-05-03 Philipp Klaus Krause <philipp@colecovision.eu>
 

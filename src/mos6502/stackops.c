@@ -37,11 +37,11 @@
 bool
 m6502_pushReg (reg_info * reg, bool freereg)
 {
-  int regidx = reg->rIdx;
+  bool needloada = false;
 
   m6502_emitComment (REGOPS, "  pushReg(%s) %s %s", reg->name, reg->isFree?"free":"", reg->isDead?"dead":"");
 
-  switch (regidx)
+  switch (reg->rIdx)
     {
     case A_IDX:
       m6502_emitOp ("pha", "");
@@ -54,8 +54,8 @@ m6502_pushReg (reg_info * reg, bool freereg)
         }
       else
         {
-          bool needloada = storeRegTempIfUsed (m6502_reg_a);
-          m6502_transferRegReg (m6502_reg_x, m6502_reg_a, false);
+          needloada = storeRegTempIfUsed (m6502_reg_a);
+          m6502_transferRegReg (m6502_reg_x, m6502_reg_a, freereg);
           m6502_pushReg (m6502_reg_a, true);
           loadOrFreeRegTemp (m6502_reg_a, needloada);
         }
@@ -68,8 +68,8 @@ m6502_pushReg (reg_info * reg, bool freereg)
         }
       else
         {
-          bool needloada = storeRegTempIfUsed (m6502_reg_a);
-          m6502_transferRegReg (m6502_reg_y, m6502_reg_a, true);
+          needloada = storeRegTempIfUsed (m6502_reg_a);
+          m6502_transferRegReg (m6502_reg_y, m6502_reg_a, freereg);
           m6502_pushReg (m6502_reg_a, true);
           loadOrFreeRegTemp (m6502_reg_a, needloada);
         }
@@ -77,13 +77,24 @@ m6502_pushReg (reg_info * reg, bool freereg)
       break;
       // little-endian order
     case XA_IDX:
-      if(m6502_reg_y->isFree && !IS_MOS65C02)
+      if(!IS_MOS65C02)
         {
-          m6502_transferRegReg (m6502_reg_a, m6502_reg_y, freereg);
-          m6502_transferRegReg (m6502_reg_x, m6502_reg_a, freereg);
-          m6502_pushReg(m6502_reg_a, freereg);
-          m6502_transferRegReg (m6502_reg_y, m6502_reg_a, true);
-          m6502_pushReg(m6502_reg_a, freereg);
+          if(m6502_reg_y->isFree)
+            {
+              m6502_transferRegReg (m6502_reg_a, m6502_reg_y, freereg);
+              m6502_transferRegReg (m6502_reg_x, m6502_reg_a, freereg);
+              m6502_pushReg(m6502_reg_a, true);
+              m6502_transferRegReg (m6502_reg_y, m6502_reg_a, true);
+              m6502_pushReg(m6502_reg_a, freereg);
+            }
+          else
+            {
+              storeRegTemp(m6502_reg_a, true);
+              m6502_transferRegReg (m6502_reg_x, m6502_reg_a, freereg);
+              m6502_pushReg(m6502_reg_a, true);
+              loadRegTemp(m6502_reg_a);
+              m6502_pushReg(m6502_reg_a, freereg);
+            }
         }
       else
         {
@@ -92,11 +103,21 @@ m6502_pushReg (reg_info * reg, bool freereg)
         }
       break;
     case XY_IDX:
-      m6502_pushReg(m6502_reg_x, freereg);
-      m6502_pushReg(m6502_reg_y, freereg);
+      if(!IS_MOS65C02)
+        {
+          needloada = storeRegTempIfUsed (m6502_reg_a);
+          m6502_pushReg(m6502_reg_x, freereg);
+          m6502_pushReg(m6502_reg_y, freereg);
+          loadOrFreeRegTemp (m6502_reg_a, needloada);
+        }
+      else
+        {
+          m6502_pushReg(m6502_reg_x, freereg);
+          m6502_pushReg(m6502_reg_y, freereg);
+        }
       break;
     default:
-      emitcode("ERROR", "    %s: bad reg idx: 0x%02x", __func__, regidx);
+      emitcode("ERROR", "    %s: bad reg idx: 0x%02x", __func__, reg->rIdx);
       break;
     }
   if (freereg)
