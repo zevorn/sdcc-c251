@@ -28,8 +28,8 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#ifndef __SDCC_STRING_H
-#define __SDCC_STRING_H 1
+#ifndef __STDC_VERSION_STRING_H__
+#define __STDC_VERSION_STRING_H__ __STDC_VERSION__
 
 #ifndef NULL
 # define NULL (void *)0

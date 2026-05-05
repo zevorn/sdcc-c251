@@ -4,6 +4,8 @@
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
 #ifdef __SDCC
 #pragma std_c99
 #pragma disable_warning 278
@@ -34,10 +36,12 @@ foo (struct B b, struct A *q, float *h)
   q->t = 2;
   return *(b.p);
 }
+#endif
 
 void
 testTortureExecute (void)
 {
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
   struct A a;
   struct B b;
 
@@ -46,4 +50,5 @@ testTortureExecute (void)
     ASSERT (0);
 
   return;
+#endif
 }

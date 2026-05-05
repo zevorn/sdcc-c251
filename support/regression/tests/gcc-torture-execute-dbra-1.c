@@ -4,6 +4,8 @@ dbra-1.c from the execute part of the gcc torture tests.
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
 #pragma disable_warning 278
 
 f1 (a)
@@ -77,6 +79,7 @@ f6 (a)
     }
   return -1;
 }
+#endif
 
 void
 testTortureExecute (void)

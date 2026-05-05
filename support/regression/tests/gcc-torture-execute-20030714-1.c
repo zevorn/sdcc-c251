@@ -8,6 +8,8 @@
 #pragma std_c11
 #endif
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
 #if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // pdk needs functions called via pointer to be reentrant even for a single argument
 #if !(defined (__GNUC__) && defined (__GNUC_MINOR__) && (__GNUC__ < 5))
 /* derived from PR optimization/11440  */
@@ -179,10 +181,12 @@ bool RenderBox_isTableCell (RenderBox *this)
 }
 #endif
 #endif
+#endif
 
 void
 testTortureExecute (void)
 {
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
 #ifndef __SDCC_pic16
 #if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
 #if !(defined (__GNUC__) && defined (__GNUC_MINOR__) && (__GNUC__ < 5))
@@ -204,6 +208,7 @@ testTortureExecute (void)
     ASSERT (0);
 
   return;
+#endif
 #endif
 #endif
 #endif

@@ -4,6 +4,8 @@
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
 #ifdef __SDCC
 #pragma std_c89
 #endif
@@ -14,10 +16,12 @@ int false()
 {
   return 0;
 }
+#endif
 
 void
 testTortureExecute (void)
 {
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
   int count = 0;
 
   while (false() || count < -123)
@@ -27,4 +31,5 @@ testTortureExecute (void)
     ASSERT (0);
 
   return;
+#endif
 }

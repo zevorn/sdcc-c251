@@ -4,6 +4,8 @@
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
 #ifdef __SDCC
 #pragma std_c99
 #endif
@@ -19,10 +21,12 @@ f (T u)
   ++u.c.b3;
   return (u.c.b1 != 2 || u.c.b2 != 2);
 }
+#endif
 
 void
 testTortureExecute (void)
 {
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
   T u;
   u.c.b1 = 2;
   u.c.b2 = 2;
@@ -31,5 +35,6 @@ testTortureExecute (void)
   if (f (u))
     ASSERT(0);
   return;
+#endif
 }
 

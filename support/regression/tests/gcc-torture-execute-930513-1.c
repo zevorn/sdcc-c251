@@ -4,6 +4,7 @@
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
 #pragma disable_warning 278
 
 /* { dg-additional-options "-Wl,-u,_printf_float" { target newlib_nano_io } } */
@@ -16,6 +17,7 @@ f (fp)
 {
   (*fp)(buf, "%.0f", 5.0);
 }
+#endif
 
 void
 testTortureExecute (void)

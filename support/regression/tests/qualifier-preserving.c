@@ -13,7 +13,7 @@ _Pragma("std_c23")
 
 void testQualifierPreserving(void)
 {
-#if __STDC_VERSION__ >= 202311L
+#if __STDC_VERSION_STRING_H__ >= 202311L
     // test char and void pointer representatives -- the wrappers all use the same mechanism
     char abc[] = "abc";
     ASSERT(memchr(abc, 'c', 3) == abc + 2);

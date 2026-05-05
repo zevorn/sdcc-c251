@@ -1,3 +1,20 @@
+2026-05-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* device/include/string.h:
+	  Announce support for qualifier-preserving standard library functions.
+	* support/regression/tests/qualifier-preserving.c:
+	  Do not test host compilers where they don't support qualifier-preserving standard library functions.
+	* support/regression/tests/gcc-torture-execute-20030714-1.c,
+	  support/regression/tests/gcc-torture-execute-930208-1.c,
+	  support/regression/tests/gcc-torture-execute-930513-1.c,
+	  support/regression/tests/gcc-torture-execute-931004-1.c,
+	  support/regression/tests/gcc-torture-execute-dbra-1.c,
+	  support/regression/tests/gcc-torture-execute-inst-check.c,
+	  support/regression/tests/gcc-torture-execute-int-compare.c,
+	  support/regression/tests/gcc-torture-execute-loop-9.c,
+	  support/regression/tests/gcc-torture-execute-pr15262-2.c:
+	  Disable some tests for host, where we do not have control over C dialect used, but the tests require C99.
+
 2026-05-04 Felix Salfelder <felix AT salfelder.org>
 
 	* support/cpp
@@ -30,7 +47,7 @@
 
 	* src/SDCCgenconstprop.cc,
 	  src/SDCCicode.c:
-	  Improve optimizations based on generalized constnat propagation for global variables, RFE #534.
+	  Improve optimizations based on generalized constant propagation for global variables, RFE #534.
 
 2026-05-03 Philipp Klaus Krause <philipp@colecovision.eu>
 

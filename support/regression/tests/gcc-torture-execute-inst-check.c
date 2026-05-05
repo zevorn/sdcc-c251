@@ -4,6 +4,8 @@ inst-check.c from the execute part of the gcc torture tests.
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
 #include <stdarg.h>
 
 f(m)
@@ -13,6 +15,7 @@ f(m)
     s+=i;
   return s;
 }
+#endif
 
 void
 testTortureExecute (void)
