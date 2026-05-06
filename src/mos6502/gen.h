@@ -79,7 +79,6 @@ typedef enum
     AOP_STK,       /* should be pushed on stack this
 		      can happen only for the result */
     AOP_IMMD,      /* immediate value for eg. remateriazable */
-    AOP_STR,       /* array of strings */
     AOP_CRY,       /* carry contains the value of this */
     AOP_EXT,       /* operand using extended addressing mode */
     AOP_SOF,       /* operand at an offset on the stack */

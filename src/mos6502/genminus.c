@@ -266,6 +266,7 @@ m6502_genMinus (iCode * ic)
       emitRegTempOp(OPCODE, x_loc);
       if (maskedtopbyte)
 	m6502_emitOp ("and", IMMDFMT, topbytemask);
+
       m6502_storeRegToAop (m6502_reg_a, AOP (result), 1);
 
       if(restore_x)

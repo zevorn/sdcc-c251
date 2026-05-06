@@ -2,6 +2,12 @@
 
 	* device/lib/mos6502/_fsadd.s:
       Minor code cleanups.
+    * src/mos6502/gen.h,
+      src/mos6502/gen.c,
+      src/mos6502/genrot.c,
+      src/mos6502/genminus.c,
+      src/mos6502/ralloc2.cc:
+      Remove dead code and small cosmetic fixes.
 
 2026-05-05 Philipp Klaus Krause <philipp@colecovision.eu>
 

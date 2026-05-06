@@ -159,8 +159,11 @@ genRLC (iCode * ic)
 	{
 	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), offset);
 	  m6502_rmwWithReg (shift, m6502_reg_a);
-	  if(offset==0 && resultInA) storeRegTemp (m6502_reg_a, true);
-	  else m6502_storeRegToAop (m6502_reg_a, AOP (result), offset);
+	  if(offset==0 && resultInA)
+            storeRegTemp (m6502_reg_a, true);
+	  else
+            m6502_storeRegToAop (m6502_reg_a, AOP (result), offset);
+
 	  shift = "rol";
 	  offset++;
 	}

@@ -1992,10 +1992,10 @@ m6502_transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
       return;
     }
 
-  m6502_emitComment (TRACE_AOP|VVDBG, "    m6502_transferAopAop from (%s, %d, 0x%x)",
-               aopName (srcaop), srcofs, srcaop->regmask);
-  m6502_emitComment (TRACE_AOP|VVDBG, "    m6502_transferAopAop   to (%s, %d, 0x%x)",
-               aopName (dstaop), dstofs, dstaop->regmask);
+  m6502_emitComment (TRACE_AOP|VVDBG, "    %s from (%s, %d, 0x%x)",
+               __func__, aopName (srcaop), srcofs, srcaop->regmask);
+  m6502_emitComment (TRACE_AOP|VVDBG, "    %s to (%s, %d, 0x%x)",
+               __func__, aopName (dstaop), dstofs, dstaop->regmask);
 
   if (dstofs >= dstaop->size)
     return;
@@ -2013,7 +2013,7 @@ m6502_transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
   if(srcaop->type == AOP_SOF && dstaop->type == AOP_SOF)
     if( (srcaop->aopu.aop_stk+srcofs) == (dstaop->aopu.aop_stk+dstofs) )
       {
-	m6502_emitComment (TRACE_AOP|VVDBG, "    m6502_transferAopAop  AOP_SOF same offset");
+	m6502_emitComment (TRACE_AOP|VVDBG, "    %s:  AOP_SOF same offset", __func__);
 	return;
       }
 #endif
@@ -2178,40 +2178,22 @@ m6502_accopWithAop (const char *accop, asmop *aop, int loffset)
  * m6502_rmwWithReg - Emit read/modify/write instruction rmwop with register reg.
  *              byte at logical offset loffset of asmop aop. Register reg
  *              must be 8-bit.
- *              Supports: com, dec, inc, lsl, lsr, neg, rol, ror
+ *              Supports: dec, inc, lsl, lsr, neg, rol, ror
  *************************************************************************/
 void
 m6502_rmwWithReg (char *rmwop, reg_info * reg)
 {
   if (reg->rIdx == A_IDX)
     {
-      if (!strcmp(rmwop, "inc"))
+      if (!strcmp(rmwop, "inc") && !IS_MOS65C02)
         {
-          if (IS_MOS65C02)
-            {
-              m6502_emitOp (rmwop, "a");
-            }
-          else
-            {
-              m6502_emitSetCarry(0);
-              m6502_emitOp ("adc", "#0x01");
-            }
+          m6502_emitSetCarry(0);
+          m6502_emitOp ("adc", "#0x01");
         }
-      else if (!strcmp(rmwop, "dec"))
+      else if (!strcmp(rmwop, "dec")  && !IS_MOS65C02)
         {
-          if (IS_MOS65C02)
-            {
-              m6502_emitOp (rmwop, "a");
-            }
-          else
-            {
-              m6502_emitSetCarry(1);
-              m6502_emitOp ("sbc", "#0x01");
-            }
-        }
-      else if (!strcmp(rmwop, "com"))
-        {
-          m6502_emitOp ("eor", "#0xff");
+          m6502_emitSetCarry(1);
+          m6502_emitOp ("sbc", "#0x01");
         }
       else if (!strcmp(rmwop, "neg"))
         {
@@ -2224,41 +2206,28 @@ m6502_rmwWithReg (char *rmwop, reg_info * reg)
           m6502_emitOp (rmwop, "a");
         }
     }
-  else if (reg->rIdx == X_IDX)
+  else if (reg->rIdx == X_IDX || reg->rIdx == Y_IDX)
     {
       if (!strcmp(rmwop, "inc"))
         {
-          m6502_emitOp ("inx", "");
+          if (reg->rIdx == X_IDX)
+            m6502_emitOp ("inx", "");
+          else
+            m6502_emitOp ("iny", "");
         }
       else if (!strcmp(rmwop, "dec"))
         {
-          m6502_emitOp ("dex", "");
+          if (reg->rIdx == X_IDX)
+            m6502_emitOp ("dex", "");
+          else
+            m6502_emitOp ("dey", "");
         }
       else
         {
           bool needpulla = pushRegIfUsed (m6502_reg_a);
-          m6502_transferRegReg (m6502_reg_x, m6502_reg_a, true);
+          m6502_transferRegReg (reg, m6502_reg_a, true);
           m6502_rmwWithReg (rmwop, m6502_reg_a);
-          m6502_transferRegReg (m6502_reg_a, m6502_reg_x, true);
-          pullOrFreeReg (m6502_reg_a, needpulla);
-        }
-    }
-  else if (reg->rIdx == Y_IDX)
-    {
-      if (!strcmp(rmwop, "inc"))
-        {
-          m6502_emitOp ("iny", "");
-        }
-      else if (!strcmp(rmwop, "dec"))
-        {
-          m6502_emitOp ("dey", "");
-        }
-      else
-        {
-          bool needpulla = pushRegIfUsed (m6502_reg_a);
-          m6502_transferRegReg (m6502_reg_y, m6502_reg_a, true);
-          m6502_rmwWithReg (rmwop, m6502_reg_a);
-          m6502_transferRegReg (m6502_reg_a, m6502_reg_y, true);
+          m6502_transferRegReg (m6502_reg_a, reg, true);
           pullOrFreeReg (m6502_reg_a, needpulla);
         }
     }
@@ -2266,8 +2235,6 @@ m6502_rmwWithReg (char *rmwop, reg_info * reg)
     {
       emitcode("ERROR", "bad reg in m6502_rmwWithReg()");
     }
-  // always dirty dest. register
-  //  m6502_dirtyReg (reg);
 }
 
 /**************************************************************************
@@ -2292,48 +2259,25 @@ m6502_rmwWithAop (char *rmwop, asmop * aop, int loffset)
     case AOP_REG:
       m6502_rmwWithReg (rmwop, aop->aopu.aop_reg[loffset]);
       break;
+
     case AOP_DIR:
     case AOP_EXT:
       m6502_emitComment (TRACE_AOP, "  m6502_rmwWithAop DIR/EXT");
       m6502_emitOp (rmwop, aopAdrStr(aop, loffset, false));
       dirtyRegAop(NULL, aop, loffset);
       break;
-    case AOP_DUMMY:
-      break;
-    case AOP_SOF:
-      {
-        m6502_emitComment (TRACE_AOP, "  m6502_rmwWithAop AOP_SOF");
-        // TODO: does anything but A make sense here?
-	//        reg_info * reg = getFreeByteReg();
-	//        if (!reg)
-	//            reg = m6502_reg_a;
-#if 0
-        int offset = _S.stackOfs + _S.stackPushes + aop->aopu.aop_stk + loffset + 1;
 
-        if ((offset > 0x1ff) || (offset < 0))
-	  {
-	    m6502_emitComment (TRACE_AOP, "  m6502_rmwWithAop large offset");
-	    /* Unfortunately, the rmw class of instructions only support a */
-	    /* single byte stack pointer offset and we need two. */
-	    needpull = pushRegIfUsed (reg);
-	    m6502_loadRegFromAop (reg, aop, loffset);
-	    m6502_rmwWithReg (rmwop, reg);
-	    if (strcmp ("tst", rmwop)) //TODO: no tst
-	      m6502_storeRegToAop (reg, aop, loffset);
-	    pullOrFreeReg (reg, needpull);
-	    break;
-	  }
-#endif
-        /* If the offset is small enough, fall through to default case */
-      }
-    default:
-      m6502_emitComment (TRACE_AOP, "  m6502_rmwWithAop small offset ");
+    case AOP_SOF:
+      m6502_emitComment (TRACE_AOP, "  m6502_rmwWithAop AOP_SOF");
       // FIXME: figure out if asr handling should be here
       // or if asr should be generated at all by the codegen
       m6502_emitOp (rmwop, aopAdrStr (aop, loffset, false));
       dirtyRegAop(NULL, aop, loffset);
-    }
+      break;
 
+    default:
+      break;
+    }
 }
 
 /**************************************************************************
@@ -4010,122 +3954,6 @@ genNot (iCode * ic)
   m6502_freeAsmop (left, NULL);
 }
 
-
-/**************************************************************************
- * genCpl - generate code for complement
- * no longer used; todo: chekc if something from here could still
- * be useful in genXor, then remove genCpl!
- *************************************************************************/
-static void
-genCpl (iCode * ic)
-{
-  operand *left = IC_LEFT (ic);
-  operand *result = IC_RESULT (ic);
-
-  int offset;
-  int size;
-  bool needpullreg;
-
-  m6502_emitComment (TRACEGEN, __func__);
-  printIC(ic);
-
-  /* assign asmOps to operand & result */
-  m6502_aopOp (left, ic);
-  m6502_aopOp (result, ic);
-  size = AOP_SIZE (result);
-
-  m6502_emitComment (TRACEGEN|VVDBG, "      %s - regmask %02x -> %02x",
-               __func__, AOP(left)->regmask, AOP(result)->regmask );
-
-  if (size==2 && AOP_TYPE (left) == AOP_REG)
-    {
-      if(m6502_reg_x->isLitConst)
-        {
-          unsigned char val = m6502_reg_x->litConst;
-          m6502_dirtyReg(m6502_reg_x);
-          m6502_freeReg(m6502_reg_x);
-
-	  bool pa = pushRegIfSurv (m6502_reg_a);
-          m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
-	  m6502_rmwWithReg ("com", m6502_reg_a);
-          m6502_storeRegToAop (m6502_reg_a, AOP (result), 0);
-
-          if(AOP_TYPE(result)==AOP_SOF)
-            {
-              m6502_loadRegFromConst(m6502_reg_a, ~val);
-              m6502_storeRegToAop (m6502_reg_a, AOP (result), 1);
-            }
-          else
-            {
-              m6502_loadRegFromConst(m6502_reg_x, ~val);
-              m6502_storeRegToAop (m6502_reg_x, AOP (result), 1);
-            }
-	  pullOrFreeReg (m6502_reg_a, pa);
-        }
-      else if(IS_AOP_XA(AOP(left)) && IS_AOP_XA(AOP(result)))
-	{
-	  m6502_pushReg (m6502_reg_a, true);
-	  m6502_transferRegReg (m6502_reg_x, m6502_reg_a, true);
-	  m6502_rmwWithReg ("com", m6502_reg_a);
-	  m6502_transferRegReg (m6502_reg_a, m6502_reg_x, true);
-	  m6502_pullReg (m6502_reg_a);
-	  m6502_rmwWithReg ("com", m6502_reg_a);
-	}
-      else if(IS_AOP_XY(AOP(left)) && IS_AOP_XY(AOP(result)))
-	{
-	  bool pa = pushRegIfSurv (m6502_reg_a);
-	  m6502_transferRegReg (m6502_reg_y, m6502_reg_a, true);
-	  m6502_rmwWithReg ("com", m6502_reg_a);
-	  m6502_transferRegReg (m6502_reg_a, m6502_reg_y, true);
-	  m6502_transferRegReg (m6502_reg_x, m6502_reg_a, true);
-	  m6502_rmwWithReg ("com", m6502_reg_a);
-	  m6502_transferRegReg (m6502_reg_a, m6502_reg_x, true);
-	  pullOrFreeReg (m6502_reg_a, pa);
-	}
-      else if(IS_AOP_XY(AOP(left)) && IS_AOP_XA(AOP(result)))
-	{
-	  m6502_transferRegReg (m6502_reg_x, m6502_reg_a, true);
-	  m6502_rmwWithReg ("com", m6502_reg_a);
-	  m6502_transferRegReg (m6502_reg_a, m6502_reg_x, true);
-	  m6502_transferRegReg (m6502_reg_y, m6502_reg_a, true);
-	  m6502_rmwWithReg ("com", m6502_reg_a);
-	}
-      else if(IS_AOP_XA(AOP(left)) && IS_AOP_XY(AOP(result)))
-	{
-	  m6502_rmwWithReg ("com", m6502_reg_a);
-	  m6502_transferRegReg (m6502_reg_a, m6502_reg_y, true);
-	  m6502_transferRegReg (m6502_reg_x, m6502_reg_a, true);
-	  m6502_rmwWithReg ("com", m6502_reg_a);
-	  m6502_transferRegReg (m6502_reg_a, m6502_reg_x, true);
-	}
-      else
-        {
-          m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
-          m6502_rmwWithReg ("com", m6502_reg_a);
-          m6502_storeRegToAop (m6502_reg_a, AOP (result), 0);
-          m6502_loadRegFromAop (m6502_reg_a, AOP (left), 1);
-          m6502_rmwWithReg ("com", m6502_reg_a);
-          m6502_storeRegToAop (m6502_reg_a, AOP (result), 1);
-        }
-      goto release;
-    }
-
-  needpullreg = pushRegIfSurv (m6502_reg_a);
-  for(offset=size-1; offset>=0; offset--)
-    {
-      m6502_emitComment (TRACEGEN|VVDBG, "  %s: general case", __func__);
-      m6502_loadRegFromAop (m6502_reg_a, AOP (left), offset);
-      m6502_rmwWithReg ("com", m6502_reg_a);
-      m6502_storeRegToAop (m6502_reg_a, AOP (result), offset);
-    }
-  pullOrFreeReg (m6502_reg_a, needpullreg);
-
-  /* release the aops */
- release:
-  m6502_freeAsmop (result, NULL);
-  m6502_freeAsmop (left, NULL);
-}
-
 /**************************************************************************
  * genUminusFloat - unary minus for floating points
  *************************************************************************/
@@ -4232,6 +4060,7 @@ static void genUminus (iCode * ic)
         m6502_pushReg (m6502_reg_a, true);
       else
         m6502_storeRegToAop (m6502_reg_a, AOP (result), 0);
+
       m6502_loadRegFromConst (m6502_reg_a, 0);
       if (left1 == m6502_reg_a)
 	{
@@ -5663,6 +5492,7 @@ genCmp (iCode * ic, iCode * ifx)
               m6502_emitComment (TRACEGEN|VVDBG, "   GenCmp - REG_A");
 	      if(!needloada)
 		storeRegTemp (m6502_reg_a, true);
+
               m6502_loadRegFromAop (m6502_reg_a, AOP (left), offset);
 	      if (!strcmp (cmp_inst, "sub"))
 		{
@@ -6578,10 +6408,12 @@ static void genUnpackBitsImmed (operand * left, operand *right, operand * result
 	    m6502_rmwWithReg ("inc", m6502_reg_a);
 	  else
 	    m6502_rmwWithReg ("dec", m6502_reg_a);
+
 	  safeEmitLabel (tlbl);
 	  m6502_storeRegToAop (m6502_reg_a, AOP (result), offset);
 	  if (AOP_TYPE (result) == AOP_REG && AOP(result)->aopu.aop_reg[offset]->rIdx == A_IDX)
 	    assigned_a = true;
+
 	  m6502_freeReg (m6502_reg_a);
 	  offset++;
 	  goto finish;
@@ -7152,6 +6984,7 @@ static void genPointerGet (iCode * ic, iCode * ifx)
 	    m6502_emitOp ("lda", INDFMT_IY, "DPTR");
 	  else
 	    m6502_emitOp("lda", INDFMT_IY, ptr_aop->aopu.aop_dir);
+
           m6502_storeRegToAop (m6502_reg_a, AOP (result), offset);
         }
     }
@@ -8216,6 +8049,7 @@ static void genCast (iCode * ic)
 	  save_a = result->aop->aopu.aop_reg[0] == m6502_reg_a || !m6502_reg_a->isDead;
 	  if (save_a)
 	    fastSaveA();
+
 	  m6502_loadRegFromAop (m6502_reg_a, result->aop, result->aop->size - 1);
 	}
       m6502_emitOp ("and", IMMDFMT, topbytemask);

@@ -176,7 +176,6 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   bool unused_X = (ia.registers[REG_X][1] < 0);
   bool unused_Y = (ia.registers[REG_Y][1] < 0);
 
-
   if(unused_A && unused_X && unused_Y)
     return(true);
 
