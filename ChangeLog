@@ -1,3 +1,8 @@
+2026-05-06 Gabriele Gorla <gorlik@yahoo.com>
+
+	* device/lib/mos6502/_fsadd.s:
+      Minor code cleanups.
+
 2026-05-05 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* device/include/string.h:

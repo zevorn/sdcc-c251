@@ -1,7 +1,7 @@
 ;-------------------------------------------------------------------------
 ;   _fsadd.s - routine for floating point addition
 ;
-;   Copyright (C) 2025, Gabriele Gorla
+;   Copyright (C) 2025-2026, Gabriele Gorla
 ;
 ;   This library is free software; you can redistribute it and/or modify it
 ;   under the terms of the GNU General Public License as published by the
@@ -112,11 +112,11 @@ p2_not0:
 ;	sta	expd
 
 ;   lda expd
- ; a=expd, y=0
+; a=expd, y=0
 	bpl	pos_diff
-    ; negative exponent difference
-    ; expd=-eppd
-    eor	#0xff
+; negative exponent difference
+; expd=-eppd
+	eor	#0xff
 	clc
 	adc	#0x01
 	; check for overflow
@@ -178,14 +178,11 @@ done:
 00269$:
 
 ; Y is still 0
-; rneg and exp2 share the same location
-;	sty	*rneg  ; Y is still 0
-	ldx	#0x00   ; rneg is in X
+	ldx	#0x00	; rneg is in X
 	lda	*s1
 	and	*s2
 	beq	not_both_negative
-;	sta	*rneg
-	tax            ; rneg is in X
+	tax		; rneg=0x80
 	bne	end
 not_both_negative:
 	lda	*s1
@@ -208,7 +205,7 @@ skip2:
 	lda	*s2
 	beq	end	
 	sec
-    tya
+	tya
 	sbc	*___fsadd_PARM_2
 	sta	*___fsadd_PARM_2
 	tya
@@ -251,9 +248,8 @@ end:
 res_not_zero:
 	bit	*res3
 	bpl	res_pos
-    ; result is negative
-	ldx	#0x80
-;    stx *rneg
+; result is negative
+	ldx	#0x80	; rneg=0x80
 	sec
 	tya
 	sbc	*res0
@@ -269,7 +265,6 @@ res_not_zero:
 	sta	*res3  
 res_pos:
 
-
 normalize:
 	lda	*res3
 	bne	norm_done
@@ -280,7 +275,6 @@ normalize:
 	dec	*exp1
 	bne	normalize
 	jmp	___fs_ret_zero
-
 norm_done:
 
 round:
@@ -305,12 +299,10 @@ add_end:
 	ror	*res0
 	inc	*exp1
 	bne	round
-;    	lda	*rneg
-	txa     ; rneg is in X
+	txa     	; rneg is in X
 	jmp 	___fs_ret_inf ; return infinite
 
 end_round:
-    
 	lsr	*res2
 	ror	*res1
 	ror	*res0
