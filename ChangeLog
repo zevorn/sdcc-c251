@@ -1,5 +1,10 @@
 2026-05-06 Gabriele Gorla <gorlik@yahoo.com>
 
+	* device/lib/mos6502/_memset.s:
+      Save 6 bytes.
+
+2026-05-06 Gabriele Gorla <gorlik@yahoo.com>
+
 	* device/lib/mos6502/_fsadd.s:
       Minor code cleanups.
     * src/mos6502/gen.h,
