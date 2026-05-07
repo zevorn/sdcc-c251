@@ -1,7 +1,12 @@
+2026-05-07 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/mcs51/gen.c:
+	  Fix bug #3984.
+
 2026-05-06 Gabriele Gorla <gorlik@yahoo.com>
 
 	* device/lib/mos6502/_memset.s:
-      Save 6 bytes.
+	  Save 6 bytes.
 
 2026-05-06 Gabriele Gorla <gorlik@yahoo.com>
 

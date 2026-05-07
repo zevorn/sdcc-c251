@@ -1230,10 +1230,10 @@ freeAsmop (operand * op, asmop * aaop, iCode * ic, bool pop)
   if (!aop)
     return;
 
-  aop->allocated--;
-
-  if (aop->allocated)
+  if (!aop->allocated)
     goto dealloc;
+
+  aop->allocated--;
 
   /* depending on the asmop type only three cases need work
      AOP_R0, AOP_R1 & AOP_STK */
@@ -1256,7 +1256,7 @@ freeAsmop (operand * op, asmop * aaop, iCode * ic, bool pop)
       bitVectUnSetBit (ic->rUsed, R0_IDX);
       break;
 
-    case AOP_R1:
+    case AOP_R1:emitcode(";", "freeAsmop r1 %d", pop);
       if (R1INB)
         {
           emitcode ("mov", "r1,b");
@@ -1311,6 +1311,7 @@ freeAsmop (operand * op, asmop * aaop, iCode * ic, bool pop)
 
 dealloc:
   /* all other cases just dealloc */
+  aop->allocated = 0;
   if (op)
     {
       op->aop = NULL;
