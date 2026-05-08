@@ -109,31 +109,35 @@ _rand:
 ;	sta	*(_rand_sloc1_1_0 + 3) 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
 
 ;	lda	*(_rand_sloc0_1_0 + 3) 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
-	eor	*(_rand_sloc0_1_0 + 3) 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
-	sta	*(_rand_sloc0_1_0 + 3) 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
+;	eor	*(_rand_sloc0_1_0 + 3) 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
+;	sta	*(_rand_sloc0_1_0 + 3) 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
+	tax
 	lda	*(_rand_sloc0_1_0 + 2) 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
 	eor	*(_rand_sloc1_1_0 + 2) 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
 	sta	*(_rand_sloc0_1_0 + 2) 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
 	lda	*(_rand_sloc0_1_0 + 1) 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
 	eor	*(_rand_sloc1_1_0 + 1) 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
 	sta	*(_rand_sloc0_1_0 + 1) 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
-	lda	*(_rand_sloc0_1_0 + 3) 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
+	txa
+;	lda	*(_rand_sloc0_1_0 + 3) 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
 
 ;	../rand.c: 46: t ^= t >> 25;
 	lsr	a 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
 	eor	*_rand_sloc0_1_0 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
-	sta	*_rand_sloc0_1_0 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
+;	sta	*_rand_sloc0_1_0 	; A:U-:???  X:--:???  Y:--:#00  F:a C:?
+	tay
 
 ;	../rand.c: 48: s = t; return(t & RAND_MAX);
-	lda	*(_rand_sloc0_1_0 + 3) 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
-	sta	(_seed+3) 	; A:U-:A+3  X:--:???  Y:--:#00  F:a C:?
+;	lda	*(_rand_sloc0_1_0 + 3) 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
+	stx	(_seed+3) 	; A:U-:A+3  X:--:???  Y:--:#00  F:a C:?
 	lda	*(_rand_sloc0_1_0 + 2) 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
 	sta	(_seed+2) 	; A:U-:A+2  X:--:???  Y:--:#00  F:a C:?
 	lda	*(_rand_sloc0_1_0 + 1) 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
 	sta	(_seed+1) 	; A:U-:A+1  X:--:???  Y:--:#00  F:a C:?
 	and	#0x7f 	; A:U-:???  X:U-:A+1  Y:U-:A+0  F:a C:?
 	tax
-	lda	*_rand_sloc0_1_0 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
+;	lda	*_rand_sloc0_1_0 	; A:--:???  X:--:???  Y:--:#00  F:a C:?
+	tya
 	sta	_seed 	; A:U-:A+0  X:--:???  Y:--:#00  F:a C:?
 	rts	 	; A:--:???  X:--:???  Y:--:???  F:? C:?
 
