@@ -1,3 +1,8 @@
+2026-05-10 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/gcc-torture-execute-961223-1.c:
+	  Add non-inline definition to test to make it work on all hosts.
+
 2026-05-09 Gabriele Gorla <gorlik@yahoo.com>
 
 	* src/mos6502/peep.c:

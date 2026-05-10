@@ -29,3 +29,5 @@ testTortureExecute (void)
   return;
 }
 
+struct s sub (struct s s); // Non-inline definition to make this test work on all hosts.
+
