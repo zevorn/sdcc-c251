@@ -134,6 +134,13 @@ struct m6502_state_t
   struct attr_t DPTRAttr[2];
 };
 
+struct binst_t
+{
+  char flag[4];
+  char set[4];
+  char clear[4];
+};
+
 // globals
 extern asmop tsxaop;
 extern unsigned fReturnSizeM6502;
@@ -169,7 +176,7 @@ void m6502_emitDebuggerSymbol (const char *);
 void m6502_emitOp (const char *inst, const char *fmt, ...);
 void m6502_emitComment (unsigned int level, const char *fmt, ...);
 bool m6502_emitCmp (reg_info *reg, unsigned char v);
-void m6502_emitBranch (char *branchop, symbol * tlbl);
+void m6502_emitBranch (const char *branchop, symbol * tlbl);
 void m6502_emitTSX(void);
 void m6502_emitSetCarry(int c);
 

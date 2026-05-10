@@ -7,6 +7,9 @@
       Improve genIPush() and genPointerPush().
 	* src/mos6502/gen.c:
       Use CPX and CPY in genCmp() when possible.
+	* src/mos6502/gen.h,
+	  src/mos6502/gen.c:
+      Refactor genIfxJump().
 
 2026-05-10 Philipp Klaus Krause <philipp@colecovision.eu>
 

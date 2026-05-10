@@ -796,7 +796,7 @@ emitUnsignedBranch (bool gt, bool eq, symbol * tlbl)
  *
  *************************************************************************/
 void
-m6502_emitBranch (char *branchop, symbol * tlbl)
+m6502_emitBranch (const char *branchop, symbol * tlbl)
 {
   if (!strcmp("bls", branchop))
     {
@@ -5128,6 +5128,42 @@ genMod (iCode * ic)
   wassertl (0, "Division is handled through support function calls");
 }
 
+static const struct binst_t binst[5] = {
+  { "z", "beq", "bne" },
+  { "c", "bcc", "bcs" },
+  { "n", "bpl", "bmi" },
+  { "v", "bvc", "bvs" },
+  { "a", "bra", "brn" }
+};
+
+static const char *
+negateBranch(const char *inst)
+{
+  for(int i=0; i<sizeof(binst)/sizeof(struct binst_t); i++)
+    {
+      if (!strcmp (inst, binst[i].set))
+        return(binst[i].clear);
+      if (!strcmp (inst, binst[i].clear))
+        return(binst[i].set);
+    }
+  emitcode("ERROR", "%s : unknown inst %s", __func__, inst );
+
+  return "ERROR";
+}
+
+static const char *
+findBranch(const char *jval)
+{
+  for(int i=0; i<sizeof(binst)/sizeof(struct binst_t); i++)
+    {
+      if (!strcmp (jval, binst[i].flag))
+        return(binst[i].set);
+    }
+  emitcode("ERROR", "%s : unknown jval %s", __func__, jval );
+
+  return "ERROR";
+}
+
 /**************************************************************************
  * genIfxJump :- will create a jump depending on the ifx
  *************************************************************************/
@@ -5135,51 +5171,29 @@ void
 genIfxJump (iCode * ic, char *jval)
 {
   symbol *jlbl;
-  symbol *tlbl = safeNewiTempLabel (NULL);
-  char *inst = "ERROR";
+  symbol *skip_lbl = safeNewiTempLabel (NULL);
+  const char *inst;
 
   m6502_emitComment (TRACEGEN, "%s : %s", __func__, jval);
 
-  /* if true label then we jump if condition
-     supplied is true */
+  inst = findBranch(jval);
+
   if (IC_TRUE (ic))
     {
+     /* if true label then we jump if condition
+     supplied is true */
       jlbl = IC_TRUE (ic);
-      if (!strcmp (jval, "z"))
-	inst = "beq";
-      else if (!strcmp (jval, "nz"))
-	inst = "bne";
-      else if (!strcmp (jval, "c"))
-	inst = "bcc";
-      else if (!strcmp (jval, "n"))
-	inst = "bpl";
-      else if (!strcmp (jval, "v"))
-	inst = "bvc";
-      else
-	emitcode("ERROR", "; %s IC_TRUE: Unimplemented jval (%s)", __func__, jval );
-      //      inst = "bge";
     }
   else
     {
       /* false label is present */
       jlbl = IC_FALSE (ic);
-      if (!strcmp (jval, "z"))
-	inst = "bne";
-      else if (!strcmp (jval, "nz"))
-	inst = "beq";
-      else if (!strcmp (jval, "c"))
-	inst = "bcs";
-      else if (!strcmp (jval, "n"))
-	inst = "bmi";
-      else if (!strcmp (jval, "v"))
-	inst = "bvs";
-      else
-	emitcode("ERROR", "; %s IC_FALSE: Unimplemented jval (%s)", __func__, jval );
-      //      inst = "blt";
+      inst = negateBranch(inst);
     }
-  m6502_emitBranch (inst, tlbl);
+
+  m6502_emitBranch (inst, skip_lbl);
   m6502_emitBranch ("jmp", jlbl);
-  safeEmitLabel (tlbl);
+  safeEmitLabel (skip_lbl);
 
   /* mark the icode as generated */
   ic->generated = 1;
