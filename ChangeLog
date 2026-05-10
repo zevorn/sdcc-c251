@@ -4,6 +4,8 @@
 	  Fix typo in mos6502SurelyWritesFlag().
 	* src/mos6502/main.c:
 	  Correct affected flags for cmp,cpx and cpy in m6502opcodeDataTable.
+	* src/mos6502/peep.c:
+	  Enable mos65c02 in mos6502notUsed().
 
 2026-05-07 Gabriele Gorla <gorlik@yahoo.com>
 

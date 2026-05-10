@@ -152,6 +152,8 @@ mos6502SurelyWritesFlag(const lineNode *pl, const char *what)
     lineIsInst (pl, "ldy") ||
     lineIsInst (pl, "ora") ||
     lineIsInst (pl, "pla") ||
+    lineIsInst (pl, "plx") ||
+    lineIsInst (pl, "ply") ||
     lineIsInst (pl, "tax") ||
     lineIsInst (pl, "tay") ||
     lineIsInst (pl, "tsx") ||
@@ -189,7 +191,7 @@ mos6502SurelyWrites(const lineNode *pl, const char *what)
 static bool
 mos6502UncondJump (const lineNode *pl)
 {
-  return (lineIsInst (pl, "jmp"));
+  return (lineIsInst (pl, "jmp") || lineIsInst (pl, "bra"));
 }
 
 static bool
@@ -366,10 +368,6 @@ bool mos6502notUsed (const char *what, lineNode *endPl, lineNode *head)
   _G.head = head;
 
   unvisitLines (_G.head);
-
-  // Todo: Implement WDC 65C02 support, remove this check!
-  if (TARGET_IS_MOS65C02)
-    return (false);
 
   pl = endPl->next;
   return (doTermScan (&pl, what));
