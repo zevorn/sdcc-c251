@@ -786,6 +786,7 @@ emitUnsignedBranch (bool gt, bool eq, symbol * tlbl)
     m6502_emitOp ("beq", "%05d$", safeLabelNum (tlbl));
   if (!eq && gt)
     m6502_emitOp ("beq", "%05d$", safeLabelNum (tlbl2));
+
   m6502_emitOp (gt ? "bcs" : "bcc", "%05d$", safeLabelNum (tlbl));
   safeEmitLabel (tlbl2);
 }
@@ -842,7 +843,7 @@ m6502_emitSetCarry(int c)
   if(c)
     m6502_emitOp("sec", "");
   else
-    m6502_emitOp ("clc", "");
+    m6502_emitOp("clc", "");
 }
 
 /**************************************************************************
@@ -2672,6 +2673,7 @@ m6502_emitTSX()
   // put stack pointer in X
   if(!m6502_reg_x->isFree)
     emitcode("ERROR","m6502_emitTSX called with X in use");
+
   m6502_emitOp ("tsx", "");
 }
 
@@ -3883,7 +3885,7 @@ m6502_genCopy (operand * result, operand * source)
       save_a = storeRegTempIfSurv(m6502_reg_a);
       save_x = storeRegTempIfSurv(m6502_reg_x);
       offset=size-1;
-      while (offset>=0)
+      for(offset=size-1; offset>=0; offset--)
 	{
 
 	  if(offset >= srcsize)
@@ -3898,7 +3900,6 @@ m6502_genCopy (operand * result, operand * source)
 	      m6502_storeRegToAop (m6502_reg_a, AOP(result), offset);
 	      m6502_freeReg(m6502_reg_a);
 	    }
-	  offset--;
 	}
       loadOrFreeRegTemp(m6502_reg_x, save_x);
       loadOrFreeRegTemp(m6502_reg_a, save_a);
@@ -4358,11 +4359,21 @@ genIpush (iCode * ic)
       goto release;
     }
 
+  bool needpulla = false;
+  bool needpullx = false;
+  if(AOP_TYPE(left)==AOP_SOF)
+    needpullx=storeRegTempIfSurv(m6502_reg_x);
+
+  needpulla=storeRegTempIfSurv(m6502_reg_a);
+
   for (offset=size-1; offset>=0; offset--)
     {
       m6502_loadRegFromAop (m6502_reg_a, AOP (left), offset);
       m6502_pushReg (m6502_reg_a, true);
     }
+
+  loadOrFreeRegTemp(m6502_reg_a, needpulla);
+  loadOrFreeRegTemp(m6502_reg_x, needpullx);
 
  release:
   m6502_freeAsmop (left, NULL);
@@ -4385,8 +4396,18 @@ genPointerPush (iCode *ic)
   wassertl (IS_OP_LITERAL (IC_RIGHT (ic)), "IPUSH_VALUE_AT_ADDRESS with non-literal right operand");
   wassertl (!operandLitValue (IC_RIGHT(ic)), "IPUSH_VALUE_AT_ADDRESS with non-zero right operand");
 
+  bool needpulla = false;
+  bool needpullx = false;
+  bool needpully = false;
+
+  if(AOP_TYPE(left)==AOP_SOF)
+    needpullx=storeRegTempIfSurv(m6502_reg_x);
+
+  needpulla=storeRegTempIfSurv(m6502_reg_a);
+
   yoff = setupDPTR(left, 0, NULL, false);
 
+  needpully=storeRegTempIfSurv(m6502_reg_y);
 
   int size = getSize (operandType (left)->next);
   while (size--)
@@ -4396,6 +4417,9 @@ genPointerPush (iCode *ic)
       m6502_pushReg (m6502_reg_a, true);
     }
 
+  loadOrFreeRegTemp(m6502_reg_y, needpully);
+  loadOrFreeRegTemp(m6502_reg_a, needpulla);
+  loadOrFreeRegTemp(m6502_reg_x, needpullx);
   m6502_freeAsmop (left, NULL);
 }
 
@@ -5074,8 +5098,6 @@ static void genGoto (iCode * ic)
   m6502_emitComment (TRACEGEN, __func__);
   m6502_emitOp ("jmp", "%05d$", safeLabelNum (IC_LABEL (ic)));
 }
-
-
 
 /**************************************************************************
  * genMult - generates code for multiplication
@@ -7040,6 +7062,7 @@ static void genPackBits (operand * result, operand * left, sym_link * etype, ope
       /* push the intermediate result. */
       if (blen > 8)
         m6502_pushReg (AOP (right)->aopu.aop_reg[1], true);
+
       m6502_pushReg (AOP (right)->aopu.aop_reg[0], true);
     }
 
