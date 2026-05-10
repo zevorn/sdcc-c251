@@ -1,3 +1,9 @@
+2026-05-10 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/peep.c,
+	  src/mos6502/main.c:
+	  Use opcode table in mos6502SurelyWritesFlag().
+
 2026-05-10 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/tests/gcc-torture-execute-961223-1.c:

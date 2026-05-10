@@ -389,7 +389,7 @@ newAsmLineNode (void)
 */
 
 /* These must be kept sorted by opcode name */
-static m6502opcodedata m6502opcodeDataTable[] =
+const m6502opcodedata m6502opcodeDataTable[] =
   {
     {".db",   M6502OP_INH, -1,       0 },    // used by the code generator only in the jump table
     {"adc",   M6502OP_REG, A_IDX,    0xc3 },
@@ -461,7 +461,8 @@ static m6502opcodedata m6502opcodeDataTable[] =
     {"txa",   M6502OP_INH, A_IDX,    0x82 },
     {"txs",   M6502OP_INH, -1,       0 },
     {"tya",   M6502OP_INH, A_IDX,    0x82 },
-    {"wai",   M6502OP_INH, -1,       0 }     // WDC only
+    {"wai",   M6502OP_INH, -1,       0 },    // WDC only
+    {"zzz",   0,           -1,       0 }     // end of table
   };
 
 static int
@@ -474,7 +475,7 @@ m6502_opcodeCompare (const void *key, const void *member)
 const m6502opcodedata *m6502_getOpcodeData (const char *inst)
 {
   return   bsearch (inst, m6502opcodeDataTable,
-                    sizeof(m6502opcodeDataTable)/sizeof(m6502opcodedata),
+                    sizeof(m6502opcodeDataTable)/sizeof(m6502opcodedata)-1,
                     sizeof(m6502opcodedata), m6502_opcodeCompare);
 }
 
