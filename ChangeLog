@@ -1,3 +1,8 @@
+2026-05-09 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/peep.c:
+	  Fix typo in mos6502SurelyWritesFlag().
+
 2026-05-07 Gabriele Gorla <gorlik@yahoo.com>
 
 	* device/lib/mos6502/rand.s:

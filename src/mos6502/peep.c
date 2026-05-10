@@ -155,7 +155,7 @@ mos6502SurelyWritesFlag(const lineNode *pl, const char *what)
     lineIsInst (pl, "tax") ||
     lineIsInst (pl, "tay") ||
     lineIsInst (pl, "tsx") ||
-    lineIsInst (pl, "tsa") ||
+    lineIsInst (pl, "txa") ||
     lineIsInst (pl, "tya"))
     return (!strcmp(what, "n") || !strcmp(what, "z"));
 
