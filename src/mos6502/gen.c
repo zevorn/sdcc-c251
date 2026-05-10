@@ -1821,7 +1821,7 @@ storeImmToAop (char *c, asmop * aop, int loffset)
 void
 m6502_signExtendReg(reg_info *reg)
 {
-  symbol *tlbl = safeNewiTempLabel (NULL);
+  symbol *skip_lbl = safeNewiTempLabel (NULL);
 
   if(reg==m6502_reg_a)
     m6502_emitOp ("asl", "a");
@@ -1829,9 +1829,9 @@ m6502_signExtendReg(reg_info *reg)
     m6502_emitCmp (reg, 0x80);
 
   m6502_loadRegFromConst (reg, 0);
-  m6502_emitBranch ("bcc", tlbl);
+  m6502_emitBranch ("bcc", skip_lbl);
   m6502_loadRegFromConst (reg, 0xff);
-  safeEmitLabel (tlbl);
+  safeEmitLabel (skip_lbl);
   m6502_dirtyReg (reg);
 }
 
@@ -3884,10 +3884,9 @@ m6502_genCopy (operand * result, operand * source)
       bool save_a, save_x;
       save_a = storeRegTempIfSurv(m6502_reg_a);
       save_x = storeRegTempIfSurv(m6502_reg_x);
-      offset=size-1;
+
       for(offset=size-1; offset>=0; offset--)
 	{
-
 	  if(offset >= srcsize)
 	    {
 	      m6502_loadRegFromConst (m6502_reg_a, 0);
@@ -5533,14 +5532,25 @@ genCmp (iCode * ic, iCode * ifx)
               m6502_emitComment (TRACEGEN|VVDBG, "   %s - generic off:%d sub:%s",
                            __func__, offset, cmp_inst);
 
-              m6502_loadRegFromAop (m6502_reg_a, AOP (left), offset);
               if (!strcmp(cmp_inst, "sub"))
 		{
+                  m6502_loadRegFromAop (m6502_reg_a, AOP (left), offset);
 		  m6502_emitSetCarry (1);
 		  m6502_accopWithAop ("sbc", AOP (right), offset);
 		}
 	      else
 		{
+                  if(!strcmp(cmp_inst, "cmp") && AOP_TYPE(left)==AOP_REG && AOP_TYPE(right)!=AOP_SOF )
+                    {
+                      if(AOP(left)->aopu.aop_reg[offset]->rIdx==X_IDX)
+                        cmp_inst="cpx";
+                      else if(AOP(left)->aopu.aop_reg[offset]->rIdx==Y_IDX)
+                        cmp_inst="cpy";                
+                    }
+                  else
+                    {
+                      m6502_loadRegFromAop (m6502_reg_a, AOP (left), offset);
+                    }
 		  m6502_accopWithAop (cmp_inst, AOP (right), offset);
 		}
             }

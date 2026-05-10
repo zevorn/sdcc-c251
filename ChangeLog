@@ -5,6 +5,8 @@
 	  Use opcode table in mos6502SurelyWritesFlag().
 	* src/mos6502/gen.c:
       Improve genIPush() and genPointerPush().
+	* src/mos6502/gen.c:
+      Use CPX and CPY in genCmp() when possible.
 
 2026-05-10 Philipp Klaus Krause <philipp@colecovision.eu>
 
