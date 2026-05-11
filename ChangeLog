@@ -17,6 +17,8 @@
 	  src/mos6502/genand.c,
 	  src/mos6502/peeph.def:
       Add branch always and branch never to genIfxJump().
+	* src/mos6502/genrot.c:
+      Add special case for swap16.
 
 2026-05-10 Philipp Klaus Krause <philipp@colecovision.eu>
 

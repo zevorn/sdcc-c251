@@ -213,6 +213,51 @@ genRotX(iCode *ic, int shCount)
 
   m6502_emitComment (TRACEGEN, "%s - size=%d shCount=%d",__func__, size, shCount);
 
+  // special case swap16
+  if(shCount==8 && size==2)
+    {
+      if( (IS_AOP_XA(AOP(result)) || IS_AOP_XY(AOP(result)))
+	  && AOP_TYPE(result)!=AOP_SOF && AOP_TYPE(left)!=AOP_SOF)
+	{
+          reg_info *lsb_reg = IS_AOP_XA(AOP(result))?m6502_reg_a:m6502_reg_y;
+ 
+	  if(IS_AOP_WITH_X(AOP(result))&&IS_AOP_WITH_X(AOP(left)))
+	    {
+	      // reg to reg
+	      storeRegTemp(m6502_reg_x, true);
+	      m6502_transferRegReg(AOP (left)->aopu.aop_reg[0], m6502_reg_x, true);
+	      loadRegTemp(lsb_reg);
+	      goto release;
+	    }
+          else
+	    {
+	      m6502_loadRegFromAop (lsb_reg, AOP (left), 1);
+	      m6502_loadRegFromAop (m6502_reg_x, AOP (left), 0);
+	    }
+          goto release;
+	}
+      else if(IS_AOP_XA(AOP(result)))
+	{
+	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
+	  storeRegTempAlways(m6502_reg_a, true);
+	  dirtyRegTemp (getLastTempOfs());
+	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 1);
+          loadRegTemp(m6502_reg_x);
+          goto release;
+	}
+      else if(IS_AOP_XY(AOP(result)))
+	{
+	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 1);
+	  m6502_storeRegToAop (m6502_reg_a, AOP (result), 0);
+	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
+          m6502_transferRegReg(m6502_reg_a, m6502_reg_x, true);
+          goto release;
+	}
+    }
+
+  if(IS_AOP_WITH_Y(AOP(result)))
+    m6502_useReg(m6502_reg_y);
+
   if(IS_AOP_XA(AOP(result)))
     resultInXA=true;
 
@@ -356,6 +401,8 @@ genRotX(iCode *ic, int shCount)
 	}
     }
 
+
+release:
   pullOrFreeReg (m6502_reg_a, needpulla);
 
   m6502_freeAsmop (left, NULL);
