@@ -10,6 +10,8 @@
 	* src/mos6502/gen.h,
 	  src/mos6502/gen.c:
       Refactor genIfxJump().
+	* src/mos6502/peeph.def:
+      Fix bug in dead load elimination.
 
 2026-05-10 Philipp Klaus Krause <philipp@colecovision.eu>
 

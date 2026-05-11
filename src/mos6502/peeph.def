@@ -593,7 +593,7 @@ replace restart {
 	; Peephole load 11b - removed dead lda %3
 	%1 
 	lda	%2
-} if notSame(%1 'pha' 'php' 'tax' 'tay'), notVolatile(%3)
+} if notSame(%1 'pha' 'php' 'tax' 'tay' 'rts'), notVolatile(%3)
 
 replace restart {
 	lda	%3
@@ -603,7 +603,7 @@ replace restart {
 	; Peephole load 11c - removed dead lda %3
 	%1 
 	lda	%2,%4
-} if notSame(%1 'pha' 'php' 'tax' 'tay'), notVolatile(%3)
+} if notSame(%1 'pha' 'php' 'tax' 'tay' 'rts'), notVolatile(%3)
 
 replace restart {
 	ldx	%4
@@ -623,7 +623,7 @@ replace restart {
 	; Peephole load 12a - removed dead ldx %3
 	%1 
 	ldx	%2
-} if notSame(%1 'txa' 'txs' 'phx'), notVolatile(%3)
+} if notSame(%1 'txa' 'txs' 'phx' 'rts'), notVolatile(%3)
 
 replace restart {
 	ldx	%2
@@ -656,7 +656,7 @@ replace restart {
 	; Peephole load 13a - removed dead ldy
 	%1 
 	ldy	%2
-} if notSame(%1 'tya' 'phy'), notVolatile(%3)
+} if notSame(%1 'tya' 'phy' 'rts'), notVolatile(%3)
 
 replace restart {
 	lda	%1
