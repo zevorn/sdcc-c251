@@ -278,13 +278,24 @@ m6502_genAnd (iCode * ic, iCode * ifx)
 
   unsigned int bmask0 = (isLit) ? ((lit >> (0 * 8)) & 0xff) : 0x100;
   unsigned int bmask1 = (isLit) ? ((lit >> (1 * 8)) & 0xff) : 0x100;
-  bool x_zero = (IS_AOP_XA(AOP(left)) || IS_AOP_XY(AOP(left))) && (m6502_reg_x->isLitConst) && (m6502_reg_x->litConst==0);
+  bool x_const = (IS_AOP_XA(AOP(left)) || IS_AOP_XY(AOP(left))) && (m6502_reg_x->isLitConst);
 
-  if (x_zero)
+  if (x_const && (m6502_reg_x->litConst==0) )
     {
       m6502_emitComment (TRACEGEN|VVDBG, "  %s: x_zero", __func__);
       if(AOP_SIZE (result)>1)
         m6502_storeConstToAop(0x00, AOP(result), 1);
+
+      m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
+      m6502_accopWithAop (OPCODE, AOP (right), 0);
+      m6502_storeRegToAop (m6502_reg_a, AOP (result), 0);
+      goto release;
+    }
+
+  if (x_const && bmask1!=0x100 )
+    {
+      if(AOP_SIZE (result)>1)
+        m6502_storeConstToAop(m6502_reg_x->litConst^bmask1, AOP(result), 1);
 
       m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
       m6502_accopWithAop (OPCODE, AOP (right), 0);
