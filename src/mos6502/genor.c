@@ -89,8 +89,7 @@ m6502_genOr (iCode * ic, iCode * ifx)
       if (isLit && lit != 0)
 	{
           // trivial case - always true
-	  m6502_emitSetCarry(1);
-	  genIfxJump (ifx, "c");
+	  genIfxJump (ifx, "a");
 	  goto release;
 	}
 

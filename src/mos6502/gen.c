@@ -5173,8 +5173,15 @@ genIfxJump (iCode * ic, char *jval)
   symbol *jlbl;
   symbol *skip_lbl = safeNewiTempLabel (NULL);
   const char *inst;
+  bool negate=false;
 
   m6502_emitComment (TRACEGEN, "%s : %s", __func__, jval);
+
+  if(jval[0]=='~')
+    {
+      jval++;
+      negate=true;
+    }
 
   inst = findBranch(jval);
 
@@ -5191,9 +5198,23 @@ genIfxJump (iCode * ic, char *jval)
       inst = negateBranch(inst);
     }
 
-  m6502_emitBranch (inst, skip_lbl);
-  m6502_emitBranch ("jmp", jlbl);
-  safeEmitLabel (skip_lbl);
+  if(negate)
+    inst = negateBranch(inst);
+
+  if(!strcmp (inst, "bra") )
+    {
+      m6502_emitBranch ("jmp", jlbl);
+    }
+  else if(!strcmp (inst, "brn") )
+    {
+      // do nothing
+    }
+  else
+    {
+      m6502_emitBranch (inst, skip_lbl);
+      m6502_emitBranch ("jmp", jlbl);
+      safeEmitLabel (skip_lbl);
+    }
 
   /* mark the icode as generated */
   ic->generated = 1;

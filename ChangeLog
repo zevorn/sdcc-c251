@@ -12,6 +12,11 @@
       Refactor genIfxJump().
 	* src/mos6502/peeph.def:
       Fix bug in dead load elimination.
+	* src/mos6502/gen.c,
+	  src/mos6502/genor.c,
+	  src/mos6502/genand.c,
+	  src/mos6502/peeph.def:
+      Add branch always and branch never to genIfxJump().
 
 2026-05-10 Philipp Klaus Krause <philipp@colecovision.eu>
 

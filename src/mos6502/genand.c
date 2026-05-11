@@ -119,8 +119,7 @@ m6502_genAnd (iCode * ic, iCode * ifx)
       if ( isLit && lit == 0)
 	{
           // trivial case - always false
-	  m6502_emitSetCarry(0);
-	  genIfxJump (ifx, "c");
+	  genIfxJump (ifx, "~a");
 	  goto release;
 	}
 

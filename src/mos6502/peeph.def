@@ -319,6 +319,15 @@ replace restart {
 	; peephole gencopy 1 - removed redundant tsx
 }
 
+replace restart {
+	ldx	%1
+	stx	%1
+        tsx
+} by {
+	; Peephole regtemp load/store - removed redundant ldx/stx
+	tsx
+} if notVolatile(%1)
+
 ////////////////////////////////////////////////////////
 // Reorder copy
 ////////////////////////////////////////////////////////
@@ -1116,7 +1125,7 @@ replace restart {
 } by {
 	%1	%2
 	; Peephole dup branch 1 - removed %1
-} if same(%1 'bne' 'beq' 'bra'), labelRefCountChange(%2 -1)
+} if same(%1 'bne' 'beq' 'bcc' 'bcs' 'bvc' 'bvs' 'bpl' 'bmi' 'bra' 'jmp'), labelRefCountChange(%2 -1)
 
 
 ////////////////////////////////////////////////////////
@@ -1229,6 +1238,20 @@ replace restart {
 } if optimizeReturn(), labelIsReturnOnly(%5), labelRefCountChange(%5 -1)
 
 ////////////////////////////////////////////////////////
+// Remove dead code
+////////////////////////////////////////////////////////
+
+replace restart {
+        %1	%2
+        %3	%4
+%2:
+} by {
+        ; Peephole dead 1 - eliminated %1 and dead %3
+%2:
+} if same(%1 'jmp' 'bra'), labelRefCountChange(%2 -1)
+
+
+////////////////////////////////////////////////////////
 // Remove branch/jump to following label
 ////////////////////////////////////////////////////////
 
@@ -1238,7 +1261,7 @@ replace restart {
 } by {
         ; Peephole branch 12 - eliminated branch to %2
 %2:
-} if same(%1 'bne' 'beq' 'bcc' 'bcs' 'bvc' 'bvs' 'bpl' 'bmi' 'jmp' 'bra'), labelRefCountChange(%2 -1)
+} if same(%1 'bne' 'beq' 'bcc' 'bcs' 'bvc' 'bvs' 'bpl' 'bmi' 'bra' 'jmp'), labelRefCountChange(%2 -1)
 
 ////////////////////////////////////////////////////////
 // Tail call optimization
