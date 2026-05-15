@@ -22,6 +22,9 @@
 	  Do not emit some expected warnings in regtest output.
 	* src/SDCCgenconstprop.cc:
 	  Improve generalized constant porpagation analysis for global objects to fix false positive warnings about array length.
+	* src/SDCCopt.c,
+	  support/regression/tests/bug-3985.c:
+	  Fix bug #3985.
 
 2026-05-10 Gabriele Gorla <gorlik@yahoo.com>
 

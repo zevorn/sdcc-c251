@@ -3938,6 +3938,7 @@ eBBlockFromiCode (iCode *ic)
   recomputeLiveRanges (ebbi->bbOrder, ebbi->count, false);
   while (optimizeOpWidth (ebbi->bbOrder, ebbi->count))
     optimizeCastCast (ebbi->bbOrder, ebbi->count);
+  computeDataFlow (ebbi);                                  // Apparently needed here, since otherwise we get some cases of killDeadCode below killing code not actually dead.
   recomputeLiveRanges (ebbi->bbOrder, ebbi->count, false); // Recompute again before killing dead code, since dead code elimination needs updated ic->seq - the old ones might have been invalidated in optimizeOpWidth above.
   killDeadCode (ebbi);                                     // Ensure lospre doesn't resurrect dead code.
   adjustIChain (ebbi->bbOrder, ebbi->count);
