@@ -1,28 +1,47 @@
+2026-05-15 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/tests/bug-1981238.c,
+	  support/regression/tests/bug-880197.c,
+	  support/regression/tests/bug1723128.c,
+	  support/regression/tests/bug1839321.c,
+	  support/regression/tests/bug1921073.c,
+	  support/regression/tests/bug1928022.c,
+	  support/regression/tests/bug2655200.c,
+	  support/regression/tests/bug2783061.c,
+	  support/regression/tests/bug2989562.c,
+	  support/regression/tests/bug3027957.c,
+	  support/regression/tests/bug3444293.c,
+	  support/regression/tests/gcc-torture-execute-20000419-1.c,
+	  support/regression/tests/gcc-torture-execute-20000706-1.c,
+	  support/regression/tests/gcc-torture-execute-931004-1.c,
+	  support/regression/tests/gcc-torture-execute-931004-11.c:
+	  Do not emit some expected warnings in regtest output.
+
 2026-05-10 Gabriele Gorla <gorlik@yahoo.com>
 
 	* src/mos6502/peep.c,
 	  src/mos6502/main.c:
 	  Use opcode table in mos6502SurelyWritesFlag().
 	* src/mos6502/gen.c:
-      Improve genIPush() and genPointerPush().
+	  Improve genIPush() and genPointerPush().
 	* src/mos6502/gen.c:
-      Use CPX and CPY in genCmp() when possible.
+	  Use CPX and CPY in genCmp() when possible.
 	* src/mos6502/gen.h,
 	  src/mos6502/gen.c:
-      Refactor genIfxJump().
+	  Refactor genIfxJump().
 	* src/mos6502/peeph.def:
-      Fix bug in dead load elimination.
+	  Fix bug in dead load elimination.
 	* src/mos6502/gen.c,
 	  src/mos6502/genor.c,
 	  src/mos6502/genand.c,
 	  src/mos6502/peeph.def:
-      Add branch always and branch never to genIfxJump().
+	  Add branch always and branch never to genIfxJump().
 	* src/mos6502/genrot.c:
-      Add special case for swap16.
+	  Add special case for swap16.
 	* src/mos6502/genand.c,
 	  src/mos6502/genor.c,
 	  src/mos6502/genxor.c:
-      Special case when msb is constant.
+	  Special case when msb is constant.
 
 2026-05-10 Philipp Klaus Krause <philipp@colecovision.eu>
 
@@ -56,8 +75,8 @@
 2026-05-06 Gabriele Gorla <gorlik@yahoo.com>
 
 	* device/lib/mos6502/_fsadd.s:
-      Minor code cleanups.
-    * src/mos6502/gen.h,
+	  Minor code cleanups.
+	* src/mos6502/gen.h,
       src/mos6502/gen.c,
       src/mos6502/genrot.c,
       src/mos6502/genminus.c,
@@ -84,7 +103,7 @@
 2026-05-04 Felix Salfelder <felix AT salfelder.org>
 
 	* support/cpp
-      Bump to release/gcc-13.
+	  Bump to release/gcc-13.
 	* support/cpp/gcc/config/i386/xm-cygwin.h,
       support/cpp/gcc/config/i386/xm-djgpp.h,
       support/cpp/gcc/config/i386/xm-mingw32.h,
@@ -107,7 +126,7 @@
       src/mos6502/tempops.c:
       Add m6502_ prefix to several non static functions.
 	* src/mos6502/stackops.c:
-      Small stack operations optimizations.
+	  Small stack operations optimizations.
 
 2026-05-03 Philipp Klaus Krause <philipp@colecovision.eu>
 

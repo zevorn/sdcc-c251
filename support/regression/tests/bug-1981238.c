@@ -3,7 +3,10 @@
 */
 #include <testfwk.h>
 
+#ifdef __SDCC
 #pragma disable_warning 147
+#pragma disable_warning 356
+#endif
 
 #if defined(__SUNPRO_C) || defined(__GNUC__) || defined(__clang__)
 #pragma pack(1)

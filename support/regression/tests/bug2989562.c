@@ -4,6 +4,10 @@
 
 #include <testfwk.h>
 
+#ifdef __SDCC
+#pragma disable_warning 356
+#endif
+
 #ifndef __SDCC_pdk14 // Lack of memory
 unsigned int  adc_samples[8];
 unsigned char sample_count = 8;

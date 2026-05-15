@@ -4,6 +4,10 @@
 
 #include <testfwk.h>
 
+#ifdef __SDCC
+#pragma disable_warning 357
+#endif
+
 void __code* s[3];
 
 void f(void)

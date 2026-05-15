@@ -4,6 +4,11 @@
 
 #include <testfwk.h>
 
+#ifdef __SDCC
+#pragma disable_warning 356
+#pragma disable_warning 357
+#endif
+
 __xdata char Global = 2;
 
 __code struct Value {

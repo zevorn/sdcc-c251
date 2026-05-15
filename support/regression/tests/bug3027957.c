@@ -4,6 +4,10 @@
 
 #include <testfwk.h>
 
+#ifdef __SDCC
+#pragma disable_warning 357
+#endif
+
 #ifdef __SDCC_stm8
 #define ADDRESS 0x1000
 #elif defined(__SDCC_f8) || defined(__SDCC_f8l)
