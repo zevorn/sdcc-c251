@@ -6,6 +6,11 @@ inst-check.c from the execute part of the gcc torture tests.
 
 #ifndef PORT_HOST // Enable when we can do host test in C99 mode
 
+#ifdef __SDCC
+#pragma std_c99
+#pragma disable_warning 278
+#endif
+
 #include <stdarg.h>
 
 f(m)

@@ -9,6 +9,7 @@
 #ifdef __SDCC
 #pragma std_c99
 #pragma disable_warning 85
+#pragma disable_warning 278
 #endif
 
 struct tiny

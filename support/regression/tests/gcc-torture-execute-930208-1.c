@@ -8,6 +8,7 @@
 
 #ifdef __SDCC
 #pragma std_c99
+#pragma disable_warning 278
 #endif
 
 typedef union {
