@@ -790,7 +790,7 @@ static void update_out_edges (cfg_t &G, unsigned int i, int key_false, int key_t
 }
 
 static void
-recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<unsigned int>, std::set<unsigned int> > &todo, const valinfos &global_operands, bool externchange, int end_it_quickly)
+recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<unsigned int>, std::set<unsigned int> > &todo, const valinfos &global_operands, const std::map <int, sym_link *>& global_types, bool externchange, int end_it_quickly)
 {
   iCode *const ic = G[i].ic;
   bool change = externchange;
@@ -917,7 +917,12 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
         {
           for (std::map <int, struct valinfo>::const_iterator i = global_operands.map.begin(); i != global_operands.map.end(); ++i)
             if (ic->op == SET_VALUE_AT_ADDRESS || POINTER_SET (ic))
-              valinfo_union (&G[*out].map[i->first], rightvalinfo);
+              {
+                wassert (global_types.find (i->first) != global_types.end());
+                valinfo v;
+                valinfoCast (&v, global_types.find (i->first)->second, rightvalinfo, NULL);
+                valinfo_union (&G[*out].map[i->first], v);
+              }
             else
               G[*out].map[i->first] = i->second;
         }
@@ -1146,7 +1151,8 @@ recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix)
   create_cfg_genconstprop(G, sic, ebbi);
 
   std::pair <std::queue<unsigned int>, std::set<unsigned int> > todo; // Nodes where valinfos need to be updated. We need a pair of a queue and a set to implement a queue with uniqe entries. A plain set wouldn't work, as we'd be working on some nodes all the time while never getting to others before we reach the round limit.
-  valinfos global_operands; // set of operands that are global or had their address taken, and thus need to be invalidated at every potential pointer write (or function call).
+  valinfos global_operands;                // Set of operands that are global or had their address taken, and thus need to be invalidated at every potential pointer write (or function call).
+  std::map <int, sym_link *> global_types; // Types for above.
 
   // Process each node at least once, and handle incoming non-register parameters.
   typedef /*typename*/ boost::graph_traits<cfg_t>::out_edge_iterator out_iter_t;
@@ -1167,16 +1173,25 @@ recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix)
       // Need to include static objects here, since they might revert their state via setjmp/longjmp.
       if (G[i].ic->left && !IS_ITEMP(G[i].ic->left) && IS_SYMOP (G[i].ic->left) &&
         (!OP_SYMBOL_CONST (G[i].ic->left)->islocal && !OP_SYMBOL_CONST (G[i].ic->left)->ismyparm || OP_SYMBOL_CONST (G[i].ic->left)->addrtaken || IS_STATIC (OP_SYMBOL_CONST (G[i].ic->left)->etype)))
-        global_operands.map[G[i].ic->left->key] = getOperandValinfo (G[i].ic, G[i].ic->left);
+        {
+          global_operands.map[G[i].ic->left->key] = getOperandValinfo (G[i].ic, G[i].ic->left);
+          global_types[G[i].ic->left->key] = operandType (G[i].ic->left);
+        }
       if (G[i].ic->right && !IS_ITEMP(G[i].ic->right) && IS_SYMOP (G[i].ic->right) &&
         (!OP_SYMBOL_CONST (G[i].ic->right)->islocal && !OP_SYMBOL_CONST (G[i].ic->right)->ismyparm || OP_SYMBOL_CONST (G[i].ic->right)->addrtaken || IS_STATIC (OP_SYMBOL_CONST (G[i].ic->right)->etype)))
-        global_operands.map[G[i].ic->right->key] = getOperandValinfo (G[i].ic, G[i].ic->right);
+        {
+          global_operands.map[G[i].ic->right->key] = getOperandValinfo (G[i].ic, G[i].ic->right);
+          global_types[G[i].ic->right->key] = operandType (G[i].ic->right);
+        }
       if (G[i].ic->result && !IS_ITEMP(G[i].ic->result) && IS_SYMOP (G[i].ic->result) &&
         (!OP_SYMBOL_CONST (G[i].ic->result)->islocal && !OP_SYMBOL_CONST (G[i].ic->result)->ismyparm || OP_SYMBOL_CONST (G[i].ic->result)->addrtaken || IS_STATIC (OP_SYMBOL_CONST (G[i].ic->result)->etype)))
-        global_operands.map[G[i].ic->result->key] = getOperandValinfo (G[i].ic, G[i].ic->result);
+        {
+          global_operands.map[G[i].ic->result->key] = getOperandValinfo (G[i].ic, G[i].ic->result);
+          global_types[G[i].ic->result->key] = operandType (G[i].ic->result);
+        }
     }
   for (unsigned int i = 0; i < boost::num_vertices (G); i++)
-    recompute_node (G, i, ebbi, todo, global_operands, true, 0);
+    recompute_node (G, i, ebbi, todo, global_operands, global_types, true, 0);
 
   // Forward pass to get first approximation.
   for (unsigned long round = 0; !todo.first.empty (); round++)
@@ -1190,7 +1205,7 @@ recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix)
       std::cout << "Round " << round << " node " << i << " ic " << G[i].ic->key << "\n"; std::cout.flush();
 #endif
 
-      recompute_node (G, i, ebbi, todo, global_operands, false, (round >= max_rounds) + (round >= max_rounds * 2));
+      recompute_node (G, i, ebbi, todo, global_operands, global_types, false, (round >= max_rounds) + (round >= max_rounds * 2));
     }
 
   // Refinement backward pass.
