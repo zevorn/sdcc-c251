@@ -245,11 +245,28 @@ getOperandValinfo (const iCode *ic, const operand *op)
       v2.max = litval;
       v2.knownbitsmask = ~0ull;
       v2.knownbits = litval;
+      v2.minsize = 0;
+      v2.maxsize = ULONG_MAX;
+      v2.maybeminsize = 0;
+      v2.maybemaxsize = ULONG_MAX;
       valinfoCast (&v, type, v2, NULL); // Need to cast: ival could be out of range of type.
       valinfoUpdate (&v);
     }
+#if 1
   else if (IS_SYMOP (op) && !IS_OP_VOLATILE (op) && ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end ())
     return (ic->valinfos->map[op->key].anything ? getTypeValinfo (type, true) : ic->valinfos->map[op->key]);
+#else
+  else if (IS_SYMOP (op) && !IS_OP_VOLATILE (op) && ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end () && !ic->valinfos->map[op->key].anything)
+    {
+      if (IS_ITEMP (op))
+        v = ic->valinfos->map[op->key];
+      else
+        {
+          valinfoCast (&v, type, ic->valinfos->map[op->key], NULL); // Need to cast, since updates for global/pointed-to operands might have been too pessimistic.
+          valinfoUpdate (&v);
+        }
+    }
+#endif
   else if (IS_ITEMP (op))
     {
       v.nothing = true;
@@ -257,6 +274,7 @@ getOperandValinfo (const iCode *ic, const operand *op)
     }
   else
     v = getTypeValinfo (type, true);
+
   return (v);
 }
 
@@ -330,7 +348,7 @@ dump_op_info (std::ostream &os, const iCode *ic, operand *op)
   if (v.anything)
     os << "*";
   else
-    os << "[" << v.min << ", " << v.max << "] " << v.knownbitsmask;
+    os << "[" << v.min << ", " << v.max << "] " << "[" << v.minsize << ", " << v.maxsize << "] " << v.knownbitsmask;
 }
 
 // Dump cfg.
@@ -913,11 +931,11 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
       std::cout << "Recompute node " << i << " ic " << ic->key << "\n";
       if (localchange && resultsym)
         { 
-          std::cout << "getTypeValinfo: resultvalinfo anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << std::dec << " min " << resultvalinfo.min << "\n";
+          std::cout << "getTypeValinfo: resultvalinfo anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << std::dec << " min " << resultvalinfo.min << " max " << resultvalinfo.max << " maxsize "<< resultvalinfo.maxsize << "\n";
           if (ic->left)
-            std::cout << "leftvalinfo op " << ic->left->key << " anything " << rightvalinfo.anything << " min " << rightvalinfo.min << " max " << rightvalinfo.max << "\n";
+            std::cout << "leftvalinfo op " << ic->left->key << " anything " << leftvalinfo.anything << " min " << leftvalinfo.min << " max " << leftvalinfo.max << " maxsize "<< leftvalinfo.maxsize << "\n";
           if (ic->right)
-            std::cout << "rightvalinfo op " << ic->right->key << " anything " << rightvalinfo.anything << " min " << rightvalinfo.min << " max " << rightvalinfo.max << "\n";
+            std::cout << "rightvalinfo op " << ic->right->key << " anything " << rightvalinfo.anything << " min " << rightvalinfo.min << " max " << rightvalinfo.max << " maxsize "<< rightvalinfo.maxsize << "\n";
         }
 #endif
 
@@ -1098,7 +1116,7 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
         {
           valinfoUpdate (&resultvalinfo);
 #ifdef DEBUG_GCP_ANALYSIS
-          std::cout << "resultvalinfo op " << ic->result->key << " anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << " knownbits 0x" << resultvalinfo.knownbits << std::dec << " min " << resultvalinfo.min << " max " << resultvalinfo.max << " nonnull " << resultvalinfo.nonnull << "\n";
+          std::cout << "resultvalinfo op " << ic->result->key << " anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << " knownbits 0x" << resultvalinfo.knownbits << std::dec << " min " << resultvalinfo.min << " max " << resultvalinfo.max << " nonnull " << resultvalinfo.nonnull << " maxsize " << resultvalinfo.maxsize << "\n";
 #endif
           if (!ic->resultvalinfo)
             ic->resultvalinfo = new struct valinfo;

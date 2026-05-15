@@ -16,6 +16,8 @@
 	  support/regression/tests/gcc-torture-execute-931004-1.c,
 	  support/regression/tests/gcc-torture-execute-931004-11.c:
 	  Do not emit some expected warnings in regtest output.
+	* src/SDCCgenconstprop.cc:
+	  Improve debug output for generalized constant propagation.
 
 2026-05-10 Gabriele Gorla <gorlik@yahoo.com>
 

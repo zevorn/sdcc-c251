@@ -2371,7 +2371,7 @@ checkStaticArrayParams (ebbIndex *ebbi)
                   }
                 else
                   continue;
-                  
+
                 const struct valinfo vi = getOperandValinfo (ic, argop);
                 if (!vi.anything && vi.maxsize < paramsize && DCL_STATIC_ARRAY_PARAM (paramtype))
                   werrorfl (ic->filename, ic->lineno, W_STATIC_ARRAY_PARAM_LENGTH);
