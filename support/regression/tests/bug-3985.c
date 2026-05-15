@@ -1,6 +1,6 @@
 /*
    bug-3985.c
-   
+   An issue with dead-code elimination killing live code.
  */
 
 #include <testfwk.h>

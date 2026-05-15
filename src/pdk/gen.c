@@ -245,7 +245,7 @@ aopIsLitVal (const asmop *aop, int offset, int size, unsigned long long int val)
       if ((aop->size <= offset || aop->type == AOP_STL && offset) && !b)
         continue;
 
-      if (aop->type == AOP_IMMD && offset > (aop->aopu.code ? 1 : 0) && !b)
+      if (aop->type == AOP_IMMD && offset > ((aop->aopu.code || aop->aopu.func) ? 1 : 0) && !b)
         continue;
 
       // Information from generalized constant propagation analysis

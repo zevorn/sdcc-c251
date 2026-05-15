@@ -25,6 +25,9 @@
 	* src/SDCCopt.c,
 	  support/regression/tests/bug-3985.c:
 	  Fix bug #3985.
+	* src/pdk/gen.c,
+	  support/regression/tests/bug-2903.c:
+	  Fix bug #2903.
 
 2026-05-10 Gabriele Gorla <gorlik@yahoo.com>
 
