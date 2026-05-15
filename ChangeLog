@@ -17,7 +17,8 @@
 	  support/regression/tests/gcc-torture-execute-931004-11.c,
 	  support/regression/tests/gcc-torture-execute-930208-1.c,
 	  support/regression/tests/gcc-torture-execute-931004-1.c,
-	  support/regression/tests/gcc-torture-execute-inst-check.c:
+	  support/regression/tests/gcc-torture-execute-inst-check.c,
+	  support/regression/tests/gcc-torture-execute-930719-1.c:
 	  Do not emit some expected warnings in regtest output.
 	* src/SDCCgenconstprop.cc:
 	  Improve generalized constant porpagation analysis for global objects to fix false positive warnings about array length.
