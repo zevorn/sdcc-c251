@@ -2,6 +2,9 @@
 
 	* support/regression/tests/serpent.c.in:
       Disable warning 147.
+	* support/regression/tests/bug-3129.c,
+      support/regression/MakeList:
+      Disable bug-3129 for mos6502 (stack too small).
 
 2026-05-16 Philipp Klaus Krause <philipp@colecovision.eu>
 

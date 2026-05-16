@@ -463,10 +463,8 @@ const char stdcbench_name_version_string[] = "stdcbench 0.6";
 void
 testBug(void)
 {
-#if !defined(SDCC_MOS) // likely a real bug
 #if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) // Lack of memory
 	c90lib_lnlc();
-#endif
 #endif
 }
 

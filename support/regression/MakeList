@@ -49,6 +49,8 @@ EXCLUDE_pdk15-stack-auto += \
 	tst_wcsto
 EXCLUDE_mcs51-small += \
 	tst_bug-3873
+EXCLUDE_ARCH_mos6502 += \
+    tst_bug-3129
 	
 ###################################################
 # GCC Tests
@@ -227,7 +229,7 @@ EXCLUDE_mcs51-large-stack-auto += \
 	EXCLUDE_mcs51-small-stack-auto += \
 	gte_pr58365
 
-# SDCC bug #3982
+# SDCC bug #3982 -> feature request #1019 - implement structreturn of size >8
 	EXCLUDE_ARCH_mos6502 += \
 	gte_pr30185 \
 	gte_pr58365 \
