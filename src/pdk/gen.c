@@ -286,7 +286,7 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_IMMD)
     {
-      if (offset == 0 && aop->aopu.code)
+      if (offset == 0 && (aop->aopu.code || aop->aopu.func))
         SNPRINTF (buffer, sizeof(buffer), "#<(%s + %d)", aop->aopu.immd, aop->aopu.immd_off);
       else if (offset == 1 && aop->aopu.func)
         SNPRINTF (buffer, sizeof(buffer), "#>(%s + %d)", aop->aopu.immd, aop->aopu.immd_off);

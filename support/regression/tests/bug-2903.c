@@ -6,7 +6,6 @@
 #include <testfwk.h>
 
 // Declaration before definition needed to trigger bug.
-#ifndef __SDCC_pdk14 // Bug #3987.
 #if !((defined __SDCC_stm8) && defined (__SDCC_MODEL_LARGE)) // STM8 large model has sizeof(void *) != size of function pointers.
 void *f (void);
 
@@ -16,15 +15,12 @@ f (void)
   return f;
 }
 #endif
-#endif
 
 void
 testBug (void)
 {
-#ifndef __SDCC_pdk14
 #if !((defined __SDCC_stm8) && defined (__SDCC_MODEL_LARGE)) // STM8 large model has sizeof(void *) != size of function pointers.
   ASSERT (f() == f);
-#endif
 #endif
 }
 
