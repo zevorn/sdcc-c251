@@ -11,6 +11,10 @@
 
 #define OP_{op}
 
+#ifdef __SDCC
+#pragma disable_warning 147
+#endif
+
 // This implementation needs quite some code memory and some data memory.
 #if defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) \
   || defined(__SDCC_mcs51) \

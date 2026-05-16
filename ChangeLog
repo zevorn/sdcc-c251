@@ -1,3 +1,8 @@
+2026-05-16 Gabriele Gorla <gorlik@yahoo.com>
+
+	* support/regression/tests/serpent.c.in:
+      Disable warning 147.
+
 2026-05-16 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/pdk/gen.c,
