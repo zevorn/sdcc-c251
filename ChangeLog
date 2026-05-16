@@ -3,6 +3,9 @@
 	* src/pdk/gen.c,
 	  support/regression/tests/bug-2903.c:
 	  Fix bug #3987.
+	* src/z80/gen.c,
+	  support/regression/tests/bug-3988.c:
+	  Fix bug #3988.
 
 2026-05-15 Philipp Klaus Krause <philipp@colecovision.eu>
 

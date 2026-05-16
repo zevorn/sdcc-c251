@@ -14631,10 +14631,16 @@ shiftR2Left2Result (const iCode *ic, operand *left, int offl, operand *result, i
     }
   else
     {
-      bool use_b = (!IS_SM83 && !IS_TLCS870 && !IS_TLCS870C && !IS_TLCS870C1 || !isRegDead (A_IDX, ic) || result->aop->regs[A_IDX] >= 0) && // Some targets do not have djnz, so there is no reason to prefer b.
-        isRegDead (B_IDX, ic) && result->aop->regs[B_IDX] < 0;
-
-      if(!use_b && !isRegDead (A_IDX, ic))
+      asmop *caop = ASMOP_A;
+      
+      if ((!IS_SM83 && !IS_TLCS870 && !IS_TLCS870C && !IS_TLCS870C1 || !isRegDead (A_IDX, ic) || result->aop->regs[A_IDX] >= 0) && // Some targets do not have djnz, so there is no reason to prefer b.
+        isRegDead (B_IDX, ic) && result->aop->regs[B_IDX] < 0)
+        caop = ASMOP_B;
+      else if ((!isRegDead (A_IDX, ic) || result->aop->regs[A_IDX] >= 0) && isRegDead (E_IDX, ic) && result->aop->regs[E_IDX] < 0)
+        caop = ASMOP_E;
+      else if ((!isRegDead (A_IDX, ic) || result->aop->regs[A_IDX] >= 0) && isRegDead (L_IDX, ic) && !requiresHL (result->aop))
+        caop = ASMOP_L;
+      else if (!isRegDead (A_IDX, ic) || result->aop->regs[A_IDX] >= 0)
         UNIMPLEMENTED;
 
       tlbl = regalloc_dry_run ? 0 : newiTempLabel (NULL);
@@ -14642,7 +14648,8 @@ shiftR2Left2Result (const iCode *ic, operand *left, int offl, operand *result, i
       if (requiresHL (result->aop))
         spillPair (PAIR_HL);
 
-      emit2 ("ld %s, !immedbyte", use_b ? "b" : "a", (unsigned)shCount);
+      if (!regalloc_dry_run)
+        emit2 ("ld %s, !immedbyte", aopGet (caop, 0, false), (unsigned)shCount);
       cost2 (2, 2, 2, 2, 7, 6, 4, 4, 8, 4, 2, 2, 2, 2, 2);
 
       regalloc_dry_run_state_scale *= (unsigned)shCount;
@@ -14651,7 +14658,7 @@ shiftR2Left2Result (const iCode *ic, operand *left, int offl, operand *result, i
 
       emitRsh2 (result->aop, size, is_signed);
 
-      if (use_b && !IS_SM83 && !IS_TLCS870 && !IS_TLCS870C && !IS_TLCS870C1)
+      if (aopInReg (caop, 0, B_IDX) && !IS_SM83 && !IS_TLCS870 && !IS_TLCS870C && !IS_TLCS870C1)
         {
           if (!regalloc_dry_run)
             emit2 ("djnz !tlabel", labelKey2num (tlbl->key));
@@ -14659,7 +14666,7 @@ shiftR2Left2Result (const iCode *ic, operand *left, int offl, operand *result, i
         }
       else
         {
-          emit3 (A_DEC, use_b ? ASMOP_B : ASMOP_A, 0);
+          emit3 (A_DEC, caop, 0);
           emitJP (tlbl, "nz", 1.0f, true);
         }
 
