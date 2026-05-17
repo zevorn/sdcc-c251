@@ -47,7 +47,7 @@ genRRC (iCode * ic)
   /* rotate right with carry */
   m6502_aopOp (left, ic);
   m6502_aopOp (result, ic);
-  printIC (ic);
+  m6502_printIC (ic);
 
   if(IS_AOP_WITH_A(AOP(result))) resultInA=true;
   size = AOP_SIZE (result);
@@ -57,16 +57,16 @@ genRRC (iCode * ic)
   if(IS_AOP_XA(AOP(left)))
     {
       storeRegTempAlways (m6502_reg_x, true);
-      m6502_emitOp ("lsr", TEMPFMT, getLastTempOfs() );
+      m6502_emitRegTempOp ("lsr", m6502_getLastTempOfs() );
       m6502_emitOp ("ror", "a");
       if(IS_AOP_XA(AOP(result)) )
         {
 	  storeRegTemp (m6502_reg_a, true);
 	  m6502_loadRegFromConst (m6502_reg_a, 0);
 	  m6502_emitOp("ror", "a");
-	  m6502_emitOp ("ora", TEMPFMT, getLastTempOfs()-1 );
+	  m6502_emitRegTempOp ("ora", m6502_getLastTempOfs()-1 );
 	  m6502_transferRegReg (m6502_reg_a, m6502_reg_x, true);
-	  loadRegTemp (m6502_reg_a);
+ 	  m6502_loadRegTemp (m6502_reg_a);
 	}
       else
 	{
@@ -74,10 +74,10 @@ genRRC (iCode * ic)
 	  m6502_storeRegToAop (m6502_reg_a, AOP(result), 0);
 	  m6502_loadRegFromConst (m6502_reg_a, 0);
 	  m6502_emitOp ("ror", "a");
-	  m6502_emitOp ("ora", TEMPFMT, getLastTempOfs() );
+	  m6502_emitRegTempOp ("ora", m6502_getLastTempOfs() );
 	  m6502_storeRegToAop(m6502_reg_a, AOP(result), 1);
         }
-      loadRegTemp (NULL);
+      m6502_loadRegTemp (NULL);
       goto release;
     }
   else if (m6502_sameRegs (AOP (left), AOP (result)))
@@ -110,7 +110,7 @@ genRRC (iCode * ic)
   m6502_accopWithAop ("ora", AOP (result), offset);
   m6502_storeRegToAop (m6502_reg_a, AOP (result), offset);
 
-  if(resultInA) loadRegTemp(m6502_reg_a);
+  if(resultInA) m6502_loadRegTemp(m6502_reg_a);
 
  release:
   //  pullOrFreeReg (m6502_reg_a, needpula);
@@ -138,7 +138,7 @@ genRLC (iCode * ic)
   /* rotate right with carry */
   m6502_aopOp (left, ic);
   m6502_aopOp (result, ic);
-  printIC(ic);
+  m6502_printIC(ic);
 
   if(IS_AOP_WITH_A(AOP(result))) resultInA=true;
   size = AOP_SIZE (result);
@@ -177,8 +177,8 @@ genRLC (iCode * ic)
   m6502_emitOp ("rol", "a");
   if (resultInA)
     {
-      m6502_emitOp("ora", TEMPFMT, getLastTempOfs() );
-      loadRegTemp(NULL);
+      m6502_emitRegTempOp("ora", m6502_getLastTempOfs() );
+      m6502_loadRegTemp(NULL);
     }
   else
     {
@@ -207,7 +207,7 @@ genRotX(iCode *ic, int shCount)
   //m6502_emitComment (TRACEGEN, __func__);
   m6502_aopOp (left, ic);
   m6502_aopOp (result, ic);
-  printIC(ic);
+  m6502_printIC(ic);
 
   size = AOP_SIZE (result);
 
@@ -226,7 +226,7 @@ genRotX(iCode *ic, int shCount)
 	      // reg to reg
 	      storeRegTemp(m6502_reg_x, true);
 	      m6502_transferRegReg(AOP (left)->aopu.aop_reg[0], m6502_reg_x, true);
-	      loadRegTemp(lsb_reg);
+	      m6502_loadRegTemp(lsb_reg);
 	      goto release;
 	    }
           else
@@ -240,9 +240,9 @@ genRotX(iCode *ic, int shCount)
 	{
 	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
 	  storeRegTempAlways(m6502_reg_a, true);
-	  dirtyRegTemp (getLastTempOfs());
+	  m6502_dirtyRegTemp (m6502_getLastTempOfs());
 	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 1);
-          loadRegTemp(m6502_reg_x);
+          m6502_loadRegTemp(m6502_reg_x);
           goto release;
 	}
       else if(IS_AOP_XY(AOP(result)))
@@ -271,7 +271,7 @@ genRotX(iCode *ic, int shCount)
 	  m6502_emitComment (TRACEGEN|VVDBG, "%s - in A",__func__);
 	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
 	  storeRegTempAlways(m6502_reg_a, true);
-	  dirtyRegTemp (getLastTempOfs());
+	  m6502_dirtyRegTemp (m6502_getLastTempOfs());
 	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 1);
 	}
       else
@@ -282,25 +282,25 @@ genRotX(iCode *ic, int shCount)
 #if 0
 	  m6502_loadRegFromAop (m6502_reg_x, AOP (left), 1);
 	  storeRegTempAlways(m6502_reg_x, true);
-	  dirtyRegTemp (getLastTempOfs());
+	  m6502_dirtyRegTemp (m6502_getLastTempOfs());
 	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
 #else
 	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
 	  m6502_loadRegFromAop (m6502_reg_x, AOP (left), 1);
 	  storeRegTempAlways(m6502_reg_x, true);
-	  dirtyRegTemp (getLastTempOfs());
+	  m6502_dirtyRegTemp (m6502_getLastTempOfs());
 #endif
 	}
 
       for(i=0;i<shCount;i++)
 	{
 	  m6502_emitCmp(m6502_reg_a, 0x80);
-	  m6502_emitOp("rol", TEMPFMT, getLastTempOfs() );
+	  m6502_emitRegTempOp("rol", m6502_getLastTempOfs() );
 	  m6502_rmwWithReg ("rol", m6502_reg_a);
 	}
 
       m6502_transferRegReg(m6502_reg_a, m6502_reg_x, true);
-      loadRegTemp(m6502_reg_a);
+      m6502_loadRegTemp(m6502_reg_a);
     }
   else
     {
@@ -402,7 +402,7 @@ genRotX(iCode *ic, int shCount)
     }
 
 
-release:
+ release:
   pullOrFreeReg (m6502_reg_a, needpulla);
 
   m6502_freeAsmop (left, NULL);
@@ -426,7 +426,7 @@ genRot8(iCode *ic, int shCount)
 
   m6502_aopOp (left, ic);
   m6502_aopOp (result, ic);
-  printIC(ic);
+  m6502_printIC(ic);
 
   if(IS_AOP_WITH_A(AOP(result)))
     resultInA=true;
@@ -444,10 +444,10 @@ genRot8(iCode *ic, int shCount)
       while(shCount--)
 	{
 	  storeRegTempAlways (m6502_reg_a, true);
-          dirtyRegTemp (getLastTempOfs());
-	  m6502_emitOp("lsr", TEMPFMT, getLastTempOfs() );
+	  m6502_dirtyRegTemp (m6502_getLastTempOfs());
+	  m6502_emitRegTempOp("lsr", m6502_getLastTempOfs() );
 	  m6502_rmwWithReg ("ror", m6502_reg_a);
-	  loadRegTemp(NULL);
+	  m6502_loadRegTemp(NULL);
 	}
     }
   else

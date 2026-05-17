@@ -56,7 +56,7 @@ m6502_genXor (iCode * ic, iCode * ifx)
   m6502_aopOp (left, ic);
   m6502_aopOp (right, ic);
   m6502_aopOp (result, ic);
-  printIC(ic);
+  m6502_printIC(ic);
 
   /* force literal on the right and reg on the left */
   if (AOP_TYPE (left) == AOP_LIT || AOP_TYPE (right) == AOP_REG)
@@ -76,8 +76,8 @@ m6502_genXor (iCode * ic, iCode * ifx)
   if (isLit)
     {
       lit = ullFromVal (AOP (right)->aopu.aop_lit);
-      lit &= litmask(size);
-      bitpos = isLiteralBit (lit) - 1;
+      lit &= m6502_litmask(size);
+      bitpos = m6502_isLiteralBit (lit) - 1;
       m6502_emitComment (TRACEGEN|VVDBG, "  %s: lit=%04x bitpos=%d", __func__, lit, bitpos);
     }
 
@@ -91,7 +91,7 @@ m6502_genXor (iCode * ic, iCode * ifx)
 	  if( size==1 && isLit && lit==NOP_MASK ) 
 	    {
 	      m6502_emitCmp(AOP (left)->aopu.aop_reg[0], 0);
-	      genIfxJump (ifx, "z");
+	      m6502_genIfxJump (ifx, "z");
 	      goto release;
 	    }
         }
@@ -108,14 +108,14 @@ m6502_genXor (iCode * ic, iCode * ifx)
 	      // no dead register available
 	      storeRegTemp(m6502_reg_a, true);
 	      m6502_accopWithAop (OPCODE, AOP(right), 0);
-	      loadRegTempNoFlags(m6502_reg_a, true); // preserve flags
+	      m6502_loadRegTempNoFlags(m6502_reg_a, true); // preserve flags
 	    }
-	  genIfxJump (ifx, "z");
+	  m6502_genIfxJump (ifx, "z");
 	  goto release;
 	}
 
       // test for flags only (general case)
-      symbol *tlbl = safeNewiTempLabel (NULL);
+      symbol *tlbl = m6502_safeNewiTempLabel (NULL);
 
       needpulla = storeRegTempIfSurv (m6502_reg_a);
 
@@ -132,18 +132,18 @@ m6502_genXor (iCode * ic, iCode * ifx)
         }
       // FIXME: check bug1875933.c
       m6502_freeReg (m6502_reg_a);
-      safeEmitLabel (tlbl);
+      m6502_safeEmitLabel (tlbl);
 
       // TODO: better way to preserve flags?
       if (ifx)
 	{
-	  loadRegTempNoFlags (m6502_reg_a, needpulla);
-	  genIfxJump (ifx, "z");
+	  m6502_loadRegTempNoFlags (m6502_reg_a, needpulla);
+	  m6502_genIfxJump (ifx, "z");
 	}
       else
 	{
 	  if (needpulla)
-            loadRegTemp (NULL);
+            m6502_loadRegTemp (NULL);
 	}
       goto release;
     }
@@ -194,7 +194,7 @@ m6502_genXor (iCode * ic, iCode * ifx)
 	{
 	  if(IS_AOP_XA(AOP(left)))
 	    {
-	      fastSaveA();
+ 	      m6502_fastSaveA();
 	      needpulla=true;
 	    }
 	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 1);
@@ -204,7 +204,7 @@ m6502_genXor (iCode * ic, iCode * ifx)
 
       {
 	if(needpulla)
-	  fastRestoreA();
+ 	  m6502_fastRestoreA();
 	else
 	  m6502_loadRegFromAop (m6502_reg_a, AOP (left), 0);
 

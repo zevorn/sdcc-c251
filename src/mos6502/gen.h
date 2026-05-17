@@ -116,7 +116,7 @@ struct attr_t
   unsigned char literalValue;
   struct asmop *aop;		/* last operand */
   int aopofs;			/* last operand offset */
-  int stackOffset;              /* stack offset when aop==tsxaop */
+  int stackOffset;              /* stack offset when aop==m6502_tsxaop */
 };
 
 struct m6502_state_t
@@ -142,34 +142,41 @@ struct binst_t
 };
 
 // globals
-extern asmop tsxaop;
+extern asmop m6502_tsxaop;
 extern unsigned fReturnSizeM6502;
 extern bool m6502_assignment_optimal;
 extern struct m6502_state_t _S;
 
 extern const char *IMMDFMT; // = "#0x%02x";
-extern const char *TEMPFMT; // = "*(REGTEMP+%d)";
 extern const char *TEMPFMT_IND; // = "[REGTEMP+%d]";
-//extern char *TEMPFMT_IY; // = "[REGTEMP+%d],y";
-
 extern const char *IDXFMT_X; // = "0x%x,x";
 //extern char *TEMPFMT_IX; // = "[(REGTEMP+%d),x]";
+
+extern const char *TEMPFMT; // = "*(REGTEMP+%d)";
 extern const char *DPTRFMT; // = "*(DPTR+%d)";
-extern const char *DPTRFMT_IY; // = "[DPTR],y";
 extern const char *INDFMT_IY; // = "[%s],y";
 
 extern const int STACK_TOP; // = 0x100;
 
 // utility functions
-const char * regInfoStr();
-void printIC(iCode *ic);
-int isLiteralBit (unsigned long long lit);
-unsigned long long litmask (int size);
+const char * m6502_regInfoStr();
+void m6502_printIC(iCode *ic);
+int m6502_isLiteralBit (unsigned long long lit);
+unsigned long long m6502_litmask (int size);
+void m6502_signExtendReg(reg_info *reg);
+//void m6502_addSign (operand * result, int offset, int sign);
+bool m6502_smallAdjustReg (reg_info *reg, int n);
+void m6502_unimplemented(const char *msg);
+void m6502_updateCFA (void);
+bool m6502_aopCanIncDec (asmop *aop);
+bool m6502_aopCanBit (asmop *aop);
+bool m6502_aopCanShift (asmop * aop);
+bool m6502_sameRegs (asmop *aop1, asmop *aop2);
+reg_info* m6502_getDeadByteReg();
+reg_info* m6502_getFreeByteReg();
+reg_info* m6502_getFreeIdxReg();
+void m6502_copy (operand * result, operand * source);
 
-
-void m6502_aopOp (operand *op, const iCode * ic);
-void m6502_freeAsmop (operand * op, asmop * aaop);
-reg_info* m6502_findRegAop (asmop * aop, int loffset);
 
 // code emit
 void m6502_emitDebuggerSymbol (const char *);
@@ -181,71 +188,60 @@ void m6502_emitTSX(void);
 void m6502_emitSetCarry(int c);
 
 // labels
-symbol * safeNewiTempLabel(const char * a);
-void safeEmitLabel(symbol * a);
-int safeLabelNum(symbol * a);
-
-void genIfxJump (iCode * ic, char *jval);
+symbol * m6502_safeNewiTempLabel(const char * a);
+void m6502_safeEmitLabel(symbol * a);
+int m6502_safeLabelNum(symbol * a);
 
 void m6502_transferRegReg (reg_info *sreg, reg_info *dreg, bool freesrc);
 void m6502_loadRegFromConst (reg_info * reg, int c);
 void m6502_loadRegFromAop (reg_info * reg, asmop * aop, int loffset);
 void m6502_storeRegToFullAop (reg_info *reg, asmop *aop, bool isSigned);
 void m6502_rmwWithReg (char *rmwop, reg_info * reg);
+reg_info* m6502_findRegAop (asmop * aop, int loffset);
 
 void m6502_storeConstToAop (int c, asmop * aop, int loffset);
 void m6502_transferAopAop (asmop * srcaop, int srcofs, asmop * dstaop, int dstofs);
 void m6502_storeRegToAop (reg_info *reg, asmop * aop, int loffset);
 void m6502_accopWithAop (const char *accop, asmop *aop, int loffset);
 void m6502_rmwWithAop (char *rmwop, asmop * aop, int loffset);
-
-void m6502_signExtendReg(reg_info *reg);
-//void m6502_addSign (operand * result, int offset, int sign);
-bool smallAdjustReg (reg_info *reg, int n);
-void m6502_unimplemented(const char *msg);
-void updateCFA (void);
-bool m6502_aopCanIncDec (asmop *aop);
-bool m6502_aopCanBit (asmop *aop);
-bool m6502_aopCanShift (asmop * aop);
-bool m6502_sameRegs (asmop *aop1, asmop *aop2);
-reg_info* getDeadByteReg();
-reg_info* getFreeByteReg();
-reg_info* getFreeIdxReg();
-void m6502_genCopy (operand * result, operand * source);
+void m6502_aopOp (operand *op, const iCode * ic);
+void m6502_freeAsmop (operand * op, asmop * aaop);
 
 // stack
 bool m6502_pushReg (reg_info * reg, bool freereg);
 void m6502_pullReg (reg_info * reg);
-void adjustStack (int n); // candidate for moving back into gen.c
+void m6502_adjustStack (int n); // candidate for moving back into gen.c
 
 #define pushRegIfUsed(r)     (!r->isFree)?m6502_pushReg(r,true):false
 #define pushRegIfSurv(r)     (!r->isDead)?m6502_pushReg(r,true):false
 #define pullOrFreeReg(r,np)  (np)?m6502_pullReg(r):m6502_freeReg(r)
-#define pullNull(n)          adjustStack(n)
+#define pullNull(n)          m6502_adjustStack(n)
 
 // regtemp
-bool fastSaveAi(reg_info *reg);
-bool fastSaveA();
-bool fastRestoreA();
-#define fastSaveAIfUsed()     (!m6502_reg_a->isFree)?fastSaveA():false
-#define fastSaveAIfSurv()     (!m6502_reg_a->isDead)?fastSaveA():false
-#define fastRestoreOrFreeA(np)  (np)?fastRestoreA():false
+bool m6502_fastSaveAi(reg_info *reg);
+bool m6502_fastSaveA();
+bool m6502_fastRestoreA();
+
+#define fastSaveAIfUsed()     (!m6502_reg_a->isFree)?m6502_fastSaveA():false
+#define fastSaveAIfSurv()     (!m6502_reg_a->isDead)?m6502_fastSaveA():false
+#define fastRestoreOrFreeA(np)  (np)?m6502_fastRestoreA():false
 
 bool m6502_storeRegTempi(reg_info * reg, bool freereg, bool force);
 #define storeRegTemp(reg,freereg)       m6502_storeRegTempi (reg,freereg,false)
 #define storeRegTempAlways(reg,freereg) m6502_storeRegTempi (reg,freereg,true)
 #define storeRegTempIfUsed(r)           (!r->isFree)?storeRegTemp(r,true):false
 #define storeRegTempIfSurv(r)           (!r->isDead)?storeRegTemp(r,true):false
-void loadRegTempAt (reg_info * reg, int offset);
-void loadRegTemp (reg_info * reg);
-void loadOrFreeRegTemp (reg_info * reg, bool needload);
-void loadRegTempNoFlags (reg_info * reg, bool needpull);
-void emitRegTempOp(const char *op, int offset);
-void dirtyRegTemp (int temp_reg_idx);
-int getLastTempOfs();
+void m6502_loadRegTempAt (reg_info * reg, int offset);
+void m6502_loadRegTemp (reg_info * reg);
+void m6502_loadOrFreeRegTemp (reg_info * reg, bool needload);
+void m6502_loadRegTempNoFlags (reg_info * reg, bool needload);
+void m6502_emitRegTempOp(const char *op, int offset);
+void m6502_dirtyRegTemp (int temp_reg_idx);
+int  m6502_getLastTempOfs();
 
 // gen functions
 //void m6502_genCode (iCode *ic);
+void m6502_genIfxJump (iCode * ic, char *jval);
 void m6502_genOr (iCode * ic, iCode * ifx);
 void m6502_genXor (iCode * ic, iCode * ifx);
 void m6502_genAnd (iCode * ic, iCode * ifx);

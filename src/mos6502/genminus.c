@@ -59,7 +59,7 @@ genMinusDec (iCode * ic)
   m6502_emitComment (TRACEGEN, "  %s - size=%d  icount=%d", __func__, size, icount);
 
   m6502_emitComment (TRACEGEN|VVDBG, "  %s: icount = %d, m6502_sameRegs=%d",
-               __func__, icount, m6502_sameRegs (AOP (left), AOP (result)));
+		     __func__, icount, m6502_sameRegs (AOP (left), AOP (result)));
 
   if (icount>255 && ((icount&0xff)!=0) )
     return false;
@@ -75,7 +75,7 @@ genMinusDec (iCode * ic)
 	      m6502_loadRegFromConst(m6502_reg_x, m6502_reg_x->litConst - bcount);
               return true;
             }
-          else if(IS_AOP_WITH_X (AOP (result)) && smallAdjustReg(AOP(result)->aopu.aop_reg[1], -bcount))
+	  else if(IS_AOP_WITH_X (AOP (result)) && m6502_smallAdjustReg(AOP(result)->aopu.aop_reg[1], -bcount))
             {
               return true;
             }
@@ -95,12 +95,12 @@ genMinusDec (iCode * ic)
       m6502_loadRegFromAop (m6502_reg_xa, AOP (left), 0);
       if (icount)
 	{
-	  tlbl = safeNewiTempLabel (NULL);
+	  tlbl = m6502_safeNewiTempLabel (NULL);
 	  INIT_CARRY();
 	  m6502_accopWithAop (OPCODE, AOP (right), 0);
 	  m6502_emitBranch ("bcs", tlbl);
 	  m6502_rmwWithReg (OPINCDEC, m6502_reg_x);
-	  safeEmitLabel (tlbl);
+	  m6502_safeEmitLabel (tlbl);
 	  m6502_dirtyReg(m6502_reg_x);
 	}
       return true;
@@ -142,7 +142,7 @@ genMinusDec (iCode * ic)
   if (size==1 && AOP(result)->type==AOP_REG)
     {
       // if it's in a 8-bit register try to do small adjust
-      if(smallAdjustReg(AOP(result)->aopu.aop_reg[0], -icount))
+      if(m6502_smallAdjustReg(AOP(result)->aopu.aop_reg[0], -icount))
 	return true;
     }
 
@@ -151,7 +151,7 @@ genMinusDec (iCode * ic)
 
   if(icount==1 && size==2)
     {
-      reg_info *reg = getFreeByteReg();
+      reg_info *reg = m6502_getFreeByteReg();
       if(reg)
         {
           bool needpullx=false;
@@ -164,14 +164,14 @@ genMinusDec (iCode * ic)
               reg=m6502_reg_a;
             }
 
-          tlbl = safeNewiTempLabel (NULL);
+          tlbl = m6502_safeNewiTempLabel (NULL);
           m6502_loadRegFromAop (reg, AOP (left), 0);
           m6502_emitBranch ("bne", tlbl);
           m6502_rmwWithAop (OPINCDEC, AOP (result), 1);
-          safeEmitLabel (tlbl);
+          m6502_safeEmitLabel (tlbl);
           m6502_rmwWithAop (OPINCDEC, AOP (result), 0);
-          loadOrFreeRegTemp(m6502_reg_a, needpulla);
-          loadOrFreeRegTemp(m6502_reg_x, needpullx);
+          m6502_loadOrFreeRegTemp(m6502_reg_a, needpulla);
+          m6502_loadOrFreeRegTemp(m6502_reg_x, needpullx);
           return true;
         }
     }
@@ -209,7 +209,7 @@ m6502_genMinus (iCode * ic)
   m6502_aopOp (right, ic);
   m6502_aopOp (result, ic);
 
-  printIC(ic);
+  m6502_printIC(ic);
 
   if (!maskedtopbyte && genMinusDec (ic))
     goto release;
@@ -227,7 +227,7 @@ m6502_genMinus (iCode * ic)
        && AOP_TYPE(result) != AOP_SOF
        && m6502_sameRegs(AOP(result),AOP(left)) )
     {
-      symbol *skiplabel = safeNewiTempLabel (NULL);
+      symbol *skiplabel = m6502_safeNewiTempLabel (NULL);
 
       m6502_emitComment (TRACEGEN|VVDBG, "    %s: size==2 && one byte", __func__);
       savea = fastSaveAIfSurv ();
@@ -241,7 +241,7 @@ m6502_genMinus (iCode * ic)
 	m6502_dirtyReg(m6502_reg_x);
       if(IS_AOP_WITH_Y(AOP(result)))
 	m6502_dirtyReg(m6502_reg_y);
-      safeEmitLabel (skiplabel);
+      m6502_safeEmitLabel (skiplabel);
       fastRestoreOrFreeA (savea);
       goto release;
     }
@@ -253,31 +253,31 @@ m6502_genMinus (iCode * ic)
       bool restore_x = !m6502_reg_x->isDead;
       int a_loc, x_loc;
       storeRegTemp(m6502_reg_a, true);
-      a_loc=getLastTempOfs();
+      a_loc=m6502_getLastTempOfs();
       storeRegTemp(m6502_reg_x, true);
-      x_loc=getLastTempOfs();
+      x_loc=m6502_getLastTempOfs();
 
       INIT_CARRY();
       m6502_loadRegFromAop (m6502_reg_a, AOP(left), 0);
-      emitRegTempOp(OPCODE, a_loc);
+      m6502_emitRegTempOp(OPCODE, a_loc);
       m6502_storeRegToAop (m6502_reg_a, AOP (result), 0);
 
       m6502_loadRegFromAop (m6502_reg_a, AOP(left), 1);
-      emitRegTempOp(OPCODE, x_loc);
+      m6502_emitRegTempOp(OPCODE, x_loc);
       if (maskedtopbyte)
 	m6502_emitOp ("and", IMMDFMT, topbytemask);
 
       m6502_storeRegToAop (m6502_reg_a, AOP (result), 1);
 
       if(restore_x)
-        loadRegTemp(m6502_reg_x);
+	m6502_loadRegTemp(m6502_reg_x);
       else
-        loadRegTemp(NULL);
-
+	m6502_loadRegTemp(NULL);
+       
       if(restore_a)
-        loadRegTemp(m6502_reg_a);
+	m6502_loadRegTemp(m6502_reg_a);
       else
-        loadRegTemp(NULL);
+	m6502_loadRegTemp(NULL);
 
       goto release;
     }
@@ -289,13 +289,14 @@ m6502_genMinus (iCode * ic)
 
       savea = fastSaveAIfSurv();
       storeRegTemp(m6502_reg_x, true);
+
       m6502_emitTSX();
       m6502_loadRegFromAop (m6502_reg_a, AOP(left), 0);
       INIT_CARRY();
       m6502_accopWithAop (OPCODE, AOP (right), 0);
 
       m6502_storeRegToAop (m6502_reg_a, AOP (result), 0);
-      loadRegTempAt(m6502_reg_a, getLastTempOfs() );
+      m6502_loadRegTempAt(m6502_reg_a, m6502_getLastTempOfs() );
       m6502_accopWithAop (OPCODE, AOP (right), 1);
       if (maskedtopbyte)
 	m6502_emitOp ("and", IMMDFMT, topbytemask);
@@ -303,9 +304,9 @@ m6502_genMinus (iCode * ic)
       m6502_storeRegToAop (m6502_reg_a, AOP (result), 1);
 
       if(restore_x)
-        loadRegTemp(m6502_reg_x);
+	m6502_loadRegTemp(m6502_reg_x);
       else
-        loadRegTemp(NULL);
+	m6502_loadRegTemp(NULL);
 
       fastRestoreOrFreeA (savea);
       goto release;
@@ -342,8 +343,8 @@ m6502_genMinus (iCode * ic)
 	  if (init_carry)
 	    INIT_CARRY();
 
-	  emitRegTempOp(OPCODE, getLastTempOfs() );
-	  loadRegTemp (NULL);
+	  m6502_emitRegTempOp(OPCODE, m6502_getLastTempOfs() );
+ 	  m6502_loadRegTemp (NULL);
 	}
       else
 	{
@@ -360,7 +361,7 @@ m6502_genMinus (iCode * ic)
       if ( offset==0 && IS_AOP_XA (AOP(result)) )
 	{
 	  m6502_emitComment (TRACEGEN|VVDBG, "  %s - save offset=%d", __func__, offset);
-	  fastSaveA();
+ 	  m6502_fastSaveA();
           if(savea)
             emitcode("ERROR", " %s - needpulla && delayedstore == true ", __func__);
 	  savea = true;
