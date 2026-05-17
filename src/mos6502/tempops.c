@@ -287,7 +287,7 @@ m6502_emitRegTempOp(const char *op, int offset)
     m6502_dirtyRegTemp (offset);
 
   // prevent const optimization for "bit" on the plain 6502
-  if(!strcmp(op,"bit") && !IS_MOS65C02)
+  if(!strcmp(op,"bit") && _S.tempAttr[offset].isLiteral && !IS_MOS65C02)
     m6502_dirtyRegTemp (offset);
 
   if(_S.tempAttr[offset].isLiteral)

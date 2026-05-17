@@ -416,7 +416,7 @@ m6502_emitComment (unsigned int level, const char *fmt, ...)
  * Returns register state as a string
  *
  * @return
- ***********************************************************************/
+ *************************************************************************/
 const char *
 m6502_regInfoStr()
 {
@@ -766,8 +766,10 @@ emitSignedBranch (bool gt, bool eq, symbol * tlbl)
 
   if (eq && !gt)
     m6502_emitOp ("beq", "%05d$", m6502_safeLabelNum (tlbl));
+
   if (!eq && gt)
     m6502_emitOp ("beq", "%05d$", m6502_safeLabelNum (tlbl2));
+
   m6502_emitOp (gt ? "bvs" : "bvc", "%05d$", m6502_safeLabelNum (tlbl2));
   m6502_emitOp ("bpl", "%05d$", m6502_safeLabelNum (tlbl));
   m6502_emitOp ("bmi", "%05d$", m6502_safeLabelNum (tlbl3));
@@ -5893,9 +5895,11 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 	{
 	  if (!tlbl_EQ)
 	    tlbl_EQ = m6502_safeNewiTempLabel (NULL);
+
 	  m6502_emitBranch ("beq", tlbl_EQ);
 	  if (tlbl_NE)
 	    m6502_safeEmitLabel (tlbl_NE);
+
 	  m6502_emitBranch ("jmp", jlbl);
 	  m6502_safeEmitLabel (tlbl_EQ);
 	}
@@ -5903,6 +5907,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 	{
 	  if (!tlbl_NE)
 	    tlbl_NE = m6502_safeNewiTempLabel (NULL);
+
 	  m6502_emitBranch ("bne", tlbl_NE);
 	  m6502_emitBranch ("jmp", jlbl);
 	  m6502_safeEmitLabel (tlbl_NE);
@@ -6273,7 +6278,6 @@ static void bitAConst(int val)
         {
           m6502_loadRegFromConst(reg,val);
           storeRegTempAlways (reg, true);
-          m6502_dirtyRegTemp( m6502_getLastTempOfs() );
           m6502_emitRegTempOp ("bit", m6502_getLastTempOfs() );
 	  m6502_loadRegTemp(NULL);
         }
@@ -6678,7 +6682,8 @@ static void genDataPointerGet (operand * left, operand * right, operand * result
     }
   else
     {
-      if (needpulla) m6502_loadRegTemp (NULL);
+      if (needpulla)
+        m6502_loadRegTemp (NULL);
     }
 }
 
@@ -7676,10 +7681,14 @@ genPointerSet (iCode * ic)
       xloc = m6502_getLastTempOfs();
     } 
 
-  //  if(IS_AOP_WITH_Y(AOP(right)))
-  //    needloady = storeRegTempIfUsed (m6502_reg_y);
-  //  else
-  needloady = storeRegTempIfSurv (m6502_reg_y);
+// FIXME: why removing this makes perf worse?
+#if 1
+  if(IS_AOP_WITH_Y(AOP(right)))
+    needloady = storeRegTempIfUsed (m6502_reg_y);
+  else
+#endif
+    needloady = storeRegTempIfSurv (m6502_reg_y);
+
   yloc = m6502_getLastTempOfs();
 
   /* if bit-field then pack */
