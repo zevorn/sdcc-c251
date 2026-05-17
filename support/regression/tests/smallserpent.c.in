@@ -14,6 +14,10 @@
 
 #include <testfwk.h>
 
+#ifdef __SDCC
+#pragma disable_warning 147
+#endif
+
 #define OP_{op}
 
 // This implementation needs quite some code memory.

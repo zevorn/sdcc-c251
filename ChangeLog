@@ -5,6 +5,8 @@
     * src/mos6502/gen.c,
       src/mos6502/tempops.c:
       Fix small performance regression from r16535.
+    * tests/smallserpent.c.in:
+      Disable warning 147.
 
 2026-05-16 Gabriele Gorla <gorlik@yahoo.com>
 
