@@ -1,3 +1,8 @@
+2026-05-17 Gabriele Gorla <gorlik@yahoo.com>
+
+    * device/lib/mos65c02/labs.s:
+      Really checking in labs.s.
+
 2026-05-16 Gabriele Gorla <gorlik@yahoo.com>
 
 	* support/regression/tests/serpent.c.in:
