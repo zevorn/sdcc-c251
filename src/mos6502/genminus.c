@@ -239,8 +239,10 @@ m6502_genMinus (iCode * ic)
       m6502_rmwWithAop (OPINCDEC, AOP(result), 1);
       if(IS_AOP_WITH_X(AOP(result)))
 	m6502_dirtyReg(m6502_reg_x);
+
       if(IS_AOP_WITH_Y(AOP(result)))
 	m6502_dirtyReg(m6502_reg_y);
+
       m6502_safeEmitLabel (skiplabel);
       fastRestoreOrFreeA (savea);
       goto release;
@@ -362,8 +364,10 @@ m6502_genMinus (iCode * ic)
 	{
 	  m6502_emitComment (TRACEGEN|VVDBG, "  %s - save offset=%d", __func__, offset);
  	  m6502_fastSaveA();
+
           if(savea)
             emitcode("ERROR", " %s - needpulla && delayedstore == true ", __func__);
+
 	  savea = true;
 	}
       else

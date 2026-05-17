@@ -93,16 +93,6 @@ m6502_genOr (iCode * ic, iCode * ifx)
 	  goto release;
 	}
 
-#if 0
-      // FIXME: good optmization but currently not working
-      if (IS_MOS65C02 && isLit && lit!=0)
-	{
-	  m6502_emitOp("bit","#0xff");
-	  m6502_genIfxJump (ifx, "z");
-	  goto release;
-	}
-#endif
-
       if(AOP_TYPE(left)==AOP_REG)
 	{
 	  m6502_emitComment (TRACEGEN|VVDBG, "  %s: special case reg bit %d", __func__, bitpos);

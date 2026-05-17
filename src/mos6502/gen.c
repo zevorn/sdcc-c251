@@ -7681,7 +7681,7 @@ genPointerSet (iCode * ic)
       xloc = m6502_getLastTempOfs();
     } 
 
-// FIXME: why removing this makes perf worse?
+  // FIXME: why removing this makes perf worse?
 #if 1
   if(IS_AOP_WITH_Y(AOP(right)))
     needloady = storeRegTempIfUsed (m6502_reg_y);
