@@ -35,7 +35,7 @@ test1ShiftClasses(void)
 void
 test2ShiftRight(void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
     {attr} {storage} signed {type} i, result;
 
@@ -58,6 +58,7 @@ test2ShiftRight(void)
 void
 test3ShiftByteMultiples(void)
 {
+#if !defined(__SDCC_pdk13) // Lack of memory; we are close, though, sowith a bit more optimization, this might work.
     {attr} {storage} {type} i;
 
     i = ({type}){vals};
@@ -69,12 +70,13 @@ test3ShiftByteMultiples(void)
     ASSERT( ({type})(i<<8)  ==  ({type})({vals} << 8));;
     ASSERT((({type}) i<<16) == (({type}) {vals} << 16));
     ASSERT((({type}) i<<24) == (({type}) {vals} << 24));
+#endif
 }
 
 void
 test4ShiftOne(void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
     {attr} {storage} {sign} {type} i;
     {sign} {type} result;
@@ -98,7 +100,7 @@ test4ShiftOne(void)
 #endif
 }
 
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
 static {type} ShiftLeftByParam ({type} count)
 {
@@ -119,7 +121,7 @@ static {type} ShiftRightByParam ({type} count)
 void
 testShiftByParam(void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
     ASSERT(ShiftLeftByParam(2)  == ({type})({vals} << 2));
     ASSERT(ShiftRightByParam(2) == ({type})({vals} >> 2));

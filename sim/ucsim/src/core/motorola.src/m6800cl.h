@@ -86,7 +86,8 @@ struct cc_tip {
 
 
 //  Flag bit masks
-enum {
+enum flags68_t {
+  mNON  = 0x00,
   mC	= 0x01,
   flagC	= 0x01,
   mO	= 0x02,
@@ -113,11 +114,11 @@ enum {
 #define ifVC	(!(rF&mV))
 #define ifEQ	(rF&mZ)
 #define ifNE	(!(rF&mZ))
-#define ifLT	( (rF&mN) ^ ((rF&mV)?mN:0) )
-#define ifLE	( (rF&mZ) | (((rF&mN)?mZ:0) ^ ((rF&mV)?mZ:0)) )
+#define ifLT	( (rF&mN) ^ ((rF&mV)?mN:mNON) )
+#define ifLE	( (rF&mZ) | (((rF&mN)?mZ:mNON) ^ ((rF&mV)?mZ:mNON)) )
 #define ifGE	(!ifLT)
 #define ifGT	(!ifLE)
-#define ifLS	( ((rF&mC)?mZ:0) | (rF&mZ) )
+#define ifLS	( ((rF&mC)?mZ:mNON) | (rF&mZ) )
 #define ifHI	(!ifLS)
 #define ifA	(true)
 #define ifN	(false)
@@ -189,8 +190,6 @@ public:
   virtual struct dis_entry *get_dis_entry(t_addr addr);
   virtual char *disassc(t_addr addr, chars *comment=NULL);
   virtual t_addr read_addr(class cl_memory *m, t_addr start_addr);
-  virtual void analyze_start(void);
-  virtual void analyze(t_addr addr);
   virtual int inst_length(t_addr addr);
   virtual int longest_inst(void) { return 4; }
   

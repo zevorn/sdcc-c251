@@ -1,5 +1,5 @@
 /* Profile counter container type.
-   Copyright (C) 2017-2022 Free Software Foundation, Inc.
+   Copyright (C) 2017-2023 Free Software Foundation, Inc.
    Contributed by Jan Hubicka
 
 This file is part of GCC.
@@ -185,7 +185,7 @@ public:
   static profile_probability very_unlikely ()
     {
       /* Be consistent with PROB_VERY_UNLIKELY in predict.h.  */
-      profile_probability r = guessed_always ().apply_scale (1, 2000);
+      profile_probability r = guessed_always () / 2000;
       r.m_val--;
       return r;
     }
@@ -193,14 +193,14 @@ public:
   static profile_probability unlikely ()
     {
       /* Be consistent with PROB_VERY_LIKELY in predict.h.  */
-      profile_probability r = guessed_always ().apply_scale (1, 5);
+      profile_probability r = guessed_always () / 5;
       r.m_val--;
       return r;
     }
 
   static profile_probability even ()
     {
-      return guessed_always ().apply_scale (1, 2);
+      return guessed_always () / 2;
     }
 
   static profile_probability very_likely ()
@@ -600,6 +600,28 @@ public:
       return initialized_p () && other.initialized_p () && m_val >= other.m_val;
     }
 
+  profile_probability operator* (int64_t num) const
+    {
+      return apply_scale (num, 1);
+    }
+
+  profile_probability operator*= (int64_t num)
+    {
+      *this = apply_scale (num, 1);
+      return *this;
+    }
+
+  profile_probability operator/ (int64_t den) const
+    {
+      return apply_scale (1, den);
+    }
+
+  profile_probability operator/= (int64_t den)
+    {
+      *this = apply_scale (1, den);
+      return *this;
+    }
+
   /* Get the value of the count.  */
   uint32_t value () const { return m_val; }
 
@@ -854,7 +876,8 @@ public:
 
       profile_count ret;
       gcc_checking_assert (compatible_p (other));
-      ret.m_val = m_val + other.m_val;
+      uint64_t ret_val = m_val + other.m_val;
+      ret.m_val = MIN (ret_val, max_count);
       ret.m_quality = MIN (m_quality, other.m_quality);
       return ret;
     }
@@ -873,7 +896,8 @@ public:
       else
 	{
           gcc_checking_assert (compatible_p (other));
-	  m_val += other.m_val;
+	  uint64_t ret_val = m_val + other.m_val;
+	  m_val = MIN (ret_val, max_count);
 	  m_quality = MIN (m_quality, other.m_quality);
 	}
       return *this;
@@ -901,7 +925,7 @@ public:
       else
 	{
           gcc_checking_assert (compatible_p (other));
-	  m_val = m_val >= other.m_val ? m_val - other.m_val: 0;
+	  m_val = m_val >= other.m_val ? m_val - other.m_val : 0;
 	  m_quality = MIN (m_quality, other.m_quality);
 	}
       return *this;
@@ -992,6 +1016,28 @@ public:
       return ipa ().initialized_p () && ipa ().m_val >= (uint64_t) other;
     }
 
+  profile_count operator* (int64_t num) const
+    {
+      return apply_scale (num, 1);
+    }
+
+  profile_count operator*= (int64_t num)
+    {
+      *this = apply_scale (num, 1);
+      return *this;
+    }
+
+  profile_count operator/ (int64_t den) const
+    {
+      return apply_scale (1, den);
+    }
+
+  profile_count operator/= (int64_t den)
+    {
+      *this = apply_scale (1, den);
+      return *this;
+    }
+
   /* Return true when value is not zero and can be used for scaling. 
      This is different from *this > 0 because that requires counter to
      be IPA.  */
@@ -1049,7 +1095,9 @@ public:
       if (!initialized_p ())
 	return uninitialized ();
       profile_count ret;
-      ret.m_val = RDIV (m_val * prob, REG_BR_PROB_BASE);
+      uint64_t tmp;
+      safe_scale_64bit (m_val, prob, REG_BR_PROB_BASE, &tmp);
+      ret.m_val = tmp;
       ret.m_quality = MIN (m_quality, ADJUSTED);
       return ret;
     }

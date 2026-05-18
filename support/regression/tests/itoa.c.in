@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if !defined(PORT_HOST) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
+#if !defined(PORT_HOST) && !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
 /* do not run tests for listed above platforms - out of memory */
 
 #define TEST_{test} 1

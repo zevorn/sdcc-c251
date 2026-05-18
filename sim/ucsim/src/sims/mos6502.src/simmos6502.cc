@@ -32,6 +32,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "mos65c02cl.h"
 #include "mos65c02scl.h"
 #include "mos65ce02cl.h"
+#include "huc6280cl.h"
 #include "glob.h"
 
 
@@ -42,26 +43,13 @@ cl_simmos6502::cl_simmos6502(class cl_app *the_app):
 class cl_uc *
 cl_simmos6502::mk_controller(void)
 {
-  int i;
-  const char *typ= 0;
-  class cl_optref type_option(this);
   class cl_mos6502 *uc;
+  struct cpu_entry *ct;
 
-  type_option.init();
-  type_option.use("cpu_type");
-  i= 0;
-  if ((typ= type_option.get_value(typ)) == 0)
-    typ= "65C02S";
-  while ((cpus_6502[i].type_str != NULL) &&
-	 (strcasecmp(typ, cpus_6502[i].type_str) != 0))
-    i++;
-  if (cpus_6502[i].type_str == NULL)
-    {
-      fprintf(stderr, "Unknown processor type. "
-	      "Use -H option to see known types.\n");
-      return(NULL);
-    }
-  switch (cpus_6502[i].type)
+  if ((ct= type_entry("")) == NULL)
+    return NULL;
+  
+  switch (ct->type)
     {
     case CPU_6502:
       return(new cl_mos6502(this));
@@ -90,8 +78,9 @@ cl_simmos6502::mk_controller(void)
     case CPU_65CE02:
       printf("Not implemented yet.\n"); return(NULL); 
       return(new cl_mos65ce02(this));
+    case CPU_HUC6280:
+      return new cl_huc6280(this);
     default:
-      fprintf(stderr, "Unknown processor type\n");
       return NULL;
     }
   return NULL;

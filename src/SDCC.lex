@@ -37,7 +37,7 @@ L       [a-zA-Z_$]
 E       [Ee][+-]?{D}+
 BE      [Pp][+-]?{D}+
 FS      (f|F|l|L|df|dd|dl|DF|DD|DL)
-IS      [uUlL]*
+IS      [uUlLzZ]*
 WB      (((u|U)(wb|WB))|((wb|WB)(u|U)?))
 CP      (L|u|U|u8)
 HASH    (#|%:)
@@ -62,15 +62,6 @@ UTF8IDF         {UTF8IDF1ST}|\xcc[\x80-\xbf]|\xcd[\x80-\xaf]|\xe2\x83[\x90-\xbf]
 #include "common.h"
 #include "newalloc.h"
 #include "dbuf_string.h"
-/* Some systems, notably Mac OS, do not have uchar.h. */
-/* If it is missing, use our own type definitions. */
-#ifdef HAVE_UCHAR_H
-#include <uchar.h>
-#else
-#include <stdint.h>
-#define char16_t uint_least16_t
-#define char32_t uint_least32_t
-#endif
 /* Needed by flex 2.5.4 on NetBSD 5.0.1 sparc64 */
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -101,6 +92,7 @@ static const char *stringLiteral (char);
 static void count (void);
 static void count_char (int);
 static int process_pragma (const char *);
+void process_identifier (char *dest, const char *src, size_t n);
 static int check_type (void);
 static void checkCurrFile (const char *s);
 %}
@@ -203,7 +195,8 @@ static void checkCurrFile (const char *s);
 "typeof_unqual"         { count (); TKEYWORD2X (TYPEOF_UNQUAL); }
 
  /* C2y */
-"_Lengthof"             { count (); return LENGTHOF; }
+"_Countof"              { count (); return COUNTOF; }
+"_Lengthof"             { count (); return COUNTOF; }  /* kept for compatibility with earlier drafts */
 
  /* SDCC-specific intrinsic named address spaces (as per Embedded C TS) */
 "__code"                { count (); TKEYWORD (CODE); }
@@ -236,7 +229,6 @@ static void checkCurrFile (const char *s);
 "__sfr32"               { count (); TKEYWORD (SFR32); }
 "__sbit"                { count (); TKEYWORD (SBIT); }
 "__builtin_offsetof"    { count (); return OFFSETOF; }
-"__builtin_rot"         { count (); return ROT; }
 "__using"               { count (); TKEYWORD (USING); }
 "__naked"               { count (); TKEYWORD (NAKED); }
 "_JavaNative"           { count (); TKEYWORD (JAVANATIVE); }
@@ -245,6 +237,8 @@ static void checkCurrFile (const char *s);
 "__raisonance"          { count (); TKEYWORD (RAISONANCE); }
 "__iar"                 { count (); TKEYWORD (IAR); }
 "__cosmic"              { count (); TKEYWORD (COSMIC); }
+"__dynamicc"            { count (); TKEYWORD (DYNAMICC); }
+"__builtin__"           { count (); return BUILTIN; }
 "__sdcccall"            { count (); return SDCCCALL; }
 "__preserves_regs"      { count (); return PRESERVES_REGS; }
 "__z88dk_fastcall"      { count (); TKEYWORD (Z88DK_FASTCALL); }
@@ -253,13 +247,9 @@ static void checkCurrFile (const char *s);
 "__z88dk_params_offset" { count (); return Z88DK_PARAMS_OFFSET; }
 "__addressmod"          { count (); return ADDRESSMOD; }
 "__typeof"              { count (); return TYPEOF; }
-
+"_Optional"             { count (); return OPTIONAL; }
 
 ({L}|{UCN}|{UTF8IDF1ST})({L}|{D}|{UCN}|{UTF8IDF})*  {
-  if (!options.dollars_in_ident && strchr (yytext, '$'))
-    {
-      yyerror ("stray '$' in program");
-    }
   if (!options.std_c95)
     {
       bool ucn_check = strchr (yytext, '\\');
@@ -357,7 +347,7 @@ static void checkCurrFile (const char *s);
       unput (ch);
     }
 }
-.                       { count (); }
+.                       { werror (E_STRAY_CHARACTER, column); count (); }
 %%
 
 /* flex 2.5.31 undefines yytext_ptr, so we have to define it again */
@@ -473,117 +463,10 @@ count (void)
     count_char(*p);
 }
 
-static bool
-is_UCN_valid_in_idf (char32_t c, bool is_first)
-{
-  bool result = false;
-
-  // D.1 Ranges of characters allowed
-  if ((c == 0x00A8) || (c == 0x00AA) || (c == 0x00AD) || (c == 0x00AF)
-      || (c >= 0x00B2 && c <= 0x00B5) || (c >= 0x00B7 && c <= 0x00BA)
-      || (c >= 0x00BC && c <= 0x00BE) || (c >= 0x00C0 && c <= 0x00D6)
-      || (c >= 0x00D8 && c <= 0x00F6) || (c >= 0x00F8 && c <= 0x00FF)
-      || (c >= 0x0100 && c <= 0x167F) || (c >= 0x1681 && c <= 0x180D)
-      || (c >= 0x180F && c <= 0x1FFF) || (c >= 0x200B && c <= 0x200D)
-      || (c >= 0x202A && c <= 0x202E) || (c >= 0x203F && c <= 0x2040)
-      || (c == 0x2054) || (c >= 0x2060 && c <= 0x206F)
-      || (c >= 0x2070 && c <= 0x218F) || (c >= 0x2460 && c <= 0x24FF)
-      || (c >= 0x2776 && c <= 0x2793) || (c >= 0x2C00 && c <= 0x2DFF)
-      || (c >= 0x2E80 && c <= 0x2FFF) || (c >= 0x3004 && c <= 0x3007)
-      || (c >= 0x3021 && c <= 0x302F) || (c >= 0x3031 && c <= 0x303F)
-      || (c >= 0x3040 && c <= 0xD7FF) || (c >= 0xF900 && c <= 0xFD3D)
-      || (c >= 0xFD40 && c <= 0xFDCF) || (c >= 0xFDF0 && c <= 0xFE44)
-      || (c >= 0xFE47 && c <= 0xFFFD) || (c >= 0x10000 && c <= 0x1FFFD)
-      || (c >= 0x20000 && c <= 0x2FFFD) || (c >= 0x30000 && c <= 0x3FFFD)
-      || (c >= 0x40000 && c <= 0x4FFFD) || (c >= 0x50000 && c <= 0x5FFFD)
-      || (c >= 0x60000 && c <= 0x6FFFD) || (c >= 0x70000 && c <= 0x7FFFD)
-      || (c >= 0x80000 && c <= 0x8FFFD) || (c >= 0x90000 && c <= 0x9FFFD)
-      || (c >= 0xA0000 && c <= 0xAFFFD) || (c >= 0xB0000 && c <= 0xBFFFD)
-      || (c >= 0xC0000 && c <= 0xCFFFD) || (c >= 0xD0000 && c <= 0xDFFFD)
-      || (c >= 0xE0000 && c <= 0xEFFFD))
-    {
-      result = true;
-      // D.2 Ranges of characters disallowed initially
-      if (is_first && ((c >= 0x0300 && c <= 0x036F) || (c >= 0x1DC0 && c <= 0x1DFF)
-          || (c >= 0x20D0 && c <= 0x20FF) || (c >= 0xFE20 && c <= 0xFE2F)))
-        {
-          result = false;
-        }
-    }
-
-  return result;
-}
-
-static void
-decode_UCNs_to_utf8 (char *dest, const char *src, size_t n)
-{
-  bool is_first = true;
-  const char *s = src;
-  size_t chars_left = n - 1;
-
-  while (*src)
-    {
-      if (*src == '\\')
-        {
-          ++src;
-          char32_t c = 0;
-          if (*src == 'u')
-            {
-              c = universalEscape(&src, 4);
-            }
-          else  // U - the lexer only accepts \u and \U escapes in identifiers
-            {
-              c = universalEscape(&src, 8);
-            }
-          if (!is_UCN_valid_in_idf(c, is_first))
-            {
-              werror(E_INVALID_UNIVERSAL_IDENTIFIER, s);
-            }
-
-          if (c >= 0x10000)
-            {
-              if (chars_left < 4)
-                break;
-              *(dest++) = 0xf0 | (c >> 18);
-              *(dest++) = 0x80 | ((c >> 12) & 0x3f);
-              *(dest++) = 0x80 | ((c >> 6) & 0x3f);
-              *(dest++) = 0x80 | (c & 0x3f);
-              chars_left -= 4;
-            }
-          else if (c >= 0x800)
-            {
-              if (chars_left < 3)
-                break;
-              *(dest++) = 0xe0 | (c >> 12);
-              *(dest++) = 0x80 | ((c >> 6) & 0x3f);
-              *(dest++) = 0x80 | (c & 0x3f);
-              chars_left -= 3;
-            }
-          else  // ASCII characters already eliminated by validity check => no further check here
-            {
-              if (chars_left < 2)
-                break;
-              *(dest++) = 0xc0 | (c >> 6);
-              *(dest++) = 0x80 | (c & 0x3f);
-              chars_left -= 2;
-            }
-        }
-      else
-        {
-          if (chars_left < 1)
-            break;
-          *(dest++) = *(src++);
-          chars_left--;
-        }
-      is_first = false;
-    }
-  *dest = '\0';
-}
-
 static int
 check_type (void)
 {
-  decode_UCNs_to_utf8(yylval.yychar, yytext, SDCC_NAME_MAX);
+  process_identifier (yylval.yychar, yytext, SDCC_NAME_MAX + 1);
 
   symbol *sym = findSym(SymbolTab, NULL, yylval.yychar);
 
@@ -595,7 +478,7 @@ check_type (void)
   else if (findSym (AddrspaceTab, NULL, yylval.yychar))
     return (ADDRSPACE_NAME);
   else
-    return(IDENTIFIER);
+    return (IDENTIFIER);
 }
 
 /*
@@ -818,6 +701,7 @@ enum {
    P_INDUCTION,
    P_NOINDUCTION,
    P_NOINVARIANT,
+   P_MAX_ALLOCS_PER_NODE,
    P_STACKAUTO,
    P_OVERLAY_,     /* I had a strange conflict with P_OVERLAY while */
                    /* cross-compiling for MINGW32 with gcc 3.2 */
@@ -1012,6 +896,24 @@ doPragma (int id, const char *name, const char *cp)
         }
 
       optimize.loopInvariant = 0;
+      break;
+
+    case P_MAX_ALLOCS_PER_NODE:
+      cp = get_pragma_token(cp, &token);
+      if (TOKEN_INT != token.type)
+        {
+          err = 1;
+          break;
+        }
+
+      options.max_allocs_per_node = token.val.int_val;
+
+      cp = get_pragma_token(cp, &token);
+      if (TOKEN_EOL != token.type)
+        {
+          err = 1;
+          break;
+        }
       break;
 
     case P_STACKAUTO:
@@ -1361,38 +1263,39 @@ doPragma (int id, const char *name, const char *cp)
 }
 
 static struct pragma_s pragma_tbl[] = {
-  { "save",              P_SAVE,            0, doPragma },
-  { "restore",           P_RESTORE,         0, doPragma },
-  { "induction",         P_INDUCTION,       0, doPragma },
-  { "noinduction",       P_NOINDUCTION,     0, doPragma },
-  { "noinvariant",       P_NOINVARIANT,     0, doPragma },
-  { "noloopreverse",     P_LOOPREV,         0, doPragma },
-  { "stackauto",         P_STACKAUTO,       0, doPragma },
-  { "nogcse",            P_NOGCSE,          0, doPragma },
-  { "overlay",           P_OVERLAY_,        0, doPragma },
-  { "nooverlay",         P_NOOVERLAY,       0, doPragma },
-  { "callee_saves",      P_CALLEE_SAVES,    0, doPragma },
-  { "exclude",           P_EXCLUDE,         0, doPragma },
-  { "noiv",              P_NOIV,            0, doPragma },
-  { "less_pedantic",     P_LESSPEDANTIC,    0, doPragma },
-  { "disable_warning",   P_DISABLEWARN,     0, doPragma },
-  { "opt_code_speed",    P_OPTCODESPEED,    0, doPragma },
-  { "opt_code_size",     P_OPTCODESIZE,     0, doPragma },
-  { "opt_code_balanced", P_OPTCODEBALANCED, 0, doPragma },
-  { "std_c89",           P_STD_C89,         0, doPragma },
-  { "std_c99",           P_STD_C99,         0, doPragma },
-  { "std_c11",           P_STD_C11,         0, doPragma },
-  { "std_c23",           P_STD_C23,         0, doPragma },
-  { "std_c2x",           P_STD_C2X,         1, doPragma },
-  { "std_c2y",           P_STD_C2Y,         0, doPragma },
-  { "std_sdcc89",        P_STD_SDCC89,      0, doPragma },
-  { "std_sdcc99",        P_STD_SDCC99,      0, doPragma },
-  { "std_sdcc11",        P_STD_SDCC11,      0, doPragma },
-  { "std_sdcc23",        P_STD_SDCC23,      0, doPragma },
-  { "std_sdcc2y",        P_STD_SDCC2Y,      0, doPragma },
-  { "codeseg",           P_CODESEG,         0, doPragma },
-  { "constseg",          P_CONSTSEG,        0, doPragma },
-  { NULL,                0,                 0, NULL },
+  { "save",                P_SAVE,                0, doPragma },
+  { "restore",             P_RESTORE,             0, doPragma },
+  { "induction",           P_INDUCTION,           0, doPragma },
+  { "noinduction",         P_NOINDUCTION,         0, doPragma },
+  { "noinvariant",         P_NOINVARIANT,         0, doPragma },
+  { "max_allocs_per_node", P_MAX_ALLOCS_PER_NODE, 0, doPragma },
+  { "noloopreverse",       P_LOOPREV,             0, doPragma },
+  { "stackauto",           P_STACKAUTO,           0, doPragma },
+  { "nogcse",              P_NOGCSE,              0, doPragma },
+  { "overlay",             P_OVERLAY_,            0, doPragma },
+  { "nooverlay",           P_NOOVERLAY,           0, doPragma },
+  { "callee_saves",        P_CALLEE_SAVES,        0, doPragma },
+  { "exclude",             P_EXCLUDE,             0, doPragma },
+  { "noiv",                P_NOIV,                0, doPragma },
+  { "less_pedantic",       P_LESSPEDANTIC,        0, doPragma },
+  { "disable_warning",     P_DISABLEWARN,         0, doPragma },
+  { "opt_code_speed",      P_OPTCODESPEED,        0, doPragma },
+  { "opt_code_size",       P_OPTCODESIZE,         0, doPragma },
+  { "opt_code_balanced",   P_OPTCODEBALANCED,     0, doPragma },
+  { "std_c89",             P_STD_C89,             0, doPragma },
+  { "std_c99",             P_STD_C99,             0, doPragma },
+  { "std_c11",             P_STD_C11,             0, doPragma },
+  { "std_c23",             P_STD_C23,             0, doPragma },
+  { "std_c2x",             P_STD_C2X,             1, doPragma },
+  { "std_c2y",             P_STD_C2Y,             0, doPragma },
+  { "std_sdcc89",          P_STD_SDCC89,          0, doPragma },
+  { "std_sdcc99",          P_STD_SDCC99,          0, doPragma },
+  { "std_sdcc11",          P_STD_SDCC11,          0, doPragma },
+  { "std_sdcc23",          P_STD_SDCC23,          0, doPragma },
+  { "std_sdcc2y",          P_STD_SDCC2Y,          0, doPragma },
+  { "codeseg",             P_CODESEG,             0, doPragma },
+  { "constseg",            P_CONSTSEG,            0, doPragma },
+  { NULL,                  0,                     0, NULL },
 };
 
 /*
@@ -1481,3 +1384,4 @@ yyerror (char *s)
 
   return 0;
 }
+

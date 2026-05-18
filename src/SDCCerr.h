@@ -51,7 +51,7 @@ enum {
   W_STACK_OVERFLOW              =  21, /* stack overflow       */
   E_NEED_ARRAY_PTR              =  22, /* array or pointer reqd*/
   E_IDX_NOT_INT                 =  23, /* index not an integer */
-  W_IDX_OUT_OF_BOUNDS           =  24, /* array index out of bounds */
+  W_IDX_OUT_OF_BOUNDS           =  24, // array index out of bounds (for cases where we know exact index and bound) - see also W_INVALID_PTR_DEREF for other cases
   E_STRUCT_UNION                =  25, /* struct,union expected*/
   E_NOT_MEMBER                  =  26, /* !struct/union member */
   E_PTR_REQD                    =  27, /* pointer required     */
@@ -80,14 +80,14 @@ enum {
   E_BIT_ARRAY                   =  50, /* bit array not allowed  */
   E_DUPLICATE_TYPEDEF           =  51, /* typedef name duplicate */
   E_ARG_TYPE                    =  52, /* arg type mismatch   */
-  E_RET_VALUE                   =  53, /* return value mismatch */
+  E_RETURN_MISMATCH             =  53, /* return type mismatch */
   E_FUNC_AGGR                   =  54, /* Function cannot return aggregate. Func body ignored */
   E_FUNC_DEF                    =  55, /* ANSI Style def neede */
   E_DUPLICATE_LABEL             =  56, /* duplicate label name */
   E_LABEL_UNDEF                 =  57, /* undefined label used */
   E_FUNC_VOID                   =  58, /* void func ret value  */
   W_VOID_FUNC                   =  59, /* func must return value */
-  W_RETURN_MISMATCH             =  60, /* return value mismatch */
+  W_RETURN_MISMATCH             =  60, /* return type mismatch */
   E_CASE_CONTEXT                =  61, /* case stmnt without switch */
   E_CASE_CONSTANT               =  62, /* case expression ! const */
   E_BREAK_CONTEXT               =  63, /* break statement invalid */
@@ -301,14 +301,14 @@ enum {
   E_SFR_POINTER                 = 271, /* unsupported pointer to __sfr */
   E_INVALID_BITINTWIDTH         = 272, /* invalid with for bit-precise integer type */
   W_BITINTCONST_C23             = 273, /* bit-precise integer constant requires ISO C23 or later */
-  E_INVALID_UNIVERSAL_IDENTIFIER = 274, /* universal character name %s invalid in identifier */
+  E_INVALID_UNIVERSAL_ID        = 274, /* universal character name %s invalid in identifier */
   E_COMPLEX_UNSUPPORTED         = 275, /* complex numbers are not supported */
   E_DECIMAL_FLOAT_UNSUPPORTED   = 276, /* decimal floating-point numbers are not supported */
   E_ATOMIC_UNSUPPORTED          = 277, /* atomics are not supported */
   W_RETURN_TYPE_OMITTED_INT     = 278, /* return type of function omitted, assuming int */
   W_SINGLE_DASH_LONG_OPT        = 279, /* use of single-dash long options is discouraged */
   E_UNKNOWN_LANGUAGE_STANDARD   = 280, /* unknown language standard */
-  E_CONSTEXPR                   = 281, /* constexpr not implemented */
+  E_CONSTEXPR_C23               = 281, /* constexpr requires ISO C23 or later */
   E_TYPEOF                      = 282, /* typeof and typeof_unqual not implemented for nontrivial expressions */
   W_FUNCDECL_WITH_NO_PROTOTYPE  = 283, /* function declarator with no prototype */
   W_UNKNOWN_ATTRIBUTE           = 284, /* unknown attribute ignored*/
@@ -332,14 +332,65 @@ enum {
   E_GENERIC_WITH_TYPENAME_C2Y   = 302, /* generic selection based on a type name requires C2y or later */
   E_MIXED_FUNCTION_STYLES       = 303, /* function mixes ISO and K&R style */
   E_ENUM_TYPE_SPECIFIER_C23     = 304, /* enum type specifiers require C23 or later */
-  E_ENUM_UNDERLYING_TYPE        = 305, /* enum's underlying type must be an integer type and cannot be bit-precise or an enum */
+  E_ENUM_UNDERLYING_TYPE        = 305, /* enum's underlying type must be an integer type and cannot be an enum */
   E_ENUM_TYPE_RANGE_TOO_SMALL   = 306, /* the enum's underlying type cannot represent all enumerator values */
-  E_LENGTHOF_INVALID_TYPE       = 307, /* _Lengthof applied to an incomplete or non-array type */
+  E_COUNTOF_INVALID_TYPE        = 307, /* _Countof applied to an incomplete or non-array type */
   W_PREFIXED_OCTAL_C2Y          = 308, /* prefixed octal integer constants require ISO C2y or later */
   W_OCTAL_DEPRECATED_C2Y        = 309, /* unprefixed octal integer constants are deprecated as of ISO C2y */
   E_CLOSING_BRACE               = 310, /* invalid character or end of string encountered before '}' */
   E_INVALID_OCTAL               = 311, /* \o{...} used without valid octal digits */
   E_SELECTION_DECLARATION_C2Y   = 312, /* declaration within selection header requires ISO C2y or later */
+  E_COMPLIT_SCLASS_C23          = 313, // compound literals with storage class specifier require ISO C23 or later
+  W_ENUM_UNDERLYING_BITINT      = 314, // enum's underlying type may not be a bit-precise type in ISO C23
+  W_BITINTWIDTH_1_C2Y           = 315, // signed bit-precise integer type of width 1 requires ISO C2y or later
+  E_ATOMIC_ARRAY                = 316, // _Atomic array
+  E_ATOMIC_FUNCTION             = 317, // _Atomic function
+  E_ATOMIC_SPEC_ATOMIC          = 318, // _Atomic specifier on atomic type
+  E_ATOMIC_SPEC_QUALIFIED       = 319, // _Atomic specifier on qualified type
+  E_BLOCK_SCOPE_EXTERN_INIT     = 320, // block scope variable declared extern and intialized
+  E_BLOCK_SCOPE_FUNC_SCLASS     = 321, // Function declared at block scope with explicit storage-class specifier other than extern
+  W_PTR2INT_NOREPRESENT         = 322, // Cast of pointer to integer type that cannot represent all values of the pointer type
+  W_MAIN_TYPE                   = 323, // Function main should be void main(void) or int main(void)
+  E_VOID_SHALL_BE_LONELY        = 324, // void is allowed as single parameter with no storage class specifiers, no type qualifers, no following ellipsis
+  W_ANONYMOUS_STRUCT_C11        = 325, // anonymous struct/union requires ISO C11 or later
+  E_UNAMED_STRUCT_MEMBER        = 326, // struct/union members need to have a name, unless they are anonymous struct/union or bit-fields
+  E_NO_LINKAGE_INCOMPLETE_TYPE  = 327, // object with no linkage of incomplete type
+  E_EXTERN_INLINE_NO_DEF        = 328, // inline function declared with external linkage, but not defined in translation unit
+  E_STRAY_CHARACTER             = 329, // stray character at column %d
+  W_UNICODE_RANGE               = 330, // character out of unicode range
+  E_INCOMPLETE_TYPE_LVALUE      = 331, // lvalue of incomplete type
+  W_REGISTER_EXTERNAL_DECL      = 332, // storage class register on external declaration
+  W_REGISTER_ELEMENT_ACCESS_C2Y = 333, // access to element of array with storage class specifier register requires ISO C2y or later
+  W_EXCESS_BRACES_INITIALIZER   = 334, // excess braces in initializer
+  E_VLA_UNSPECIFIED_SCOPE       = 335, //  "[*] variable length array declarators of unspecified length must have function prototype scope
+  W_INCOMPLETE_ARRAY_IMPLICIT_1 = 336, // incomplete array type has length 1 due to implicit initializer
+  E_QUALIFIED_FUNCTION          = 337, // qualified function
+  W_NONASCII_ID_NOUNILIB        = 338, // non-ascii characters in identifier, but SDCC built without libu8ident library; diagnostics on and semantics of identifier names limited to the minimum required by ISO C11
+  E_INVALID_ID                  = 339, // invalid identifier
+  W_ID_NOT_NORMALIZED_NFC       = 340, // identifier not normalized to unicode normalization form C
+  W_INSECURE_ID                 = 341, // insecure identifier not compliant with UTS #39
+  E_CONSTEXPR_WITHOUT_INIT      = 342, // constexpr declaration without initialization
+  E_CONSTEXPR_RANGE_PRECISION   = 343, // type of constexpr declaration has insufficient range or precision
+  E_CONSTEXPR_INVALID_QUAL      = 344, // object of constexpr type cannot be atomic, variably modified, volatile or restrict qualified
+  W_STATIC_ARRAY_PARAM_LENGTH   = 345, // argument for [static] array parameter is not of sufficient length
+  W_INVALID_PTR_DEREF           = 346, // possibly invalid pointer dereferenced or array index out of bounds - see also W_IDX_OUT_OF_BOUNDS (for cases where we know exact index and bound)
+  W_PARAM_FWD_DECL              = 347, // parameter forward declaration not allowed in ISO C
+  E_PARAM_FWD_DECL_NOPARAM      = 348, // forward-declared parameter '%s' missing from parameter list
+  E_PARAM_FWD_DECL_UNSUPPORTED  = 349, // unsupported parameter forward declaration; only single forward-declared parameters of integer type are supported
+  W_VARARG_ONLY_C23             = 350, // function with variable arguments only requires ISO C23 or later
+  E_BAD_OPTIONAL                = 351, // types other than the referenced type of a pointer type shall not be optional-qualified
+  W_SIZETCONST_SDCC             = 352, // integer literals of type size_t or ptrdiff_t are an SDCC extension based on C++23
+  W_ARRAY_PARAM_LENGTH          = 353, // argument for array parameter might not be of sufficient length
+  W_MAYBE_INVALID_PTR_DEREF     = 354, // maybe invalid pointer dereferenced or array index out of bounds (assuming array parameters are arrays of given size)
+  W_OPTIONAL_PTR_DEREF          = 355, // pointer to _Optional could not be proven to be non-null at dereference
+  W_NONCONST_CODE_OBJ           = 356, // object in read-only code space should be const
+  W_NONCONST_CODE_PTR           = 357, // pointer to object in read-only code space should be pointer to const
+  W_OPTIONAL_RELATIONAL         = 358, // pointer to _Optional could not be proven to be non-null at relational operator
+  W_OPTIONAL_ARITHMETIC         = 359, // pointer to _Optional could not be proven to be non-null at pointer arithmetic
+  W_NONCONST_STRINGLIT          = 360, // string literal assigned to pointer to non-const
+  W_QUALIFIED_RETURN            = 361, // qualifier on return type has no effect
+
+  // If you get a merge conflict here, some #pragma disable_warning in support/valdiag and support/regression will likely need to be adapted to the resolution. Check there!
 
   /* don't touch this! */
   NUMBER_OF_ERROR_MESSAGES             /* Number of error messages */
@@ -442,7 +493,7 @@ werrorfl - Output a standard error message with variable number of arguments.
 -------------------------------------------------------------------------------
 */
 
-int werrorfl (char *newFilename, int newLineno, int errNum, ...);
+int werrorfl (const char *newFilename, int newLineno, int errNum, ...);
 
 /*
 -------------------------------------------------------------------------------

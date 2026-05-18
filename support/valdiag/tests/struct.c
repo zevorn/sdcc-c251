@@ -135,3 +135,39 @@ struct A {int x; int z;}; /* ERROR */
 
 #endif
 
+#ifdef TEST11a
+// Anonymous struct/union is a C11 feature.
+#ifdef __SDCC
+#pragma std_c99
+#endif
+struct s
+{
+  struct {int i;}; /* WARNING */
+  char; /* ERROR */
+};
+#endif
+
+#ifdef TEST11b
+#ifdef __SDCC
+// Anonymous struct/union is a C11 feature.
+#pragma std_c11
+#endif
+struct s
+{
+  struct {int i;};
+  char; /* ERROR */
+};
+#endif
+
+#ifdef TEST11c
+// Anonymous struct/union is a C11 feature, which we also allow in the SDCC-specific dialects correspondignto earlier standards.
+#ifdef __SDCC
+#pragma std_sdcc99
+#endif
+struct s
+{
+  struct {int i;};
+  char; /* ERROR */
+};
+#endif
+

@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------------------
-   r2kb.h - definitions on the built in I/O ports for the Rabbit 2000B
+   r2kb.h - definitions of the built in I/O ports for the Rabbit 2000B
             for use with SDCC
 
    Copyright (C) 2020, Philipp Klaus Krause <pkk AT spth.de>
@@ -29,10 +29,6 @@
 
 #ifndef __R2KB_H__
 #define __R2KB_H__ 1
-
-#ifndef _RABREG
-#define _RABREG(addr, reg) __sfr __at(addr) reg
-#endif
 
 #include "r2ka.h"
 

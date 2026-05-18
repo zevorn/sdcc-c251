@@ -239,6 +239,9 @@ typedef struct {
 /* declarations of functions related to intmax_t and uintmax_t */
 
 intmax_t imaxabs(intmax_t j);
+#if __STDC_VERSION__ > 202311L // ISO C2Y
+uintmax_t umaxabs(intmax_t j);
+#endif
 
 /* NOTE: SDCC does not currently support struct return types on these architectures */
 #if !defined(__SDCC_ds390) && !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_mos6502) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
@@ -254,3 +257,4 @@ uintmax_t wcstoumax(const wchar_t * restrict nptr, wchar_t ** restrict endptr, i
 #endif
 
 #endif /* inttypes.h */
+

@@ -55,7 +55,7 @@ void testBitInt(void)
 
 	bitinttype b = 1;
 	ASSERT(_Generic(++b, default: 1, bitinttype: 0) == 0); // ++a is not the same a += 1, but a += (bitinttype)1.
-
+#ifndef __SDCC_pdk13 // Lackof memory - with more optimization, we could enable a few more lines
 	// Cast from int
 	ASSERT((bitinttype)i == (bitinttype)42); // Explicit cast
 	b = i; // Implicit cast
@@ -76,6 +76,7 @@ void testBitInt(void)
 	ASSERT((unsigned _BitInt(6))((bitinttype)0x5aff) == b6); // Bug #3371 - both casts are done at compile time, results were different - left cast done on ast (ok), right on iCode (wrong on FreeBSD13 on aarch64).
 	b = b6;
 	ASSERT((bitinttype)b6 == (bitinttype)(unsigned _BitInt(6))0x5aff);
+#endif
 #endif
 #endif
 }

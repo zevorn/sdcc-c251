@@ -107,11 +107,6 @@ GTE_SKIP_TESTS += \
 	va-arg-8.c \
 	980608-1.c
 
-# SDCC does not yet support compound literals (RFE #332)
-GTE_SKIP_TESTS += \
-	20000917-1.c \
-	20020206-2.c
-
 # Uses GCC implementation-defined long long bit-fields not supported in SDCC
 GTE_SKIP_TESTS += \
 	991118-1.c
@@ -161,36 +156,23 @@ GTE_SKIP_TESTS += \
 	vrp-5.c \
 	vrp-6.c
 
-# Bugs? These fail on stm8.
-GTE_SKIP_TESTS += \
-	pr48197.c
-
 # BUGs? abnormal stop on stm8
 GTE_SKIP_TESTS += \
 	printf-1.c \
 	vprintf-1.c
 
-# timeout on ucsim stm8 (revisit later..)
+# fail/timeout on multiple targets (revisit later..)
 GTE_SKIP_TESTS += \
-	20000819-1.c \
-	20000910-1.c \
-	20001111-1.c \
 	20020404-1.c \
 	20021024-1.c \
-	921110-1.c \
 	941014-2.c \
 	960521-1.c \
-	960802-1.c \
-	991030-1.c \
-	loop-2b.c \
 	nestfunc-4.c \
-	pr58640.c \
+	pr48197.c \
 	pr58943.c \
 	pr7284-1.c \
 	va-arg-21.c \
-	va-arg-24.c \
-	va-arg-trap-1.c \
-	zerolen-1.c
+	va-arg-24.c
 
 # Test for implementation-defined struct layout
 GTE_SKIP_TESTS += \
@@ -208,9 +190,8 @@ GTE_SKIP_TESTS += \
 GTE_SKIP_TESTS += \
 	20000801-3.c \
 	20000822-1.c \
-	20010904-2.c \
+	20000917-1.c \
 	20020320-1.c \
-	20030109-1.c \
 	20030224-2.c \
 	20030501-1.c \
 	20030910-1.c \
@@ -261,7 +242,6 @@ GTE_SKIP_TESTS += \
 	align-nest.c \
 	builtin-bitops-1.c \
 	built-in-setjmp.c \
-	comp-goto-1.c \
 	comp-goto-2.c \
 	complex-1.c \
 	complex-2.c \
@@ -288,7 +268,6 @@ GTE_SKIP_TESTS += \
 	nest-stdar-1.c \
 	packed-aligned.c \
 	pr103209.c \
-	pr103255.c \
 	pr104604.c \
 	pr19687.c \
 	pr22061-3.c \
@@ -360,7 +339,6 @@ GTE_SKIP_TESTS += \
 	pr57568.c \
 	pr57829.c \
 	pr58209.c \
-	pr58277-2.c \
 	pr58574.c \
 	pr58831.c \
 	pr59014-2.c \
@@ -596,10 +574,6 @@ GTE_SKIP_TESTS += \
 	20040308-1.c \
 	20040811-1.c
 
-# Bug #3405
-GTE_SKIP_TESTS += \
-	931004-12.c
-
 #BUG? incompatible types
 GTE_SKIP_TESTS += \
 	930608-1.c \
@@ -757,10 +731,6 @@ QC_TESTS = $(filter-out $(QC_SKIP_TESTS), $(QC_TESTS_WC))
 ##############
 # Tiny C tests
 
-# SDCC does not yet support compound literals (RFE #332)
-TCC_SKIP_TESTS += \
-	94_generic.c
-
 # Uses POSIX threads
 TCC_SKIP_TESTS += \
 	106_versym.c \
@@ -797,6 +767,7 @@ TCC_SKIP_TESTS += \
 	88_codeopt.c \
 	89_nocode_wanted.c \
 	90_struct-init.c \
+	94_generic.c \
 	95_bitfields.c \
 	98_al_ax_extend.c \
 	99_fastcall.c

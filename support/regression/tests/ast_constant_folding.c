@@ -73,7 +73,10 @@ test_ast_cf(void)
           ASSERT(foo_ssl() ==   -67);
           ASSERT(foo_sa () ==   -37);
           ASSERT(foo_mul() == 54000);
+#ifndef __SDCC_pdk13 // Those tests would pass, we just don't have enough space in code memory to fit them in together with the others. With a little bit more optimization, this should work - we lack only 15B
   i =  3; ASSERT(foo_div() ==    20);
   i =  3; ASSERT(foo_or () ==    15);
   i =  7; ASSERT(foo_and() ==     4);
+#endif
 }
+

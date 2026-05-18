@@ -4,12 +4,13 @@
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
 #ifdef __SDCC
 #pragma std_c99
+#pragma disable_warning 278
 #endif
 
-// TODO: Enable when sdcc supports union!
-#if 0
 typedef union {
   long l;
   struct { char b3, b2, b1, b0; } c;
@@ -26,7 +27,7 @@ f (T u)
 void
 testTortureExecute (void)
 {
-#if 0
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
   T u;
   u.c.b1 = 2;
   u.c.b2 = 2;

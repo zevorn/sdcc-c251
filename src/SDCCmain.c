@@ -24,6 +24,7 @@
 
 #ifdef _WIN32
 #include <io.h>
+#include <fcntl.h>
 #else
 #include <unistd.h>
 #include <libgen.h>
@@ -143,6 +144,8 @@ char buffer[PATH_MAX * 2];
 #define OPTION_DATA_SEG             "--dataseg"
 #define OPTION_DOLLARS_IN_IDENT     "--fdollars-in-identifiers"
 #define OPTION_SIGNED_CHAR          "--fsigned-char"
+#define OPTION_CONST_STRINGLIT      "--fconst-stringlit"
+#define OPTION_CONST_CODE           "--fconst-code"
 #define OPTION_USE_NON_FREE         "--use-non-free"
 #define OPTION_PEEP_RETURN          "--peep-return"
 #define OPTION_NO_PEEP_RETURN       "--no-peep-return"
@@ -155,6 +158,7 @@ char buffer[PATH_MAX * 2];
 #define OPTION_DUMP_GRAPHS          "--dump-graphs"
 #define OPTION_INCLUDE              "--include"
 #define OPTION_NO_GENCONSTPROP      "--nogenconstprop"
+#define OPTION_NO_PURITY            "--nopurity"
 
 #define OPTION_SMALL_MODEL          "--model-small"
 #define OPTION_MEDIUM_MODEL         "--model-medium"
@@ -187,6 +191,7 @@ static const OPTION optionsTable[] = {
   {0,   OPTION_USE_STDOUT, NULL, "send errors to stdout instead of stderr"},
   {0,   "--nostdlib", &options.nostdlib, "Do not include the standard library directory in the search path"},
   {0,   "--nostdinc", &options.nostdinc, "Do not include the standard include directory in the search path"},
+  {0,   "--norestartseqatomics", &options.norestartseqatomics, "Omit restartable sequence support routines for atomics"},
   {0,   OPTION_LESS_PEDANTIC, NULL, "Disable some of the more pedantic warnings"},
   {0,   OPTION_DISABLE_WARNING, NULL, "<nnnn> Disable specific warning"},
   {0,   OPTION_WERROR, NULL, "Treat the warnings as errors"},
@@ -195,6 +200,8 @@ static const OPTION optionsTable[] = {
   {0,   OPTION_STD, NULL, "Determine the language standard (c90, c99, c11, c23, c2y, sdcc89 etc.)"},
   {0,   OPTION_DOLLARS_IN_IDENT, &options.dollars_in_ident, "Permit '$' as an identifier character"},
   {0,   OPTION_SIGNED_CHAR, &options.signed_char, "Make \"char\" signed by default"},
+  {0,   OPTION_CONST_STRINGLIT, &options.const_stringlit, "Make string literals const, like in C++"},
+  {0,   OPTION_CONST_CODE, &options.const_code, "Make objects in read-only __code space implicitly const"},
   {0,   OPTION_USE_NON_FREE, &options.use_non_free, "Search / include non-free licensed libraries and header files"},
 
   {0,   NULL, NULL, "Code generation options"},
@@ -223,6 +230,7 @@ static const OPTION optionsTable[] = {
   {0,   "--no-reg-params", &options.noRegParams, "On some ports, disable passing some parameters in registers"},
   {0,   "--nostdlibcall", &optimize.noStdLibCall, "Disable optimization of calls to standard library"},
   {0,   "--nooverlay", &options.noOverlay, "Disable overlaying leaf function auto variables"},
+  {0,   OPTION_NO_PURITY, NULL, "Disable optimizations of pure functions"},
   {0,   OPTION_NO_GCSE, NULL, "Disable the GCSE optimisation"},
   {0,   OPTION_NO_LOSPRE, NULL, "Disable lospre"},
   {0,   OPTION_NO_GENCONSTPROP, NULL, "Disable generalized constant propagation"},
@@ -319,23 +327,29 @@ static PORT *_ports[] = {
 #if !OPT_DISABLE_R3KA
   &r3ka_port,
 #endif
+#if !OPT_DISABLE_R4K
+  &r4k_port,
+#endif
+#if !OPT_DISABLE_R5K
+  &r5k_port,
+#endif
+#if !OPT_DISABLE_R6K
+  &r6k_port,
+#endif
 #if !OPT_DISABLE_SM83
   &sm83_port,
 #endif
 #if !OPT_DISABLE_TLCS90
   &tlcs90_port,
 #endif
-#if !OPT_DISABLE_EZ80_Z80
-  &ez80_z80_port,
+#if !OPT_DISABLE_EZ80
+  &ez80_port,
 #endif
 #if !OPT_DISABLE_Z80N
   &z80n_port,
 #endif
 #if !OPT_DISABLE_R800
   &r800_port,
-#endif
-#if !OPT_DISABLE_AVR
-  &avr_port,
 #endif
 #if !OPT_DISABLE_DS390
   &ds390_port,
@@ -378,6 +392,9 @@ static PORT *_ports[] = {
 #endif
 #if !OPT_DISABLE_F8
   &f8_port,
+#endif
+#if !OPT_DISABLE_F8L
+  &f8l_port,
 #endif
 };
 
@@ -647,6 +664,7 @@ setDefaultOptions (void)
   options.model = port->general.default_model;
   options.nostdlib = 0;
   options.nostdinc = 0;
+  options.norestartseqatomics = false;
   options.verbose = 0;
   options.std_sdcc = 1;         /* enable SDCC language extensions */
   options.std_c95 = 1;
@@ -673,6 +691,7 @@ setDefaultOptions (void)
   optimize.loopInvariant = 1;
   optimize.loopInduction = 1;
   options.max_allocs_per_node = 3000;
+  optimize.purity = true;
   optimize.lospre = 1;
   optimize.allow_unsafe_read = 0;
   optimize.genconstprop = 1;
@@ -1222,6 +1241,12 @@ parseCmdLine (int argc, char **argv)
             {
               optimize.codeSpeed = 0;
               optimize.codeSize = 1;
+              continue;
+            }
+
+          if (strcmp (argv[i], OPTION_NO_PURITY) == 0)
+            {
+              optimize.purity = 0;
               continue;
             }
 
@@ -1948,6 +1973,8 @@ linkEdit (char **envp)
         {
           WRITE_SEG_LOC ("_CODE", options.code_loc);
           WRITE_SEG_LOC ("_DATA", options.data_loc);
+          if (TARGET_RABBIT_LIKE)
+            WRITE_SEG_LOC ("_XDATA", options.xdata_loc);
         }
 
       /* If the port has any special linker area declarations, get 'em */
@@ -2528,7 +2555,7 @@ setIncludePath (void)
 
       tempSet = processStrSet (dataDirsSet, NULL, INCLUDE_DIR_SUFFIX, NULL);
       includeDirsSet = processStrSet (tempSet, NULL, DIR_SEPARATOR_STRING, NULL);
-      if (TARGET_IS_RABBIT) // Rabbits have a shared include directory.
+      if (TARGET_RABBIT_LIKE) // Rabbits have a shared include directory.
         includeDirsSet = processStrSet (includeDirsSet, NULL, "rab", NULL);
       else
         includeDirsSet = processStrSet (includeDirsSet, NULL, port->target, NULL);
@@ -2730,7 +2757,7 @@ doPrintSearchDirs (void)
 static void
 sig_handler (int signal)
 {
-  char *sig_string;
+  const char *sig_string;
 
   switch (signal)
     {
@@ -2869,13 +2896,34 @@ main (int argc, char **argv, char **envp)
 
   if (fullSrcFileName || options.c1mode)
     {
-      preProcess (envp);
-
       initSymt ();
       initiCode ();
       initCSupport ();
       initBuiltIns ();
       initPeepHole ();
+
+      // Emit preamble for declarations for port-specific built-in functions.
+      unsigned L;
+      if (port->c_preamble && (L = strlen (port->c_preamble))!=0)
+        {
+          int p[2];
+          FILE *preamble;
+#ifdef _WIN32
+          wassert (!_pipe (p, L+1, _O_BINARY));
+#else
+          wassert (!pipe (p));
+#endif
+          preamble = fdopen (p[1], "w");
+          wassert (preamble);
+          fprintf (preamble, port->c_preamble);
+          fclose (preamble);
+          yyin = fdopen (p[0], "r");
+          wassert (yyin);
+          yyparse ();
+          fclose (yyin);
+        }
+
+      preProcess (envp); // Sets yyin to pipe from preprocessor
 
       if (options.verbose)
         printf ("sdcc: Generating code...\n");
@@ -2897,6 +2945,32 @@ main (int argc, char **argv, char **envp)
 
       if (fatalError)
         exit (EXIT_FAILURE);
+
+      for (int i = 0; i < HASHTAB_SIZE; i++)
+        {
+          for (bucket *chain = SymbolTab[i]; chain; chain = chain->next)
+            {
+              symbol *sym = (symbol *)chain->sym;
+              if (sym->level)
+                continue;
+              // Check for arrays of unknown size that get size 1 due to an implicit initializer.
+              if (IS_ARRAY (sym->type) && !IS_EXTERN (sym->etype) && DCL_ARRAY_LENGTH_TYPE (sym->type) == ARRAY_LENGTH_UNKNOWN)
+                {
+                  wassert (!DCL_ELEM (sym->type));
+                  werrorfl (sym->fileDef, sym->lineDef, W_INCOMPLETE_ARRAY_IMPLICIT_1, sym->name);
+                  DCL_ARRAY_LENGTH_TYPE (sym->type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (sym->type) = 1;
+                }
+              // Check for extern inline function for which no non-inline definition has been emitted yet.
+              if (IS_FUNC (sym->type) && IS_EXTERN (sym->etype) && IS_INLINE (sym->etype) && !sym->generated)
+                {
+                  if (!sym->funcTree)
+                    werrorfl (sym->fileDef, sym->lineDef, E_EXTERN_INLINE_NO_DEF, sym->name);
+                  else
+                    fprintf (stderr, "Internal issue for function %s: todo: implement emission of definition for inline function after extern declaration.\n", sym->name);
+                }
+            }
+        }
 
       if (port->general.do_glue != NULL)
         (*port->general.do_glue) ();

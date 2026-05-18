@@ -1,7 +1,7 @@
 /* st8adr.c */
 
 /*
- *  Copyright (C) 2010  Alan R. Baldwin
+ *  Copyright (C) 2010-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -63,8 +63,7 @@
 int rcode;
 
 int
-addr(esp)
-struct expr *esp;
+addr(struct expr *esp)
 {
 	int c;
 
@@ -74,6 +73,7 @@ struct expr *esp;
 		esp->e_mode = S_IMM;
 	} else
 	if (c == '[') {
+		/* [___] */
 		if (addr1(esp) == S_SHORT) {
 			esp->e_mode = S_INB;
 		} else {
@@ -86,6 +86,7 @@ struct expr *esp;
 	} else
 	if (c == '(') {
 		if ((rcode = admode(REG)) != 0) {
+			/* (R) */
 			rcode = rcode & 0xFF;
 			esp->e_mode = S_IX;
 			if (getnb() != ')') {
@@ -93,9 +94,12 @@ struct expr *esp;
 			}
 		} else {
 			if ((c = getnb()) == '[') {
+				/* ([___]) */
 				if (addr1(esp) == S_SHORT) {
+					/* Short <- '*' */
 					esp->e_mode = S_INIXB;
 				} else {
+					/* Long */
 					esp->e_mode = S_INIX;
 				}
 				if (getnb() != ']') {
@@ -119,6 +123,7 @@ struct expr *esp;
 			if (getnb() != ')') {
 				aerr();
 			}
+			/* .b, .w, and .e Check After ')' */
 			addrsl(esp);
 		}
 	} else {
@@ -130,12 +135,45 @@ struct expr *esp;
 			addr1(esp);
 		}
 	}
+	/*
+	 * Development Addressing Mode Checking
+	 */
+#if 0
+	if (pass == 2) {
+		fprintf(stderr, "Addressing Mode ");
+		switch(esp->e_mode) {
+		case S_IMM:	fprintf(stderr, "S_IMM:' #arg ' arg = %X", esp->e_addr);	break;
+		case S_LONG:	fprintf(stderr, "S_LONG:' arg ' arg = %X", esp->e_addr);	break;
+		case S_SHORT:	fprintf(stderr, "S_SHORT:' *arg ' arg = %X", esp->e_addr);	break;
+		case S_IN:	fprintf(stderr, "S_IN:' [arg] ' arg = %X", esp->e_addr);	break;
+		case S_INB:	fprintf(stderr, "S_INB:' [*arg] ' arg = %X", esp->e_addr);	break;
+		case S_REG:	fprintf(stderr, "S_REG:' R ' rcode = %d", rcode);		break;
+		case S_IXR:	fprintf(stderr, "S_IXR:' (R) ' rcode = %d", rcode);		break;
+		case S_IX:	fprintf(stderr, "S_IX:' (arg,R) ' arg = %X, rcode = %d", esp->e_addr, rcode);	break;
+		case S_IXB:	fprintf(stderr, "S_IXB:' (*arg,R) ' arg = %X, rcode = %d", esp->e_addr, rcode);	break;
+		case S_INIX:
+			if (rcode != 0) {
+				fprintf(stderr, "S_INIX' ([arg],R) ' arg = %X, rcode = %d", esp->e_addr, rcode);	break;	
+			} else {
+				fprintf(stderr, "S_INIX' ([arg]) ' arg = %X", esp->e_addr);	break;
+			}
+		case S_INIXB:
+			if (rcode != 0) {
+				fprintf(stderr, "S_INIXB:' ([*arg],R) ' arg = %X, rcode = %d", esp->e_addr, rcode);	break;	
+			} else {
+				fprintf(stderr, "S_INIXB:' ([*arg]) ' arg = %X", esp->e_addr); break;
+			}
+		default:	fprintf(stderr, "Bad");	break;
+		}
+		fprintf(stderr, "\n");
+	}
+#endif
+
 	return (esp->e_mode);
 }
 
 int
-addr1(esp)
-struct expr *esp;
+addr1(struct expr *esp)
 {
 	int c;
 
@@ -151,8 +189,7 @@ struct expr *esp;
 }
 
 int
-addrsl(esp)
-struct expr *esp;
+addrsl(struct expr *esp)
 {
 	int c, d;
 
@@ -171,13 +208,29 @@ struct expr *esp;
 }
 
 /*
+ * When building a table that has variations of a common
+ * symbol always start with the most complex symbol first.
+ * for example if x, x+, and x++ are in the same table
+ * the order should be x++, x+, and then x.  The search
+ * order is then most to least complex.
+ */
+
+/*
+ * When searching symbol tables that contain characters
+ * not of type LTR16, eg with '-' or '+', always search
+ * the more complex symbol tables first. For example:
+ * searching for x+ will match the first part of x++,
+ * a false match if the table with x+ is searched
+ * before the table with x++.
+ */
+
+/*
  * Enter admode() to search a specific addressing mode table
  * for a match. Return the addressing value on a match or
  * zero for no match.
  */
 int
-admode(sp)
-struct adsym *sp;
+admode(struct adsym *sp)
 {
 	char *ptr;
 	int i;
@@ -201,8 +254,7 @@ struct adsym *sp;
  *      srch --- does string match ?
  */
 int
-srch(str)
-char *str;
+srch(char *str)
 {
 	char *ptr;
 	ptr = ip;

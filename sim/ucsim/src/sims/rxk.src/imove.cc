@@ -340,6 +340,21 @@ cl_rxk::LD_iIXd_HL(t_mem code)
 }
 
 int
+cl_rxk::LD_iIRd_HL(t_mem code)
+{
+  class cl_cell16 *ir= cIR;
+  if (cIR == &cIX)
+    ir= &cHL;
+  i8_t d= fetch();
+  u16_t a= ir->get() + d;
+  rwas->write(a, rL);
+  rwas->write(a+1, rH);
+  vc.wr+= 2;
+  tick5p1(10);
+  return resGO;
+}
+
+int
 cl_rxk::LD_iSPn_HL(t_mem code)
 {
   u8_t n= fetch();
@@ -558,10 +573,11 @@ cl_rxk::ld_imn_ss(u16_t src)
 int
 cl_rxk::ldp_irp_rp(u16_t addr, u16_t src)
 {
-  t_addr a= ((u32_t)rA << 16) + addr;
+  u32_t rAl= rA & 0xf;
+  t_addr a= ((u32_t)rAl << 16) + addr;
   mem->phwrite(a, src&0xff);
   addr++;
-  a= ((u32_t)rA << 16) + addr; // LDP wraps around 64k page boundary
+  a= ((u32_t)rAl << 16) + addr; // LDP wraps around 64k page boundary
   mem->phwrite(a, (src>>8)&0xff);
   vc.wr+= 2;
   tick(11);
@@ -571,10 +587,11 @@ cl_rxk::ldp_irp_rp(u16_t addr, u16_t src)
 int
 cl_rxk::ldp_rp_irp(class cl_cell16 &dest, u16_t addr)
 {
-  t_addr a= ((u32_t)rA >> 16) + addr;
+  u32_t rAl= rA & 0xf;
+  t_addr a= ((u32_t)rAl << 16) + addr;
   u8_t l= mem->phread(a);
   addr++;
-  a= ((u32_t)rA >> 16) + addr;
+  a= ((u32_t)rAl << 16) + addr;
   u8_t h= mem->phread(a);
   dest.W(h*256+l);
   vc.rd+= 2;
@@ -831,10 +848,10 @@ cl_r4k::ld_irr_iird(class cl_cell16 &ir)
   u16_t a= ir.get();
   i8_t d= fetch();
   a+= d;
-  v= (v>>8) + rwas->read(a++);
-  v= (v>>8) + rwas->read(a++);
-  v= (v>>8) + rwas->read(a++);
-  v= (v>>8) + rwas->read(a);
+  v+= rwas->read(a++);
+  v+= rwas->read(a++) << 8;
+  v+= rwas->read(a++) << 16;
+  v+= rwas->read(a  ) << 24;
   vc.rd+= 4;
   destIRR()->W(v);
   tick5p1(14);
@@ -983,14 +1000,17 @@ cl_r4k::PUSH_IRR(t_mem code)
 int
 cl_r4k::LDF_IRR_iLMN(t_mem code)
 {
-  u32_t v= 0;
-  t_addr a= fetch();
-  a<<= 8; a+= fetch();
-  a<<= 8; a+= fetch();
-  v+= mem->phread(a); a= (a+1)&0xffffff;
-  v<<= 8; v+= mem->phread(a); a= (a+1)&0xffffff;
-  v<<= 8; v+= mem->phread(a); a= (a+1)&0xffffff;
-  v<<= 8; v+= mem->phread(a);
+  u32_t v, v0, v1, v2, v3;
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
+  v0= mem->phread(a); a= (a+1)&0xffffff;
+  v1= mem->phread(a); a= (a+1)&0xffffff;
+  v2= mem->phread(a); a= (a+1)&0xffffff;
+  v3= mem->phread(a);
+  v= (v3<<24)|(v2<<16)|(v1<<8)|(v0);
   vc.rd+= 4;
   destIRR()->write(v);
   tick(18);
@@ -1001,13 +1021,15 @@ int
 cl_r4k::LDF_iLMN_IRR(t_mem code)
 {
   u32_t v= cIRR->get();
-  t_addr a= fetch();
-  a<<= 8; a+= fetch();
-  a<<= 8; a+= fetch();
-  mem->phwrite(a++, v>>24); a&= 0xffffff;
-  mem->phwrite(a++, v>>16); a&= 0xffffff;
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
+  mem->phwrite(a++, v    ); a&= 0xffffff;
   mem->phwrite(a++, v>>8 ); a&= 0xffffff;
-  mem->phwrite(a  , v    );
+  mem->phwrite(a++, v>>16); a&= 0xffffff;
+  mem->phwrite(a  , v>>24);
   vc.wr+= 4;
   tick(22);
   return resGO;
@@ -1017,11 +1039,13 @@ int
 cl_r4k::LDF_iLMN_HL(t_mem code)
 {
   u16_t v= rHL;
-  t_addr a= fetch();
-  a<<= 8; a+= fetch();
-  a<<= 8; a+= fetch();
-  mem->phwrite(a++, v>>8 ); a&= 0xffffff;
-  mem->phwrite(a  , v    );
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
+  mem->phwrite(a++, v   ); a&= 0xffffff;
+  mem->phwrite(a  , v>>8);
   vc.wr+= 2;
   tick5m2(14);
   return resGO;
@@ -1030,12 +1054,15 @@ cl_r4k::LDF_iLMN_HL(t_mem code)
 int
 cl_r4k::LDF_HL_iLMN(t_mem code)
 {
-  u16_t v= 0;
-  t_addr a= fetch();
-  a<<= 8; a+= fetch();
-  a<<= 8; a+= fetch();
-  v+= mem->phread(a); a= (a+1)&0xffffff;
-  v<<= 8; v+= mem->phread(a);
+  u16_t v, v0, v1;
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
+  v0= mem->phread(a); a= (a+1)&0xffffff;
+  v1= mem->phread(a);
+  v= (v1<<8)+v0;
   vc.rd+= 2;
   destHL().W(v);
   tick(12);
@@ -1045,9 +1072,11 @@ cl_r4k::LDF_HL_iLMN(t_mem code)
 int
 cl_r4k::LDF_ilmn_A(t_mem code)
 {
-  u32_t a= fetch();
-  a+= fetch()*256;
-  a+= fetch()*256*256;
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
   mem->phwrite(a, rA);
   tick(11);
   return resGO;
@@ -1056,9 +1085,11 @@ cl_r4k::LDF_ilmn_A(t_mem code)
 int
 cl_r4k::LDF_A_ilmn(t_mem code)
 {
-  u32_t a= fetch();
-  a+= fetch()*256;
-  a+= fetch()*256*256;
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
   u8_t v= mem->phread(a);
   destA().W(v);
   tick(10);
@@ -1068,12 +1099,15 @@ cl_r4k::LDF_A_ilmn(t_mem code)
 int
 cl_r4k::ldf_pd_ilmn(class cl_cell32 &pd)
 {
-  u32_t a= fetch();
-  a+= fetch()*256;
-  a+= fetch()*256*256;
-  u32_t v= mem->phread(a++);
-  v+= mem->phread(a++)<<8;
-  v+= mem->phread(a++)<<16;
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
+  u32_t v;
+  v = mem->phread(a++)    ; a&= 0xffffff;
+  v+= mem->phread(a++)<< 8; a&= 0xffffff;
+  v+= mem->phread(a++)<<16; a&= 0xffffff;
   v+= mem->phread(a  )<<24;
   vc.rd+= 4;
   pd.W(v);
@@ -1084,12 +1118,14 @@ cl_r4k::ldf_pd_ilmn(class cl_cell32 &pd)
 int
 cl_r4k::ldf_ilmn_ps(u32_t ps)
 {
-  u32_t a= fetch();
-  a+= fetch()*256;
-  a+= fetch()*256*256;
-  mem->phwrite(a++, ps);
-  mem->phwrite(a++, ps>>8);
-  mem->phwrite(a++, ps>>16);
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
+  mem->phwrite(a++, ps    ); a&= 0xffffff;
+  mem->phwrite(a++, ps>>8 ); a&= 0xffffff;
+  mem->phwrite(a++, ps>>16); a&= 0xffffff;
   mem->phwrite(a  , ps>>24);
   vc.wr+= 4;
   tick(22);
@@ -1099,10 +1135,13 @@ cl_r4k::ldf_ilmn_ps(u32_t ps)
 int
 cl_r4k::ldf_rr_ilmn(class cl_cell16 &rr)
 {
-  u32_t a= fetch();
-  a+= fetch()*256;
-  a+= fetch()*256*256;
-  u16_t v= mem->phread(a++);
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
+  u16_t v;
+  v = mem->phread(a++)   ; a&= 0xffffff;
   v+= mem->phread(a++)<<8;
   vc.rd+= 2;
   rr.W(v);
@@ -1113,10 +1152,12 @@ cl_r4k::ldf_rr_ilmn(class cl_cell16 &rr)
 int
 cl_r4k::ldf_ilmn_rr(u16_t rr)
 {
-  u32_t a= fetch();
-  a+= fetch()*256;
-  a+= fetch()*256*256;
-  mem->phwrite(a++, rr);
+  t_addr n, m, l, a;
+  n= fetch();
+  m= fetch();
+  l= fetch();
+  a= (l<<16)+(m<<8)+(n);
+  mem->phwrite(a++, rr   ); a&= 0xffffff;
   mem->phwrite(a  , rr>>8);
   vc.wr+= 2;
   tick(16);
@@ -1135,10 +1176,12 @@ cl_r4k::ld_irr_ips_hl(t_mem code)
     case 0x30: ps= &cPZ; break;
     }
   u32_t p= ps->get();
-  u32_t v   = mem->pxread(px16se(p, rHL+0));
-  v<<= 8; v+= mem->pxread(px16se(p, rHL+1));
-  v<<= 8; v+= mem->pxread(px16se(p, rHL+2));
-  v<<= 8; v+= mem->pxread(px16se(p, rHL+3));
+  u32_t v, v0, v1, v2, v3;
+  v0= mem->pxread(px16se(p, rHL+0));
+  v1= mem->pxread(px16se(p, rHL+1));
+  v2= mem->pxread(px16se(p, rHL+2));
+  v3= mem->pxread(px16se(p, rHL+3));
+  v= (v3<<24)|(v2<<16)|(v1<<8)|v0;
   vc.rd+= 4;
   destIRR()->write(v);
   tick5p1(13);
@@ -1159,10 +1202,12 @@ cl_r4k::ld_irr_ips_d(t_mem code)
     }
   u32_t p= ps->get();
   u8_t d= fetch();
-  u32_t v   = mem->pxread(px8se(p, d)+0);
-  v<<= 8; v+= mem->pxread(px8se(p, d)+1);
-  v<<= 8; v+= mem->pxread(px8se(p, d)+2);
-  v<<= 8; v+= mem->pxread(px8se(p, d)+3);
+  u32_t v, v0, v1, v2, v3;
+  v0= mem->pxread(px8se(p, d)+0);
+  v1= mem->pxread(px8se(p, d)+1);
+  v2= mem->pxread(px8se(p, d)+2);
+  v3= mem->pxread(px8se(p, d)+3);
+  v= (v3<<24)|(v2<<16)|(v1<<8)|v0;
   vc.rd+= 4;
   destIRR()->write(v);
   tick5p1(13);
@@ -1182,8 +1227,8 @@ cl_r4k::ld_ips_hl_irr(t_mem code)
     }
   u32_t p= ps->get();
   u32_t v= cIRR->get();
-  mem->pxwrite(px16se(p, rHL+0), v);
-  mem->pxwrite(px16se(p, rHL+1), v>>8);
+  mem->pxwrite(px16se(p, rHL+0), v    );
+  mem->pxwrite(px16se(p, rHL+1), v>>8 );
   mem->pxwrite(px16se(p, rHL+2), v>>16);
   mem->pxwrite(px16se(p, rHL+3), v>>24);
   vc.wr+= 4;
@@ -1205,8 +1250,8 @@ cl_r4k::ld_ips_d_irr(t_mem code)
   u32_t p= ps->get();
   u32_t v= cIRR->get();
   u8_t d= fetch();
-  mem->pxwrite(px16se(p, d)+0, v);
-  mem->pxwrite(px16se(p, d)+1, v>>8);
+  mem->pxwrite(px16se(p, d)+0, v    );
+  mem->pxwrite(px16se(p, d)+1, v>>8 );
   mem->pxwrite(px16se(p, d)+2, v>>16);
   mem->pxwrite(px16se(p, d)+3, v>>24);
   vc.wr+= 4;

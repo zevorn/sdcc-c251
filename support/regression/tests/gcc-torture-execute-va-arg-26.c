@@ -5,7 +5,6 @@ va-arg-26.c from the execute part of the gcc torture tests.
 #include <testfwk.h>
 
 #pragma disable_warning 85
-#pragma disable_warning 93
 
 #include <stdarg.h>
 

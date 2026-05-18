@@ -7,7 +7,6 @@
 void
 testFloatOp(void)
 {
-#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
     volatile float a,b;
     float result;
 
@@ -22,6 +21,5 @@ testFloatOp(void)
     result = a / b;
     ASSERT( result < a );
     ASSERT( result >= 0.0 );
-#endif
 }
 

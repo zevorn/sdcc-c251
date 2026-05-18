@@ -34,14 +34,14 @@ _divschar (signed char x, signed char y)
 }
 
 signed int
-_divuschar (unsigned char x, unsigned char y)
+_divuschar (unsigned char x, signed char y)
 {
-  return ((int)((signed char)x) / (int)y);
+  return ((int)x / (int)y);
 }
 
-unsigned int
-_divsuchar (signed char x, signed char y)
+signed int
+_divsuchar (signed char x, unsigned char y)
 {
-  return ((int)((unsigned char)x) / (int)y);
+  return ((int)x / (int)y);
 }
 

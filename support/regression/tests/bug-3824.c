@@ -19,3 +19,8 @@ char f(char *c)
 	c[0] = 0;
 }
 
+void testBug(void)
+{
+	g();
+}
+

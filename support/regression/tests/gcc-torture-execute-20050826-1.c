@@ -32,9 +32,9 @@ void
 bar (struct A *x)
 {
   size_t i;
-  ASSERTFALSE (memcmp (x, "\1HELLO\1", sizeof "\1HELLO\1"));
+  ASSERT (!memcmp (x, "\1HELLO\1", sizeof "\1HELLO\1"));
   for (i = 0; i < sizeof (x->a4); i++)
-    ASSERTFALSE (x->a4[i]);
+    ASSERT (!x->a4[i]);
 }
 
 int

@@ -1,6 +1,9 @@
 #ifndef __TESTFWK_H
 #define __TESTFWK_H   1
 
+// suppress warning about double and long double as no target supports them
+#pragma disable_warning 93
+
 // This is used to avoid repeating the same checks over and over again, also much easier to maintain.
 #if defined(__SDCC_pdk13)
   #define SDCC_PDK 13
@@ -10,6 +13,13 @@
   #define SDCC_PDK 15
 #elif defined(__SDCC_pdk16)
   #define SDCC_PDK 16
+#endif
+
+#if defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
+#define SDCC_MOS
+#if defined(__SDCC_STACK_AUTO)
+#define SDCC_SMALL_STACK 256
+#endif
 #endif
 
 // This macro allows easy check for multiple devices: SDCC_PDK_BITS(<=13), SDCC_PDK_BITS(>=14)
@@ -43,7 +53,7 @@ void __printf(const char *szFormat, ...);
  #define _STATMEM
 #endif
 
-#if defined(__SDCC_stm8) || defined(__SDCC_f8) || defined(PORT_HOST)
+#if defined(__SDCC_stm8) || defined(__SDCC_f8) || defined(__SDCC_f8l) || defined(PORT_HOST)
 #define __data
 #define __idata
 #define __pdata
@@ -54,7 +64,7 @@ void __printf(const char *szFormat, ...);
 #define __reentrant
 #endif
 
-#if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka) || defined(__SDCC_sm83) || defined(__SDCC_tlcs90) || defined(__SDCC_ez80_z80) || defined(__SDCC_z80n) || defined(__SDCC_r800)
+#if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k) || defined(__SDCC_sm83) || defined(__SDCC_tlcs90) || defined(__SDCC_ez80) || defined(__SDCC_z80n) || defined(__SDCC_r800)
 #define __data
 #define __idata
 #define __pdata
@@ -64,6 +74,7 @@ void __printf(const char *szFormat, ...);
 #define __far
 #define __reentrant
 #else
+#define __dynamicc
 #define __smallc
 #define __z88dk_fastcall
 #ifndef __SDCC_stm8
@@ -121,9 +132,6 @@ __code const char *__getSuiteName (void);
 void __runSuite (void);
 
 #define ASSERT(_a)  (++__numTests, (_a) ? (void)0 : __fail ("Assertion failed", #_a, __FILE__, __LINE__))
-#define ASSERTFALSE(_a)  ASSERT(!(_a))
-#define FAIL()      FAILM("Failure")
-#define FAILM(_a)   __fail(_a, #_a, __FILE__, __LINE__)
 
 #define UNUSED(_a)  if (_a) { }
 

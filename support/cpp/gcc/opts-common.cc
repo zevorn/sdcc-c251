@@ -1,5 +1,5 @@
 /* Command line option handling.
-   Copyright (C) 2006-2022 Free Software Foundation, Inc.
+   Copyright (C) 2006-2023 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define INCLUDE_STRING
 #include "config.h"
 #include "system.h"
 #include "intl.h"
@@ -25,6 +26,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "options.h"
 #include "diagnostic.h"
 #include "spellcheck.h"
+//sdcpp #include "opts-jobserver.h"
 
 #define untested() { fprintf (stderr, "@@#\n@@@:%s:%d:%s\n", __FILE__, __LINE__, __func__); }
 
@@ -116,17 +118,16 @@ find_opt (const char *input, unsigned int lang_mask)
 	  && (input[opt->opt_len] == '\0' || (opt->flags & CL_JOINED)))
 	{
 	  /* If language is OK, return it.  */
-	  if (opt->flags & lang_mask){
+	  if (opt->flags & lang_mask)
 	    return mn;
-     }else if (remapping_prefix_p (opt)) {untested();
+
+	  if (remapping_prefix_p (opt))
 	    return OPT_SPECIAL_unknown;
 
 	  /* If we haven't remembered a prior match, remember this
 	     one.  Any prior match is necessarily better.  */
-     }else if (match_wrong_lang == OPT_SPECIAL_unknown){
+	  if (match_wrong_lang == OPT_SPECIAL_unknown)
 	    match_wrong_lang = mn;
-	  }else{ untested();
-	  }
 	}
 
       /* Try the next possibility.  This is cl_options_count if there
@@ -136,7 +137,7 @@ find_opt (const char *input, unsigned int lang_mask)
   while (mn != cl_options_count);
 
   if (match_wrong_lang == OPT_SPECIAL_unknown && input[0] == '-')
-    { untested();
+    {
       /* Long options, starting "--", may be abbreviated if the
 	 abbreviation is unambiguous.  This only applies to options
 	 not taking a joined argument, and abbreviations of "--option"
@@ -145,7 +146,7 @@ find_opt (const char *input, unsigned int lang_mask)
       size_t cmp_len = strlen (input);
       while (mnc < cl_options_count
 	     && strncmp (input, cl_options[mnc].opt_text + 1, cmp_len) == 0)
-	{ untested();
+	{
 	  /* Option matching this abbreviation.  OK if it is the first
 	     match and that does not take a joined argument, or the
 	     second match, taking a joined argument and with only '='
@@ -180,12 +181,12 @@ find_opt (const char *input, unsigned int lang_mask)
 
 HOST_WIDE_INT
 integral_argument (const char *arg, int *err, bool byte_size_suffix)
-{ untested();
+{
   if (!err)
     err = &errno;
 
   if (!ISDIGIT (*arg))
-    { untested();
+    {
       *err = EINVAL;
       return -1;
     }
@@ -202,13 +203,13 @@ integral_argument (const char *arg, int *err, bool byte_size_suffix)
      errno to ERANGE).  */
 
   if (end && *end)
-    { untested();
+    {
       if (!byte_size_suffix)
-	{ untested();
+	{
 	  errno = 0;
 	  value = strtoull (arg, &end, 0);
 	  if (*end)
-	    { untested();
+	    {
 	      if (errno)
 		*err = errno;
 	      else
@@ -249,7 +250,7 @@ integral_argument (const char *arg, int *err, bool byte_size_suffix)
 	unit = HOST_WIDE_INT_UC (1024) * 1024 * 1024 * 1024 * 1024
 	  * 1024;
       else
-	{ untested();
+	{
 	  /* This could mean an unknown suffix or a bad prefix, like
 	     "+-1".  */
 	  *err = EINVAL;
@@ -258,7 +259,7 @@ integral_argument (const char *arg, int *err, bool byte_size_suffix)
     }
 
   if (unit)
-    { untested();
+    {
       unsigned HOST_WIDE_INT prod = value * unit;
       value = prod < value ? HOST_WIDE_INT_M1U : prod;
     }
@@ -289,7 +290,7 @@ option_ok_for_language (const struct cl_option *option,
 static bool
 enum_arg_ok_for_language (const struct cl_enum_arg *enum_arg,
 			  unsigned int lang_mask)
-{ untested();
+{
   return (lang_mask & CL_DRIVER) || !(enum_arg->flags & CL_ENUM_DRIVER_ONLY);
 }
 
@@ -301,7 +302,7 @@ static int
 enum_arg_to_value (const struct cl_enum_arg *enum_args,
 		   const char *arg, size_t len, HOST_WIDE_INT *value,
 		   unsigned int lang_mask)
-{ untested();
+{
   unsigned int i;
 
   for (i = 0; enum_args[i].arg != NULL; i++)
@@ -310,7 +311,7 @@ enum_arg_to_value (const struct cl_enum_arg *enum_args,
 	    && enum_args[i].arg[len] == '\0')
 	 : strcmp (arg, enum_args[i].arg) == 0)
 	&& enum_arg_ok_for_language (&enum_args[i], lang_mask))
-      { untested();
+      {
 	*value = enum_args[i].value;
 	return i;
       }
@@ -325,7 +326,7 @@ enum_arg_to_value (const struct cl_enum_arg *enum_args,
 bool
 opt_enum_arg_to_value (size_t opt_index, const char *arg,
 		       int *value, unsigned int lang_mask)
-{ untested();
+{
   const struct cl_option *option = &cl_options[opt_index];
 
   gcc_assert (option->var_type == CLVC_ENUM);
@@ -333,7 +334,7 @@ opt_enum_arg_to_value (size_t opt_index, const char *arg,
   HOST_WIDE_INT wideval;
   if (enum_arg_to_value (cl_enums[option->var_enum].values, arg, 0,
 			 &wideval, lang_mask) >= 0)
-    { untested();
+    {
       *value = wideval;
       return true;
     }
@@ -351,14 +352,14 @@ opt_enum_arg_to_value (size_t opt_index, const char *arg,
 bool
 enum_value_to_arg (const struct cl_enum_arg *enum_args,
 		   const char **argp, int value, unsigned int lang_mask)
-{ untested();
+{
   unsigned int i;
 
   for (i = 0; enum_args[i].arg != NULL; i++)
     if (enum_args[i].value == value
 	&& (enum_args[i].flags & CL_ENUM_CANONICAL)
 	&& enum_arg_ok_for_language (&enum_args[i], lang_mask))
-      { untested();
+      {
 	*argp = enum_args[i].arg;
 	return true;
       }
@@ -366,7 +367,7 @@ enum_value_to_arg (const struct cl_enum_arg *enum_args,
   for (i = 0; enum_args[i].arg != NULL; i++)
     if (enum_args[i].value == value
 	&& enum_arg_ok_for_language (&enum_args[i], lang_mask))
-      { untested();
+      {
 	*argp = enum_args[i].arg;
 	return false;
       }
@@ -494,7 +495,7 @@ void
 add_misspelling_candidates (auto_vec<char *> *candidates,
 			    const struct cl_option *option,
 			    const char *opt_text)
-{ untested();
+{
   gcc_assert (candidates);
   gcc_assert (option);
   gcc_assert (opt_text);
@@ -502,8 +503,9 @@ add_misspelling_candidates (auto_vec<char *> *candidates,
     return;
   candidates->safe_push (xstrdup (opt_text + 1));
   for (unsigned i = 0; i < ARRAY_SIZE (option_map); i++)
-    { untested();
+    {
       const char *opt0 = option_map[i].opt0;
+      const char *opt1 = option_map[i].opt1;
       const char *new_prefix = option_map[i].new_prefix;
       size_t new_prefix_len = strlen (new_prefix);
 
@@ -511,9 +513,10 @@ add_misspelling_candidates (auto_vec<char *> *candidates,
 	continue;
 
       if (strncmp (opt_text, new_prefix, new_prefix_len) == 0)
-	{ untested();
-	  char *alternative = concat (opt0 + 1, opt_text + new_prefix_len,
-				      NULL);
+	{
+	  char *alternative
+	    = concat (opt0 + 1, opt1 ? " " : "", opt1 ? opt1 : "",
+		      opt_text + new_prefix_len, NULL);
 	  candidates->safe_push (alternative);
 	}
     }
@@ -522,7 +525,7 @@ add_misspelling_candidates (auto_vec<char *> *candidates,
      include also '--param key=value'.  */
   const char *prefix = "--param=";
   if (strstr (opt_text, prefix) == opt_text)
-    { untested();
+    {
       char *param = xstrdup (opt_text + 1);
       gcc_assert (param[6] == '=');
       param[6] = ' ';
@@ -578,7 +581,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 	      || (argv[1] != NULL && strncmp (argv[1], opt1, opt1_len) == 0))
 	  && (!another_char_needed
 	      || argv[extra_args][optn_len] != 0))
-	{ untested();
+	{
 	  size_t arglen = strlen (argv[extra_args]);
 	  char *dup;
 
@@ -606,7 +609,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
   /* Reject negative form of switches that don't take negatives as
      unrecognized.  */
   if (!value && option->cl_reject_negative)
-    { untested();
+    {
       opt_index = OPT_SPECIAL_unknown;
       errors |= CL_ERR_NEGATIVE;
       arg = argv[0];
@@ -665,7 +668,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
       arg = argv[extra_args + 1];
       for (i = 0; i < separate_args; i++)
 	if (argv[extra_args + 1 + i] == NULL)
-	  { untested();
+	  {
 	    errors |= CL_ERR_MISSING_ARG;
 	    break;
 	  }
@@ -686,7 +689,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 
       if (new_opt_index == OPT_SPECIAL_ignore
 	  || new_opt_index == OPT_SPECIAL_warn_removed)
-	{ untested();
+	{
 	  gcc_assert (option->alias_arg == NULL);
 	  gcc_assert (option->neg_alias_arg == NULL);
 	  opt_index = new_opt_index;
@@ -701,7 +704,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 		      || new_option->cl_separate_alias);
 
 	  if (option->neg_alias_arg)
-	    { untested();
+	    {
 	      gcc_assert (option->alias_arg != NULL);
 	      gcc_assert (arg == NULL);
 	      gcc_assert (!option->cl_negative_alias);
@@ -712,7 +715,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 	      value = 1;
 	    }
 	  else if (option->alias_arg)
-	    { untested();
+	    {
 	      gcc_assert (value == 1);
 	      gcc_assert (arg == NULL);
 	      gcc_assert (!option->cl_negative_alias);
@@ -752,7 +755,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 
 	  /* Recheck for warnings and disabled options.  */
 	  if (option->warn_message)
-	    { untested();
+	    {
 	      gcc_assert (warn_message == NULL);
 	      warn_message = option->warn_message;
 	    }
@@ -766,7 +769,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
     errors |= CL_ERR_WRONG_LANG;
   else if (strcmp (option->opt_text, "-Werror=") == 0
 	   && strchr (opt_value, ',') == NULL)
-    { untested();
+    {
       /* Verify that -Werror argument is a valid warning
 	 for a language.  */
       char *werror_arg = xstrdup (opt_value + 6);
@@ -775,7 +778,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
       size_t warning_index = find_opt (werror_arg, lang_mask);
       free (werror_arg);
       if (warning_index != OPT_SPECIAL_unknown)
-	{ untested();
+	{
 	  const struct cl_option *warning_option
 	    = &cl_options[warning_index];
 	  if (!option_ok_for_language (warning_option, lang_mask))
@@ -785,7 +788,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 
   /* Convert the argument to lowercase if appropriate.  */
   if (arg && option->cl_tolower)
-    { untested();
+    {
       size_t j;
       size_t len = strlen (arg);
       char *arg_lower = XOBNEWVEC (&opts_obstack, char, len + 1);
@@ -798,7 +801,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 
   /* If the switch takes an integer argument, convert it.  */
   if (arg && (option->cl_uinteger || option->cl_host_wide_int))
-    { untested();
+    {
       int error = 0;
       value = *arg ? integral_argument (arg, &error, option->cl_byte_size) : 0;
       if (error)
@@ -812,40 +815,40 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 
   /* If the switch takes an enumerated argument, convert it.  */
   if (arg && (option->var_type == CLVC_ENUM))
-    { untested();
+    {
       const struct cl_enum *e = &cl_enums[option->var_enum];
 
       gcc_assert (option->var_value != CLEV_NORMAL || value == 1);
       if (option->var_value != CLEV_NORMAL)
-	{ untested();
+	{
 	  const char *p = arg;
 	  HOST_WIDE_INT sum_value = 0;
 	  unsigned HOST_WIDE_INT used_sets = 0;
 	  do
-	    { untested();
+	    {
 	      const char *q = strchr (p, ',');
 	      HOST_WIDE_INT this_value = 0;
 	      if (q && q == p)
-		{ untested();
+		{
 		  errors |= CL_ERR_ENUM_SET_ARG;
 		  break;
 		}
 	      int idx = enum_arg_to_value (e->values, p, q ? q - p : 0,
 					   &this_value, lang_mask);
 	      if (idx < 0)
-		{ untested();
+		{
 		  errors |= CL_ERR_ENUM_SET_ARG;
 		  break;
 		}
 
 	      HOST_WIDE_INT this_mask = 0;
 	      if (option->var_value == CLEV_SET)
-		{ untested();
+		{
 		  unsigned set = e->values[idx].flags >> CL_ENUM_SET_SHIFT;
 		  gcc_checking_assert (set >= 1
 				       && set <= HOST_BITS_PER_WIDE_INT);
 		  if ((used_sets & (HOST_WIDE_INT_1U << (set - 1))) != 0)
-		    { untested();
+		    {
 		      errors |= CL_ERR_ENUM_SET_ARG;
 		      break;
 		    }
@@ -856,7 +859,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 		      this_mask |= e->values[i].value;
 		}
 	      else
-		{ untested();
+		{
 		  gcc_assert (option->var_value == CLEV_BITSET
 			      && ((e->values[idx].flags >> CL_ENUM_SET_SHIFT)
 				  == 0));
@@ -876,7 +879,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 	    gcc_checking_assert (value == 0);
 	}
       else if (enum_arg_to_value (e->values, arg, 0, &value, lang_mask) >= 0)
-	{ untested();
+	{
 	  const char *carg = NULL;
 
 	  if (enum_value_to_arg (e->values, &carg, value, lang_mask))
@@ -923,9 +926,9 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
     {
       generate_canonical_option (opt_index, arg, value, decoded);
       if (separate_args > 1)
-	{ untested();
+	{
 	  for (i = 0; i < separate_args; i++)
-	    { untested();
+	    {
 	      if (argv[extra_args + 1 + i] == NULL)
 		  break;
 	      else
@@ -943,7 +946,7 @@ decode_cmdline_option (const char *const *argv, unsigned int lang_mask,
 
       /* Print the empty string verbally.  */
       if (len == 0)
-	{ untested();
+	{
 	  *p++ = '"';
 	  *p++ = '"';
 	}
@@ -1045,7 +1048,7 @@ decode_cmdline_options_to_array (unsigned int argc, const char **argv,
       /* Interpret "--param" "key=name" as "--param=key=name".  */
       const char *needle = "--param";
       if (i + 1 < argc && strcmp (opt, needle) == 0)
-	{ untested();
+	{
 	  const char *replacement
 	    = opts_concat (needle, "=", argv[i + 1], NULL);
 	  argv[++i] = replacement;
@@ -1055,7 +1058,7 @@ decode_cmdline_options_to_array (unsigned int argc, const char **argv,
 	 to happen here so that prune_options can handle -fdiagnostics-color
 	 specially.  */
       if (!strcmp (opt, "-fdiagnostics-plain-output"))
-	{ untested();
+	{
 	  /* If you have changed the default diagnostics output, and this new
 	     output is not appropriately "plain" (e.g., the change needs to be
 	     undone in order for the testsuite to work properly), then please do
@@ -1076,7 +1079,7 @@ decode_cmdline_options_to_array (unsigned int argc, const char **argv,
 	  opt_array = XRESIZEVEC (struct cl_decoded_option,
 				  opt_array, opt_array_len);
 	  for (int j = 0, nj; j < num_expanded; j += nj)
-	    { untested();
+	    {
 	      nj = decode_cmdline_option (expanded_args + j, lang_mask,
 					  &opt_array[num_decoded_options]);
 	      num_decoded_options++;
@@ -1114,7 +1117,8 @@ cancel_option (int opt_idx, int next_opt_idx, int orig_next_opt_idx)
   return false;
 }
 
-/* Filter out options canceled by the ones after them.  */
+/* Filter out options canceled by the ones after them, and related
+   rearrangement.  */
 
 static void
 prune_options (struct cl_decoded_option **decoded_options,
@@ -1127,6 +1131,8 @@ prune_options (struct cl_decoded_option **decoded_options,
     = XNEWVEC (struct cl_decoded_option, old_decoded_options_count);
   unsigned int i;
   const struct cl_option *option;
+  unsigned int options_to_prepend = 0;
+  unsigned int Wcomplain_wrong_lang_idx = 0;
   unsigned int fdiagnostics_color_idx = 0;
 
   /* Remove arguments which are negated by others after them.  */
@@ -1148,8 +1154,17 @@ prune_options (struct cl_decoded_option **decoded_options,
 	case OPT_SPECIAL_input_file:
 	  goto keep;
 
-	/* Do not save OPT_fdiagnostics_color_, just remember the last one.  */
+	/* Do not handle the following yet, just remember the last one.  */
+	case OPT_Wcomplain_wrong_lang:
+	  gcc_checking_assert (i != 0);
+	  if (Wcomplain_wrong_lang_idx == 0)
+	    ++options_to_prepend;
+	  Wcomplain_wrong_lang_idx = i;
+	  continue;
 	case OPT_fdiagnostics_color_:
+	  gcc_checking_assert (i != 0);
+	  if (fdiagnostics_color_idx == 0)
+	    ++options_to_prepend;
 	  fdiagnostics_color_idx = i;
 	  continue;
 
@@ -1193,15 +1208,29 @@ keep:
 	}
     }
 
-  if (fdiagnostics_color_idx >= 1)
-    { untested();
-      /* We put the last -fdiagnostics-color= at the first position
-	 after argv[0] so it can take effect immediately.  */
-      memmove (new_decoded_options + 2, new_decoded_options + 1,
-	       sizeof (struct cl_decoded_option) 
-	       * (new_decoded_options_count - 1));
-      new_decoded_options[1] = old_decoded_options[fdiagnostics_color_idx];
-      new_decoded_options_count++;
+  /* For those not yet handled, put (only) the last at a front position after
+     'argv[0]', so they can take effect immediately.  */
+  if (options_to_prepend)
+    {
+      const unsigned int argv_0 = 1;
+      memmove (new_decoded_options + argv_0 + options_to_prepend,
+	       new_decoded_options + argv_0,
+	       sizeof (struct cl_decoded_option)
+	       * (new_decoded_options_count - argv_0));
+      unsigned int options_prepended = 0;
+      if (Wcomplain_wrong_lang_idx != 0)
+	{
+	  new_decoded_options[argv_0 + options_prepended++]
+	    = old_decoded_options[Wcomplain_wrong_lang_idx];
+	  new_decoded_options_count++;
+	}
+      if (fdiagnostics_color_idx != 0)
+	{
+	  new_decoded_options[argv_0 + options_prepended++]
+	    = old_decoded_options[fdiagnostics_color_idx];
+	  new_decoded_options_count++;
+	}
+      gcc_checking_assert (options_to_prepend == options_prepended);
     }
 
   free (old_decoded_options);
@@ -1247,9 +1276,7 @@ handle_option (struct gcc_options *opts,
   for (i = 0; i < handlers->num_handlers; i++)
     if (option->flags & handlers->handlers[i].mask)
       {
-	 if(!handlers->handlers[i].handler){
-	    return false;
-	 }else if (!handlers->handlers[i].handler (opts, opts_set, decoded,
+	if (!handlers->handlers[i].handler (opts, opts_set, decoded,
 					    lang_mask, kind, loc,
 					    handlers, dc,
 					    handlers->target_option_override_hook))
@@ -1347,18 +1374,20 @@ generate_option_input_file (const char *file,
 const char *
 candidates_list_and_hint (const char *arg, char *&str,
 			  const auto_vec <const char *> &candidates)
-{ untested();
+{
   size_t len = 0;
   int i;
   const char *candidate;
   char *p;
+
+  gcc_assert (!candidates.is_empty ());
 
   FOR_EACH_VEC_ELT (candidates, i, candidate)
     len += strlen (candidate) + 1;
 
   str = p = XNEWVEC (char, len);
   FOR_EACH_VEC_ELT (candidates, i, candidate)
-    { untested();
+    {
       len = strlen (candidate);
       memcpy (p, candidate, len);
       p[len] = ' ';
@@ -1381,14 +1410,14 @@ cmdline_handle_error (location_t loc, const struct cl_option *option,
 		      unsigned int lang_mask)
 {
   if (errors & CL_ERR_DISABLED)
-    { untested();
+    {
       error_at (loc, "command-line option %qs"
 		     " is not supported by this configuration", opt);
       return true;
     }
 
   if (errors & CL_ERR_MISSING_ARG)
-    { untested();
+    {
       if (option->missing_argument_error)
 	error_at (loc, option->missing_argument_error, opt);
       else
@@ -1397,7 +1426,7 @@ cmdline_handle_error (location_t loc, const struct cl_option *option,
     }
 
   if (errors & CL_ERR_UINT_ARG)
-    { untested();
+    {
       if (option->cl_byte_size)
 	error_at (loc, "argument to %qs should be a non-negative integer "
 		  "optionally followed by a size unit",
@@ -1409,14 +1438,14 @@ cmdline_handle_error (location_t loc, const struct cl_option *option,
     }
 
   if (errors & CL_ERR_INT_RANGE_ARG)
-    { untested();
+    {
       error_at (loc, "argument to %qs is not between %d and %d",
 		option->opt_text, option->range_min, option->range_max);
       return true;
     }
 
   if (errors & CL_ERR_ENUM_SET_ARG)
-    { untested();
+    {
       const struct cl_enum *e = &cl_enums[option->var_enum];
       const char *p = arg;
       unsigned HOST_WIDE_INT used_sets = 0;
@@ -1424,11 +1453,11 @@ cmdline_handle_error (location_t loc, const struct cl_option *option,
       size_t second_opt_len = 0;
       errors = 0;
       do
-	{ untested();
+	{
 	  const char *q = strchr (p, ',');
 	  HOST_WIDE_INT this_value = 0;
 	  if (q && q == p)
-	    { untested();
+	    {
 	      arg = "";
 	      errors = CL_ERR_ENUM_ARG;
 	      break;
@@ -1436,7 +1465,7 @@ cmdline_handle_error (location_t loc, const struct cl_option *option,
 	  int idx = enum_arg_to_value (e->values, p, q ? q - p : 0,
 				       &this_value, lang_mask);
 	  if (idx < 0)
-	    { untested();
+	    {
 	      if (q == NULL)
 		q = strchr (p, '\0');
 	      char *narg = XALLOCAVEC (char, (q - p) + 1);
@@ -1448,7 +1477,7 @@ cmdline_handle_error (location_t loc, const struct cl_option *option,
 	    }
 
 	  if (option->var_value == CLEV_BITSET)
-	    { untested();
+	    {
 	      if (q == NULL)
 		break;
 	      p = q + 1;
@@ -1458,11 +1487,11 @@ cmdline_handle_error (location_t loc, const struct cl_option *option,
 	  unsigned set = e->values[idx].flags >> CL_ENUM_SET_SHIFT;
 	  gcc_checking_assert (set >= 1 && set <= HOST_BITS_PER_WIDE_INT);
 	  if ((used_sets & (HOST_WIDE_INT_1U << (set - 1))) != 0)
-	    { untested();
+	    {
 	      if (q == NULL)
 		q = strchr (p, '\0');
 	      if (second_opt == NULL)
-		{ untested();
+		{
 		  used_sets = HOST_WIDE_INT_1U << (set - 1);
 		  second_opt = p;
 		  second_opt_len = q - p;
@@ -1492,7 +1521,7 @@ cmdline_handle_error (location_t loc, const struct cl_option *option,
     }
 
   if (errors & CL_ERR_ENUM_ARG)
-    { untested();
+    {
       const struct cl_enum *e = &cl_enums[option->var_enum];
       unsigned int i;
       char *s;
@@ -1505,7 +1534,7 @@ cmdline_handle_error (location_t loc, const struct cl_option *option,
 
       auto_vec <const char *> candidates;
       for (i = 0; e->values[i].arg != NULL; i++)
-	{ untested();
+	{
 	  if (!enum_arg_ok_for_language (&e->values[i], lang_mask))
 	    continue;
 	  candidates.safe_push (e->values[i].arg);
@@ -1546,25 +1575,21 @@ read_cmdline_option (struct gcc_options *opts,
 
   if (decoded->opt_index == OPT_SPECIAL_unknown)
     {
-      if (handlers->unknown_option_callback (decoded)){ untested();
+      if (handlers->unknown_option_callback (decoded))
 	error_at (loc, "unrecognized command-line option %qs", decoded->arg);
-		}else{
-		}
       return;
-    }else{
-	 }
+    }
 
   if (decoded->opt_index == OPT_SPECIAL_ignore)
     return;
 
   if (decoded->opt_index == OPT_SPECIAL_warn_removed)
-    { untested();
+    {
       /* Warn only about positive ignored options.  */
       if (decoded->value)
 	warning_at (loc, 0, "switch %qs is no longer supported", opt);
       return;
-    }else{
-	 }
+    }
 
   option = &cl_options[decoded->opt_index];
 
@@ -1614,7 +1639,7 @@ set_option (struct gcc_options *opts, struct gcc_options *opts_set,
     {
     case CLVC_INTEGER:
 	if (option->cl_host_wide_int)
-	  { untested();
+	  {
 	    *(HOST_WIDE_INT *) flag_var = value;
 	    if (set_flag_var)
 	      *(HOST_WIDE_INT *) set_flag_var = 1;
@@ -1636,13 +1661,13 @@ set_option (struct gcc_options *opts, struct gcc_options *opts_set,
 
     case CLVC_SIZE:
 	if (option->cl_host_wide_int)
-	  { untested();
+	  {
 	    *(HOST_WIDE_INT *) flag_var = value;
 	    if (set_flag_var)
 	      *(HOST_WIDE_INT *) set_flag_var = value;
 	  }
 	else
-	  { untested();
+	  {
 	    *(int *) flag_var = value;
 	    if (set_flag_var)
 	      *(int *) set_flag_var = value;
@@ -1652,7 +1677,7 @@ set_option (struct gcc_options *opts, struct gcc_options *opts_set,
 
     case CLVC_EQUAL:
 	if (option->cl_host_wide_int)
-	  { untested();
+	  {
 	    *(HOST_WIDE_INT *) flag_var = (value
 					   ? option->var_value
 					   : !option->var_value);
@@ -1660,7 +1685,7 @@ set_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	      *(HOST_WIDE_INT *) set_flag_var = 1;
 	  }
 	else
-	  { untested();
+	  {
 	    *(int *) flag_var = (value
 				 ? option->var_value
 				 : !option->var_value);
@@ -1672,21 +1697,21 @@ set_option (struct gcc_options *opts, struct gcc_options *opts_set,
     case CLVC_BIT_CLEAR:
     case CLVC_BIT_SET:
 	if ((value != 0) == (option->var_type == CLVC_BIT_SET))
-	  { untested();
+	  {
 	    if (option->cl_host_wide_int) 
 	      *(HOST_WIDE_INT *) flag_var |= option->var_value;
 	    else 
 	      *(int *) flag_var |= option->var_value;
 	  }
 	else
-	  { untested();
+	  {
 	    if (option->cl_host_wide_int) 
 	      *(HOST_WIDE_INT *) flag_var &= ~option->var_value;
 	    else 
 	      *(int *) flag_var &= ~option->var_value;
 	  }
 	if (set_flag_var)
-	  { untested();
+	  {
 	    if (option->cl_host_wide_int) 
 	      *(HOST_WIDE_INT *) set_flag_var |= option->var_value;
 	    else
@@ -1701,7 +1726,7 @@ set_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	break;
 
     case CLVC_ENUM:
-      { untested();
+      {
 	const struct cl_enum *e = &cl_enums[option->var_enum];
 
 	if (mask)
@@ -1714,7 +1739,7 @@ set_option (struct gcc_options *opts, struct gcc_options *opts_set,
       break;
 
     case CLVC_DEFER:
-	{ untested();
+	{
 	  vec<cl_deferred_option> *v
 	    = (vec<cl_deferred_option> *) *(void **) flag_var;
 	  cl_deferred_option p = {opt_index, arg, value};
@@ -1766,7 +1791,7 @@ option_enabled (int opt_idx, unsigned lang_mask, void *opts)
       {
       case CLVC_INTEGER:
 	if (option->cl_host_wide_int)
-	  { untested();
+	  {
 	    HOST_WIDE_INT v = *(HOST_WIDE_INT *) flag_var;
 	    return v != 0 ? (v < 0 ? -1 : 1) : 0;
 	  }
@@ -1814,7 +1839,7 @@ option_enabled (int opt_idx, unsigned lang_mask, void *opts)
 bool
 get_option_state (struct gcc_options *opts, int option,
 		  struct cl_option_state *state)
-{ untested();
+{
   void *flag_var = option_flag_var (option, opts);
 
   if (flag_var == 0)
@@ -1871,9 +1896,9 @@ control_warning_option (unsigned int opt_index, int kind, const char *arg,
 			struct gcc_options *opts,
 			struct gcc_options *opts_set,
 			diagnostic_context *dc)
-{ untested();
+{
   if (cl_options[opt_index].alias_target != N_OPTS)
-    { untested();
+    {
       gcc_assert (!cl_options[opt_index].cl_separate_alias
 		  && !cl_options[opt_index].cl_negative_alias);
       if (cl_options[opt_index].alias_arg)
@@ -1885,21 +1910,21 @@ control_warning_option (unsigned int opt_index, int kind, const char *arg,
   if (dc)
     diagnostic_classify_diagnostic (dc, opt_index, (diagnostic_t) kind, loc);
   if (imply)
-    { untested();
+    {
       const struct cl_option *option = &cl_options[opt_index];
 
       /* -Werror=foo implies -Wfoo.  */
       if (option->var_type == CLVC_INTEGER
 	  || option->var_type == CLVC_ENUM
 	  || option->var_type == CLVC_SIZE)
-	{ untested();
+	{
 	  HOST_WIDE_INT value = 1;
 
 	  if (arg && *arg == '\0' && !option->cl_missing_ok)
 	    arg = NULL;
 
 	  if ((option->flags & CL_JOINED) && arg == NULL)
-	    { untested();
+	    {
 	      cmdline_handle_error (loc, option, option->opt_text, arg,
 				    CL_ERR_MISSING_ARG, lang_mask);
 	      return;
@@ -1907,12 +1932,12 @@ control_warning_option (unsigned int opt_index, int kind, const char *arg,
 
 	  /* If the switch takes an integer argument, convert it.  */
 	  if (arg && (option->cl_uinteger || option->cl_host_wide_int))
-	    { untested();
+	    {
 	      int error = 0;
 	      value = *arg ? integral_argument (arg, &error,
 						option->cl_byte_size) : 0;
 	      if (error)
-		{ untested();
+		{
 		  cmdline_handle_error (loc, option, option->opt_text, arg,
 					CL_ERR_UINT_ARG, lang_mask);
 		  return;
@@ -1921,12 +1946,12 @@ control_warning_option (unsigned int opt_index, int kind, const char *arg,
 
 	  /* If the switch takes an enumerated argument, convert it.  */
 	  if (arg && option->var_type == CLVC_ENUM)
-	    { untested();
+	    {
 	      const struct cl_enum *e = &cl_enums[option->var_enum];
 
 	      if (enum_arg_to_value (e->values, arg, 0, &value,
 				     lang_mask) >= 0)
-		{ untested();
+		{
 		  const char *carg = NULL;
 
 		  if (enum_value_to_arg (e->values, &carg, value, lang_mask))
@@ -1934,7 +1959,7 @@ control_warning_option (unsigned int opt_index, int kind, const char *arg,
 		  gcc_assert (carg != NULL);
 		}
 	      else
-		{ untested();
+		{
 		  cmdline_handle_error (loc, option, option->opt_text, arg,
 					CL_ERR_ENUM_ARG, lang_mask);
 		  return;
@@ -1955,23 +1980,23 @@ void
 parse_options_from_collect_gcc_options (const char *collect_gcc_options,
 					obstack *argv_obstack,
 					int *argc_p)
-{ untested();
+{
   char *argv_storage = xstrdup (collect_gcc_options);
   int j, k;
 
   for (j = 0, k = 0; argv_storage[j] != '\0'; ++j)
-    { untested();
+    {
       if (argv_storage[j] == '\'')
-	{ untested();
+	{
 	  obstack_ptr_grow (argv_obstack, &argv_storage[k]);
 	  ++j;
 	  do
-	    { untested();
+	    {
 	      if (argv_storage[j] == '\0')
 		fatal_error (input_location,
 			     "malformed %<COLLECT_GCC_OPTIONS%>");
 	      else if (startswith (&argv_storage[j], "'\\''"))
-		{ untested();
+		{
 		  argv_storage[k++] = '\'';
 		  j += 4;
 		}
@@ -1995,7 +2020,7 @@ parse_options_from_collect_gcc_options (const char *collect_gcc_options,
 #if 0 //sdcpp
 void prepend_xassembler_to_collect_as_options (const char *collect_as_options,
 					       obstack *o)
-{ untested();
+{
   obstack opts_obstack;
   int opts_count;
 
@@ -2005,7 +2030,7 @@ void prepend_xassembler_to_collect_as_options (const char *collect_as_options,
   const char **assembler_opts = XOBFINISH (&opts_obstack, const char **);
 
   for (int i = 0; i < opts_count; i++)
-    { untested();
+    {
       obstack_grow (o, " '-Xassembler' ",
 		    strlen (" '-Xassembler' "));
       const char *opt = assembler_opts[i];
@@ -2014,4 +2039,107 @@ void prepend_xassembler_to_collect_as_options (const char *collect_as_options,
       obstack_1grow (o, '\'');
     }
 }
+
+jobserver_info::jobserver_info ()
+{
+  /* Traditionally, GNU make uses opened pipes for jobserver-auth,
+    e.g. --jobserver-auth=3,4.
+    Starting with GNU make 4.4, one can use --jobserver-style=fifo
+    and then named pipe is used: --jobserver-auth=fifo:/tmp/hcsparta.  */
+
+  /* Detect jobserver and drop it if it's not working.  */
+  string js_needle = "--jobserver-auth=";
+  string fifo_prefix = "fifo:";
+
+  const char *envval = getenv ("MAKEFLAGS");
+  if (envval != NULL)
+    {
+      string makeflags = envval;
+      size_t n = makeflags.rfind (js_needle);
+      if (n != string::npos)
+	{
+	  string ending = makeflags.substr (n + js_needle.size ());
+	  if (ending.find (fifo_prefix) == 0)
+	    {
+	      ending = ending.substr (fifo_prefix.size ());
+	      pipe_path = ending.substr (0, ending.find (' '));
+	      is_active = true;
+	    }
+	  else if (sscanf (makeflags.c_str () + n + js_needle.size (),
+			   "%d,%d", &rfd, &wfd) == 2
+	      && rfd > 0
+	      && wfd > 0
+	      && is_valid_fd (rfd)
+	      && is_valid_fd (wfd))
+	    is_active = true;
+	  else
+	    {
+	      string dup = makeflags.substr (0, n);
+	      size_t pos = makeflags.find (' ', n);
+	      if (pos != string::npos)
+		dup += makeflags.substr (pos);
+	      skipped_makeflags = "MAKEFLAGS=" + dup;
+	      error_msg
+		= "cannot access %<" + js_needle + "%> file descriptors";
+	    }
+	}
+      error_msg = "%<" + js_needle + "%> is not present in %<MAKEFLAGS%>";
+    }
+  else
+    error_msg = "%<MAKEFLAGS%> environment variable is unset";
+
+  if (!error_msg.empty ())
+    error_msg = "jobserver is not available: " + error_msg;
+}
+
+void
+jobserver_info::connect ()
+{
+  if (!pipe_path.empty ())
+    {
+#if HOST_HAS_O_NONBLOCK
+      pipefd = open (pipe_path.c_str (), O_RDWR | O_NONBLOCK);
+      is_connected = true;
+#else
+      is_connected = false;
 #endif
+    }
+  else
+    is_connected = true;
+}
+
+void
+jobserver_info::disconnect ()
+{
+  if (!pipe_path.empty ())
+    {
+      int res = close (pipefd);
+      gcc_assert (res == 0);
+      pipefd = -1;
+    }
+}
+
+bool
+jobserver_info::get_token ()
+{
+  int fd = pipe_path.empty () ? rfd : pipefd;
+  char c;
+  unsigned n = read (fd, &c, 1);
+  if (n != 1)
+    {
+      gcc_assert (errno == EAGAIN);
+      return false;
+    }
+  else
+    return true;
+}
+
+void
+jobserver_info::return_token ()
+{
+  int fd = pipe_path.empty () ? wfd : pipefd;
+  char c = 'G';
+  int res = write (fd, &c, 1);
+  gcc_assert (res == 1);
+}
+#endif //sdcpp

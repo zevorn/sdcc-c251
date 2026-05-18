@@ -1,7 +1,7 @@
 /* gb.h */
 
 /*
- *  Copyright (C) 1989-2021  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -121,8 +121,8 @@
 #define HL	2
 #define SP	3
 #define AF	4
-#define HLD	5
-#define HLI	6
+#define	HLD	5
+#define	HLI	6
 
 /*
  * Conditional definitions
@@ -197,8 +197,6 @@ extern	struct	adsym	CND[];
 
 	/* machine dependent functions */
 
-#ifdef	OTHERSYSTEM
-	
 	/* gbadr.c */
 extern	int		addr(struct expr *esp);
 extern	int		admode(struct adsym *sp);
@@ -207,22 +205,7 @@ extern	int		srch(char *str);
 
 	/* gbmch.c */
 extern	int		genop(int pop, int op, struct expr *esp, int f);
-extern	VOID		machine(struct mne *mp);
+extern	void		machine(struct mne *mp);
 extern	int		mchpcr(struct expr *esp);
-extern	VOID		minit(void);
+extern	void		minit(void);
 
-#else
-
-	/* gbadr.c */
-extern	int		addr();
-extern	int		admode();
-extern	int		any();
-extern	int		srch();
-
-	/* gbmch.c */
-extern	int		genop();
-extern	VOID		machine();
-extern	int		mchpcr();
-extern	VOID		minit();
-
-#endif

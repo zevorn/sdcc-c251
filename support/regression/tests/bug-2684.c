@@ -6,6 +6,7 @@
 
 #pragma disable_warning 85
 #pragma disable_warning 196
+#pragma disable_warning 360
 
 /* printf.c
  *    Dale Schumacher                         399 Beacon Ave.

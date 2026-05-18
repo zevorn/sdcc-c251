@@ -625,3 +625,4 @@ iCodeLabelOptimize (iCode * ic)
 
   return ic;
 }
+

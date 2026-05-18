@@ -50,7 +50,7 @@ int litbitchar2 (unsigned char a, unsigned char c, unsigned char e)
   else
     return(3);
 }
-
+#ifndef __SDCC_pdk13 // Lack of code memory
 /* Some architectures have non-destructive and when one operand is a literal with at most one bit per byte set (e.g. Z80) */
 int litbitint (unsigned int a)
 {
@@ -96,14 +96,14 @@ int regchar (unsigned char a, unsigned char c)
   else
     return(3);
 }
-
+#endif
 void testAndSurvive (void)
 {
   ASSERT (litbitchar (0x77u - 1) == 0);
   ASSERT (litbitchar (0x74u - 1) == 1);
   ASSERT (litbitchar (0x70u - 1) == 2);
   ASSERT (litbitchar (0x80u - 1) == 3);
-
+#ifndef __SDCC_pdk13 // Those tests would pass, we just don't have enough space in code memory to fit them in together with the others.
   ASSERT (litbitchar2 (0x01u - 1, 0x01u - 1, 0x01u) == 8);
   ASSERT (litbitchar2 (0x01u - 1, 0x80u - 1, 0x01u) == 10);
   ASSERT (litbitchar2 (0x74u - 1, 0x01u - 1, 0x01u) == 1);
@@ -124,6 +124,7 @@ void testAndSurvive (void)
 #ifndef __SDCC_pdk14 // Those tests would pass, we just don't have enough space in code memory to fit them in together with the others.
   ASSERT (regchar (0x80u - 1, 0x88u - 1) == 1);
   ASSERT (regchar (0x80u - 1, 0x08u - 1) == 3);
+#endif
 #endif
 }
 

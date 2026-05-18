@@ -4,6 +4,8 @@
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
 #ifdef __SDCC
 #pragma std_c89
 #endif
@@ -110,11 +112,14 @@ void f (void)
   false (le (INT_MAX, INT_MIN));
   true (le (INT_MIN, INT_MAX));
 }
+#endif
 
 void
 testTortureExecute (void)
 {
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
   f ();
   return;
+#endif
 }
 

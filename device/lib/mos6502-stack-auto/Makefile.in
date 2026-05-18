@@ -13,6 +13,12 @@ SAS = $(top_builddir)/bin/sdas6500
 # override PORTDIR defined by super (parent) makefile
 override PORTDIR = ../build/mos6502-stack-auto
 
+%.rel: %.s
+	@# TODO: sdas should place it\'s output in the current dir
+	test $(srcdir) = . || cp $< .
+	-$(AS) $(ASFLAGS) $(notdir $<)
+	test $(srcdir) = . || rm $(notdir $<)
+
 include $(srcdir)/../incl.mk
 
 MOS6502_FLOAT = $(COMMON_FLOAT)
@@ -31,14 +37,11 @@ MOS6502_INT = $(COMMON_INT) \
   _modsint.c
 
 MOS6502_LONG = $(COMMON_LONG) \
-  _divulong.c \
-  _mullong.c
+  _mullong.c \
+  _divslong.c \
+  _divulong.c
 
 MOS6502_LONGLONG = $(COMMON_LONGLONG) \
-  _srulonglong.c \
-  _srslonglong.c \
-  _slulonglong.c \
-  _slslonglong.c \
   _mullonglong.c \
   _divslonglong.c \
   _divulonglong.c \
@@ -48,18 +51,17 @@ MOS6502_LONGLONG = $(COMMON_LONGLONG) \
 MOS6502_SDCC = $(COMMON_SDCC) \
   __itoa.c \
   __ltoa.c \
-  __memcpy.c \
   _heap.c \
   _memmove.c \
-  _spx.c \
   _startup.c \
   _strcmp.c \
   _strcpy.c \
   strlen.c \
   strnlen.c \
+  __memcpy.c \
+  memcpy.c \
   div.c \
   ldiv.c \
-  memcpy.c \
   sprintf.c \
   vprintf.c \
   atomic_flag_clear.c
@@ -67,7 +69,8 @@ MOS6502_SDCC = $(COMMON_SDCC) \
 MOS6502SOURCES = $(addprefix ../,$(MOS6502_FLOAT) $(MOS6502_INT) $(MOS6502_LONG) $(MOS6502_LONGLONG) $(MOS6502_SDCC))
 MOS6502OBJECTS = $(patsubst %.c,%.rel,$(MOS6502_FLOAT) $(MOS6502_INT) $(MOS6502_LONG) $(MOS6502_LONGLONG) $(MOS6502_SDCC))
 
-OBJ = _dptr.rel _temp.rel _ret01.rel _ret23.rel _ret4567.rel _setjmp.rel atomic_flag_test_and_set.rel __sdcc_indirect_jsr.rel
+OBJ = __sdcc_regs.rel __sdcc_indirect_jsr.rel\
+      _setjmp.rel atomic_flag_test_and_set.rel
 
 LIB = mos6502.lib
 AS = $(SAS)
@@ -97,12 +100,6 @@ else
     endif
   endif
 endif
-
-%.rel: %.s
-	@# TODO: sdas should place it\'s output in the current dir
-	test $(srcdir) = . || cp $< .
-	-$(AS) $(ASFLAGS) $(notdir $<)
-	test $(srcdir) = . || rm $(notdir $<)
 
 clean:
 	rm -f *.rel *.sym *.lst *~ $(CLEANSPEC) *.dump* *.asm *.lib

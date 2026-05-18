@@ -1,8 +1,5 @@
-set error non-classified off
-set error unknown_code off
-set error memory off
-set error stack off
+set error stack on
 set hw simif rom 0xfff0
-step 100000000 vclk
+step 500000000 vclk
 state
 quit

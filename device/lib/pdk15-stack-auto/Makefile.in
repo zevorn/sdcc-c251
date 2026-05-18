@@ -13,6 +13,12 @@ SAS = $(top_builddir)/bin/sdaspdk15
 # override PORTDIR defined by super (parent) makefile
 override PORTDIR = ../build/pdk15-stack-auto
 
+%.rel: %.s
+	@# TODO: sdas should place it\'s output in the current dir
+	test $(srcdir) = . || cp $< .
+	-$(AS) $(ASFLAGS) $(notdir $<)
+	test $(srcdir) = . || rm $(notdir $<)
+
 include $(srcdir)/../incl.mk
 
 PDK15_FLOAT = $(COMMON_FLOAT)
@@ -95,12 +101,6 @@ endif
 %.rel: %.c
 	$(CC) $(CFLAGS) ${EXTRA_CFLAGS} -c $<
 
-%.rel: %.s
-	@# TODO: sdas should place it\'s output in the current dir
-	test $(srcdir) = . || cp $< .
-	-$(AS) $(ASFLAGS) $(notdir $<)
-	test $(srcdir) = . || rm $(notdir $<)
-
 %.rel: ../%.c
 	$(CC) $(CFLAGS) ${EXTRA_CFLAGS} -c $<
 
@@ -112,3 +112,4 @@ distclean: clean
 
 Makefile: $(srcdir)/Makefile.in
 	cd $(top_builddir); ./config.status device/lib/pdk15-stack-auto/Makefile
+

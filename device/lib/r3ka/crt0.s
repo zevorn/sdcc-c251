@@ -4,7 +4,7 @@
 ;
 ;  Copyright (C) 2000, Michael Hope
 ;  Modified for Rabbit by Leland Morrison 2011
-;  Copyright (C) 2020, Philipp Klaus Krause
+;  Copyright (C) 2020-2025, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -47,9 +47,17 @@ MB3CR		.equ	0x17 ; Memory Bank 3 Control Register
 	; Reset vector - assuming smode0 and smode1 input pins are grounded
 	.org 	0
 
+	; Enable 16-bit internal I/O addresses and switch to instruction set mode 10
+	ld	a, #0x80
+	ioi
+	ld	(MMIDR), a
+
 	; Setup internal interrupts. Upper byte of interrupt vector table address. Needs to be even.
 	ld	a, #2
 	ld	iir, a
+	; Setup external interrupts. Upper byte of interrupt vector table address.
+	dec	a
+	ld	eir, a
 
 	; Configure physical address space.
 	; Leave MB0CR Flash at default slow at /OE0, /CS0
@@ -84,82 +92,16 @@ skip_gsinit:
 	call	_main
 	jp	_exit
 
-	; Periodic Interrupt
-	.org	0x200
-	push	af
-	ioi
-	ld	a, (GCSR) ; clear interrupt
-	pop	af
+	.org 0x0100 ; external interrupt 0
 	ipres
 	ret
 
-	; Secondary Watchdog - Rabbit 3000A only
-	.org	0x210
+	.org 0x0110 ; external interrupt 1
 	ipres
 	ret
-
-	; rst 0x10
-	.org	0x220
-	ret
-
-	; rst 0x18
-	.org	0x230
-	ret
-
-	; rst 0x20
-	.org	0x240
-	ret
-
-	; rst 0x28
-	.org	0x250
-	ret
-
-	; Syscall instruction - Rabbit 3000A only
-	.org	0x260
-	ret
-
-	; rst 0x38
-	.org	0x270
-	ret
-
-	; Slave Port
-	.org	0x280
-	ipres
-	ret
-
-	; Timer A
-	.org	0x2a0
-	ipres
-	ret
-
-	; Timer B
-	.org	0x2b0
-	ipres
-	ret
-
-	; Serial Port A
-	.org	0x2c0
-	ipres
-	ret
-
-	; Serial Port B
-	.org	0x2d0
-	ipres
-	ret
-
-	; Serial Port C
-	.org	0x2e0
-	ipres
-	ret
-
-	; Serial Port D
-	.org	0x2f0
-	ipres
-	ret
-
-	.org	0x300
 
 	;; Ordering of segments for the linker.
+	.area	_IIVT (ABS)
 	.area	_HOME
 	.area	_CODE
 	.area	_INITIALIZER
@@ -171,6 +113,12 @@ skip_gsinit:
 	.area	_BSEG
 	.area   _BSS
 	.area   _HEAP
+	.area   _HEAP_END
+	.area   _SSEG
+
+	.area   _XCONST
+
+	.area   _XDATA
 
 	.area   _CODE
 _exit::
@@ -197,7 +145,6 @@ gsinit::
 	ld	d, h
 	inc	de
 	ldir
-
 zeroed_data:
 
 	ld	bc, #l__INITIALIZER

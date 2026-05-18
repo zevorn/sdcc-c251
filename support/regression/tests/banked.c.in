@@ -3,7 +3,7 @@
 */
 #include <testfwk.h>
 
-#if defined(__SDCC_z80) || defined(__SDCC_z80n) || defined(__SDCC_z180) /*|| defined(__SDCC_sm83)*/ || defined(__SDCC_ez80_z80)
+#if defined(__SDCC_z80) || defined(__SDCC_z80n) || defined(__SDCC_z180) /*|| defined(__SDCC_sm83)*/ || defined(__SDCC_ez80)
 #define DO_CHECK
 #endif
 
@@ -68,3 +68,4 @@ get_bank::
   return bank + a * 0x100;
 }
 #endif
+

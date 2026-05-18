@@ -5,6 +5,10 @@
 #include <stdarg.h>
 #include <testfwk.h>
 
+#ifdef __SDCC
+#pragma disable_warning 357
+#endif
+
 #define CP	(void __code*)0x1234
 #define XP	(void __xdata*)0x5678
 

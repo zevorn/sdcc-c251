@@ -7,6 +7,7 @@ va-arg-9.c from the execute part of the gcc torture tests.
 #ifdef __SDCC
 #pragma disable_warning 85
 #pragma disable_warning 196
+#pragma disable_warning 360
 #endif
 
 #include <stddef.h>

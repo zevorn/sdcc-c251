@@ -14,7 +14,7 @@
 #define _BitInt _ExtInt
 #endif
 
-#if __SDCC_BITINT_MAXWIDTH >= {width} // TODO: When we can regression-test in --std-c23 mode, use the standard macro from limits.h instead!
+#if __SDCC_BITINT_MAXWIDTH >= {width} && ({width} <= 40 || !defined(__SDCC_pdk13)) // Lack of memory for pdk13. TODO: When we can regression-test in --std-c23 mode, use the standard macro from limits.h instead!
 typedef {sign} _BitInt({width}) bitinttype;
 
 struct {
@@ -32,7 +32,7 @@ struct {
 
 void testWideBitIntBitField(void)
 {
-#if __SDCC_BITINT_MAXWIDTH >= {width} // TODO: When we can regression-test in --std-c23 mode, use the standard macro from limits.h instead!
+#if __SDCC_BITINT_MAXWIDTH >= {width} && ({width} <= 40 || !defined(__SDCC_pdk13)) // Lack of memory for pdk13. TODO: When we can regression-test in --std-c23 mode, use the standard macro from limits.h instead!
 #ifndef __clang_major__ // clang 11 doesn't support == between _BitInt and int, and does weird stuff when promoting bit-fields.
   ASSERT (_Generic(+bf2.bw, bitinttype: 1, default: 0) == 1);
   ASSERT (_Generic(+bf2.bw_1, bitinttype: 1, default: 0) == 1);

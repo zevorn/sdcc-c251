@@ -62,7 +62,7 @@ bits_check_value_no_cast(const struct_8bits * var, const uint8_t value)
 #define CAST_TO_UINT8(x) ((uint8_t)(x))
 
 // Lack of memory.
-#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
 
 bool
 bits_check_value(const struct_8bits * const var, const uint8_t value)
@@ -113,7 +113,7 @@ static void
 testBitfields(void)
 {
 // Lack of memory.
-#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
     volatile struct_8bits volatileBits;
 
     BITS_SET_AND_CHECK(0x00);

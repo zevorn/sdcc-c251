@@ -43,6 +43,9 @@ void func(void (*restrict p)(void)) {	/* ERROR */
 }
 #endif
 
+#ifdef TEST9_C99
+void g(restrict int); /* ERROR */
+#endif
 
 #ifdef TEST_GOOD1_C99
 int * restrict a;
@@ -61,3 +64,4 @@ void func(int * restrict x)
   x;				/* IGNORE */
 }
 #endif
+

@@ -9,7 +9,7 @@ AC_CONFIG_SRCDIR([Makefile.in])
 # ===========================================================================
 AC_CANONICAL_HOST
 
-AC_CONFIG_HEADERS([sdccconf.h:sdccconf_in.h sdas/linksrc/asxxxx_config.h])
+AC_CONFIG_HEADERS([sdccconf.h:sdccconf_in.h])
 
 AC_PROG_AWK
 
@@ -83,6 +83,8 @@ AC_CHECK_HEADERS(endian.h sys/endian.h machine/endian.h sys/isa_defs.h)
 AC_CHECK_HEADERS(uchar.h)
 # zlib is not needed by sdcc itself, but by sdcpp and sdbinutils.
 AC_CHECK_HEADERS(zlib.h,,AC_MSG_ERROR([[zlib library not found (zlib.h).]]))
+AC_CHECK_HEADERS(u8ident.h,,AC_MSG_NOTICE([[u8ident library not found, falling back to plain ISO C11 identifier validity check.]]))
+AC_CHECK_LIB(":libu8ident.a",u8ident_init)
 AC_LANG_PUSH([C++])
 AC_CHECK_HEADERS(treedec/combinations.hpp,,AC_MSG_NOTICE([[treedec library missing, falling back to Thorup.]]))
 AC_CHECK_HEADERS(gala/graph.h)
@@ -427,66 +429,6 @@ fi
 # Checks for typedefs, structures, and compiler characteristics.
 # ===========================================================================
 
-AC_CHECK_SIZEOF(char)
-AC_CHECK_SIZEOF(short)
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(long long)
-AC_C_CHAR_UNSIGNED
-
-type_name()
-{
-  if expr "$ac_cv_sizeof_char" '>=' "$1" >/dev/null; then
-      echo "char"
-    exit
-  fi
-  if expr "$ac_cv_sizeof_short" '>=' "$1" >/dev/null; then
-    echo "short"
-    exit
-  fi
-  if expr "$ac_cv_sizeof_int" '>=' "$1" >/dev/null; then
-    echo "int"
-    exit
-  fi
-  if expr "$ac_cv_sizeof_long" '>=' "$1" >/dev/null; then
-    echo "long"
-    exit
-  fi
-  if expr "$ac_cv_sizeof_long_long" '>=' "$1" >/dev/null; then
-    echo "long long"
-    exit
-  fi
-  echo "long"
-}
-
-AC_MSG_CHECKING(type name for byte)
-TYPE_CHAR=`type_name 1`
-if test "$ac_cv_c_char_unsigned" = "yes"; then
-  TYPE_BYTE="signed $TYPE_CHAR"
-else
-  TYPE_BYTE=$TYPE_CHAR
-fi
-AC_MSG_RESULT($TYPE_BYTE)
-AC_MSG_CHECKING(type name for word)
-TYPE_WORD=`type_name 2`
-AC_MSG_RESULT($TYPE_WORD)
-AC_MSG_CHECKING(type name for dword)
-TYPE_DWORD=`type_name 4`
-AC_MSG_RESULT($TYPE_DWORD)
-AC_MSG_CHECKING(type name for qword)
-TYPE_QWORD=`type_name 8`
-AC_MSG_RESULT($TYPE_QWORD)
-
-AC_DEFINE_UNQUOTED(TYPE_BYTE,  $TYPE_BYTE,  [XXX])
-AC_DEFINE_UNQUOTED(TYPE_WORD,  $TYPE_WORD,  [XXX])
-AC_DEFINE_UNQUOTED(TYPE_DWORD, $TYPE_DWORD, [XXX])
-AC_DEFINE_UNQUOTED(TYPE_QWORD, $TYPE_QWORD, [XXX])
-
-AC_DEFINE_UNQUOTED(TYPE_UBYTE,  unsigned $TYPE_CHAR,  [XXX])
-AC_DEFINE_UNQUOTED(TYPE_UWORD,  unsigned $TYPE_WORD,  [XXX])
-AC_DEFINE_UNQUOTED(TYPE_UDWORD, unsigned $TYPE_DWORD, [XXX])
-AC_DEFINE_UNQUOTED(TYPE_UQWORD, unsigned $TYPE_QWORD, [XXX])
-
 case "${host}" in
   *x86_64*cygwin*)
     LDFLAGS="$LDFLAGS -Wl,--stack,4194304"
@@ -783,9 +725,12 @@ AC_DO_PORT(z180,     z80,    Z180,     [Excludes the Z180 port])
 AC_DO_PORT(r2k,      z80,    R2K,      [Excludes the Rabbit 2000 port])
 AC_DO_PORT(r2ka,     z80,    R2KA,     [Excludes the Rabbit 2000A port])
 AC_DO_PORT(r3ka,     z80,    R3KA,     [Excludes the Rabbit 3000A port])
+AC_DO_PORT(r4k,      z80,    R4K,      [Excludes the Rabbit 4000 port])
+AC_DO_PORT(r5k,      z80,    R5K,      [Excludes the Rabbit 5000 port])
+AC_DO_PORT(r6k,      z80,    R6K,      [Excludes the Rabbit 6000 port])
 AC_DO_PORT(sm83,     z80,    SM83,     [Excludes the SM83 port])
 AC_DO_PORT(tlcs90,   z80,    TLCS90,   [Excludes the TLCS-90 port])
-AC_DO_PORT(ez80_z80, z80,    EZ80_Z80, [Excludes the EZ80-Z80 port])
+AC_DO_PORT(ez80,     z80,    EZ80,     [Excludes the eZ80 port])
 AC_DO_PORT(z80n,     z80,    Z80N,     [Excludes the Z80N port])
 AC_DO_PORT(r800,     z80,    R800,     [Excludes the R800 port])
 AC_DO_PORT(ds390,    ds390,  DS390,    [Excludes the DS390 port])
@@ -802,13 +747,11 @@ AC_DO_PORT(pdk15,    pdk,    PDK15,    [Excludes the PDK15 port])
 AC_DO_PORT_ENABLER(pdk16,    pdk,    PDK16,    [Includes the PDK16 port])
 AC_DO_PORT(mos6502,  mos6502,MOS6502,  [Excludes the MOS6502 port])
 AC_DO_PORT(mos65c02, mos6502,MOS65C02, [Excludes the MOS65C02 port])
-AC_DO_PORT(f8,       f8,     F8,       [Excludes the F8 port])
+AC_DO_PORT(f8,       f8,     F8,       [Excludes the f8 port])
+AC_DO_PORT(f8l,      f8,     F8L,      [Excludes the f8l port])
 
-# Unsupported targets
+# Example for a port disabled by default, in case all the above are enabled by default:
 ####AC_DO_PORT_ENABLER(avr,   avr,   AVR,   [Includes the AVR port (disabled by default)])
-OPT_DISABLE_AVR=1
-AC_DEFINE_UNQUOTED(OPT_DISABLE_AVR, ${OPT_DISABLE_AVR}, [Define to 1 to disable the AVR port])
-AC_SUBST(OPT_DISABLE_AVR)
 
 AC_DO_DISABLER(ucsim,      UCSIM,      [Disables configuring and building of ucsim])
 AC_DO_DISABLER(device-lib, DEVICE_LIB, [Disables building device libraries])
@@ -856,8 +799,6 @@ test $OPT_DISABLE_UCSIM   = 0 && AC_CONFIG_SUBDIRS(sim/ucsim)
 test $OPT_DISABLE_SDCDB   = 0 && AC_CONFIG_SUBDIRS(debugger/mcs51)
 test $OPT_DISABLE_SDBINUTILS = 0 && AC_CONFIG_SUBDIRS(support/sdbinutils)
 AC_CONFIG_FILES([doc/Makefile])
-
-####test $OPT_DISABLE_AVR = 0 && AC_CONFIG_FILES([src/avr/Makefile])
 
 if test $OPT_DISABLE_DS390 = 0 || test $OPT_DISABLE_DS400; then
   AC_CONFIG_FILES([src/ds390/Makefile
@@ -907,24 +848,27 @@ if test $OPT_DISABLE_PIC16 = 0 && test $OPT_DISABLE_NON_FREE = 0; then
   test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_SUBDIRS(device/non-free/lib/pic16)
 fi
 
-if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0 || test $OPT_DISABLE_SM83 = 0 || test $OPT_DISABLE_TLCS90 = 0 || test $OPT_DISABLE_EZ80_Z80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
+if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0 || test $OPT_DISABLE_R4K = 0 || test $OPT_DISABLE_R5K = 0 || test $OPT_DISABLE_R6K = 0 || test $OPT_DISABLE_SM83 = 0 || test $OPT_DISABLE_TLCS90 = 0 || test $OPT_DISABLE_EZ80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
   AC_CONFIG_FILES([src/z80/Makefile])
 fi
 
-if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_EZ80_Z80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
+if test $OPT_DISABLE_Z80 = 0 || test $OPT_DISABLE_Z180 = 0 || test $OPT_DISABLE_EZ80 = 0 || test $OPT_DISABLE_Z80N = 0 || test $OPT_DISABLE_R800 = 0; then
   AC_CONFIG_FILES([sdas/asz80/Makefile])
   test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/z80/Makefile
                                                        device/lib/z180/Makefile
-                                                       device/lib/ez80_z80/Makefile
+                                                       device/lib/ez80/Makefile
                                                        device/lib/z80n/Makefile
                                                        device/lib/r800/Makefile])
 fi
 
-if test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0; then
+if test $OPT_DISABLE_R2K = 0 || test $OPT_DISABLE_R2KA = 0 || test $OPT_DISABLE_R3KA = 0 || test $OPT_DISABLE_R4K = 0 || test $OPT_DISABLE_R5K = 0 || test $OPT_DISABLE_R6K = 0; then
   AC_CONFIG_FILES([sdas/asrab/Makefile])
   test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/r2k/Makefile
                                                        device/lib/r2ka/Makefile
-                                                       device/lib/r3ka/Makefile])
+                                                       device/lib/r3ka/Makefile
+                                                       device/lib/r4k/Makefile
+                                                       device/lib/r5k/Makefile
+                                                       device/lib/r6k/Makefile])
 fi
 
 if test $OPT_DISABLE_TLCS90 = 0; then
@@ -968,10 +912,17 @@ if test $OPT_DISABLE_PDK16 = 0; then
   AC_CONFIG_FILES([sdas/aspdk16/Makefile])
 fi
 
-if test $OPT_DISABLE_F8 = 0; then
+if test $OPT_DISABLE_F8 = 0 || test $OPT_DISABLE_F8L = 0; then
   AC_CONFIG_FILES([src/f8/Makefile
                    sdas/asf8/Makefile])
+fi
+
+if test $OPT_DISABLE_F8 = 0; then
   test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/f8/Makefile])
+fi
+
+if test $OPT_DISABLE_F8L = 0; then
+  test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/f8l/Makefile])
 fi
 
 test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/Makefile])
@@ -1057,9 +1008,12 @@ sdcc ${VERSION} is now configured for
     r2k                 ${enable_r2k_port}
     r2ka                ${enable_r2ka_port}
     r3ka                ${enable_r3ka_port}
+    r4k                 ${enable_r4k_port}
+    r5k                 ${enable_r5k_port}
+    r6k                 ${enable_r6k_port}
     sm83                ${enable_sm83_port}
     tlcs90              ${enable_tlcs90_port}
-    ez80_z80            ${enable_ez80_z80_port}
+    ez80                ${enable_ez80_port}
     z80n                ${enable_z80n_port}
     r800                ${enable_r800_port}
     stm8                ${enable_stm8_port}
@@ -1070,6 +1024,7 @@ sdcc ${VERSION} is now configured for
     mos6502             ${enable_mos6502_port}
     mos65c02            ${enable_mos65c02_port}
     f8                  ${enable_f8_port}
+    f8l                 ${enable_f8l_port}
 
   Disable non-free lib: ${OPT_DISABLE_NON_FREE}
   Disable packihx:      ${OPT_DISABLE_PACKIHX}

@@ -48,19 +48,20 @@ testAdd(void)
 
   result = left + right;
   ASSERT(result == ({type})(0x5500 + 0x0a00));
-
+#if !defined (__SDCC_pdk13) // Not enough code memory - just a few bytes, this should work with more optimizations
   left = 0x550000ul;
 
   result = left + 0x0a0000ul;
   ASSERT(result == ({type})(0x550000ul + 0x0a0000ul));
 
   ASSERT(add_func(0) == ({type})(5ul << 16));
+#endif
 }
 
 void 
 testSub(void)
 {
-#if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
+#if !defined (__SDCC_pdk13) && !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
   {storage} {attr} {type} left, right, result;
 
   left = 5;
@@ -91,3 +92,4 @@ testSub(void)
   ASSERT(result == ({type})(-39-(signed)0x1200));
 #endif
 }
+

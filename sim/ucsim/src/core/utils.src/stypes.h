@@ -156,22 +156,26 @@ enum cpu_type {
   CPU_R4K	= 0x0200,
   CPU_R5K	= 0x0400,
   CPU_R6K	= 0x0800,
+  CPU_RXK_SDCC	= 0x8000,
+  
   CPU_R800	= 0x1000,
   CPU_ALL_Z80   = (CPU_Z80|CPU_Z180|CPU_LR35902|CPU_EZ80|
 		   CPU_Z80N|CPU_GB80|
 		   CPU_R800),
   CPU_ALL_RXK   =  (CPU_R3K|CPU_R4K|CPU_R5K|CPU_R6K|CPU_R3KA|CPU_R2K),
   
+  CPU_TLCS90	= 0x0001,
+  CPU_TLCS870	= 0x0002,
+  CPU_TLCS870C	= 0x0004,
+  CPU_TLCS870C1	= 0x0008,
+  CPU_TLCS870X	= 0x0010,
+  CPU_TLCS900	= 0x0020,
+  CPU_ALL_TLCS	= (CPU_TLCS90|
+		   CPU_TLCS870|CPU_TLCS870C|CPU_TLCS870C1|CPU_TLCS870X|
+		   CPU_TLCS900),
+
   CPU_XA	= 0x0001,
   CPU_ALL_XA	= (CPU_XA),
-
-  CPU_HC08      = 0x0001,
-  CPU_HCS08     = 0x0002,
-  CPU_ALL_HC08  = (CPU_HC08|CPU_HCS08),
-
-  CPU_HC11      = 0x0004,
-  CPU_HC12      = 0x0008,
-  CPU_ALL_HC12  = (CPU_HC11|CPU_HC12),
   
   CPU_PBLAZE_3	= 0x0001,
   CPU_PBLAZE_6	= 0x0002,
@@ -244,6 +248,16 @@ enum cpu_type {
   CPU_ST7       = 0x0001,
   CPU_ALL_ST7   = (CPU_ST7),
 
+  // Motorola
+  CPU_M6800	= 0x0001,
+  CPU_HC08      = 0x0002,
+  CPU_HCS08     = 0x0004,
+  CPU_M6809	= 0x0008,
+  CPU_HC11      = 0x0010,
+  CPU_HC12      = 0x0020,
+  CPU_9S08      = 0x0040,
+  CPU_M6801	= 0x0080,
+  
   // MOS6502 and variants
   CPU_6502	= 0x0001,	// NMOS
   CPU_6502C	= 0x0002,	// 6502 + HALT pin
@@ -257,7 +271,8 @@ enum cpu_type {
   CPU_65C02	= 0x0100,	// extended inst.set
   CPU_65C02S	= 0x0200,      	// 65C02 variant, different inst.set
   CPU_65CE02	= 0x0400,	// extension of 65C02
-
+  CPU_HUC6280   = 0x0800,	// extension of 65C02S
+  
   // Intel 8080, 8085
   CPU_I8080	= 0x0001,
   CPU_I8085	= 0x0002,
@@ -277,18 +292,25 @@ enum cpu_type {
   // MCS48 Intel 8048 family
   CPU_I8021	= 0x0001, // 1k-? "1"
   CPU_I8022	= 0x0002, // 2k-? "2"
-  CPU_MCS21	= (CPU_I8021|CPU_I8022),
+  CPU_MCS21	= (CPU_I8021),
+  CPU_MCS22     = (CPU_I8022),
   CPU_I8035	= 0x0010, // 0k-64 "8"
   CPU_I8039	= 0x0020, // 0k-128 "8"
   CPU_I8040	= 0x0040, // 0k-256 "8"
   CPU_MCS30	= (CPU_I8035|CPU_I8039|CPU_I8040),
   CPU_I8041	= 0x0100, // "4"
-  CPU_I8041A	= 0x0200, // "A"
-  CPU_MCS41	= (CPU_I8041|CPU_I8041A),
-  CPU_I8048	= 0x1000, // 1k-64 "8"
-  CPU_I8049	= 0x2000, // 2k-128 "8"
-  CPU_I8050	= 0x4000, // 4k-256 "8"
-  CPU_MCS48	= (CPU_I8048|CPU_I8049|CPU_I8050),
+  CPU_I8041A	= 0x0200, // "4"
+  CPU_I8041AH   = 0x0400, // "4"
+  CPU_I8042     = 0x0800, // "4"
+  CPU_I8042AH   = 0x1000, // "4"
+  CPU_I80C42    = 0x2000, // "4"
+  CPU_I80L42    = 0x4000, // "4"
+  CPU_MCS41	= (CPU_I8041|CPU_I8041A|CPU_I8041AH|
+		   CPU_I8042|CPU_I8042AH|CPU_I80C42|CPU_I80L42),
+  CPU_I8048	= 0x8000, // 1k-64 "8"
+  CPU_I8049	= 0x10000,// 2k-128 "8"
+  CPU_I8050	= 0x20000,// 4k-256 "8"
+  CPU_MCS48	= ( CPU_MCS30 |CPU_I8048|CPU_I8049|CPU_I8050),
 
   // OISC
   CPU_OISC	= 0x0001,
@@ -309,6 +331,13 @@ struct cpu_entry
   int  subtype;
   const char *type_help;
   const char *sub_help;
+};
+
+struct cpu_collection
+{
+  const char *family;
+  const char *exe;
+  struct cpu_entry *entries;
 };
 
 /* Classes of memories, this is index on the list */

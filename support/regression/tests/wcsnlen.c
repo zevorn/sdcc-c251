@@ -14,7 +14,6 @@ void
 testStr(void)
 {
 #if  defined(__SDCC) || (_POSIX_C_SOURCE >= 200809L) || (__STDC_VERSION_STRING_H__ > 202311L) // wcsnlen is a C2Y function previously vailable in POSIX.
-#ifndef __SDCC_pdk14 // lack of RAM
   const wchar_t hello4[] = L"hello4";
   const wchar_t hello5[7];
 
@@ -48,7 +47,6 @@ testStr(void)
   ASSERT(wcsnlen(hello3, 7) == 6);
   ASSERT(wcsnlen(hello4, 7) == 6);
   ASSERT(wcsnlen(hello5, 7) == 6);
-#endif
 #endif
 #endif
 }

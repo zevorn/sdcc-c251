@@ -1,5 +1,6 @@
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="content-type" content="text/html; charset=ISO-8859-2">
     <title>&micro;Csim: Invocation</title>
   </head>
@@ -35,26 +36,50 @@
 
     <p>The simulator can be started in the following way: </p>
 
-    <p><tt><font color="blue">$</font> ucsim_XXX [-bBEgGhHlPqVvw] [-a
+    <p><tt><font color="blue">$</font> ucsim_XXX [-bBEgGhHlmPqVvw] [-a
       nr] [-c file] [-C cfg_file] [-e command] [-I if_optionlist] [-k
       portnum] [-o colorlist] [-p prompt] [-R seed]\n [-s file] [-S
       optionlist] [-t CPU] [-U uartnr] [-u hw] [-X freq[k|M]]\n [-z
-      portnum] [-Z portnum] [files...]</tt> </p>
-    
-    <p>Specified files must be names of Intel hex files. Simulator
-      loads them in the specified order into the ROM of the simulated
-      system. If the file is specified without extension, the
-      simulator will try to find intel hex file (filename extended
-      with .hex), omf file (with .omf) and cdb file (with .cdb
-      extension). Simulator can interpret content of these SDCC output
-      files and reads information from them.</p>
-    
-    <p>Options: </p>
+      portnum] [-Z portnum] [file[@memory][:offset][#range]...]</tt> </p>
 
+    <a name="inspec">
+    <h3>Input files</h3>
+    </a>
+    
+    <p>Specified files must be names of Intel hex or Motorola S19
+      files. Some simulators may accept some other file formats, for
+      example ucsim_p1516 accepts .p2h file which is internal format
+      of
+      the <a href="https://danieldrotos.github.io/p12dev/">development
+      system</a>. Simulator loads the files in the specified order
+      into the memory of the simulated system. If the file is specified
+      without extension, the simulator will try to find intel hex file
+      (filename extended with .hex), omf file (with .omf) and cdb file
+      (with .cdb extension). Simulator can interpret content of
+      these <a href="https://sdcc.sourceforge.net/">SDCC</a> output
+      files and reads information from them.</p>
+
+    <p>A memory name (either an address space or a chip) can be
+    appended to the filename using the @ character. The content of the
+    file will then be loaded into the specified memory. If an offset
+    parameter is provided (appended to the input specification using
+    the : character), the simulator will add this offset to the
+    address before storing data in the simulated memory. The offset
+    can be a signed number in decimal, hexadecimal, or octal
+    format. An address range can also be specified using the #
+    character in the form of min_address-max_address (default range is
+    0-0xffffffff). The simulator checks if the address from the data
+    file falls within this specified range; data is only stored in
+    memory if this check succeeds.</p>
+
+    <a name="options">
+    <h3>Options: </h3>
+    </a>
+    
     <dl>
 
       <dt><span style="font-family: monospace;"><b>-a
-      nr</b></span></dt>
+	nr</b></span></dt>
       
       <dd>Set size of variable space. Default is 256.</dd>
 
@@ -80,18 +105,19 @@
       
       <dt><span style="font-family: monospace;"><b>-C cfg_file</b></span></dt>
 
-      <dd>Read and execute initial commands from specified file.</dd>
+      <dd>Read and execute initial commands from specified file
+      (before input files).</dd>
 
-<!--       
-      <dt><tt>-d portnum</tt></dt>
+      <!--       
+	   <dt><tt>-d portnum</tt></dt>
 
-      <dd>Act as gdbserver, listen on <b>portnum</b> for gdb connections.</dd>
--->
+	   <dd>Act as gdbserver, listen on <b>portnum</b> for gdb connections.</dd>
+	 -->
       
       <dt><b><tt>-e command</tt></b></dt>
 
-      <dd>Execute command at program startup (before config
-      file).</dd>
+      <dd>Execute command at program startup (after config
+	file and input files).</dd>
 
 
       <dt><tt><b>-E</b></tt></dt>
@@ -117,7 +143,7 @@
       <dd>Print out a short help about the options and stop. </dd>
       
 
-      <dt><tt><b>-H</b></tt> </dt>
+      <dt><tt><b><a name="H-option">-H</a></b></tt> </dt>
 
       <dd>Print out types of known CPUs. Names printed out by this option can be
         used to determine CPU type using <tt><b>-t</b></tt> option. </dd>
@@ -145,6 +171,13 @@
 
       <dd>Use colors of light theme (default is dark)</dd>
 
+
+      <dt><b><tt>-m</tt></b></dt>
+
+      <dd>Return value of the simulated main() function. The simulated
+      application must be compiled by
+      the <a href="https://sdcc.sourceforge.net/">SDCC</a>.</dd>
+      
 
       <dt><tt><b>-o colorsetting,...<br>
       </b></tt></dt>
@@ -296,24 +329,24 @@
         compiled with sdcc -mds390.<br>
         <tt>-H</tt> option can be used to list all of recognized CPU
         types.<br>  See <a href="cpu_types.html">how to select CPU
-        type</a>. </dd>
+          type</a>. </dd>
 
 
       <dt><tt><b>-U uartnr</b></tt></dt>
 
       <dd>Connect console of standard io to uart as
-      a <a href="display.html#uart_display">display</a> of it. ID of
-      the uart must be specified as parameter to -U option.</dd>
+	a <a href="display.html#uart_display">display</a> of it. ID of
+	the uart must be specified as parameter to -U option.</dd>
 
 
       <dt><tt><b>-u hw</b></tt></dt>
 
       <dd>Connect console of standard io to a hardware element
-      specified as option parameter as
-      a <a href="display.html#uart_display">display</a>. Hardware
-      element can be specified in the same way as
-      in <a href="cmd_general.html#info_hardware">info hardware</a>
-      command.
+	specified as option parameter as
+	a <a href="display.html#uart_display">display</a>. Hardware
+	element can be specified in the same way as
+	in <a href="cmd_general.html#info_hardware">info hardware</a>
+	command.
       </dd>
 
       
@@ -369,7 +402,7 @@
         a console is using telnet to portnum.
 
 	<br> See <a href="mulcons.html">how to use multiple
-	consoles</a>. </dd>
+	  consoles</a>. </dd>
       
 
       <!-- ----------------------------------------------------------------------------- -->

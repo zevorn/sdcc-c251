@@ -302,7 +302,7 @@ asxxxx_get_byte (bfd *abfd, bool *errorptr)
 {
   bfd_byte c;
 
-  if (bfd_bread (&c, (bfd_size_type) 1, abfd) != 1)
+  if (bfd_read (&c, (bfd_size_type) 1, abfd) != 1)
     {
       if (bfd_get_error () == bfd_error_invalid_operation){
         // FEATURE? // this error is set at EOF
@@ -1091,6 +1091,7 @@ static bool asxxxx_bfd_is_target_special_symbol(bfd * a, asymbol * b)
 #define asxxxx_bfd_is_local_label_name              bfd_generic_is_local_label_name
 #define asxxxx_get_lineno                           _bfd_nosymbols_get_lineno
 #define asxxxx_find_nearest_line                    _bfd_nosymbols_find_nearest_line
+#define asxxxx_find_nearest_line_with_alt	    _bfd_nosymbols_find_nearest_line_with_alt
 #define asxxxx_find_inliner_info                    _bfd_nosymbols_find_inliner_info
 #define asxxxx_make_empty_symbol                    _bfd_generic_make_empty_symbol
 #define asxxxx_bfd_make_debug_symbol                _bfd_nosymbols_bfd_make_debug_symbol
@@ -1132,6 +1133,7 @@ const bfd_target asxxxx_vec =
   15,                           /* AR_max_namelen.  */
   1,                            /* match priority.  */
   TARGET_KEEP_UNUSED_SECTION_SYMBOLS, /* keep unused section symbols.  */
+  TARGET_MERGE_SECTIONS,
   bfd_getb64, bfd_getb_signed_64, bfd_putb64,
   bfd_getb32, bfd_getb_signed_32, bfd_putb32,
   bfd_getb16, bfd_getb_signed_16, bfd_putb16,   /* Data.  */
@@ -1147,16 +1149,16 @@ const bfd_target asxxxx_vec =
     _bfd_dummy_target,          /* core */
   },
   {     /* Set the format of a file being written.  */
-    false,
+    NULL,
     asxxxx_mkobject,            /* object */
     _bfd_generic_mkarchive,     /* archive */
-    false,                  /* core */
+    NULL,                  /* core */
   },
   {     /* Write cached information into a file being written, at <<bfd_close>>.  */
-    false,
-    false, /*    asxxxx_write_object_contents, object */
+    NULL,
+    NULL, /*    asxxxx_write_object_contents, object */
     _bfd_write_archive_contents,  /* archive */
-    false,                    /* core */
+    NULL,                    /* core */
   },
 
   BFD_JUMP_TABLE_GENERIC (asxxxx),

@@ -5,7 +5,7 @@
 #include <testfwk.h>
 
 #ifdef __SDCC
-#pragma std_c99
+#pragma std_c11
 #endif
 
 #include <stdio.h>

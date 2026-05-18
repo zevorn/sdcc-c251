@@ -1,7 +1,7 @@
 /* stm8pst.c */
 
 /*
- *  Copyright (C) 1010  Alan R. Baldwin
+ *  Copyright (C) 2010-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

@@ -24,7 +24,7 @@
 /* XXX */
 #undef EXEC_PREFIX
 
-/* Define to 1 if you have the `backtrace_symbols_fd' function. */
+/* Define to 1 if you have the 'backtrace_symbols_fd' function. */
 #undef HAVE_BACKTRACE_SYMBOLS_FD
 
 /* Define to 1 if you have the <boost/graph/adjacency_list.hpp> header file.
@@ -43,16 +43,16 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `gc' library (-lgc). */
+/* Define to 1 if you have the 'gc' library (-lgc). */
 #undef HAVE_LIBGC
 
 /* Define to 1 if you have the <machine/endian.h> header file. */
 #undef HAVE_MACHINE_ENDIAN_H
 
-/* Define to 1 if you have the `mkstemp' function. */
+/* Define to 1 if you have the 'mkstemp' function. */
 #undef HAVE_MKSTEMP
 
-/* Define to 1 if you have the `setrlimit' function. */
+/* Define to 1 if you have the 'setrlimit' function. */
 #undef HAVE_SETRLIMIT
 
 /* Define to 1 if you have the <stdint.h> header file. */
@@ -70,7 +70,7 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
-/* Define to 1 if you have the `strndup' function. */
+/* Define to 1 if you have the 'strndup' function. */
 #undef HAVE_STRNDUP
 
 /* Define to 1 if you have the <sys/endian.h> header file. */
@@ -87,6 +87,9 @@
 
 /* Define to 1 if you have the <treedec/combinations.hpp> header file. */
 #undef HAVE_TREEDEC_COMBINATIONS_HPP
+
+/* Define to 1 if you have the <u8ident.h> header file. */
+#undef HAVE_U8IDENT_H
 
 /* Define to 1 if you have the <uchar.h> header file. */
 #undef HAVE_UCHAR_H
@@ -109,9 +112,6 @@
 /* XXX */
 #undef NON_FREE_LIB_DIR_SUFFIX
 
-/* Define to 1 to disable the AVR port */
-#undef OPT_DISABLE_AVR
-
 /* XXX */
 #undef OPT_DISABLE_DEVICE_LIB
 
@@ -122,10 +122,13 @@
 #undef OPT_DISABLE_DS400
 
 /* XXX */
-#undef OPT_DISABLE_EZ80_Z80
+#undef OPT_DISABLE_EZ80
 
 /* XXX */
 #undef OPT_DISABLE_F8
+
+/* XXX */
+#undef OPT_DISABLE_F8L
 
 /* XXX */
 #undef OPT_DISABLE_HC08
@@ -171,6 +174,15 @@
 
 /* XXX */
 #undef OPT_DISABLE_R3KA
+
+/* XXX */
+#undef OPT_DISABLE_R4K
+
+/* XXX */
+#undef OPT_DISABLE_R5K
+
+/* XXX */
+#undef OPT_DISABLE_R6K
 
 /* XXX */
 #undef OPT_DISABLE_R800
@@ -265,22 +277,22 @@
 /* XXX */
 #undef SDCC_VERSION_STR
 
-/* The size of `char', as computed by sizeof. */
+/* The size of 'char', as computed by sizeof. */
 #undef SIZEOF_CHAR
 
-/* The size of `int', as computed by sizeof. */
+/* The size of 'int', as computed by sizeof. */
 #undef SIZEOF_INT
 
-/* The size of `long', as computed by sizeof. */
+/* The size of 'long', as computed by sizeof. */
 #undef SIZEOF_LONG
 
-/* The size of `long long', as computed by sizeof. */
+/* The size of 'long long', as computed by sizeof. */
 #undef SIZEOF_LONG_LONG
 
-/* The size of `short', as computed by sizeof. */
+/* The size of 'short', as computed by sizeof. */
 #undef SIZEOF_SHORT
 
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
+/* Define to 1 if all of the C89 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
@@ -339,7 +351,7 @@
 # endif
 #endif
 
-/* Define to 1 if type `char' is unsigned and your compiler does not
+/* Define to 1 if type 'char' is unsigned and your compiler does not
    predefine this macro.  */
 #ifndef __CHAR_UNSIGNED__
 # undef __CHAR_UNSIGNED__

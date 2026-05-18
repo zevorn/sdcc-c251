@@ -160,4 +160,7 @@ void getPrefixSuffix(const char *);
 char *setPrefixSuffix(const char *);
 
 char *formatInlineAsm (char *);
+
+void process_identifier (char *dest, const char *src, size_t n);
 #endif
+

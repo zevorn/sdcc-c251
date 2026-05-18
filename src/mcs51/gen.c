@@ -1230,10 +1230,10 @@ freeAsmop (operand * op, asmop * aaop, iCode * ic, bool pop)
   if (!aop)
     return;
 
-  aop->allocated--;
-
-  if (aop->allocated)
+  if (!aop->allocated)
     goto dealloc;
+
+  aop->allocated--;
 
   /* depending on the asmop type only three cases need work
      AOP_R0, AOP_R1 & AOP_STK */
@@ -1256,7 +1256,7 @@ freeAsmop (operand * op, asmop * aaop, iCode * ic, bool pop)
       bitVectUnSetBit (ic->rUsed, R0_IDX);
       break;
 
-    case AOP_R1:
+    case AOP_R1:emitcode(";", "freeAsmop r1 %d", pop);
       if (R1INB)
         {
           emitcode ("mov", "r1,b");
@@ -1311,6 +1311,7 @@ freeAsmop (operand * op, asmop * aaop, iCode * ic, bool pop)
 
 dealloc:
   /* all other cases just dealloc */
+  aop->allocated = 0;
   if (op)
     {
       op->aop = NULL;
@@ -1464,7 +1465,7 @@ aopArg (sym_link *ftype, int i)
   for (j = 1, arg = args; j < i; j++, arg = arg->next)
     wassert (arg);
 
-  if (IS_SPEC(arg->type) && SPEC_NOUN(arg->type) == V_BIT)
+  if (IS_SPEC (arg->type) && SPEC_NOUN (arg->type) == V_BIT)
     {
       wassert (0); // todo: special handling for bits.
     }
@@ -2650,6 +2651,8 @@ release:
 
 /*-----------------------------------------------------------------*/
 /* genCpl - generate code for complement                           */
+/* no longer used; todo: chekc if something from here could still  */
+/* be useful in genXor for AOP_CRY, then remove genCpl!            */
 /*-----------------------------------------------------------------*/
 static void
 genCpl (iCode * ic)
@@ -4317,9 +4320,7 @@ genFunction (iCode * ic)
   bool switchedPSW = FALSE;
   int calleesaves_saved_register = -1;
   int stackAdjust = sym->stack;
-  int accIsFree = sym->recvSize < 4;
   char *freereg = NULL;
-  iCode *ric = (ic->next && ic->next->op == RECEIVE) ? ic->next : NULL;
   bool fReentrant = (IFFUNC_ISREENT (sym->type) || options.stackAuto);
 
   /* create the function header */
@@ -4596,9 +4597,13 @@ genFunction (iCode * ic)
 
   /* For some cases it is worthwhile to perform a RECEIVE iCode */
   /* before setting up the stack frame completely. */
-  if (ric && ric->argreg <= 1000 && IC_RESULT (ric))
+  iCode *ric = (ic->next && ic->next->op == RECEIVE) ? ic->next : NULL;
+  while (ric && ric->argreg > 1000 && ric->next && ric->next->op == RECEIVE)
+    ric = ric->next;
+  bool accIsFree = !(mcs51IsParmInCall (ftype, "a"));
+  if (ric && ric->argreg <= 1000 && ric->result)
     {
-      symbol *rsym = OP_SYMBOL (IC_RESULT (ric));
+      symbol *rsym = OP_SYMBOL (ric->result);
 
       if (rsym->isitmp)
         {
@@ -4619,12 +4624,12 @@ genFunction (iCode * ic)
 
           genLine.lineElement.ic = ric;
           D (emitcode (";", "genReceive"));
-          for (ofs = 0; ofs < sym->recvSize; ofs++)
+          for (ofs = 0; ofs < getSize (rsym->type); ofs++)
             {
               emitpush (fReturn[ofs]);
               _G.stack.pushed--; /* cancel out pushed++ from emitpush() */
             }
-          stackAdjust -= sym->recvSize;
+          stackAdjust -= getSize (rsym->type);
           if (stackAdjust < 0)
             {
               assert (stackAdjust >= 0);
@@ -4632,23 +4637,23 @@ genFunction (iCode * ic)
             }
           genLine.lineElement.ic = ic;
           ric->generated = 1;
-          accIsFree = 1;
+          accIsFree = true;
         }
       /* If the RECEIVE operand is 4 registers, we can do the moves now */
       /* to free up the accumulator. */
-      else if (rsym && rsym->nRegs && sym->recvSize == 4)
+      else if (rsym && rsym->nRegs && getSize (rsym->type) == 4) // Should be >= 4, but the loop below is fragile. TODO: Use genMove here, enable for >= 4.
         {
           int ofs;
 
           genLine.lineElement.ic = ric;
           D (emitcode (";", "genReceive"));
-          for (ofs = 0; ofs < sym->recvSize; ofs++)
+          for (ofs = 0; ofs < getSize (rsym->type); ofs++)
             {
               emitcode ("mov", "%s,%s", rsym->regs[ofs]->name, fReturn[ofs]);
             }
           genLine.lineElement.ic = ic;
           ric->generated = 1;
-          accIsFree = 1;
+          accIsFree = true;
         }
     }
 
@@ -5057,7 +5062,7 @@ genEndFunction (iCode * ic)
     return;
 
   /* If there were stack parameters, we cannot optimize without also    */
-  /* fixing all of the stack offsets; this is too dificult to consider. */
+  /* fixing all of the stack offsets; this is too difficult to consider. */
   if (FUNC_HASSTACKPARM (ftype))
     return;
 
@@ -7073,12 +7078,12 @@ genCmpGt (iCode * ic, iCode * ifx)
       sign = !((SPEC_USIGN (letype) && !(IS_CHAR (letype) && IS_LITERAL (letype))) ||
                (SPEC_USIGN (retype) && !(IS_CHAR (retype) && IS_LITERAL (retype))));
     }
-  /* assign the asmops */
+  /* assign the asmops - the order here nees tomatch the freeing in genCmp. Note that for genCmp the order in which they are passed to genCmp matters. */
   aopOp (result, ic, TRUE);
-  aopOp (left, ic, FALSE);
   aopOp (right, ic, FALSE);
-
-  genCmp (right, left, result, ifx, sign, ic);
+  aopOp (left, ic, FALSE);
+  
+  genCmp (right, left, result, ifx, sign, ic);emitcode(";","free result");
 
   freeAsmop (result, NULL, ic, TRUE);
 }
@@ -7106,10 +7111,10 @@ genCmpLt (iCode * ic, iCode * ifx)
       sign = !((SPEC_USIGN (letype) && !(IS_CHAR (letype) && IS_LITERAL (letype))) ||
                (SPEC_USIGN (retype) && !(IS_CHAR (retype) && IS_LITERAL (retype))));
     }
-  /* assign the asmops */
+  /* assign the asmops - the order here nees tomatch the freeing in genCmp. Note that for genCmp the order in which they are passed to genCmp matters. */
+  aopOp (result, ic, TRUE);
   aopOp (left, ic, FALSE);
   aopOp (right, ic, FALSE);
-  aopOp (result, ic, TRUE);
 
   genCmp (left, right, result, ifx, sign, ic);
 
@@ -8848,13 +8853,16 @@ genXor (iCode * ic, iCode * ifx)
               if (aopIsLitVal (right->aop, offset, 1, 0x00))
                 {
                   opPut (result, opGet (left, offset, FALSE, FALSE), offset);
-                   continue;
+                  continue;
                 }
               else if (AOP_TYPE (right) == AOP_LIT && AOP_TYPE (left) == AOP_ACC)
                 {
                   // this should be the only use of left so A,B can be overwritten
                   char *l = Safe_strdup (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("xrl", "%s,%s", l, opGet (right, offset, FALSE, FALSE));
+                  if (aopIsLitVal (right->aop, offset, 1, 0xff))
+                    emitcode ("cpl", "a");
+                  else
+                    emitcode ("xrl", "%s,%s", l, opGet (right, offset, FALSE, FALSE));
                   opPut (result, l, offset);
                   Safe_free (l);
                   continue;
@@ -8894,7 +8902,10 @@ genXor (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  if (aopIsLitVal (right->aop, offset, 1, 0xff))
+                    emitcode ("cpl", "a");
+                  else
+                    emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
                 }
               else
                 {
@@ -10808,7 +10819,7 @@ genUnpackBits (operand * result, const char *rname, int ptype, iCode * ifx)
       emitPtrByteGet (rname, ptype, FALSE);
       AccRol (8 - bstr);
       emitcode ("anl", "a,#!constbyte", (unsigned)(((unsigned char)-1) >> (8 - blen)));
-      if (!SPEC_USIGN (etype))
+      if (!SPEC_USIGN (etype) && !IS_BOOLEAN (etype))
         {
           /* signed bitfield */
           symbol *tlbl = newiTempLabel (NULL);
@@ -10852,7 +10863,7 @@ finish:
     {
       char *source;
 
-      if (SPEC_USIGN (etype))
+      if (SPEC_USIGN (etype) || IS_BOOLEAN (etype))
         source = zero;
       else
         {
@@ -13040,10 +13051,6 @@ gen51Code (iCode * lic)
           genNot (ic);
           break;
 
-        case '~':
-          genCpl (ic);
-          break;
-
         case UNARYMINUS:
           genUminus (ic);
           break;
@@ -13307,7 +13314,7 @@ mcs51IsParmInCall (sym_link *ftype, const char *what)
   int i;
 
   for (i = 1, args = FUNC_ARGS (ftype); args; args = args->next, i++)
-    if (mcs51IsRegArg(ftype, i, what))
+    if (!(IS_SPEC (args->type) && SPEC_NOUN (args->type) == V_BIT) && mcs51IsRegArg (ftype, i, what)) // TODO: Allow bits, once supported in aopArg!
       return true;
   return false;
 }

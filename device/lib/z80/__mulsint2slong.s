@@ -32,15 +32,13 @@
 .globl ___muluint2ulong
 .globl ___mulsint2slong
 
-; uint32_t _u_16_16_mul(uint16_t l, uint16_t r);
-
 .area _CODE
 
 ___mulsint2slong:
 	; Use lowest bit of c to remember if result needs to be negated. Use b to cache #0.
 	ld	bc, #0
 
-	bit	#7, l
+	bit	#7, h
 	jr	z, hl_nonneg
 	ld	a, b
 	sub	a, l
@@ -51,7 +49,7 @@ ___mulsint2slong:
 	inc	c
 hl_nonneg:
 
-	bit	#7, e
+	bit	#7, d
 	jr	z, de_nonneg
 	ld	a, b
 	sub	a, e
@@ -82,22 +80,5 @@ de_nonneg:
 	ld	a, b
 	sbc	a, h
 	ld	h, a
-	ret
-
-; 16x16->32 multiplication
-___muluint2ulong:
-	ld	iy, #0
-	ld	b, #16
-loop:
-	add	iy, iy
-	adc	hl, hl
-	jr	NC, skip
-	add	iy, de
-	jr	NC, skip
-	inc	hl
-skip:
-	djnz	loop
-	push	iy
-	pop	de
 	ret
 

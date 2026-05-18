@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc can pass struct!
-#if 0
 struct s {
   double d;
 };
@@ -20,17 +18,16 @@ sub (struct s s)
   s.d += 1.0;
   return s;
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   struct s t = { 2.0 };
   t = sub (t);
   if (t.d != 3.0)
     ASSERT (0);
   return;
-#endif
 }
+
+struct s sub (struct s s); // Non-inline definition to make this test work on all hosts.
 

@@ -1,7 +1,7 @@
 /* z80adr.c */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,11 +23,6 @@
  */
 
 /*
- * xerr messages and order fix Copyright (C) 1989-2021  Alan R. Baldwin
- * from ASxxxx 5.40
- */
-
-/*
  * Extensions: P. Felber
  */
 
@@ -42,18 +37,17 @@
  *
  * This addr(esp) routine performs the following addressing decoding:
  *
- *      address         mode            flag            addr            base
- *      #n              S_IMMED         0               n               NULL
- *      label           s_type          ----            s_addr          s_area
- *      [REG]           S_IND+icode     0               0               NULL
- *      [label]         S_INDM          ----            s_addr          s_area
- *      offset[REG]     S_IND+icode     ----            offset          ----
+ *	address		mode		flag		addr		base
+ *	#n		S_IMMED		0		n		NULL
+ *	label		s_type		----		s_addr		s_area
+ *	[REG]		S_IND+icode	0		0		NULL
+ *	[label]		S_INDM		----		s_addr		s_area
+ *	offset[REG]	S_IND+icode	----		offset		----
  */
 int
-addr(esp)
-struct expr *esp;
+addr(struct expr *esp)
 {
-        int c, mode, indx;
+	int c, mode, indx;
 	char *p;
 
 	/* fix order of '<', '>', and '#' */
@@ -67,82 +61,102 @@ struct expr *esp;
 	}
 	ip = p;
 
-        if ((c = getnb()) == '#') {
-                expr(esp, 0);
-                esp->e_mode = S_IMMED;
-        } else
-        if (c == LFIND) {
-                if ((indx = admode(R8)) != 0) {
-                        mode = S_INDB;
-                } else
-                if ((indx = admode(R16)) != 0) {
-                        mode = S_INDR;
-                } else
-                if ((indx = admode(R8X)) != 0) {
-                        mode = S_R8X;
-                        xerr('a', "No I or R.");
-                } else
-                if ((indx = admode(R16X)) != 0) {
-                        mode = S_R16X;
-                        xerr('a', "Registers AF and AF' are invalid.");
-                } else {
-                        mode = S_INDM;
-                        expr(esp, 0);
-                        esp->e_mode = mode;
-                }
-                if (indx) {
+	if ((c = getnb()) == '#') {
+		expr(esp, 0);
+		esp->e_mode = S_IMMED;
+	} else
+	if (c == LFIND) {
+		if ((indx = admode(R8)) != 0) {
+			mode = S_INDB;
+		} else
+		if ((indx = admode(R16)) != 0) {
+			if (((mchtyp == X_8080) && ((indx & 0xFF) == IX)) ||
+			    ((mchtyp == X_8080) && ((indx & 0xFF) == IY)))
+				xerr('a', "8080: No IX or IY.");
+			mode = S_INDR;
+		} else	
+		if ((indx = admode(R8X)) != 0) {
+			if (mchtyp == X_8080)
+				xerr('a', "8080: No I or R.");
+			mode = S_R8X;
+		} else
+		if ((indx = admode(R16X)) != 0) {
+			xerr('a', "Registers AF and AF' are invalid.");
+			mode = S_R16X;
+		} else {
+			mode = S_INDM;
+			expr(esp, 0);
+			esp->e_mode = mode;
+		}
+		if (indx) {
                         esp->e_mode = (mode + indx)&0xFF;
-                        esp->e_base.e_ap = NULL;
-                }
-                if ((c = getnb()) != RTIND) {
-                        xerr('a', "Missing ')'.");
-                }
-        } else {
-                unget(c);
-                if ((indx = admode(R8)) != 0) {
-                        mode = S_R8;
-                } else
-                if ((indx = admode(R16)) != 0) {
-                        mode = S_R16;
-                } else
-                if ((indx = admode(R8X)) != 0) {
-                        mode = S_R8X;
-                } else
+			esp->e_base.e_ap = NULL;
+		}
+		if ((c = getnb()) != RTIND) {
+			unget(c);
+			if (indx && ((indx & 0xFF)==IX || (indx & 0xFF)==IY)) {
+				if (mchtyp == X_8080)
+					xerr('a', "8080: No IX or IY.");
+				expr(esp, 0);
+				esp->e_mode = S_INDR + (indx&0xFF);
+			}
+			if ((c = getnb()) != RTIND)
+				xerr('a', "Missing ')'.");
+		}
+	} else {
+		unget(c);
+		if ((indx = admode(R8)) != 0) {
+			mode = S_R8;
+		} else
+		if ((indx = admode(R16)) != 0) {
+			if (((mchtyp == X_8080) && ((indx & 0xFF) == IX)) ||
+			    ((mchtyp == X_8080) && ((indx & 0xFF) == IY)))
+				xerr('a', "8080: No IX or IY.");
+			mode = S_R16;
+		} else	
+		if ((indx = admode(R8X)) != 0) {
+			if (mchtyp == X_8080)
+				xerr('a', "8080: No I or R.");
+			mode = S_R8X;
+		} else
                 if ((indx = admode(R8U1)) != 0) {
                         mode = S_R8U1;
-                } else
+		} else
                 if ((indx = admode(R8U2)) != 0) {
                         mode = S_R8U2;
-                } else
-                if ((indx = admode(R16X)) != 0) {
-                        mode = S_R16X;
-                } else
+		} else
+		if ((indx = admode(R16X)) != 0) {
+			mode = S_R16X;
+		} else
                 if ((indx = admode(R8MB)) != 0) {
                         mode = S_R8MB;
-                } else {
-                        mode = S_USER;
-                        expr(esp, 0);
-                        esp->e_mode = mode;
-                }
-                if (indx) {
-                        esp->e_addr = indx&0xFF;
-                        esp->e_mode = mode;
-                        esp->e_base.e_ap = NULL;
-                }
-                if ((c = getnb()) == LFIND) {
-                        if ((indx=admode(R16))!=0
-                                && ((indx&0xFF)==IX || (indx&0xFF)==IY)) {
-                                esp->e_mode = S_INDR + (indx&0xFF);
-                        } else {
-                                xerr('a', "Register IX or IY required.");
-                        }
-                        if ((c = getnb()) != RTIND)
-                                xerr('a', "Missing ')'.");
-                } else {
-                        unget(c);
-                }
-        }
-        return (esp->e_mode);
+		} else {
+			mode = S_USER;
+			expr(esp, 0);
+			esp->e_mode = mode;
+		}
+		if (indx) {
+			esp->e_addr = indx&0xFF;
+			esp->e_mode = mode;
+			esp->e_base.e_ap = NULL;
+		}
+		if ((c = getnb()) == LFIND) {
+			if ((indx=admode(R16))!=0
+				&& ((indx&0xFF)==IX || (indx&0xFF)==IY)) {
+				if (((mchtyp == X_8080) && ((indx & 0xFF) == IX)) ||
+				    ((mchtyp == X_8080) && ((indx & 0xFF) == IY)))
+					xerr('a', "8080: No IX or IY.");
+				esp->e_mode = S_INDR + (indx&0xFF);
+			} else {
+				xerr('a', "Register IX or IY required.");
+			}
+			if ((c = getnb()) != RTIND)
+				xerr('a', "Missing ')'.");
+		} else {
+			unget(c);
+		}
+	}
+	return (esp->e_mode);
 }
 
 /*
@@ -168,75 +182,73 @@ struct expr *esp;
  * zero for no match.
  */
 int
-admode(sp)
-struct adsym *sp;
+admode(struct adsym *sp)
 {
-        char *ptr;
-        int i;
-        char *ips;
+	char *ptr;
+	int i;
+	char *ips;
 
-        ips = ip;
-        unget(getnb());
+	ips = ip;
+	unget(getnb());
 
-        i = 0;
-        while ( *(ptr = &sp[i].a_str[0]) ) {
-                if (srch(ptr)) {
-                        return(sp[i].a_val);
-                }
-                i++;
-        }
-        ip = ips;
-        return(0);
+	i = 0;
+	while ( *(ptr = &sp[i].a_str[0]) ) {
+		if (srch(ptr)) {
+			return(sp[i].a_val);
+		}
+		i++;
+	}
+	ip = ips;
+	return(0);
 }
 
 /*
  *      srch --- does string match ?
  */
 int
-srch(str)
-char *str;
+srch(char *str)
 {
-        char *ptr;
-        ptr = ip;
+	char *ptr;
+	ptr = ip;
 
-        while (*ptr && *str) {
-                if (ccase[*ptr & 0x007F] != ccase[*str & 0x007F])
-                        break;
-                ptr++;
-                str++;
-        }
-        if (ccase[*ptr & 0x007F] == ccase[*str & 0x007F]) {
-                ip = ptr;
-                return(1);
-        }
+	while (*ptr && *str) {
+		if (ccase[*ptr & 0x007F] != ccase[*str & 0x007F])
+			break;
+		ptr++;
+		str++;
+	}
+	if (ccase[*ptr & 0x007F] == ccase[*str & 0x007F]) {
+		ip = ptr;
+		return(1);
+	}
 
-        if (!*str)
-                if (!(ctype[*ptr & 0x007F] & LTR16)) {
-                        ip = ptr;
-                        return(1);
-                }
-        return(0);
+	if (!*str)
+		if (!(ctype[*ptr & 0x007F] & LTR16)) {
+			ip = ptr;
+			return(1);
+		}
+	return(0);
 }
 
 /*
  * Registers
  */
 
-struct  adsym   R8[] = {
-    {   "b",    B|0400  },
-    {   "c",    C|0400  },
-    {   "d",    D|0400  },
-    {   "e",    E|0400  },
-    {   "h",    H|0400  },
-    {   "l",    L|0400  },
-    {   "a",    A|0400  },
-    {   "",     0000    }
+struct	adsym	R8[] = {
+    {	"b",	B|0400	},
+    {	"c",	C|0400	},
+    {	"d",	D|0400	},
+    {	"e",	E|0400	},
+    {	"h",	H|0400	},
+    {	"l",	L|0400	},
+    {	"a",	A|0400	},
+    {	"",	0000	}
 };
 
-struct  adsym   R8X[] = {
-    {   "i",    I|0400  },
-    {   "r",    R|0400  },
-    {   "",     0000    }
+struct	adsym	R8X[] = {
+    {	"i",	I|0400	},
+    {	"r",	R|0400	},
+    {	"",	0000	}
 };
 
 /* Undocumented instructions for 0xDD prefix H->IX high, L->IX low */
@@ -253,25 +265,25 @@ struct  adsym   R8U2[] = {
   {   "",     0000    }
 };
 
-struct  adsym   R16[] = {
-    {   "bc",   BC|0400 },
-    {   "de",   DE|0400 },
-    {   "hl",   HL|0400 },
-    {   "sp",   SP|0400 },
-    {   "ix",   IX|0400 },
-    {   "iy",   IY|0400 },
-    {   "",     0000    }
+struct	adsym	R16[] = {
+    {	"bc",	BC|0400	},
+    {	"de",	DE|0400	},
+    {	"hl",	HL|0400	},
+    {	"sp",	SP|0400	},
+    {	"ix",	IX|0400	},
+    {	"iy",	IY|0400	},
+    {	"",	0000	}
 };
 
-struct  adsym   R16X[] = {
-    {   "af'",  AF|0400 },      /* af' must be first !!! */
-    {   "af",   AF|0400 },
-    {   "",     0000    }
+struct	adsym	R16X[] = {
+    {	"af'",	AF|0400	},	/* af' must be first !!! */
+    {	"af",	AF|0400	},
+    {	"",	0000	}
 };
 
 struct  adsym   R8MB[] = {
     {   "mb",   MB|0400 },
-    {   "",     0000    }
+    {	"",	0000	}
 };
 
 struct  adsym   RX[] = {
@@ -283,14 +295,14 @@ struct  adsym   RX[] = {
  * Conditional definitions
  */
 
-struct  adsym   CND[] = {
-    {   "NZ",   NZ|0400 },
-    {   "Z",    Z |0400 },
-    {   "NC",   NC|0400 },
-    {   "C",    CS|0400 },
-    {   "PO",   PO|0400 },
-    {   "PE",   PE|0400 },
-    {   "P",    P |0400 },
-    {   "M",    M |0400 },
-    {   "",     0000    }
+struct	adsym	CND[] = {
+    {	"NZ",	NZ|0400	},
+    {	"Z",	Z |0400	},
+    {	"NC",	NC|0400	},
+    {	"C",	CS|0400	},
+    {	"PO",	PO|0400	},
+    {	"PE",	PE|0400	},
+    {	"P",	P |0400	},
+    {	"M",	M |0400	},
+    {	"",	0000	}
 };

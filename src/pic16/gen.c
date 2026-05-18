@@ -11358,10 +11358,6 @@ genpic16Code (iCode * lic)
           pic16_genNot (ic);
           break;
 
-        case '~':
-          pic16_genCpl (ic);
-          break;
-
         case UNARYMINUS:
           genUminus (ic);
           break;

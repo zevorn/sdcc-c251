@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc supports struct passing!
-#if 0
 typedef struct trio { int a, b, c; } trio;
 
 int
@@ -25,16 +23,13 @@ foo (trio t, int i, int j, int k)
 {
   return bar (i, j, k, t);
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   trio t = { 1, 2, 3 };
 
   foo (t, 4, 5, 6);
   return;
-#endif
 }
 

@@ -95,12 +95,24 @@ pdk_init_asmops (void)
   asmop_zero.type = AOP_LIT;
   asmop_zero.size = 1;
   asmop_zero.aopu.aop_lit = constVal ("0");
-  asmop_zero.valinfo.anything = true;
+  asmop_zero.valinfo.anything = false;
+  asmop_zero.valinfo.nothing = true;
+  asmop_zero.valinfo.nonnull = false;
+  asmop_zero.valinfo.min = 0;
+  asmop_zero.valinfo.max = 0;
+  asmop_zero.valinfo.knownbitsmask = 0xffffffffffffffffull;
+  asmop_zero.valinfo.knownbits = 0;
 
   asmop_one.type = AOP_LIT;
   asmop_one.size = 1;
   asmop_one.aopu.aop_lit = constVal ("1");
-  asmop_one.valinfo.anything = true;
+  asmop_zero.valinfo.anything = false;
+  asmop_zero.valinfo.nothing = true;
+  asmop_zero.valinfo.nonnull = true;
+  asmop_zero.valinfo.min = 1;
+  asmop_zero.valinfo.max = 1;
+  asmop_zero.valinfo.knownbitsmask = 0xffffffffffffffffull;
+  asmop_zero.valinfo.knownbits = 1;
   
   asmop_mone.type = AOP_LIT;
   asmop_mone.size = 8; // Maximum size for asmop.
@@ -233,7 +245,7 @@ aopIsLitVal (const asmop *aop, int offset, int size, unsigned long long int val)
       if ((aop->size <= offset || aop->type == AOP_STL && offset) && !b)
         continue;
 
-      if (aop->type == AOP_IMMD && offset > (aop->aopu.code ? 1 : 0) && !b)
+      if (aop->type == AOP_IMMD && offset > ((aop->aopu.code || aop->aopu.func) ? 1 : 0) && !b)
         continue;
 
       // Information from generalized constant propagation analysis
@@ -274,7 +286,7 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_IMMD)
     {
-      if (offset == 0 && aop->aopu.code)
+      if (offset == 0 && (aop->aopu.code || aop->aopu.func))
         SNPRINTF (buffer, sizeof(buffer), "#<(%s + %d)", aop->aopu.immd, aop->aopu.immd_off);
       else if (offset == 1 && aop->aopu.func)
         SNPRINTF (buffer, sizeof(buffer), "#>(%s + %d)", aop->aopu.immd, aop->aopu.immd_off);
@@ -1421,7 +1433,7 @@ genXorByte (const asmop *result_aop, const asmop *left_aop, const asmop *right_a
           emit2 (right_aop->type == AOP_SFR ? "xor.io" : "xor", "%s, a", aopGet (right_aop, i));
           cost (1, 1);
         }
-      else if (right_aop->type == AOP_STK || right_aop->type == AOP_STL)
+      else if (right_aop->type == AOP_STK || right_aop->type == AOP_STL || right_aop->type == AOP_SFR)
         {
           if (!p_dead || aopInReg (left_aop, i, P_IDX))
             UNIMPLEMENTED;
@@ -1501,26 +1513,6 @@ genXorImpl (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_ao
 
   if (pushed_a)
     popAF();
-}
-
-/*-----------------------------------------------------------------*/
-/* genCpl - generate code for complement                           */
-/*-----------------------------------------------------------------*/
-static void
-genCpl (const iCode *ic)
-{
-  operand *result = IC_RESULT (ic);
-  operand *left = IC_LEFT (ic);
-
-  D (emit2 ("; genCpl", ""));
-
-  aopOp (left, ic);
-  aopOp (result, ic);
-  
-  genXorImpl (ic, result->aop, left->aop, ASMOP_MONE);
-
-  freeAsmop (left);
-  freeAsmop (result);
 }
 
 /*-----------------------------------------------------------------*/
@@ -4478,7 +4470,7 @@ genPointerGet (const iCode *ic)
             }
 
           if (bit_field && blen < 8)
-            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))));
+            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result))));
 
           if (aopInReg (result->aop, i, A_IDX) && (!bit_field ? i + 1 < size : blen - 8 > 0))
             {
@@ -4497,7 +4489,7 @@ genPointerGet (const iCode *ic)
       cost (1, 2);
 
       if (bit_field && blen < 8)
-        getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))));
+        getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result))));
 
       cheapMove (result->aop, 0, ASMOP_A, 0, true, true);
       goto release;
@@ -4528,7 +4520,7 @@ genPointerGet (const iCode *ic)
           cost (1, 2);
 
           if (bit_field && blen < 8)
-            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))));
+            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result))));
 
           if (aopInReg (result->aop, i, A_IDX) && (!bit_field ? i + 1 < size : blen - 8 > 0))
             {
@@ -4608,7 +4600,7 @@ genPointerGet (const iCode *ic)
           G.p.type = AOP_INVALID;
 
           if (bit_field && blen < 8)
-            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))));
+            getBitFieldByte (blen, bstr, !SPEC_USIGN (getSpec (operandType (result))) && !IS_BOOLEAN (getSpec (operandType (result))));
 
           if (aopInReg (result->aop, i, P_IDX) && (!bit_field ? i + 1 < size : blen - 8 > 0))
             UNIMPLEMENTED;
@@ -5315,6 +5307,8 @@ genCast (const iCode *ic)
   // Cast to _BitInt can require mask of top byte.
   if (IS_BITINT (resulttype) && (SPEC_BITINTWIDTH (resulttype) % 8) && bitsForType (resulttype) < bitsForType (righttype))
     {
+      bool swapped_a = false;
+
       aopOp (right, ic);
       aopOp (result, ic);
 
@@ -5324,6 +5318,12 @@ genCast (const iCode *ic)
           pushed_a = true;
         }
       genMove (result->aop, right->aop, true, regDead (P_IDX, ic));
+      if (result->aop->size == 2 && aopInReg (result->aop, 0, A_IDX))
+        {
+          emit2 ("xch", "a, p");
+          cost (1, 1);
+          swapped_a = true;
+        }
       cheapMove (ASMOP_A, 0, result->aop, result->aop->size - 1, true, false, true);
       emit2 ("and", "a, #0x%02x", topbytemask);
       cost (2, 1);
@@ -5342,7 +5342,11 @@ genCast (const iCode *ic)
           emitLabel (tlbl);
         }
       cheapMove (result->aop, result->aop->size - 1, ASMOP_A, 0, true, false, true);
-
+      if (swapped_a)
+        {
+          emit2 ("xch", "a, p");
+          cost (1, 1);
+        }
       goto release;
     }
 
@@ -5476,7 +5480,7 @@ genDummyRead (const iCode *ic)
         }
 
       for (int i = 0; i < op->aop->size; i++)
-        cheapMove (ASMOP_A, 0, op->aop, i, true, true, true);
+        cheapMove (ASMOP_A, 0, op->aop, i, true, regDead(P_IDX, ic), true);
 
       if (!regDead(A_IDX, ic))
         {
@@ -5542,10 +5546,6 @@ genPdkiCode (iCode *ic)
     {
     case '!':
       genNot (ic);
-      break;
-
-    case '~':
-      genCpl (ic);
       break;
 
     case UNARYMINUS:

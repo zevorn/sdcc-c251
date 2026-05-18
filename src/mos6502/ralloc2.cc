@@ -26,8 +26,7 @@
 
 extern "C"
 {
-  #include "ralloc.h"
-  #include "gen.h"
+#include "ralloc.h"
   float drym6502iCode (iCode *ic);
   bool m6502_assignment_optimal;
 }
@@ -98,9 +97,9 @@ static bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, 
   return(false);
 }
 
-// Return true, iff the operand is placed in a reg.
+// Return true, iff the operand is placed in xa
 template <class G_t, class I_t>
-static bool operand_is_ax(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static bool operand_is_xa(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {  
   if(!o || !IS_SYMOP(o))
     return(false);
@@ -116,19 +115,17 @@ static bool operand_is_ax(const operand *o, const assignment &a, unsigned short 
   if (oi2 == oi_end)
     return(false);
   
-  // Register combinations code generation cannot handle yet (AX, AY, XY, YA).
   if(std::binary_search(a.local.begin(), a.local.end(), oi->second) && std::binary_search(a.local.begin(), a.local.end(), oi2->second))
     {
       const reg_t l = a.global[oi->second];
       const reg_t h = a.global[oi2->second];
-      if(l == REG_X && h == REG_A)
+      if(h == REG_X && l == REG_A)
         return(true);
     }
 
   return(false);
 }
 
-// Return true, iff the operand is placed in xa
 template <class G_t, class I_t>
 static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
@@ -136,39 +133,38 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   // Instructions that can handle anything.
   if(ic->op == '!' ||
-    ic->op == '~' ||
-    ic->op == UNARYMINUS ||
-    ic->op == CALL ||
-    ic->op == PCALL ||
-    ic->op == FUNCTION ||
-    ic->op == ENDFUNCTION ||
-    ic->op == RETURN ||
-    ic->op == LABEL ||
-    ic->op == GOTO ||
-    ic->op == IFX ||
-    ic->op == '+' ||
-    ic->op == '-' ||
-    ic->op == '*' ||
-    ic->op == '/' ||
-    ic->op == '%' ||
-    ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP ||
-    ic->op == NE_OP || ic->op == EQ_OP ||
-    ic->op == AND_OP ||
-    ic->op == OR_OP ||
-    ic->op == '^' ||
-    ic->op == '|' ||
-    ic->op == BITWISEAND ||
-    ic->op == GETABIT ||
-    ic->op == GETBYTE ||
-    ic->op == GETWORD ||
-    ic-> op == ROT ||
-    ic->op == LEFT_OP ||
-    ic->op == RIGHT_OP ||
-    //ic->op == '=' ||  /* both regular assignment and POINTER_SET safe */
-    //ic->op == GET_VALUE_AT_ADDRESS ||
-    ic->op == ADDRESS_OF ||
-    ic->op == CAST ||
-    ic->op == DUMMY_READ_VOLATILE)
+     ic->op == UNARYMINUS ||
+     ic->op == CALL ||
+     ic->op == PCALL ||
+     ic->op == FUNCTION ||
+     ic->op == ENDFUNCTION ||
+     ic->op == RETURN ||
+     ic->op == LABEL ||
+     ic->op == GOTO ||
+     ic->op == IFX ||
+     ic->op == '+' ||
+     ic->op == '-' ||
+     ic->op == '*' ||
+     ic->op == '/' ||
+     ic->op == '%' ||
+     ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP ||
+     ic->op == NE_OP || ic->op == EQ_OP ||
+     ic->op == AND_OP ||
+     ic->op == OR_OP ||
+     ic->op == '^' ||
+     ic->op == '|' ||
+     ic->op == BITWISEAND ||
+     ic->op == GETABIT ||
+     ic->op == GETBYTE ||
+     ic->op == GETWORD ||
+     ic-> op == ROT ||
+     ic->op == LEFT_OP ||
+     ic->op == RIGHT_OP ||
+     //ic->op == '=' ||  /* both regular assignment and POINTER_SET safe */
+     //ic->op == GET_VALUE_AT_ADDRESS ||
+     ic->op == ADDRESS_OF ||
+     ic->op == CAST ||
+     ic->op == DUMMY_READ_VOLATILE)
     return(true);
 
   if(ic->op == IFX && ic->generated)
@@ -177,10 +173,10 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   const i_assignment_t &ia = a.i_assignment;
 
   bool unused_A = (ia.registers[REG_A][1] < 0);
-  bool unused_Y = (ia.registers[REG_Y][1] < 0);
   bool unused_X = (ia.registers[REG_X][1] < 0);
+  bool unused_Y = (ia.registers[REG_Y][1] < 0);
 
-  if(unused_X && unused_A && unused_Y)
+  if(unused_A && unused_X && unused_Y)
     return(true);
 
 #if 0
@@ -192,16 +188,16 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   const operand *result = IC_RESULT(ic);
 
   bool result_in_A = operand_in_reg(result, REG_A, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
-  bool result_in_Y = operand_in_reg(result, REG_Y, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
   bool result_in_X = operand_in_reg(result, REG_X, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
-  bool left_in_A = operand_in_reg(result, REG_A, ia, i, G);
-  bool left_in_X = operand_in_reg(result, REG_X, ia, i, G);
+  bool result_in_Y = operand_in_reg(result, REG_Y, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
+  bool left_in_A = operand_in_reg(left, REG_A, ia, i, G);
+  bool left_in_X = operand_in_reg(left, REG_X, ia, i, G);
 
   const cfg_dying_t &dying = G[i].dying;
 
   bool dying_A = result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end();
-  bool dying_Y = result_in_Y || dying.find(ia.registers[REG_Y][1]) != dying.end() || dying.find(ia.registers[REG_Y][0]) != dying.end();
   bool dying_X = result_in_X || dying.find(ia.registers[REG_X][1]) != dying.end() || dying.find(ia.registers[REG_X][0]) != dying.end();
+  bool dying_Y = result_in_Y || dying.find(ia.registers[REG_Y][1]) != dying.end() || dying.find(ia.registers[REG_Y][0]) != dying.end();
 
   bool result_only_XA = (result_in_X || unused_X || dying_X) && (result_in_A || unused_A || dying_A);
 
@@ -241,41 +237,40 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 }
 
 template <class G_t, class I_t>
-static bool AXinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static bool XYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
 
   const i_assignment_t &ia = a.i_assignment;
 
   if(ic->op == '!' ||
-    ic->op == '~' ||
-    ic->op == IPUSH ||
-    ic->op == CALL ||
-    ic->op == FUNCTION ||
-    ic->op == ENDFUNCTION ||
-    ic->op == RETURN ||
-    ic->op == LABEL ||
-    ic->op == GOTO ||
-    ic->op == '+' ||
-    ic->op == '-' ||
-    ic->op == NE_OP || ic->op == EQ_OP ||
-    ic->op == '^' ||
-    ic->op == '|' ||
-    ic->op == BITWISEAND ||
-    ic->op == GETABIT ||
-    ic->op == GETBYTE ||
-    ic->op == GETWORD ||
-    /*ic->op == LEFT_OP ||
-    ic->op == RIGHT_OP ||*/
-    ic->op == GET_VALUE_AT_ADDRESS ||
-    ic->op == '=' ||
-    ic->op == ADDRESS_OF ||
-    ic->op == RECEIVE ||
-    ic->op == SEND ||
-    ic->op == DUMMY_READ_VOLATILE ||
-    ic->op == CRITICAL ||
-    ic->op == ENDCRITICAL ||
-    ic->op == ROT && IS_OP_LITERAL (IC_RIGHT (ic)) && operandLitValueUll (IC_RIGHT (ic)) * 2 == bitsForType (operandType (IC_LEFT (ic))))
+     ic->op == IPUSH ||
+     ic->op == CALL ||
+     ic->op == FUNCTION ||
+     ic->op == ENDFUNCTION ||
+     ic->op == RETURN ||
+     ic->op == LABEL ||
+     ic->op == GOTO ||
+     ic->op == '+' ||
+     ic->op == '-' ||
+     ic->op == NE_OP || ic->op == EQ_OP ||
+     ic->op == '^' ||
+     ic->op == '|' ||
+     ic->op == BITWISEAND ||
+     ic->op == GETABIT ||
+     ic->op == GETBYTE ||
+     ic->op == GETWORD ||
+     /*ic->op == LEFT_OP ||
+       ic->op == RIGHT_OP ||*/
+     ic->op == GET_VALUE_AT_ADDRESS ||
+     ic->op == '=' ||
+     ic->op == ADDRESS_OF ||
+     ic->op == RECEIVE ||
+     ic->op == SEND ||
+     ic->op == DUMMY_READ_VOLATILE ||
+     ic->op == CRITICAL ||
+     ic->op == ENDCRITICAL ||
+     ic->op == ROT && IS_OP_LITERAL (IC_RIGHT (ic)) && operandLitValueUll (IC_RIGHT (ic)) * 2 == bitsForType (operandType (IC_LEFT (ic))))
     return(true);
 
   bool unused_A = (ia.registers[REG_A][1] < 0);
@@ -290,16 +285,16 @@ static bool AXinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   bool result_in_A = operand_in_reg(result, REG_A, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
   bool result_in_X = operand_in_reg(result, REG_X, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
-  bool left_in_A = operand_in_reg(result, REG_A, ia, i, G);
-  bool left_in_X = operand_in_reg(result, REG_X, ia, i, G);
-  bool right_in_A = operand_in_reg(result, REG_A, ia, i, G);
-  bool right_in_X = operand_in_reg(result, REG_X, ia, i, G);
+  bool left_in_A = operand_in_reg(left, REG_A, ia, i, G);
+  bool left_in_X = operand_in_reg(left, REG_X, ia, i, G);
+  bool right_in_A = operand_in_reg(right, REG_A, ia, i, G);
+  bool right_in_X = operand_in_reg(right, REG_X, ia, i, G);
 
-  bool result_is_ax = operand_is_ax (result, a, i, G, I);
-  bool left_is_ax = operand_is_ax (left, a, i, G, I);
-  bool right_is_ax = operand_is_ax (right, a, i, G, I);
+  bool result_is_xa = operand_is_xa (result, a, i, G, I);
+  bool left_is_xa = operand_is_xa (left, a, i, G, I);
+  bool right_is_xa = operand_is_xa (right, a, i, G, I);
 
-  if (!result_is_ax && !left_is_ax && !right_is_ax)
+  if (!result_is_xa && !left_is_xa && !right_is_xa)
     return(true);
 
   return(false);
@@ -338,7 +333,7 @@ static void assign_operand_for_cost(operand *o, const assignment &a, unsigned sh
       var_t v = oi->second;
       if(a.global[v] >= 0)
         { 
-          sym->regs[I[v].byte] = regsm6502 + a.global[v];   
+          sym->regs[I[v].byte] = m6502_regs + a.global[v];
           sym->accuse = 0;
           sym->isspilt = false;
           sym->nRegs = I[v].size;
@@ -387,13 +382,14 @@ static bool operand_sane(const operand *o, const assignment &a, unsigned short i
   if (oi2 == oi_end)
     return(true);
   
-  // Register combinations code generation cannot handle yet (AY, XY, YA).
+  // Register combinations code generation cannot handle yet (AY, YA, AX, YX)
   if(std::binary_search(a.local.begin(), a.local.end(), oi->second) && std::binary_search(a.local.begin(), a.local.end(), oi2->second))
     {
       const reg_t l = a.global[oi->second];
       const reg_t h = a.global[oi2->second];
-//      if(l == REG_A && h == REG_Y || l == REG_Y)
-      if(l != REG_A || h != REG_X)
+      //      if(l == REG_A && h == REG_Y || l == REG_Y)
+      //      if(l != REG_A || h != REG_X)
+      if(l == REG_X || h != REG_X)
         return(false);
     }
   
@@ -408,7 +404,7 @@ static bool operand_sane(const operand *o, const assignment &a, unsigned short i
     }
   else
     {
-       while(++oi != oi_end)
+      while(++oi != oi_end)
         if(std::binary_search(a.local.begin(), a.local.end(), oi->second))
           return(false);
     }
@@ -445,33 +441,24 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 #endif
 
   if(ic->generated)
-    {
-#if 0
-  std::cout << "Skipping, already generated.\n";
-#endif
-    return(0.0f);
-    }
+      return(0.0f);
 
   if(!XAinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
-  if(!AXinst_ok(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
+  //  if(!AXinst_ok(a, i, G, I))
+  //    return(std::numeric_limits<float>::infinity());
 
   switch(ic->op)
     {
-    // Register assignment doesn't matter for these:
+      // Register assignment doesn't matter for these:
     case FUNCTION:
     case ENDFUNCTION:
     case LABEL:
     case GOTO:
     case INLINEASM:
-#if 0
-  std::cout << "Skipping, indepent from assignment.\n";
-#endif
       return(0.0f);
     case '!':
-    case '~':
     case UNARYMINUS:
     case '+':
     case '-':
@@ -480,7 +467,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case BITWISEAND:
     case IPUSH:
     case IPUSH_VALUE_AT_ADDRESS:
-    //case IPOP:
+      //case IPOP:
     case CALL:
     case PCALL:
     case RETURN:
@@ -502,7 +489,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case LEFT_OP:
     case RIGHT_OP:
     case GET_VALUE_AT_ADDRESS:
-//    case SET_VALUE_AT_ADDRESS:
+      //    case SET_VALUE_AT_ADDRESS:
     case '=':
     case IFX:
     case ADDRESS_OF:
@@ -603,9 +590,9 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
 #ifdef DEBUG_RALLOC_DEC
   std::cout << "Winner: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
-  {
-  	std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
-  }
+    {
+      std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
+    }
   std::cout << "\n";
   std::cout << "Cost: " << winner.s << "\n";
   std::cout.flush();
@@ -623,7 +610,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
       if(winner.global[v] >= 0)
         { 
-          sym->regs[I[v].byte] = regsm6502 + winner.global[v];   
+          sym->regs[I[v].byte] = m6502_regs + winner.global[v];   
           sym->accuse = 0;
           sym->isspilt = false;
           sym->nRegs = I[v].size;
@@ -635,7 +622,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
           sym->accuse = 0;
           sym->nRegs = I[v].size;
           wassert (sym->nRegs);
-          //m6502SpillThis(sym); Leave it to regFix, which can do some spillocation compaction. Todo: Use Thorup instead.
+          //m6502_SpillThis(sym); Leave it to regFix, which can do some spillocation compaction. Todo: Use Thorup instead.
           sym->isspilt = false;
         }
     }
@@ -662,12 +649,12 @@ iCode *m6502_ralloc2_cc(ebbIndex *ebbi)
   iCode *ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
 
   if(optimize.genconstprop)
-    recomputeValinfos(ic, ebbi, "_2");
-
-  guessCounts(ic, ebbi);
+    recomputeValinfos(ic, ebbi, "_3");
 
   if(options.dump_graphs)
     dump_cfg(control_flow_graph);
+
+  guessCounts(ic, ebbi);
 
   if(options.dump_graphs)
     dump_con(conflict_graph);

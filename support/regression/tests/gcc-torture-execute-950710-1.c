@@ -8,8 +8,6 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc supports struct return!
-#if 0
 struct twelve
 {
   int a;
@@ -58,14 +56,11 @@ f ()
 	}
     }
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   f ();
   return;
-#endif
 }
 

@@ -18,3 +18,4 @@ void testBug(void)
   foo (&(*((char *) VAL)));
   foo (&(*(&(*((char *) VAL)))));
 }
+

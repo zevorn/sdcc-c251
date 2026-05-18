@@ -103,6 +103,9 @@ int cl_fpp::init(void) {
       n.format("PC%d", id);
       d.format("Program counter of FPP%d", id);
       puc->mk_cvar(&cPC, n, d);
+
+      delete fbrk;
+      fbrk = puc->fbrk;
     }
   
   return (0);
@@ -638,7 +641,7 @@ cl_fppen_op::write(t_mem val)
 t_mem
 cl_xtal_writer::write(t_mem val)
 {
-  u32_t u= puc->osc->frsys;
+  u32_t u= (u32_t)(puc->osc->frsys);
   puc->set_xtal(u);
   return u;
 }

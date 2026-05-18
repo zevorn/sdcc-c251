@@ -33,16 +33,23 @@ instruction_wrapper_fn itab[256];
 /*	Formats
 	x (ind,X)
 	y (ind),Y
-	a abs
-	z zpg
-	X zpg,X
+	a abs   -- addr[1]
+	A abs   -- addr[2]
+	z zpg   -- addr[1]
+	Z zpg   -- addr[2]
+	X zpg,X -- addr[1]
+	5 zpg,X -- addr[2]
 	Y zpg,Y
 	i abs,X
+	6 abs,X -- addr[2]
 	p abs.Y
 	r rel
 	# imm8
-	3 (ind)
+	3 (ind16)
 	4 (zind)
+	I (abs,X)
+	L log2(imm8)
+	T block transfer params: SL,SH,DL,DH,LL,LH
 */
 
 // code mask branch len mn call tick
@@ -297,28 +304,39 @@ struct dis_entry disass_mos65c02s[]=
     { 0, 0, 0, 0, 0, 0 }
   };
 
-struct cpu_entry cpus_6502[]=
+
+struct dis_entry disass_huc6280[]=
   {
-    {"6502"	, CPU_6502, 0		, "MOS6502", ""},
-    {"02"	, CPU_6502, 0		, "MOS6502", ""},
-    {"7501"	, CPU_7501, 0		, "MOS7501", ""},
-    {"8501"	, CPU_8501, 0		, "MOS8501", ""},
-    {"65C02"	, CPU_65C02, 0		, "MOS65C02", ""},
-    {"C02"	, CPU_65C02, 0		, "MOS65C02", ""},
-    {"C"	, CPU_65C02, 0		, "MOS65C02", ""},
-    {"6510"	, CPU_6510, 0		, "MOS6510", ""},
-    {"10"	, CPU_6510, 0		, "MOS6510", ""},
-    {"8500"	, CPU_8500, 0		, "MOS8500", ""},
-    {"8502"	, CPU_8502, 0		, "MOS8502", ""},
-    {"65CE02"	, CPU_65CE02, 0		, "MOS65CE02", ""},
-    {"CE02"	, CPU_65CE02, 0		, "MOS65CE02", ""},
-    {"CE"	, CPU_65CE02, 0		, "MOS65CE02", ""},
-    {"65C02S"	, CPU_65C02S, 0		, "MOS65C02S", ""},
-    {"C02S"	, CPU_65C02S, 0		, "MOS65C02S", ""},
-    {"CS"	, CPU_65C02S, 0		, "MOS65C02S", ""},
-    {"S"	, CPU_65C02S, 0		, "MOS65C02S", ""},
+    { 0x02, 0xff, ' ', 1, "SXY" },
+    { 0x22, 0xff, ' ', 1, "SAX" },
+    { 0x42, 0xff, ' ', 1, "SAY" },
+    { 0x62, 0xff, ' ', 1, "CLA" },
+    { 0x82, 0xff, ' ', 1, "CLX" },
+    { 0xc2, 0xff, ' ', 1, "CLY" },
+
+    { 0x03, 0xff, ' ', 2, "STO %#" },
+    { 0x13, 0xff, ' ', 2, "ST1 %#" },
+    { 0x23, 0xff, ' ', 2, "ST2 %#" },
+    { 0x43, 0xff, ' ', 2, "TMA %L" },
+    { 0x53, 0xff, ' ', 2, "TAM %L" },
+    { 0x73, 0xff, ' ', 7, "TII %T" },
+    { 0xc3, 0xff, ' ', 7, "TDD %T" },
+    { 0xd3, 0xff, ' ', 7, "TIN %T" },
+    { 0xe3, 0xff, ' ', 7, "TIA %T" },
+    { 0xf3, 0xff, ' ', 7, "TAI %T" },
+    { 0x83, 0xff, ' ', 3, "TST %#,%Z" },
+    { 0x93, 0xff, ' ', 3, "TST %#,%5" },
+    { 0xa3, 0xff, ' ', 4, "TST %#,%A" },
+    { 0xb3, 0xff, ' ', 4, "TST %#,%6" },
     
-    {NULL, CPU_NONE, 0, "", ""}
+    { 0x44, 0xff, 'S', 2, "BSR %r" },
+
+    { 0x54, 0xff, ' ', 1, "CSL" },
+    { 0xd4, 0xff, ' ', 1, "CSH" },
+    { 0xf4, 0xff, ' ', 1, "SET" },
+
+    { 0, 0, 0, 0, 0, 0 }
   };
+
 
 /* End of mos6502.src/glob.cc */

@@ -66,6 +66,7 @@ sdas_init (char *path)
   } tgt[] = {
     { "gb", TARGET_ID_GB },
     { "z80", TARGET_ID_Z80 },
+    { "rab", TARGET_ID_RAB },
     { "8051", TARGET_ID_8051 },
     { "390", TARGET_ID_DS390 },
     { "6808", TARGET_ID_6808 },
@@ -149,6 +150,13 @@ is_sdas_target_stm8(void)
 {
   check_init();
   return target == TARGET_ID_STM8;
+}
+
+int
+is_sdas_target_rab(void)
+{
+  check_init();
+  return target == TARGET_ID_RAB;
 }
 
 int

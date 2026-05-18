@@ -18,8 +18,8 @@
    Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 -------------------------------------------------------------------------*/
 
-#ifndef STM8GEN_H
-#define STM8GEN_H 1
+#ifndef F8GEN_H
+#define F8GEN_H 1
 
 #include "ralloc.h"
 
@@ -86,7 +86,7 @@ void f8_emitDebuggerSymbol (const char *);
 bool f8IsReturned(const char *what);
 
 // Check if what is part of the ith argument (counting from 1) to a function of type ftype.
-// If what is 0, just check if hte ith argument is in registers.
+// If what is 0, just check if the ith argument is in registers.
 bool f8IsRegArg(struct sym_link *ftype, int i, const char *what);
 
 // Check if what is part of the any argument (counting from 1) to a function of type ftype.

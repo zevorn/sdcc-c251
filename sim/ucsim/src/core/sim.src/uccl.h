@@ -254,6 +254,40 @@ public:
 };
   
 
+class cl_uc;
+
+/* Input data/file specifier */
+
+class cl_inspec: public cl_base
+{
+public:
+  class cl_uc *uc;
+  chars ispec;
+  bool inited;
+  chars file_name;
+  chars mem_name;
+  chars offset_name;
+  chars range_name;
+  chars min_name;
+  chars max_name;
+  long int offset;
+  class cl_memory *mem;
+  t_addr use_min, use_max;
+public:
+  cl_inspec(chars aspec, class cl_uc *auc);
+  virtual int init(void);
+  virtual chars *get_file_name(void)     { init(); return &file_name; }
+  virtual chars *get_mem_name(void)      { init(); return &mem_name; }
+  virtual chars *get_range_name(void)    { init(); return &range_name; }
+  virtual chars *get_min_name()          { init(); return &min_name; }
+  virtual chars *get_max_name()          { init(); return &max_name; }
+  virtual long int get_offset(void)      { init(); return offset; }
+  virtual class cl_memory *get_mem(void) { init(); return mem; }
+  virtual t_addr get_min(void)           { init(); return use_min; }
+  virtual t_addr get_max(void)           { init(); return use_max; }
+};
+
+
 /* Abstract microcontroller */
 
 class cl_uc: public /*cl_base*/cl_itab
@@ -319,7 +353,8 @@ public:
   //t_addr sp_avg;
 
   bool vcd_break;
-
+  bool skip_cmdset;
+  
 public:
   cl_uc(class cl_sim *asim);
   virtual ~cl_uc(void);
@@ -360,30 +395,23 @@ public:
   virtual void remove_chip(class cl_memory *chip);
   
   // file handling
-  virtual void set_rom(t_addr addr, t_mem val);
-  virtual long read_hex_file(const char *nam);
+  virtual cl_f *find_loadable_file(chars nam);
   virtual long read_hex_file(cl_console_base *con);
-  virtual long read_hex_file(cl_f *f);
-  virtual long read_omf_file(cl_f *f);
-  virtual long read_asc_file(cl_f *f);
-  virtual long read_p2h_file(cl_f *f, bool just_check= false);
+  virtual long read_hex_file(const char *nam, bool check);
+  virtual long read_file(chars nam, class cl_console_base *con, bool check= false);
+  virtual bool set_rom(class cl_inspec *is, t_addr addr, t_mem val, bool check);
+  // content loaders
+  virtual long read_hex_file(class cl_inspec *is, cl_f *f, bool check);
+  virtual long read_omf_file(class cl_inspec *is, cl_f *f, bool check);
+  virtual long read_asc_file(class cl_inspec *is, cl_f *f, bool check);
+  virtual long read_p2h_file(class cl_inspec *is, cl_f *f, bool check);
+  virtual long read_s19_file(class cl_inspec *is, cl_f *f, bool check);
+  // symbol loaders
   virtual long read_cdb_file(cl_f *f);
   virtual long read_map_file(cl_f *f);
-  virtual long read_s19_file(cl_f *f);
-  virtual cl_f *find_loadable_file(chars nam);
-  virtual long read_file(chars nam, class cl_console_base *con, bool just_check= false);
   
   // instructions, code analyzer
   virtual void set_analyzer(bool val);
-  virtual t_addr reset_addr(void) { return 0; }
-  void analyze_init(void);
-  virtual void analyze_start(void);
-  virtual void analyze(t_addr addr);
-  virtual void analyze_jump(t_addr addr, t_addr target, char type, unsigned int bit = 0);
-  virtual bool inst_at(t_addr addr);
-  virtual void set_inst_at(t_addr addr);
-  virtual void del_inst_at(t_addr addr);
-  virtual bool there_is_inst(void);
 
   // manipulating hw elements
   virtual void add_hw(class cl_hw *hw);
@@ -436,7 +464,9 @@ public:
   virtual int accept_it(class it_level *il);
   virtual bool it_enabled(void) { return false; }
   virtual class cl_it_src *search_it_src(int cid_or_nr);
-  
+
+  virtual int sim_stop_result(void) { return 0; }
+
 #include "uccl_instructions.h"
   
   // stack tracking
@@ -472,6 +502,7 @@ public:
   virtual char *disass(t_addr addr);
   virtual char *disassc(t_addr addr, chars *comment= NULL) { return disass(addr); }
   virtual struct dis_entry *dis_tbl(void);
+  virtual struct dis_entry *get_dis_entry(t_addr addr);
   virtual int print_disass(t_addr addr, class cl_console_base *con, bool nl);
   virtual int print_disass(t_addr addr, class cl_console_base *con);
   virtual void print_regs(class cl_console_base *con);

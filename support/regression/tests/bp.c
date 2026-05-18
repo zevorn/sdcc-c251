@@ -20,7 +20,7 @@ spoil(int a)
   return a;
 }
 
-#if defined(__SDCC_pic14) || defined(__SDCC_pdk14)
+#if defined(__SDCC_pic14) || defined(__SDCC_pdk13) || defined(__SDCC_pdk14)
 
 // test devices with much less memory
 #define ABOVE_MEM_SIZE       20

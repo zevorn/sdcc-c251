@@ -14,20 +14,23 @@ __muluchar_PARM_2::
 ; unsigned int _muluchar (unsigned char x, unsigned char y)
 __muluchar::
 
+	mov	a, __muluchar_PARM_1
+	mov	p, a
+	mov	a, #0x08
+	mov	__muluchar_PARM_1, a
 	mov	a, #0x00
-	clear	p
 
-	inc	p   ; {p,a} = 0x0100
 0$:
 	sl	a
 	slc	p
-	slc	_test_muluchar_PARM_1       ;   x <<= 1;
-	t0sn.io f,c
-	add	a, _test_muluchar_PARM_2    ;   result += y;
+	t0sn.io f, c
+	add	a, __muluchar_PARM_2
 3$:
 	addc	p
-	t1sn	_test_muluchar_PARM_1, #0
+
+	dzsn	__muluchar_PARM_1
 	goto	0$
 4$:
+
 	ret
 

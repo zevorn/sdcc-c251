@@ -41,6 +41,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define SUB_HL_JK	instruction_4k45
 #define SUB_HL_DE	instruction_4k55
 #define TEST_HL		instruction_4k4c
+#define NEG_HL		instruction_4k4d
 #define CP_HL_D		instruction_4k48
 #define RLC_BC		instruction_4k60
 #define RLC_DE		instruction_4k50
@@ -53,8 +54,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define LD_HL_BC	instruction_4k81
 #define LD_BC_HL	instruction_4k91
 #define LD_HL_DE	instruction_4ka1
-#define LD_iLMN_HL	instruction_4k82
-#define LD_HL_iLMN	instruction_4k92
+#define LDF_iLMN_HL	instruction_4k82
+#define LDF_HL_iLMN	instruction_4k92
 #define LD_iMN_BCDE	instruction_4k83
 #define LD_iMN_JKHL	instruction_4k84
 #define LD_BCDE_iMN	instruction_4k93

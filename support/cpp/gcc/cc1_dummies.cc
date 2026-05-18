@@ -174,6 +174,10 @@ bool lang_GNU_C()
 {
 	return true;
 }
+tree
+lhd_omp_array_size (tree, gimple_seq *)
+{ SDCPP_DUMMY_FCT();
+}
 void lhd_append_data(void const*, size_t, void*)
 { SDCPP_DUMMY_FCT();
 }
@@ -200,6 +204,11 @@ const char* lhd_dwarf_name(tree_node*, int)
 }
 void lhd_end_section()
 { SDCPP_DUMMY_FCT();
+}
+const char*
+lhd_get_sarif_source_language (const char *)
+{ SDCPP_DUMMY_FCT();
+	return 0;
 }
 const char* lhd_get_substring_location(substring_loc const&, unsigned int*)
 { SDCPP_DUMMY_FCT();

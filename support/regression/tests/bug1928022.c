@@ -17,6 +17,10 @@
 
 #include <testfwk.h>
 
+#ifdef __SDCC
+#pragma disable_warning 356
+#endif
+
 struct st_a {
   char b;
   char a[2];

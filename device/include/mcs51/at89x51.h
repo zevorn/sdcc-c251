@@ -77,7 +77,7 @@ SBIT(IT1,	0x88,	2);
 SBIT(IE1,	0x88,	3);
 SBIT(TR0,	0x88,	4);
 SBIT(TF0,	0x88,	5);
-SBIT(TR1,	0x88,	E);
+SBIT(TR1,	0x88,	6);
 SBIT(TF1,	0x88,	7);
 
 /* P1 */

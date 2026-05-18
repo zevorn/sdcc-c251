@@ -26,6 +26,8 @@
 #include "newalloc.h"
 #include "dbuf_string.h"
 
+// #define RANGEHUNT
+
 /*-----------------------------------------------------------------*/
 /* newCseDef - new cseDef                                          */
 /*-----------------------------------------------------------------*/
@@ -191,7 +193,16 @@ void ReplaceOpWithCheaperOp(operand **op, operand *cop) {
   }
   printf ("\n");
 #endif
-  *op=cop;
+  if (IS_PTR (operandType (*op)) && IS_PTR (operandType (cop)) &&
+    ((!isOptional (operandType (*op)->next) || (*op)->isOptionalEliminated) != (!isOptional (operandType (cop)->next) || cop->isOptionalEliminated) || (*op)->isSemDeref != cop->isSemDeref))
+    {
+      operand *nop = operandFromOperand (cop);
+      nop->isOptionalEliminated = (!isOptional (operandType (*op)->next) || (*op)->isOptionalEliminated);
+      nop->isSemDeref = (*op)->isSemDeref;
+      *op = nop;
+    }
+  else
+    *op=cop;
 }
 
 /*-----------------------------------------------------------------*/
@@ -645,7 +656,10 @@ DEFSETFUNC (ifAnyUnrestrictedGetPointer)
       ptype = operandType (IC_LEFT (cdp->diCode));
       if (!IS_PTR_RESTRICT (ptype))
         {
-	  if (DCL_TYPE (ptype) == decl || IS_GENPTR (ptype))
+	  if (DCL_TYPE (ptype) == decl || IS_GENPTR (ptype) ||
+	    DCL_TYPE (ptype) == IPOINTER && decl == POINTER ||  // __near is a subspace of __idata (at least for mcs51)
+	    DCL_TYPE (ptype) == FPOINTER && decl == PPOINTER || // __pdata is a subspace of __far (at least for mcs51)
+	    DCL_TYPE (ptype) == FPOINTER && port->generic_in_far)
             return 1;
 	}
     }
@@ -666,7 +680,10 @@ DEFSETFUNC (ifAnyUnrestrictedSetPointer)
       ptype = operandType (IC_RESULT (cdp->diCode));
       if (!IS_PTR_RESTRICT (ptype))
         {
-	  if (DCL_TYPE (ptype) == decl || IS_GENPTR (ptype))
+	  if (DCL_TYPE (ptype) == decl || IS_GENPTR (ptype) ||
+	    DCL_TYPE (ptype) == IPOINTER && decl == POINTER ||  // __near is a subspace of __idata (at least for mcs51)
+	    DCL_TYPE (ptype) == FPOINTER && decl == PPOINTER || // __pdata is a subspace of __far (at least for mcs51)
+	    DCL_TYPE (ptype) == FPOINTER && port->generic_in_far)
             return 1;
 	}
     }
@@ -915,10 +932,56 @@ iCode *findBackwardDef(operand *op,iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
+/* fixPointerReads - used to be part of algebraicOpts              */
+/*-----------------------------------------------------------------*/
+static void
+fixPointerReads (iCode *ic)
+{
+  // TODO: Why is this not necessary for IPUSH_VALUE_AT_ADDRESS?
+  // And why does this have to be done during CSE (it doesn't work
+  // done earlier in eBBlockFromiCode)? Does CSE itself create some
+  // of the weird iCode that we fix here?
+  if (ic->op != GET_VALUE_AT_ADDRESS)
+    return;
+
+  /* a special case : or in short a kludgy solution will think
+     about a better solution over a glass of wine someday */
+  if (IS_ITEMP (IC_RESULT (ic)) &&
+      IS_TRUE_SYMOP (IC_LEFT (ic)))
+    {
+      ic->op = '=';
+      IC_RIGHT (ic) = operandFromOperand (IC_LEFT (ic));
+      IC_RIGHT (ic)->isaddr = 0;
+      IC_LEFT (ic) = NULL;
+      IC_RESULT (ic) = operandFromOperand (IC_RESULT (ic));
+      IC_RESULT (ic)->isaddr = 0;
+      setOperandType (IC_RESULT (ic), operandType (IC_RIGHT (ic)));
+      if (IS_DECL (operandType (IC_RESULT (ic))))
+        {
+          DCL_PTR_VOLATILE (operandType (IC_RESULT (ic))) = 0;
+          DCL_PTR_ADDRSPACE (operandType (IC_RESULT (ic))) = 0;
+        }
+      return;
+    }
+  if (IS_ITEMP (IC_LEFT (ic)) &&
+      IS_ITEMP (IC_RESULT (ic)) &&
+      !IC_LEFT (ic)->isaddr)
+    {
+      ic->op = '=';
+      IC_RIGHT (ic) = operandFromOperand (IC_LEFT (ic));
+      IC_RIGHT (ic)->isaddr = 0;
+      IC_RESULT (ic) = operandFromOperand (IC_RESULT (ic));
+      IC_RESULT (ic)->isaddr = 0;
+      IC_LEFT (ic) = NULL;
+      return;
+    }
+}
+
+/*-----------------------------------------------------------------*/
 /* algebraicOpts - does some algebraic optimizations               */
 /*-----------------------------------------------------------------*/
 static void
-algebraicOpts (iCode * ic, eBBlock * ebp)
+algebraicOpts (iCode *ic, eBBlock *ebp)
 {
   lineno = ic->lineno; // For error messages
 
@@ -930,7 +993,7 @@ algebraicOpts (iCode * ic, eBBlock * ebp)
       ic->op == CALL ||
       ic->op == PCALL ||
       ic->op == RETURN ||
-      POINTER_GET (ic))
+      ic->op == GET_VALUE_AT_ADDRESS)
     return;
 
   /* if both operands present & ! IFX */
@@ -966,42 +1029,6 @@ algebraicOpts (iCode * ic, eBBlock * ebp)
       IC_LEFT (ic) = NULL;
       SET_RESULT_RIGHT (ic);
       return;
-    }
-
-  /* a special case : or in short a kludgy solution will think
-     about a better solution over a glass of wine someday */
-  if (ic->op == GET_VALUE_AT_ADDRESS)
-    {
-      if (IS_ITEMP (IC_RESULT (ic)) &&
-          IS_TRUE_SYMOP (IC_LEFT (ic)))
-        {
-          ic->op = '=';
-          IC_RIGHT (ic) = operandFromOperand (IC_LEFT (ic));
-          IC_RIGHT (ic)->isaddr = 0;
-          IC_LEFT (ic) = NULL;
-          IC_RESULT (ic) = operandFromOperand (IC_RESULT (ic));
-          IC_RESULT (ic)->isaddr = 0;
-          setOperandType (IC_RESULT (ic), operandType (IC_RIGHT (ic)));
-          if (IS_DECL (operandType (IC_RESULT (ic))))
-            {
-              DCL_PTR_VOLATILE (operandType (IC_RESULT (ic))) = 0;
-              DCL_PTR_ADDRSPACE (operandType (IC_RESULT (ic))) = 0;
-            }
-          return;
-        }
-
-      if (IS_ITEMP (IC_LEFT (ic)) &&
-          IS_ITEMP (IC_RESULT (ic)) &&
-          !IC_LEFT (ic)->isaddr)
-        {
-          ic->op = '=';
-          IC_RIGHT (ic) = operandFromOperand (IC_LEFT (ic));
-          IC_RIGHT (ic)->isaddr = 0;
-          IC_RESULT (ic) = operandFromOperand (IC_RESULT (ic));
-          IC_RESULT (ic)->isaddr = 0;
-          IC_LEFT (ic) = NULL;
-          return;
-        }
     }
 
   /* depending on the operation */
@@ -1094,12 +1121,14 @@ algebraicOpts (iCode * ic, eBBlock * ebp)
       if (IS_OP_LITERAL (IC_RIGHT (ic)) &&
           isEqualVal (OP_VALUE (IC_RIGHT (ic)), 0))
         {
-          /* right size zero change to assignment */
+          bool semderef = IS_PTR (operandType (ic->left)) && isOptional (operandType (ic->left)->next); // Preserve +0 as semantic dereference for _Optional.
+          /* right side zero change to assignment */
           ic->op = '=';
           IC_RIGHT (ic) = IC_LEFT (ic);
           IC_LEFT (ic) = NULL;
           SET_ISADDR (IC_RIGHT (ic), 0);
           SET_ISADDR (IC_RESULT (ic), 0);
+          ic->result->isSemDeref |= semderef;
           return;
         }
       if (IS_OP_LITERAL (IC_LEFT (ic)) &&
@@ -1335,7 +1364,11 @@ algebraicOpts (iCode * ic, eBBlock * ebp)
               SET_ISADDR (IC_RESULT (ic), 0);
             }
           /* if casting to the same */
-          if (compareType (operandType (IC_RESULT (ic)), operandType (IC_RIGHT (ic)), false) == 1)
+          if (compareType (operandType (ic->result), operandType (ic->right), false) == 1 &&
+            // Don't remove _Optional to target - would mess up diagnostics
+            (!(IS_PTR (operandType (ic->result)) && isOptional (operandType (ic->result)->next) && !ic->result->isOptionalEliminated) || IS_PTR (operandType (ic->right)) && isOptional (operandType (ic->right)->next) && !ic->right->isOptionalEliminated) && 
+            // Don't remove volatile - could result in wrong code
+            (!(IS_PTR (operandType (ic->result)) && isVolatile (operandType (ic->result)->next)) || IS_PTR (operandType (ic->right)) && isVolatile (operandType (ic->right)->next)))
             {
               ic->op = '=';
               IC_LEFT (ic) = NULL;
@@ -2111,7 +2144,6 @@ static int isSignedOp (iCode *ic)
 {
     switch (ic->op) {
     case '!':
-    case '~':
     case UNARYMINUS:
     case IPUSH:
     case IPUSH_VALUE_AT_ADDRESS:
@@ -2210,7 +2242,6 @@ cseBBlock (eBBlock * ebb, int computeOnly, ebbIndex * ebbi)
     }
   /* set of common subexpressions */
   cseSet = setFromSet (ebb->inExprs);
- 
 
   /* these will be computed by this routine */
   freeBitVect(ebb->outDefs); ebb->outDefs = NULL;
@@ -2251,6 +2282,8 @@ cseBBlock (eBBlock * ebb, int computeOnly, ebbIndex * ebbi)
 
       if (ic->op == PCALL || ic->op == CALL || ic->op == RECEIVE)
         {
+          bool purecall = ic->op == CALL && IS_SYMOP (ic->left) && OP_SYMBOL (ic->left)->funcPure && optimize.purity;
+
           /* add to defSet of the symbol */
           OP_DEFS (IC_RESULT (ic)) = bitVectSetBit (OP_DEFS (IC_RESULT (ic)), ic->key);
           /* add to the definition set of this block */
@@ -2258,24 +2291,28 @@ cseBBlock (eBBlock * ebb, int computeOnly, ebbIndex * ebbi)
           ebb->ldefs = bitVectSetBit (ebb->ldefs, ic->key);
           ebb->outDefs = bitVectCplAnd (ebb->outDefs, OP_DEFS (IC_RESULT (ic)));
           setUsesDefs (IC_RESULT (ic), ebb->defSet, ebb->outDefs, &ebb->usesDefs);
-          /* delete global variables from the cseSet
-             since they can be modified by the function call */
-          destructItemIf (&cseSet, freeLocalCseDef, ifDefGlobal);
 
-          /* and also iTemps derived from globals */
-          destructItemIf (&cseSet, freeLocalCseDef, ifFromGlobal);
-
-          /* Delete iTemps derived from symbols whose address */
-          /* has been taken */
-          destructItemIf (&cseSet, freeLocalCseDef, ifFromAddrTaken);
-
-          /* delete all getpointer iCodes from cseSet, this should
-             be done only for global arrays & pointers but at this
-             point we don't know if globals, so to be safe do all */
-          destructItemIf (&cseSet, freeLocalCseDef, ifAnyGetPointer);
-
-          /* can't cache pointer set/get operations across a call */
-          deleteSet (&ptrSetSet);
+          if (!purecall)
+            {
+              /* delete global variables from the cseSet
+                 since they can be modified by the function call */
+              destructItemIf (&cseSet, freeLocalCseDef, ifDefGlobal);
+    
+              /* and also iTemps derived from globals */
+              destructItemIf (&cseSet, freeLocalCseDef, ifFromGlobal);
+    
+              /* Delete iTemps derived from symbols whose address */
+              /* has been taken */
+              destructItemIf (&cseSet, freeLocalCseDef, ifFromAddrTaken);
+    
+              /* delete all getpointer iCodes from cseSet, this should
+                 be done only for global arrays & pointers but at this
+                 point we don't know if globals, so to be safe do all */
+              destructItemIf (&cseSet, freeLocalCseDef, ifAnyGetPointer);
+    
+              /* can't cache pointer set/get operations across a call */
+              deleteSet (&ptrSetSet);
+            }
         }
 
       /* for pcall & ipush we need to add to the useSet */
@@ -2346,6 +2383,7 @@ cseBBlock (eBBlock * ebb, int computeOnly, ebbIndex * ebbi)
 
       if (!computeOnly)
         {
+          fixPointerReads (ic);
           /* do some algebraic optimizations if possible */
           algebraicOpts (ic, ebb);
           while (constFold (ic, cseSet));

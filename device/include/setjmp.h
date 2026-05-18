@@ -51,11 +51,11 @@
 #define RET_SIZE	2
 #endif
 
-#if defined (__SDCC_z80) || defined (__SDCC_z180) || defined (__SDCC_r2k) || defined (__SDCC_r2ka) || defined (__SDCC_r3ka) || defined (__SDCC_tlcs90) || defined (__SDCC_ez80_z80) || defined (__SDCC_z80n) || defined(__SDCC_r800)
+#if defined (__SDCC_z80) || defined (__SDCC_z180) || defined (__SDCC_r2k) || defined (__SDCC_r2ka) || defined (__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k) || defined (__SDCC_tlcs90) || defined (__SDCC_ez80) || defined (__SDCC_z80n) || defined(__SDCC_r800)
 typedef unsigned char jmp_buf[6]; /* 2 for the stack pointer, 2 for the return address, 2 for the frame pointer. */
 #elif defined (__SDCC_ds390) || defined (__SDCC_stm8) && defined (__SDCC_MODEL_LARGE)
 typedef unsigned char jmp_buf[5]; /* 2 for the stack pointer, 3 for the return address. */
-#elif defined (__SDCC_stm8) || defined (__SDCC_sm83) || defined (__SDCC_hc08) || defined (__SDCC_s08) || defined (__SDCC_f8)
+#elif defined (__SDCC_stm8) || defined (__SDCC_sm83) || defined (__SDCC_hc08) || defined (__SDCC_s08) || defined (__SDCC_f8) || defined (__SDCC_f8l)
 typedef unsigned char jmp_buf[4]; /* 2 for the stack pointer, 2 for the return address. */
 #elif defined (__SDCC_pdk13) || defined (__SDCC_pdk14) || defined (__SDCC_pdk15) || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
 typedef unsigned char jmp_buf[3]; /* 1 for the stack pointer, 2 for the return address. */

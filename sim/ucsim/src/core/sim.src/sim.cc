@@ -66,6 +66,7 @@ int
 cl_sim::init(void)
 {
   cl_base::init();
+  exec_limit= 0;
   build_cmdset(app->get_commander()->cmdset);
   if (!(uc= mk_controller()))
     return(1);
@@ -79,6 +80,32 @@ cl_sim::~cl_sim(void)
 {
   if (uc)
     delete uc;
+}
+
+struct cpu_entry *
+cl_sim::type_entry(chars type_str)
+{
+  const char *typ= 0;
+  if (cpus == NULL)
+    return NULL;
+  if (type_str.empty())
+    {
+      class cl_optref type_option(this);
+      type_option.init();
+      type_option.use("cpu_type");
+      if ((typ= type_option.get_value(typ)) == 0)
+	typ= cpus[0].type_str;
+      type_str= typ;
+    }
+  if (type_str.empty())
+    return NULL;
+  int i= 0;
+  while ((cpus[i].type_str != NULL) &&
+	 !type_str.iequal(cpus[i].type_str))
+    i++;
+  if (cpus[i].type_str == NULL)
+    return(NULL);
+  return &cpus[i];
 }
 
 class cl_uc *

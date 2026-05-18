@@ -99,13 +99,14 @@ typedef struct ast
                                          */
       unsigned removedCast:1;   /* true if the explicit cast has been removed */
       unsigned implicitCast:1;  /* true if compiler added this cast */
+      bool semDeref:1;          /* semantic dereference, i.e. a &* removing _Optional represented as cast - we just need to pass this flag from the parser to the iCode */
     } cast;
     int argreg;                 /* argreg number when operand type == EX_OPERAND */
   }
   values;
 
   int lineno;                   /* source file line number     */
-  char *filename;               /* filename of the source file */
+  const char *filename;         // filename of the source file
 
   sym_link *ftype;              /* start of type chain for this subtree */
   sym_link *etype;              /* end of type chain for this subtree   */
@@ -198,11 +199,12 @@ ast *removeIncDecOps (ast *);
 ast *removePreIncDecOps (ast *);
 ast *removePostIncDecOps (ast *);
 value *sizeofOp (sym_link *);
-value *lengthofOp (sym_link *);
+value *countofOp (sym_link *);
 value *alignofOp (sym_link *);
 sym_link *typeofOp (ast *tree);
 ast *offsetofOp (sym_link * type, ast * snd);
 value *evalStmnt (ast *);
+ast *replaceAstWithTemporary (ast ** treeptr);
 ast *createRMW (ast *, unsigned, ast *);
 symbol * createFunctionDecl (symbol *);
 ast *createFunction (symbol *, ast *);
@@ -214,7 +216,9 @@ ast *createDefault (ast *, ast *, ast *);
 ast *forLoopOptForm (ast *);
 ast *argAst (ast *);
 ast *resolveSymbols (ast *);
-void CodePtrPointsToConst (sym_link * t);
+void checkCodePtrPointsToConst (sym_link *t, const char *filename, int lineno);
+void removeQualifiers (sym_link *type);
+sym_link *ptrTypeFromType (sym_link *type);
 void checkPtrCast (sym_link * newType, sym_link * orgType, bool implicit, bool orgIsNullPtrConstant);
 ast *decorateType (ast *, RESULT_TYPE, bool reduceTypeAllowed);
 ast *createWhile (symbol *, symbol *, symbol *, ast *, ast *);
@@ -224,9 +228,10 @@ ast *createFor (symbol *, symbol *, symbol *, symbol *, ast *, ast *, ast *, ast
 void eval2icode (ast *);
 value *constExprValue (ast *, int);
 bool constExprTree (ast *);
-int setAstFileLine (ast *, char *, int);
-symbol *funcOfType (const char *, sym_link *, sym_link *, int, int);
-symbol *funcOfTypeVarg (const char *, const char *, int, const char **);
+int setAstFileLine (ast *tree, const char *filename, int lineno);
+symbol *funcOfType (const char *name, sym_link *rtype, sym_link *argtype, int nArgs, int rent);
+symbol *funcOfType2 (const char *name, sym_link *rtype, sym_link *largtype, sym_link *rargtype, int rent);
+symbol *funcOfTypeVarg (const char *name, const char *, int, const char **);
 ast *initAggregates (symbol *, initList *, ast *);
 bool astHasVolatile (ast *tree);
 bool hasSEFcalls (ast *);

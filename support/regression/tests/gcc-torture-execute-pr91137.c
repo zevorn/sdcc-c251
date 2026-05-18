@@ -4,7 +4,7 @@
 
 #include <testfwk.h>
 
-#if !(defined(__SDCC_mcs51) && defined(__SDCC_MODEL_SMALL)) && !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !defined(__SDCC_mcs51) && !defined(__SDCC_sm83) && !defined(__SDCC_f8) // Lack of memory
+#if !(defined(__SDCC_mcs51) && defined(__SDCC_MODEL_SMALL)) && !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !defined(__SDCC_mcs51) && !defined(__SDCC_sm83) && !defined(__SDCC_f8) && !defined(__SDCC_f8l) // Lack of data memory - test needs 10 KB.
 long long a;
 unsigned b;
 int c[70];
@@ -32,7 +32,7 @@ void fn2() {
 void
 testTortureExecute (void)
 {
-#if !(defined(__SDCC_mcs51) && defined(__SDCC_MODEL_SMALL)) && !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !defined(__SDCC_mcs51) && !defined(__SDCC_sm83) && !defined(__SDCC_f8) // Lack of memory
+#if !(defined(__SDCC_mcs51) && defined(__SDCC_MODEL_SMALL)) && !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !defined(__SDCC_mcs51) && !defined(__SDCC_sm83) && !defined(__SDCC_f8) && !defined(__SDCC_f8l) // Lack of data memory - test needs 10 KB.
   b = 5;
   for (int j = 0; j < 70; ++j)
     c[j] = 2075593088;

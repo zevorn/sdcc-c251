@@ -1,14 +1,14 @@
 #include "common.h"
 #include "SDCCgen.h"
 
+#include "ralloc.h"
 #include "peep.h"
+extern const m6502opcodedata m6502opcodeDataTable[];
 
 #define NOTUSEDERROR() do {werror(E_INTERNAL_ERROR, __FILE__, __LINE__, "error in notUsed()");} while(0)
 
 // #define D(_s) { printf _s; fflush(stdout); }
 #define D(_s)
-
-#define ISINST(l, i) (!STRNCASECMP((l), (i), sizeof(i) - 1) && (!(l)[sizeof(i) - 1] || isspace((unsigned char)((l)[sizeof(i) - 1]))))
 
 typedef enum
 {
@@ -95,22 +95,22 @@ findLabel (const lineNode *pl)
 static bool
 mos6502MightReadFlag(const lineNode *pl, const char *what)
 {
-  if (ISINST (pl->line, "adc") ||
-    ISINST (pl->line, "rol") ||
-    ISINST (pl->line, "ror") ||
-    ISINST (pl->line, "sbc"))
+  if (lineIsInst (pl, "adc") ||
+    lineIsInst (pl, "rol") ||
+    lineIsInst (pl, "ror") ||
+    lineIsInst (pl, "sbc"))
     return (!strcmp(what, "c"));
 
-  if (ISINST (pl->line, "bcc") || ISINST (pl->line, "bcs"))
+  if (lineIsInst (pl, "bcc") || lineIsInst (pl, "bcs"))
     return (!strcmp(what, "c"));
 
-  if (ISINST (pl->line, "beq") || ISINST (pl->line, "bne"))
+  if (lineIsInst (pl, "beq") || lineIsInst (pl, "bne"))
     return (!strcmp(what, "z"));
 
-  if (ISINST (pl->line, "bmi") || ISINST (pl->line, "bpl"))
+  if (lineIsInst (pl, "bmi") || lineIsInst (pl, "bpl"))
     return (!strcmp(what, "n"));
 
-  if (ISINST (pl->line, "bvc") || ISINST (pl->line, "bvs"))
+  if (lineIsInst (pl, "bvc") || lineIsInst (pl, "bvs"))
     return (!strcmp(what, "v"));
 
   return false;
@@ -125,57 +125,49 @@ mos6502MightRead(const lineNode *pl, const char *what)
   return true;
 }
 
+/*
+  processor flags
+  N 0x80
+  V 0x40
+  B 0x10
+  D 0x08
+  I 0x04
+  Z 0x02
+  C 0x01
+*/
+
 static bool
 mos6502SurelyWritesFlag(const lineNode *pl, const char *what)
 {
-  if (ISINST (pl->line, "adc") ||
-    ISINST (pl->line, "sbc"))
-    return (!strcmp(what, "n") || !strcmp(what, "z") || !strcmp(what, "c") || !strcmp(what, "v"));
+  int idx = 0;
+  int ret = 0;
+  int i;
 
-  if (ISINST (pl->line, "asl") ||
-    ISINST (pl->line, "cmp") ||
-    ISINST (pl->line, "cpx") ||
-    ISINST (pl->line, "cpy") ||
-    ISINST (pl->line, "lsr") ||
-    ISINST (pl->line, "rol") ||
-    ISINST (pl->line, "ror"))
-    return (!strcmp(what, "n") || !strcmp(what, "z") || !strcmp(what, "c"));
+ for(i=0; m6502opcodeDataTable[i].name[0]!='z'; i++)
+    {
+      if(lineIsInst (pl, m6502opcodeDataTable[i].name ))
+        {
+          idx=i;
+          break;
+        }
+    }
 
-  if (ISINST (pl->line, "and") ||
-    ISINST (pl->line, "dec") ||
-    ISINST (pl->line, "dex") ||
-    ISINST (pl->line, "dey") ||
-    ISINST (pl->line, "eor") ||
-    ISINST (pl->line, "inc") ||
-    ISINST (pl->line, "inx") ||
-    ISINST (pl->line, "iny") ||
-    ISINST (pl->line, "lda") ||
-    ISINST (pl->line, "ldx") ||
-    ISINST (pl->line, "ldy") ||
-    ISINST (pl->line, "ora") ||
-    ISINST (pl->line, "pla") ||
-    ISINST (pl->line, "tax") ||
-    ISINST (pl->line, "tay") ||
-    ISINST (pl->line, "tsx") ||
-    ISINST (pl->line, "tsa") ||
-    ISINST (pl->line, "tya"))
-    return (!strcmp(what, "n") || !strcmp(what, "z"));
+  if(idx==0)
+    return false;
 
-  if (ISINST (pl->line, "bit"))
-    return (!strcmp(what, "n") || !strcmp(what, "z") || !strcmp(what, "v"));
+  if(m6502opcodeDataTable[idx].flags&0x01)
+    ret |= !strcmp(what, "c");
 
-  if (ISINST (pl->line, "clc") ||
-    ISINST (pl->line, "sec"))
-    return (!strcmp(what, "c"));
+  if(m6502opcodeDataTable[idx].flags&0x02)
+    ret |= !strcmp(what, "z");
 
-  if (ISINST (pl->line, "clv"))
-    return (!strcmp(what, "v"));
+  if(m6502opcodeDataTable[idx].flags&0x40)
+    ret |= !strcmp(what, "v");
 
-  if (ISINST (pl->line, "plp") ||
-    ISINST (pl->line, "rti"))
-    return true;
-    
-  return false;
+  if(m6502opcodeDataTable[idx].flags&0x80)
+    ret |= !strcmp(what, "n");
+
+  return ret;
 }
 
 static bool
@@ -191,22 +183,23 @@ mos6502SurelyWrites(const lineNode *pl, const char *what)
 static bool
 mos6502UncondJump (const lineNode *pl)
 {
-  return (ISINST (pl->line, "jmp"));
+  // FIXME: should jsr be here as well?
+  return (lineIsInst (pl, "jmp") || lineIsInst (pl, "bra"));
 }
 
 static bool
 mos6502CondJump (const lineNode *pl)
 {
-  return (ISINST (pl->line, "bpl") || ISINST (pl->line, "bmi") ||
-    ISINST (pl->line, "bvc") || ISINST (pl->line, "bvs") ||
-    ISINST (pl->line, "bcc") || ISINST (pl->line, "bcs") ||
-    ISINST (pl->line, "bne") || ISINST (pl->line, "beq"));
+  return (lineIsInst (pl, "bpl") || lineIsInst (pl, "bmi") ||
+    lineIsInst (pl, "bvc") || lineIsInst (pl, "bvs") ||
+    lineIsInst (pl, "bcc") || lineIsInst (pl, "bcs") ||
+    lineIsInst (pl, "bne") || lineIsInst (pl, "beq"));
 }
 
 static bool
 mos6502SurelyReturns (const lineNode *pl)
 {
-  return (ISINST (pl->line, "rts") || ISINST (pl->line, "rti") );
+  return (lineIsInst (pl, "rts") || lineIsInst (pl, "rti") );
 }
 
 /*-----------------------------------------------------------------*/
@@ -368,10 +361,6 @@ bool mos6502notUsed (const char *what, lineNode *endPl, lineNode *head)
   _G.head = head;
 
   unvisitLines (_G.head);
-
-  // Todo: Implement WDC 65C02 support, remove this check!
-  if (TARGET_IS_MOS65C02)
-    return (false);
 
   pl = endPl->next;
   return (doTermScan (&pl, what));

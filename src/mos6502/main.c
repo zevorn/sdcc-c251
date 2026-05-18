@@ -5,7 +5,7 @@
 
   Hacked for the MOS6502:
   Copyright (C) 2020, Steven Hugg  hugg@fasterlight.com
-  Copyright (C) 2021-2023, Gabriele Gorla
+  Copyright (C) 2021-2026, Gabriele Gorla
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -211,36 +211,17 @@ m6502_getRegName (const struct reg_info *reg)
 static void
 m6502_genAssemblerStart (FILE * of)
 {
-  fprintf(of, ";; Ordering of segments for the linker.\n");
-  tfprintf (of, "\t!area\n", DATA_NAME);
-  tfprintf (of, "\t!area\n", OVERLAY_NAME);
-  //  if (options.xdata_overlay==0)
-  //      tfprintf (of, "\t!area    (PAG, OVR)\n", OVERLAY_NAME);
-
-  tfprintf (of, "\t!area\n", HOME_NAME);
-  tfprintf (of, "\t!area\n", STATIC_NAME);
-  tfprintf (of, "\t!area\n", "GSFINAL");
-  tfprintf (of, "\t!area\n", CODE_NAME);
-  tfprintf (of, "\t!area\n", CONST_NAME);
-  tfprintf (of, "\t!area\n", XINIT_NAME);
-
-  tfprintf (of, "\t!area\n", "_DATA");
-  tfprintf (of, "\t!area\n", XIDATA_NAME);
-  //  if(options.xdata_overlay)
-  //      tfprintf (of, "\t!area    (OVR)\n", OVERLAY_NAME);
-  tfprintf (of, "\t!area\n", XDATA_NAME);
-
   if (!options.noOptsdccInAsm)
     {
-      fprintf (of, "\t.optsdcc -m%s", port->target);
-      fprintf (of, "\n");
+      fprintf (of, "\t.optsdcc -m%s\n", port->target);
     }
+  fprintf (of, "\n");
 }
 
 static void
 m65c02_genAssemblerStart (FILE * of)
 {
-  fprintf(of, "\t.r65c02\n\n");
+  fprintf(of, "\t.r65c02\n");
   m6502_genAssemblerStart (of);
 }
 
@@ -322,10 +303,18 @@ hasExtBitOp (int op, sym_link *left, int right)
     case ROT:
       {
         unsigned int lbits = bitsForType (left);
+        if (lbits % 8)
+          return false;
+        if (lbits==8)
+          return true;
+        if (lbits==16)
+          return true;
+        if (lbits==32)
+          return true;
         if (lbits > (unsigned)port->support.shift*8)
           return false;
         if (right % lbits  == 1 || right % lbits == lbits - 1)
-          return (true);
+          return true;
       }
       return false;
     }
@@ -400,7 +389,7 @@ newAsmLineNode (void)
 */
 
 /* These must be kept sorted by opcode name */
-static m6502opcodedata m6502opcodeDataTable[] =
+const m6502opcodedata m6502opcodeDataTable[] =
   {
     {".db",   M6502OP_INH, -1,       0 },    // used by the code generator only in the jump table
     {"adc",   M6502OP_REG, A_IDX,    0xc3 },
@@ -423,9 +412,9 @@ static m6502opcodedata m6502opcodeDataTable[] =
     {"cld",   M6502OP_INH, -1,       0x08 },
     {"cli",   M6502OP_INH, -1,       0x04 },
     {"clv",   M6502OP_INH, -1,       0x40 },
-    {"cmp",   M6502OP_CMP, -1,       0xc3 },
-    {"cpx",   M6502OP_CMP, -1,       0xc3 },
-    {"cpy",   M6502OP_CMP, -1,       0xc3 },
+    {"cmp",   M6502OP_CMP, -1,       0x83 },
+    {"cpx",   M6502OP_CMP, -1,       0x83 },
+    {"cpy",   M6502OP_CMP, -1,       0x83 },
     {"dec",   M6502OP_RMW, -1,       0x82 },
     {"dex",   M6502OP_IDD, X_IDX,    0x82 },
     {"dey",   M6502OP_IDD, Y_IDX,    0x82 },
@@ -472,7 +461,8 @@ static m6502opcodedata m6502opcodeDataTable[] =
     {"txa",   M6502OP_INH, A_IDX,    0x82 },
     {"txs",   M6502OP_INH, -1,       0 },
     {"tya",   M6502OP_INH, A_IDX,    0x82 },
-    {"wai",   M6502OP_INH, -1,       0 }     // WDC only
+    {"wai",   M6502OP_INH, -1,       0 },    // WDC only
+    {"zzz",   0,           -1,       0 }     // end of table
   };
 
 static int
@@ -485,7 +475,7 @@ m6502_opcodeCompare (const void *key, const void *member)
 const m6502opcodedata *m6502_getOpcodeData (const char *inst)
 {
   return   bsearch (inst, m6502opcodeDataTable,
-                    sizeof(m6502opcodeDataTable)/sizeof(m6502opcodedata),
+                    sizeof(m6502opcodeDataTable)/sizeof(m6502opcodedata)-1,
                     sizeof(m6502opcodedata), m6502_opcodeCompare);
 }
 
@@ -742,6 +732,7 @@ PORT mos6502_port =
       NULL,                     /* idata */
       NULL,                     /* pdata */
       "BSS",                    /* xdata */
+      NULL,                     // xconst_name
       NULL,                     /* bit */
       "RSEG    (ABS)",          /* reg */
       "GSINIT",                 /* static initialization */
@@ -774,7 +765,7 @@ PORT mos6502_port =
       1,                        /* sp points to next free stack location */
     },
     {
-      5,                        /* shifts up to 5 use support routines */
+      -1,                       /* shifts never use support routines */
       false,                    /* do not use support routine for int x int -> long multiplication */
       false,                    /* do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication */
     },
@@ -835,6 +826,8 @@ PORT mos6502_port =
     cseCostEstimation,          /* CSE cost estimation */
     NULL,                       /* no builtin functions */
     GPOINTER,                   /* treat unqualified pointers as "generic" pointers */
+    true,
+    false,
     1,                          /* reset labelKey to 1 */
     1,                          /* globals & local statics allowed */
     3,                          /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
@@ -911,6 +904,7 @@ PORT mos65c02_port =
       NULL,                     // idata
       NULL,                     // pdata
       "BSS",                    // xdata
+      NULL,                     // xconst_name
       NULL,                     // bit
       "RSEG    (ABS)",          // reg
       "GSINIT",                 // static initialization
@@ -943,7 +937,7 @@ PORT mos65c02_port =
       1                         /* sp is offset by 1 from last item pushed */
     },
     {
-      5,                        // Shifts up to 5 use support routines.
+      -1,                       /* shifts never use support routines */
       false,                    // Do not use support routine for int x int -> long multiplication.
       false,                    // Do not use support routine for unsigned long x unsigned char -> unsigned long long multiplication.
     },
@@ -1004,6 +998,8 @@ PORT mos65c02_port =
     cseCostEstimation,          /* CSE cost estimation */
     NULL,                       /* no builtin functions */
     GPOINTER,                   /* treat unqualified pointers as "generic" pointers */
+    true,
+    false,
     1,                          /* reset labelKey to 1 */
     1,                          /* globals & local statics allowed */
     3,                          /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

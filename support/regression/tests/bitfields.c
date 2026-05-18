@@ -10,7 +10,7 @@ struct {
   char c3_5 : 5;
 } c_bf;
 
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined (__SDCC_pdk13) && !defined (__SDCC_pdk14) // Lack of memory
 #if !defined(__SDCC_pic16)
 struct {
   int i0_7 : 7;
@@ -121,6 +121,7 @@ testBitfieldSizeof(void)
   ASSERT( sizeof(size3a_bf) >= 2);
   ASSERT( sizeof(size1a_bf) <= sizeof(size1b_bf));
 #endif  /* !__SDCC_pic16 */
+#if !defined (__SDCC_pdk13) // Lack of memory
   /* Some SDCC specific assertions. SDCC uses 8 bit storage units.
      Bitfields that are less than 8 bits, but would (due to earlier
      bitfield declarations) span a storage unit boundary are
@@ -140,13 +141,14 @@ testBitfieldSizeof(void)
   ASSERT( sizeof(size3a_bf) == 3);
 #endif  /* !__SDCC_pic16 */
 #endif
+#endif
 }
 
 
 void
 testBitfieldsSingleBitLiteral(void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined (__SDCC_pdk13) && !defined (__SDCC_pdk14) // Lack of memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
 #if !defined(__SDCC_pic16)
   size2b_bf.b0 = 0;
@@ -204,7 +206,7 @@ testBitfieldsSingleBitLiteral(void)
 void
 testBitfieldsSingleBit(void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined (__SDCC_pdk13) && !defined (__SDCC_pdk14) // Lack of memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
 #if !defined(__SDCC_pic16)
   volatile unsigned char c;
@@ -267,7 +269,7 @@ testBitfieldsSingleBit(void)
 void
 testBitfieldsMultibitLiteral(void)
 {
-#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
+#if !defined (__SDCC_pdk13) && !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
 #if !defined(__SDCC_pic16)
   size2c_bf.b0 = 0xff;   /* should truncate to 0x0f */
   size2c_bf.b1 = 0;
@@ -325,7 +327,7 @@ testBitfieldsMultibitLiteral(void)
 void
 testBitfieldsMultibit(void)
 {
-#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
+#if !defined (__SDCC_pdk13) && !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
 #if !defined(__SDCC_pic16)
   volatile int allones = 0xffff;
   volatile int zero = 0;
@@ -406,7 +408,7 @@ testBitfields(void)
 void
 testSignedBitfields(void)
 {
-#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
+#if !defined (__SDCC_pdk13) && !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
 #if !defined(__SDCC_pic16)
   s_bf.s0_7 =   0xf0;
   s_bf.s7_1 =      1;
@@ -431,7 +433,7 @@ testSignedBitfields(void)
 }
 
 /* test case for enhancement request #2291335 : Unnamed bit-field initialization */
-
+#if !defined (__SDCC_pdk13) // Lack of memory
 struct s2291335_1 {
   int a : 2;
   char  : 2;
@@ -446,10 +448,11 @@ struct s2291335_2 {
 
 struct s2291335_1 gs2291335_1 = {1, 2};
 struct s2291335_2 gs2291335_2 = {1, 2};
-
+#endif
 void
 __test2291335(void)
 {
+#if !defined (__SDCC_pdk13) // Lack of memory
   struct s2291335_1 ls2291335_1 = {1, 2};
   struct s2291335_2 ls2291335_2 = {1, 2};
 
@@ -462,6 +465,7 @@ __test2291335(void)
   ASSERT(ls2291335_1.b == 2);
   ASSERT(ls2291335_2.a == 1);
   ASSERT(ls2291335_2.b == 2);
+#endif
 }
 
 /* test case for bug #2366757: segfault when initializing structure with bitfield */
@@ -474,7 +478,7 @@ struct
 
 /* test case for const struct with bitfields */
 
-#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
+#if !defined (__SDCC_pdk13) && !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
 #ifndef __SDCC_pic16 // TODO: enable when the pic16 ports supports bitfields of size greater than 8 bits!
 const struct
 {
@@ -501,7 +505,7 @@ const struct
 void
 testCS(void)
 {
-#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
+#if !defined (__SDCC_pdk13) && !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
 #ifndef __SDCC_pic16 // TODO: enable when the pic16 ports supports bitfields of size greater than 8 bits!
   ASSERT(cs.a == 1);
   ASSERT(cs.b == 2);

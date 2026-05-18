@@ -1,6 +1,6 @@
 /* Interface between the opcode library and its callers.
 
-   Copyright (C) 1999-2022 Free Software Foundation, Inc.
+   Copyright (C) 1999-2026 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,8 +35,6 @@ extern "C" {
 #include <string.h>
 #include "bfd.h"
 
-  typedef int (*fprintf_ftype) (void *, const char*, ...) ATTRIBUTE_FPTR_PRINTF_2;
-
 enum dis_insn_type
 {
   dis_noninsn,			/* Not a valid instruction.  */
@@ -48,6 +46,83 @@ enum dis_insn_type
   dis_dref,			/* Data reference instruction.  */
   dis_dref2			/* Two data references in instruction.  */
 };
+
+/* When printing styled disassembler output, this describes what style
+   should be used.  */
+
+enum disassembler_style
+{
+  /* This is the default style, use this for any additional syntax
+     (e.g. commas between operands, brackets, etc), or just as a default if
+     no other style seems appropriate.  */
+  dis_style_text,
+
+  /* Use this for all instruction mnemonics, or aliases for mnemonics.
+     These should be things that correspond to real machine
+     instructions.  */
+  dis_style_mnemonic,
+
+  /* Some architectures include additional mnemonic like fields within the
+     instruction operands, e.g. on aarch64 'add w16, w7, w1, lsl #2' where
+     the 'lsl' is an additional piece of text that describes how the
+     instruction should behave.  This sub-mnemonic style can be used for
+     these pieces of text.  */
+  dis_style_sub_mnemonic,
+
+  /* For things that aren't real machine instructions, but rather
+     assembler directives, e.g. .byte, etc.  */
+  dis_style_assembler_directive,
+
+  /* Use this for any register names.  This may or may-not include any
+     register prefix, e.g. '$', '%', at the discretion of the target,
+     though within each target the choice to include prefixes for not
+     should be kept consistent.  If the prefix is not printed with this
+     style, then dis_style_text should be used.  */
+  dis_style_register,
+
+  /* Use this for any constant values used within instructions or
+     directives, unless the value is an absolute address, or an offset
+     that will be added to an address (no matter where the address comes
+     from) before use.  This style may, or may-not be used for any
+     prefix to the immediate value, e.g. '$', at the discretion of the
+     target, though within each target the choice to include these
+     prefixes should be kept consistent.  */
+  dis_style_immediate,
+
+  /* The style for the numerical representation of an absolute address.
+     Anything that is an address offset should use the immediate style.
+     This style may, or may-not be used for any prefix to the immediate
+     value, e.g. '$', at the discretion of the target, though within
+     each target the choice to include these prefixes should be kept
+     consistent.  */
+  dis_style_address,
+
+  /* The style for any constant value within an instruction or directive
+     that represents an offset that will be added to an address before
+     use.  This style may, or may-not be used for any prefix to the
+     immediate value, e.g. '$', at the discretion of the target, though
+     within each target the choice to include these prefixes should be
+     kept consistent.  */
+  dis_style_address_offset,
+
+  /* The style for a symbol's name.  The numerical address of a symbol
+     should use the address style above, this style is reserved for the
+     name.  */
+  dis_style_symbol,
+
+  /* The start of a comment that runs to the end of the line.  Anything
+     printed after a comment start might be styled differently,
+     e.g. everything might be styled as a comment, regardless of the
+     actual style used.  The disassembler itself should not try to adjust
+     the style emitted for comment content, e.g. an address emitted within
+     a comment should still be given dis_style_address, in this way it is
+     up to the user of the disassembler to decide how comments should be
+     styled.  */
+  dis_style_comment_start
+};
+
+typedef int (*fprintf_ftype) (void *, const char*, ...) ATTRIBUTE_FPTR_PRINTF_2;
+typedef int (*fprintf_styled_ftype) (void *, enum disassembler_style, const char*, ...) ATTRIBUTE_FPTR_PRINTF_3;
 
 /* This struct is passed into the instruction decoding routine,
    and is passed back out into each callback.  The various fields are used
@@ -62,6 +137,7 @@ enum dis_insn_type
 typedef struct disassemble_info
 {
   fprintf_ftype fprintf_func;
+  fprintf_styled_ftype fprintf_styled_func;
   void *stream;
   void *application_data;
 
@@ -163,9 +239,9 @@ typedef struct disassemble_info
   size_t buffer_length;
 
   /* This variable may be set by the instruction decoder.  It suggests
-      the number of bytes objdump should display on a single line.  If
-      the instruction decoder sets this, it should always set it to
-      the same value in order to get reasonable looking output.  */
+     the number of bytes objdump should display on a single line.  If
+     the instruction decoder sets this, it should always set it to
+     the same value in order to get reasonable looking output.  */
   int bytes_per_line;
 
   /* The next two variables control the way objdump displays the raw data.  */
@@ -211,7 +287,13 @@ typedef struct disassemble_info
 				   zero if unknown.  */
   bfd_vma target2;		/* Second target address for dref2 */
 
-  /* Command line options specific to the target disassembler.  */
+  /* Command line options specific to the target disassembler.
+     Note that if this string contains multiple comma-separated
+     options, then it must not be in read-only memory.  Commas may be
+     temporarily modified by the target disassembler when parsing
+     options.  The string is const in the sense that on return from
+     the target disassembler the string will be exactly the same as
+     on entry.  */
   const char *disassembler_options;
 
   /* If non-zero then try not disassemble beyond this address, even if
@@ -228,6 +310,9 @@ typedef struct disassemble_info
      disassembling such as the way mapping symbols are found on AArch64.  */
   bfd_vma stop_offset;
 
+  /* Set to true if the disassembler applied styling to the output,
+     otherwise, set to false.  */
+  bool created_styled_output;
 } disassemble_info;
 
 /* This struct is used to pass information about valid disassembler
@@ -239,7 +324,8 @@ typedef struct
   /* Option argument name to use in descriptions.  */
   const char *name;
 
-  /* Vector of acceptable option argument values, NULL-terminated.  */
+  /* Vector of acceptable option argument values, NULL-terminated.
+     NULL if any values are accepted.  */
   const char **values;
 } disasm_option_arg_t;
 
@@ -305,9 +391,11 @@ extern void print_ppc_disassembler_options (FILE *);
 extern void print_riscv_disassembler_options (FILE *);
 extern void print_arm_disassembler_options (FILE *);
 extern void print_arc_disassembler_options (FILE *);
+extern void print_kvx_disassembler_options(FILE *);
 extern void print_s390_disassembler_options (FILE *);
 extern void print_wasm32_disassembler_options (FILE *);
 extern void print_loongarch_disassembler_options (FILE *);
+extern void print_bpf_disassembler_options (FILE *);
 extern bool aarch64_symbol_is_valid (asymbol *, struct disassemble_info *);
 extern bool arm_symbol_is_valid (asymbol *, struct disassemble_info *);
 extern bool csky_symbol_is_valid (asymbol *, struct disassemble_info *);
@@ -337,32 +425,20 @@ extern void disassemble_init_for_target (struct disassemble_info *);
 /* Tidy any memory allocated by targets, such as info->private_data.  */
 extern void disassemble_free_target (struct disassemble_info *);
 
+/* Set the basic disassembler print functions.  */
+extern void disassemble_set_printf (struct disassemble_info *, void *,
+				    fprintf_ftype, fprintf_styled_ftype);
+
 /* Document any target specific options available from the disassembler.  */
 extern void disassembler_usage (FILE *);
 
 /* Remove whitespace and consecutive commas.  */
 extern char *remove_whitespace_and_extra_commas (char *);
 
-/* Like STRCMP, but treat ',' the same as '\0' so that we match
-   strings like "foobar" against "foobar,xxyyzz,...".  */
-extern int disassembler_options_cmp (const char *, const char *);
-
-/* A helper function for FOR_EACH_DISASSEMBLER_OPTION.  */
-static inline const char *
-next_disassembler_option (const char *options)
-{
-  const char *opt = strchr (options, ',');
-  if (opt != NULL)
-    opt++;
-  return opt;
-}
-
-/* A macro for iterating over each comma separated option in OPTIONS.  */
-#define FOR_EACH_DISASSEMBLER_OPTION(OPT, OPTIONS) \
-  for ((OPT) = (OPTIONS); \
-       (OPT) != NULL; \
-       (OPT) = next_disassembler_option (OPT))
-
+/* Iterate over each comma separated option in disassembler_options.  */
+extern bool for_each_disassembler_option (struct disassemble_info *,
+					  bool (*) (const char *, void *),
+					  void *);
 
 /* This block of definitions is for particular callers who read instructions
    into a buffer before calling the instruction decoder.  */
@@ -394,11 +470,13 @@ extern bool generic_symbol_is_valid
 /* Method to initialize a disassemble_info struct.  This should be
    called by all applications creating such a struct.  */
 extern void init_disassemble_info (struct disassemble_info *dinfo, void *stream,
-				   fprintf_ftype fprintf_func);
+				   fprintf_ftype fprintf_func,
+				   fprintf_styled_ftype fprintf_styled_func);
 
 /* For compatibility with existing code.  */
-#define INIT_DISASSEMBLE_INFO(INFO, STREAM, FPRINTF_FUNC) \
-  init_disassemble_info (&(INFO), (STREAM), (fprintf_ftype) (FPRINTF_FUNC))
+#define INIT_DISASSEMBLE_INFO(INFO, STREAM, FPRINTF_FUNC, FPRINTF_STYLED_FUNC)  \
+  init_disassemble_info (&(INFO), (STREAM), (fprintf_ftype) (FPRINTF_FUNC), \
+			 (fprintf_styled_ftype) (FPRINTF_STYLED_FUNC))
 
 #ifdef __cplusplus
 }

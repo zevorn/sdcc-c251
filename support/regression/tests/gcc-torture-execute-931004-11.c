@@ -6,10 +6,9 @@
 
 #ifdef __SDCC
 #pragma std_c99
+#pragma disable_warning 85
 #endif
 
-// TODO: Enable when sdcc supports struct!
-#if 0
 struct tiny
 {
   char c;
@@ -43,12 +42,10 @@ void f (int n, struct tiny x, struct tiny y, struct tiny z, long l)
   if (l != 123)
     ASSERT (0);
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   struct tiny x[3];
   x[0].c = 10;
   x[1].c = 11;
@@ -61,6 +58,5 @@ testTortureExecute (void)
   x[2].e = 32;
   f (3, x[0], x[1], x[2], (long) 123);
   return;
-#endif
 }
 

@@ -4,12 +4,14 @@
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
 #ifdef __SDCC
 #pragma std_c99
+#pragma disable_warning 85
+#pragma disable_warning 278
 #endif
 
-// TODO: Enable when sdcc supports struct passing!
-#if 0
 struct tiny
 {
   int c;
@@ -34,7 +36,7 @@ f (int n, struct tiny x, struct tiny y, struct tiny z, long l)
 void
 testTortureExecute (void)
 {
-#if 0
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
   struct tiny x[3];
   x[0].c = 10;
   x[1].c = 11;

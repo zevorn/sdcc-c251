@@ -253,7 +253,6 @@ if test $in_sdcc == "yes" ; then
     def_i8048="no"
     def_i8085="no"
     def_avr="no"
-    def_m6800="no"
     def_m6809="no"
     def_m68hc11="no"
     def_m68hc12="no"
@@ -708,6 +707,7 @@ else
   AC_CHECK_LIB(rt,nanosleep)
 fi
 AC_CHECK_LIB(m,fmod)
+AC_CHECK_LIB(network,socket)
 
 AC_CHECK_LIB(dl,dlopen,
 dl_ok="yes"

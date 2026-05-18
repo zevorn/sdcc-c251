@@ -37,7 +37,7 @@ public:
   class cl_memory_chip *chip;
 protected:
   RP(xpc,lxpc,hxpc,xpc);
-protected:
+public:
   u8_t segsize;
   u16_t dataseg, stackseg;
 public:
@@ -52,7 +52,7 @@ public:
   virtual t_mem get(t_addr addr);
   virtual t_mem phget(t_addr phaddr);
   virtual t_mem write(t_addr addr, t_mem val);
-  virtual t_mem phwrite(t_addr phaddr, t_mem val) { set(phaddr, val); return val; }
+  virtual t_mem phwrite(t_addr phaddr, t_mem val) { phset(phaddr, val); return val; }
   virtual t_mem pxwrite(t_addr pxaddr, t_mem val);
   virtual void set(t_addr addr, t_mem val);
   virtual void phset(t_addr phaddr, t_mem val);
@@ -71,6 +71,22 @@ public:
   virtual u16_t get_stackseg() { return stackseg; }
   virtual u8_t get_segsize() { return segsize; }
 };
+
+
+class cl_ioi: public cl_address_space
+{
+public:
+  u16_t addr_mask;
+public:
+  cl_ioi(const char *id, t_addr astart, t_addr asize, int awidth);
+  virtual t_mem read(t_addr addr);
+  virtual t_mem read(t_addr addr, enum hw_cath skip);
+  virtual t_mem get(t_addr addr);
+  virtual t_mem write(t_addr addr, t_mem val);
+  virtual void set(t_addr addr, t_mem val);
+  virtual class cl_memory_cell *get_cell(t_addr addr);
+};
+
 
 #endif
 

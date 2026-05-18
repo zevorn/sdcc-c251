@@ -8,8 +8,6 @@
 // #define D(_s) { printf _s; fflush(stdout); }
 #define D(_s)
 
-#define ISINST(l, i) (!STRNCASECMP((l), (i), sizeof(i) - 1) && (!(l)[sizeof(i) - 1] || isspace((unsigned char)((l)[sizeof(i) - 1]))))
-
 typedef enum
 {
   S4O_CONDJMP,
@@ -170,14 +168,14 @@ static bool argIs(const char *arg, const char *what)
 static bool
 pdkMightReadFlag(const lineNode *pl, const char *what)
 {
-  if (ISINST (pl->line, "push") && argIs (pl->line + 4, "af") || ISINST (pl->line, "pushaf"))
+  if (lineIsInst (pl, "push") && argIs (pl->line + 4, "af") || lineIsInst (pl, "pushaf"))
     return true;
 
-  if (ISINST (pl->line, "t0sn.io") || ISINST (pl->line, "t1sn.io"))
+  if (lineIsInst (pl, "t0sn.io") || lineIsInst (pl, "t1sn.io"))
     return argIs(strchr (pl->line, ','), what);
 
-  if(ISINST (pl->line, "addc") ||
-    ISINST (pl->line, "subc"))
+  if(lineIsInst (pl, "addc") ||
+    lineIsInst (pl, "subc"))
     return !strcmp(what, "c");
 
   return false;
@@ -193,64 +191,64 @@ pdkMightRead (const lineNode *pl, const char *what)
     return true;
 
   // Instructions that never read anything.
-  if (ISINST (pl->line, "clear") ||
-    ISINST (pl->line, "engint") ||
-    ISINST (pl->line, "disgint") ||
-    ISINST (pl->line, "goto") ||
-    ISINST (pl->line, "nop") ||
-    ISINST (pl->line, "pop") || ISINST (pl->line, "popaf") ||
-    ISINST (pl->line, "set0.io") || ISINST (pl->line, "set1.io") ||
-    ISINST (pl->line, "stopsys") ||
-    ISINST (pl->line, "t0sn.io") || ISINST (pl->line, "t1sn.io") || // They read I/O (maybe flags) but neither a nor p.
-    ISINST (pl->line, "wdreset"))
+  if (lineIsInst (pl, "clear") ||
+    lineIsInst (pl, "engint") ||
+    lineIsInst (pl, "disgint") ||
+    lineIsInst (pl, "goto") ||
+    lineIsInst (pl, "nop") ||
+    lineIsInst (pl, "pop") || lineIsInst (pl, "popaf") ||
+    lineIsInst (pl, "set0.io") || lineIsInst (pl, "set1.io") ||
+    lineIsInst (pl, "stopsys") ||
+    lineIsInst (pl, "t0sn.io") || lineIsInst (pl, "t1sn.io") || // They read I/O (maybe flags) but neither a nor p.
+    lineIsInst (pl, "wdreset"))
     return false;
 
-  if (ISINST (pl->line, "ret") && strchr (pl->line + 2, '#') && !strcmp (what, "a"))
+  if (lineIsInst (pl, "ret") && strchr (pl->line + 2, '#') && !strcmp (what, "a"))
     return false;
-  if (ISINST (pl->line, "ret"))
+  if (lineIsInst (pl, "ret"))
     return isReturned(what);
 
-  if (ISINST (pl->line, "mov") ||
-    ISINST (pl->line, "mov.io"))
+  if (lineIsInst (pl, "mov") ||
+    lineIsInst (pl, "mov.io"))
     return argIs (strchr (pl->line, ','), what);
 
-  if (ISINST (pl->line, "push") && argIs (pl->line + 4, "af") || ISINST (pl->line, "pushaf"))
+  if (lineIsInst (pl, "push") && argIs (pl->line + 4, "af") || lineIsInst (pl, "pushaf"))
     return !strcmp(what, "a");
 
   // Two-operand instructions that read both operands
-  if (ISINST (pl->line, "add") ||
-    ISINST (pl->line, "and") ||
-    ISINST (pl->line, "or") ||
-    ISINST (pl->line, "sub") ||
-    ISINST (pl->line, "xch") ||
-    ISINST (pl->line, "xor"))
+  if (lineIsInst (pl, "add") ||
+    lineIsInst (pl, "and") ||
+    lineIsInst (pl, "or") ||
+    lineIsInst (pl, "sub") ||
+    lineIsInst (pl, "xch") ||
+    lineIsInst (pl, "xor"))
     return argIs (pl->line + 3, what) || argIs (strchr (pl->line, ','), what);
-  if (ISINST(pl->line, "idxm"))
+  if (lineIsInst (pl, "idxm"))
     return argIs (pl->line + 4, what) || argIs (strchr (pl->line, ','), what);
-  if (ISINST (pl->line, "ceqsn") ||
-    ISINST (pl->line, "cneqsn") ||
-    ISINST (pl->line, "xor.io"))
+  if (lineIsInst (pl, "ceqsn") ||
+    lineIsInst (pl, "cneqsn") ||
+    lineIsInst (pl, "xor.io"))
     return argIs (pl->line + 6, what) || argIs (strchr (pl->line, ','), what);
 
   // One-operand instructions
-  if (ISINST (pl->line, "dec") ||
-    ISINST (pl->line, "inc") ||
-    ISINST (pl->line, "neg") ||
-    ISINST (pl->line, "not") ||
-    ISINST (pl->line, "sl") ||
-    ISINST (pl->line, "slc") ||
-    ISINST (pl->line, "sr") ||
-    ISINST (pl->line, "src"))
+  if (lineIsInst (pl, "dec") ||
+    lineIsInst (pl, "inc") ||
+    lineIsInst (pl, "neg") ||
+    lineIsInst (pl, "not") ||
+    lineIsInst (pl, "sl") ||
+    lineIsInst (pl, "slc") ||
+    lineIsInst (pl, "sr") ||
+    lineIsInst (pl, "src"))
     return argIs (pl->line + 3, what);
-  if (ISINST (pl->line, "addc") && !strchr (pl->line + 4, ',') || // addc a / addc M
-    ISINST (pl->line, "set0") || ISINST (pl->line, "set1") || // Technically two-operand, but second operand is a literal
-    ISINST (pl->line, "subc") && !strchr (pl->line + 4, ',') || // subc a / subc M)
-    ISINST (pl->line, "swap"))
+  if (lineIsInst (pl, "addc") && !strchr (pl->line + 4, ',') || // addc a / addc M
+    lineIsInst (pl, "set0") || lineIsInst (pl, "set1") || // Technically two-operand, but second operand is a literal
+    lineIsInst (pl, "subc") && !strchr (pl->line + 4, ',') || // subc a / subc M)
+    lineIsInst (pl, "swap"))
     return argIs (pl->line + 4, what);
-  if (ISINST (pl->line, "dzsn") ||
-    ISINST (pl->line, "izsn") ||
-    ISINST (pl->line, "pcadd") ||
-    ISINST (pl->line, "stt16"))
+  if (lineIsInst (pl, "dzsn") ||
+    lineIsInst (pl, "izsn") ||
+    lineIsInst (pl, "pcadd") ||
+    lineIsInst (pl, "stt16"))
     return argIs (pl->line + 5, what);
 
   return true; // Fail-safe: we have no idea what happens at this line, so assume it might read anything.
@@ -259,59 +257,59 @@ pdkMightRead (const lineNode *pl, const char *what)
 static bool
 pdkSurelyWritesFlag(const lineNode *pl, const char *what)
 {
-  if (ISINST (pl->line, "pop") && argIs (pl->line + 4, "af") || ISINST (pl->line, "popaf"))
+  if (lineIsInst (pl, "pop") && argIs (pl->line + 4, "af") || lineIsInst (pl, "popaf"))
     return true;
 
   // Instructions that write all flags
-  if (ISINST (pl->line, "add") ||
-    ISINST (pl->line, "addc") ||
-    ISINST (pl->line, "ceqsn") ||
-    ISINST (pl->line, "cneqsn") ||
-    ISINST (pl->line, "dec") ||
-    ISINST (pl->line, "dzsn") ||
-    ISINST (pl->line, "inc") ||
-    ISINST (pl->line, "izsn") ||
-    ISINST (pl->line, "sub") ||
-    ISINST (pl->line, "subc"))
+  if (lineIsInst (pl, "add") ||
+    lineIsInst (pl, "addc") ||
+    lineIsInst (pl, "ceqsn") ||
+    lineIsInst (pl, "cneqsn") ||
+    lineIsInst (pl, "dec") ||
+    lineIsInst (pl, "dzsn") ||
+    lineIsInst (pl, "inc") ||
+    lineIsInst (pl, "izsn") ||
+    lineIsInst (pl, "sub") ||
+    lineIsInst (pl, "subc"))
     return true;
 
   // Instructions that write c only
-  if (ISINST (pl->line, "sl") ||
-    ISINST (pl->line, "slc") ||
-    ISINST (pl->line, "sr") ||
-    ISINST (pl->line, "src") ||
-    ISINST (pl->line, "swapc.io"))
+  if (lineIsInst (pl, "sl") ||
+    lineIsInst (pl, "slc") ||
+    lineIsInst (pl, "sr") ||
+    lineIsInst (pl, "src") ||
+    lineIsInst (pl, "swapc.io"))
     return !strcmp(what, "c");
 
   // Instructions that write z only
-  if (ISINST (pl->line, "and") ||
-    ISINST (pl->line, "neg") ||
-    ISINST (pl->line, "not") ||
-    ISINST (pl->line, "or") ||
-    ISINST (pl->line, "xor") ||
-    ISINST (pl->line, "xor.io"))
+  if (lineIsInst (pl, "and") ||
+    lineIsInst (pl, "neg") ||
+    lineIsInst (pl, "not") ||
+    lineIsInst (pl, "or") ||
+    lineIsInst (pl, "xor") ||
+    lineIsInst (pl, "xor.io"))
     return !strcmp(what, "z");
 
   // mov writes z iff the destination is a and the source not an immediate.
   if (!strcmp(what, "z") && !strchr(pl->line, '#'))
     {
-      if ( (ISINST (pl->line, "mov") && pl->line[4] == 'a' && pl->line[5] == ',') ||
-         (ISINST (pl->line, "mov.io") && pl->line[7] == 'a' && pl->line[8] == ','))
+      if ( (lineIsInst (pl, "mov") && pl->line[4] == 'a' && pl->line[5] == ',') ||
+         (lineIsInst (pl, "mov.io") && pl->line[7] == 'a' && pl->line[8] == ','))
         return true;
     }
 
-  if (ISINST (pl->line, "mov") || ISINST (pl->line, "mov.io") ||
-    ISINST (pl->line, "clear") ||
-    ISINST (pl->line, "goto") ||
-    ISINST (pl->line, "t0sn") || ISINST (pl->line, "t0sn.io") ||
-    ISINST (pl->line, "t1sn") || ISINST (pl->line, "t1sn.io") ||
-    ISINST (pl->line, "xch") ||
-    ISINST (pl->line, "swap") ||
-    ISINST (pl->line, "idxm"))
+  if (lineIsInst (pl, "mov") || lineIsInst (pl, "mov.io") ||
+    lineIsInst (pl, "clear") ||
+    lineIsInst (pl, "goto") ||
+    lineIsInst (pl, "t0sn") || lineIsInst (pl, "t0sn.io") ||
+    lineIsInst (pl, "t1sn") || lineIsInst (pl, "t1sn.io") ||
+    lineIsInst (pl, "xch") ||
+    lineIsInst (pl, "swap") ||
+    lineIsInst (pl, "idxm"))
     return false;
 
   // By calling convention, caller has to save flags.
-  if (ISINST (pl->line, "ret") || ISINST (pl->line, "call"))
+  if (lineIsInst (pl, "ret") || lineIsInst (pl, "call"))
     return true;
 
   return false; // Fail-safe: we have no idea what happens at this line, so assume it writes nothing.
@@ -323,43 +321,43 @@ pdkSurelyWrites(const lineNode *pl, const char *what)
   if (!strcmp(what, "z") || !strcmp(what, "c") || !strcmp(what, "ac") || !strcmp(what, "ov"))
     return (pdkSurelyWritesFlag(pl, what));
 
-  if (ISINST (pl->line, "mov") || ISINST (pl->line, "idxm") ||
-    ISINST (pl->line, "set1") ||
-    ISINST (pl->line, "set0"))
+  if (lineIsInst (pl, "mov") || lineIsInst (pl, "idxm") ||
+    lineIsInst (pl, "set1") ||
+    lineIsInst (pl, "set0"))
     return argIs (pl->line + 4, what);
-  if (ISINST(pl->line, "mov.io") ||
-    ISINST (pl->line, "set1.io") ||
-    ISINST (pl->line, "set0.io"))
+  if (lineIsInst (pl, "mov.io") ||
+    lineIsInst (pl, "set1.io") ||
+    lineIsInst (pl, "set0.io"))
     return argIs (pl->line + 7, what);
-  if (ISINST (pl->line, "swapc.io"))
+  if (lineIsInst (pl, "swapc.io"))
     return argIs (pl->line + 9, what);
 
-  if (ISINST (pl->line, "pop") && argIs (pl->line + 4, "af") || ISINST (pl->line, "popaf"))
+  if (lineIsInst (pl, "pop") && argIs (pl->line + 4, "af") || lineIsInst (pl, "popaf"))
     return !strcmp (what, "a");
 
   // Instructions that never write anything
-  if (ISINST (pl->line, "ceqsn") || ISINST (pl->line, "cneqsn") || // Might write flags, but nothing else.
-    ISINST (pl->line, "goto") ||
-    ISINST (pl->line, "t0sn") || ISINST (pl->line, "t0sn.io") ||
-    ISINST (pl->line, "t1sn") || ISINST (pl->line, "t1sn.io"))
+  if (lineIsInst (pl, "ceqsn") || lineIsInst (pl, "cneqsn") || // Might write flags, but nothing else.
+    lineIsInst (pl, "goto") ||
+    lineIsInst (pl, "t0sn") || lineIsInst (pl, "t0sn.io") ||
+    lineIsInst (pl, "t1sn") || lineIsInst (pl, "t1sn.io"))
     return false;
 
   // One-operand instructions that write their argument
-  if (ISINST (pl->line, "neg") ||
-    ISINST (pl->line, "not") ||
-    ISINST (pl->line, "inc") ||
-    ISINST (pl->line, "dec") ||
-    ISINST (pl->line, "xch") ||
-    ISINST (pl->line, "not") ||
-    ISINST (pl->line, "sl") ||
-    ISINST (pl->line, "slc") ||
-    ISINST (pl->line, "sr") ||
-    ISINST (pl->line, "src"))
+  if (lineIsInst (pl, "neg") ||
+    lineIsInst (pl, "not") ||
+    lineIsInst (pl, "inc") ||
+    lineIsInst (pl, "dec") ||
+    lineIsInst (pl, "xch") ||
+    lineIsInst (pl, "not") ||
+    lineIsInst (pl, "sl") ||
+    lineIsInst (pl, "slc") ||
+    lineIsInst (pl, "sr") ||
+    lineIsInst (pl, "src"))
     return argIs (pl->line + 3, what);
-  if (ISINST (pl->line, "dzsn") ||
-    ISINST (pl->line, "clear") ||
-    ISINST (pl->line, "izsn") ||
-    ISINST (pl->line, "ldt16"))
+  if (lineIsInst (pl, "dzsn") ||
+    lineIsInst (pl, "clear") ||
+    lineIsInst (pl, "izsn") ||
+    lineIsInst (pl, "ldt16"))
     return argIs (pl->line + 5, what);
 
   return false;
@@ -369,22 +367,22 @@ pdkSurelyWrites(const lineNode *pl, const char *what)
 static bool
 pdkUncondJump(const lineNode *pl)
 {
-  return (ISINST(pl->line, "goto") || ISINST(pl->line, "pcadd"));
+  return (lineIsInst (pl, "goto") || lineIsInst (pl, "pcadd"));
 }
 
 static bool
 pdkCondJump(const lineNode *pl)
 {
-  return (ISINST(pl->line, "ceqsn") || ISINST(pl->line, "cneqsn") ||
-    ISINST(pl->line, "t0sn") || ISINST(pl->line, "t1sn") ||
-    ISINST(pl->line, "t0sn.io") || ISINST(pl->line, "t1sn.io") ||
-    ISINST(pl->line, "izsn") || ISINST(pl->line, "dzsn"));
+  return (lineIsInst (pl, "ceqsn") || lineIsInst (pl, "cneqsn") ||
+    lineIsInst (pl, "t0sn") || lineIsInst (pl, "t1sn") ||
+    lineIsInst (pl, "t0sn.io") || lineIsInst (pl, "t1sn.io") ||
+    lineIsInst (pl, "izsn") || lineIsInst (pl, "dzsn"));
 }
 
 static bool
 pdkSurelyReturns(const lineNode *pl)
 {
-  return(ISINST(pl->line, "ret") || ISINST(pl->line, "reti") );
+  return(lineIsInst (pl, "ret") || lineIsInst (pl, "reti") );
 }
 
 /*-----------------------------------------------------------------*/

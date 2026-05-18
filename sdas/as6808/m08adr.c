@@ -1,7 +1,7 @@
 /* m08adr.c */
 
 /*
- *  Copyright (C) 1989-2021  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,8 +26,7 @@
 #include "m6808.h"
 
 int
-addr(esp)
-struct expr *esp;
+addr(struct expr *esp)
 {
 	int c;
 	char *tcp;
@@ -176,8 +175,7 @@ struct expr *esp;
  * zero for no match.
  */
 int
-admode(sp)
-struct adsym *sp;
+admode(struct adsym *sp)
 {
 	char *ptr;
 	int i;
@@ -201,8 +199,7 @@ struct adsym *sp;
  *      srch --- does string match ?
  */
 int
-srch(str)
-char *str;
+srch(char *str)
 {
 	char *ptr;
 	ptr = ip;

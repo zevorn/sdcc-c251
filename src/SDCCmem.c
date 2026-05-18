@@ -31,10 +31,11 @@ memmap *xstack = NULL;          /* xternal stack data          */
 memmap *istack = NULL;          /* internal stack              */
 memmap *code = NULL;            /* code segment                */
 memmap *data = NULL;            /* internal data upto 128      */
-memmap *initialized = NULL;     /* initialized data, such as initialized, nonzero globals or local statics. */
-memmap *initializer = NULL;     /* a copz of the values for the initialized data from initialized in code space */
+memmap *initialized = NULL;     // initialized data, such as initialized, nonzero globals or local statics.
+memmap *initializer = NULL;     // a copy of the values for the initialized data from initialized in code space
 memmap *pdata = NULL;           /* paged external data         */
 memmap *xdata = NULL;           /* external data               */
+memmap *xconst = NULL;          // constant data in __far/__xdata space
 memmap *xidata = NULL;          /* the initialized xdata       */
 memmap *xinit = NULL;           /* the initializers for xidata */
 memmap *idata = NULL;           /* internal data upto 256      */
@@ -43,7 +44,7 @@ memmap *statsg = NULL;          /* the constant data segment   */
 memmap *c_abs = NULL;           /* constant absolute data      */
 memmap *x_abs = NULL;           /* absolute xdata/pdata        */
 memmap *i_abs = NULL;           /* absolute idata upto 256     */
-memmap *d_abs = NULL;           /* absolute data upto 128      */
+memmap *d_abs = NULL;           /* absolute data upto 128 (mcs51) or 64 K (z80-related) */
 memmap *sfr = NULL;             /* register space              */
 memmap *reg = NULL;             /* register space              */
 memmap *sfrbit = NULL;          /* sfr bit space               */
@@ -145,7 +146,7 @@ initMem (void)
      DEBUG-NAME     -   'C'
      POINTER-TYPE   -   CPOINTER
    */
-  code = allocMap (0, 1, 0, 0, 0, 1, options.code_loc, CODE_NAME, 'C', CPOINTER);
+  code = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 1, options.code_loc, CODE_NAME, 'C', CPOINTER);
 
   /* home  segment ;
      SFRSPACE       -   NO
@@ -157,7 +158,7 @@ initMem (void)
      DEBUG-NAME     -   'C'
      POINTER-TYPE   -   CPOINTER
    */
-  home = allocMap (0, 1, 0, 0, 0, 1, options.code_loc, HOME_NAME, 'C', CPOINTER);
+  home = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 1, options.code_loc, HOME_NAME, 'C', CPOINTER);
 
   /* Static segment (code for variables );
      SFRSPACE       -   NO
@@ -169,7 +170,7 @@ initMem (void)
      DEBUG-NAME     -   'D'
      POINTER-TYPE   -   CPOINTER
    */
-  statsg = allocMap (0, 1, 0, 0, 0, 1, 0, STATIC_NAME, 'D', CPOINTER);
+  statsg = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 1, 0, STATIC_NAME, 'D', CPOINTER);
 
   /* Constant Absolute Data segment (for variables );
      SFRSPACE       -   NO
@@ -181,7 +182,7 @@ initMem (void)
      DEBUG-NAME     -   'D'
      POINTER-TYPE   -   CPOINTER
    */
-  c_abs = allocMap (0, 1, 0, 0, 0, 1, 0, CABS_NAME, 'D', CPOINTER);
+  c_abs = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 1, 0, CABS_NAME, 'D', CPOINTER);
 
   /* Data segment - internal storage segment ;
      SFRSPACE       -   NO
@@ -248,6 +249,8 @@ initMem (void)
   xdata = allocMap (0, 1, 0, 0, 0, 0, options.xdata_loc, XDATA_NAME, 'F', FPOINTER);
   xidata = allocMap (0, 1, 0, 0, 0, 0, 0, XIDATA_NAME, 'F', FPOINTER);
   xinit = allocMap (0, 1, 0, 0, 0, 1, 0, XINIT_NAME, 'C', CPOINTER);
+  if (TARGET_RABBIT_LIKE || TARGET_IS_EZ80 || TARGET_IS_TLCS90)
+    xconst = allocMap (0, 1, 0, 0, 0, 1, 0, XCONST_NAME, 'F', FPOINTER);
 
   /* Absolute external storage segment ;
      SFRSPACE       -   NO
@@ -259,7 +262,8 @@ initMem (void)
      DEBUG-NAME     -   'F'
      POINTER-TYPE   -   FPOINTER
    */
-  x_abs = allocMap (0, 1, 0, 0, 0, 0, options.xdata_loc, XABS_NAME, 'F', FPOINTER);
+  // The !TARGET_Z80_LIKE is an ugly hack here. But SDCC puts global variables with __at into x_abs, while they shouldn't be in far space for z80 (and related, except maybe for Rabbits).
+  x_abs = allocMap (0, !TARGET_Z80_LIKE, 0, 0, 0, 0, options.xdata_loc, XABS_NAME, 'F', FPOINTER);
 
   /* Indirectly addressed internal data segment
      SFRSPACE       -   NO
@@ -347,7 +351,6 @@ initMem (void)
 
   /* the unknown map */
   generic = allocMap (0, 0, 0, 0, 0, 0, 0, DATA_NAME, ' ', GPOINTER);
-
 }
 
 /*-----------------------------------------------------------------*/
@@ -441,6 +444,18 @@ defaultOClass (symbol *sym)
         }
       break;
     case S_XDATA:
+      if ((TARGET_RABBIT_LIKE || TARGET_IS_EZ80 || TARGET_IS_TLCS90) && (sym->level == 0 || SPEC_STAT(sym->etype)) && !SPEC_ABSA (sym->etype))
+        {
+          sym_link *t = sym->type;
+          while (IS_ARRAY (t))
+            t = t->next;
+          if (IS_CONSTANT (t))
+            {
+              SPEC_OCLS (sym->etype) = xconst;
+              break;
+            }
+        }
+
       /* absolute initialized global */
       if (sym->ival && SPEC_ABSA (sym->etype))
         {
@@ -590,7 +605,7 @@ allocGlobal (symbol *sym)
           if (sym->ival && SPEC_ABSA (sym->etype))
             {
               /* absolute initialized global */
-              SPEC_OCLS (sym->etype) = x_abs;
+              SPEC_OCLS (sym->etype) = TARGET_Z80_LIKE ? d_abs : x_abs;
             }
           else if (sym->ival && sym->level == 0 && port->mem.initialized_name)
             {
@@ -621,20 +636,22 @@ allocGlobal (symbol *sym)
 /* allocParms - parameters are always passed on stack              */
 /*-----------------------------------------------------------------*/
 void
-allocParms (value *val, bool smallc)
+allocParms (value *val, struct sym_link *ftype)
 {
   value *lval;
   int pNum = 1;
   int stackParamSizeAdjust = 0;
+  bool smallc = IFFUNC_ISSMALLC (ftype);
+  bool dynamicc = IFFUNC_ISDYNAMICC (ftype);
 
   if (smallc)
     {
       for (lval = val; lval; lval = lval->next)
-      {
-        if (IS_REGPARM (lval->etype))
-          continue;
-        stackParamSizeAdjust += getSize (lval->type) + (getSize (lval->type) == 1);
-      }
+        {
+          if (IS_REGPARM (lval->etype) && !dynamicc)
+            continue;
+          stackParamSizeAdjust += getSize (lval->type) + (getSize (lval->type) == 1);
+        }
     }
   stackPtr += stackParamSizeAdjust;
 
@@ -652,7 +669,8 @@ allocParms (value *val, bool smallc)
       /* if this a register parm then allocate
          it as a local variable by adding it
          to the first block we see in the body */
-      if (IS_REGPARM (lval->etype))
+      if (IS_REGPARM (lval->etype) &&
+        !dynamicc) // DynamicC passes all parameters on the stack, even the ones that are in a register, too.
         continue;
 
       /* mark it as my parameter */
@@ -662,7 +680,10 @@ allocParms (value *val, bool smallc)
       /* if automatic variables r 2b stacked */
       if (options.stackAuto || IFFUNC_ISREENT (currFunc->type))
         {
-          int paramsize = getSize (lval->type) + (getSize (lval->type) == 1 && smallc) + (getSize (lval->type) % 2 && TARGET_PDK_LIKE);
+          int paramsize = getSize (lval->type) +
+            (getSize (lval->type) == 1 && (smallc || dynamicc && !IS_STRUCT (lval->type))) +
+            (getSize (lval->type) == 3 && dynamicc && IS_FARPTR (lval->type)) +
+            (getSize (lval->type) % 2 && TARGET_PDK_LIKE);
 
           if (lval->sym)
             lval->sym->onStack = 1;
@@ -752,6 +773,38 @@ allocParms (value *val, bool smallc)
 
   stackPtr -= stackParamSizeAdjust;
 
+  // Create placeholder for variable arguments - needed to implement ISO C 23 va_start macro.
+  if (IFFUNC_HASVARARGS (ftype))
+    {
+      symbol *sym = newSymbol ("__va_start", LEVEL_UNIT);
+      sym->type = newLink (DECLARATOR);
+      DCL_TYPE (sym->type) = ARRAY;
+      DCL_ARRAY_LENGTH_TYPE (sym->type) = ARRAY_LENGTH_UNSPECIFIED;
+      DCL_ELEM (sym->type) = 0;
+      DCL_ELEM_AST (sym->type) = NULL;
+      sym->type->next = newCharLink ();
+      SPEC_USIGN (sym->type->next) = 1;
+      sym->etype = getSpec (sym->type);
+      sym->onStack = 1;
+      sym->_isparm = 1;
+      sym->ismyparm = 1;
+      addSymChain (&sym);
+      
+      if (options.useXstack)
+        {
+          SPEC_OCLS (sym->etype) = xstack;
+          SPEC_STAK (sym->etype) = sym->stack = xstackPtr - 1;
+        }
+      else
+        {
+          SPEC_OCLS (sym->etype) = istack;
+          if ((port->stack.direction > 0) != smallc)
+            SPEC_STAK (sym->etype) = sym->stack = stackPtr - (FUNC_REGBANK (currFunc->type) ? port->stack.bank_overhead : 0) - 1;
+          else
+            SPEC_STAK (sym->etype) = sym->stack = stackPtr;
+        }
+    }
+
   return;
 }
 
@@ -777,9 +830,10 @@ deallocParms (value *val)
       if (!lval->sym->isref)
         {
           lval->sym->allocreq = 0;
+          if (!(currFunc && IFFUNC_HASVARARGS (currFunc->type))) // Do not warn for unused parameters in functions with variable arguments, since C standards before C23 required at least one non-variable argument for va_start.
             werror (W_NO_REFERENCE,
                     currFunc ? currFunc->name : "(unknown)",
-                    "function argument", lval->sym->name);
+                    "function parameter", lval->sym->name);
         }
 
       /* move the rname if any to the name for both val & sym */
@@ -798,7 +852,7 @@ deallocParms (value *val)
           /*strncpyz (lval->name, buffer, sizeof(lval->name)); */
 
           addSym (SymbolTab, lval->sym, lval->sym->name,
-                  lval->sym->level, lval->sym->block, 1);
+                  lval->sym->level, lval->sym->block, true);
           lval->sym->_isparm = 1;
           if (!isinSet (operKeyReset, lval->sym))
             {
@@ -824,7 +878,7 @@ allocLocal (symbol *sym)
             port->fun_prefix,
             currFunc->name, sym->name, sym->level, sym->block);
 
-  if (!sym->ismyparm && IS_ARRAY(sym->type) && DCL_ARRAY_VLA (sym->type))
+  if (!sym->ismyparm && IS_ARRAY(sym->type) && DCL_ARRAY_LENGTH_TYPE (sym->type) != ARRAY_LENGTH_KNOWN_CONST)
     {
       werrorfl (sym->fileDef, sym->lineDef, E_VLA_OBJECT);
       return;
@@ -833,11 +887,16 @@ allocLocal (symbol *sym)
   sym->islocal = 1;
   sym->localof = currFunc;
 
+  if (!IS_EXTERN (sym->type) && !IS_STATIC (sym->type) &&
+    (IS_ARRAY (sym->type) && !DCL_ELEM (sym->type) || IS_STRUCT (sym->type) && !SPEC_STRUCT (sym->type)->fields))
+    werrorfl (sym->fileDef, sym->lineDef, E_NO_LINKAGE_INCOMPLETE_TYPE, sym->name);
+
   /* if this is a static variable */
   if (IS_STATIC (sym->etype))
     {
       allocGlobal (sym);
-      sym->allocreq = 1;
+      // Do not require allocated space for static variables in inline function definitions for which no code will be emitted. Allocated space will be requested if and where it gets inlined.
+      sym->allocreq = !(currFunc && FUNC_ISINLINE (currFunc->type) && !IS_EXTERN (getSpec (currFunc->type)) && !IS_STATIC (getSpec (currFunc->type)));
       return;
     }
 
@@ -1016,11 +1075,11 @@ allocVariables (symbol *symChain)
           /* check if the typedef already exists */
           csym = findSym (TypedefTab, NULL, sym->name);
           if (csym && csym->level == sym->level &&
-            !(options.std_c11 && compareTypeExact (sym->type, csym->type, -1))) /* typedef to same type not allowed before ISO C11 */
+            !(options.std_c11 && compareTypeExact (sym->type, csym->type, -1, true))) /* typedef to same type not allowed before ISO C11 */
             werror (E_DUPLICATE_TYPEDEF, sym->name);
 
           SPEC_EXTR (sym->etype) = 0;
-          addSym (TypedefTab, sym, sym->name, sym->level, sym->block, 0);
+          addSym (TypedefTab, sym, sym->name, sym->level, sym->block, false);
           continue;             /* go to the next one */
         }
       /* make sure it already exists */
@@ -1035,7 +1094,7 @@ allocVariables (symbol *symChain)
       /* function then do args processing        */
       if (funcInChain (csym->type))
         {
-          processFuncArgs (csym, NULL);
+          processFunc (csym, NULL);
         }
 
       /* if this is an extern variable then change */

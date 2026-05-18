@@ -15,7 +15,7 @@
 #define _BitInt _ExtInt
 #endif
 
-#if __SDCC_BITINT_MAXWIDTH >= {width} && ({width} <= 8 || !defined(__SDCC_pdk14)) && ({width} <= 16 || !defined(__SDCC_pdk15)) // Lack of memory for pdk. TODO: When we can regression-test in --std-c23 mode, use the standard macro from limits.h instead!
+#if __SDCC_BITINT_MAXWIDTH >= {width} && ({width} <= 8 || !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14)) && ({width} <= 16 || !defined(__SDCC_pdk15)) // Lack of memory for pdk. TODO: When we can regression-test in --std-c23 mode, use the standard macro from limits.h instead!
 typedef unsigned _BitInt({width}) bitinttype;
 #define WIDTH {width}
 #else
@@ -46,7 +46,7 @@ testRot (void)
 	ASSERT (NROL (t2) == NROL (TESTVECT2));
 	ASSERT (NROL2 (t1) == NROL2 (TESTVECT1));
 	ASSERT (NROL2 (t2) == NROL2 (TESTVECT2));
-
+#ifndef __SDCC_pdk13 // Lack of memory
 	t1 = ROL(t1);
 	t2 = ROL(t2);
 	ASSERT (t1 == ROL (TESTVECT1));
@@ -56,5 +56,6 @@ testRot (void)
 	t2 = ROR(t2);
 	ASSERT (t1 == TESTVECT1);
 	ASSERT (t2 == TESTVECT2);
+#endif
 }
 

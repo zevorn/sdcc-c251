@@ -36,6 +36,6 @@ _exitEmu (void)
 {
   //while (!TI) /* wait for the last character to be transmitted */
   //  ;         /* before hitting the breakpoint */
-  * (char __idata *) 0 = * (char __xdata *) 0x7654;
   (* (volatile char __xdata *) 0x7654)= 's';
+  * (char __idata *) 0 = * (char __xdata *) 0x7654;
 }

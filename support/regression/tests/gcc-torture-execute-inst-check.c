@@ -4,9 +4,15 @@ inst-check.c from the execute part of the gcc torture tests.
 
 #include <testfwk.h>
 
+#ifndef PORT_HOST // Enable when we can do host test in C99 mode
+
+#ifdef __SDCC
+#pragma std_c99
+#pragma disable_warning 278
+#endif
+
 #include <stdarg.h>
 
-#if 0 // TODO: EMable when SDCC supports K&R-style
 f(m)
 {
   int i,s=0;

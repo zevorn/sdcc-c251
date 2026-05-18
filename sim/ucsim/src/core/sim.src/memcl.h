@@ -45,14 +45,13 @@ class cl_event_handler;
 // Cell flags
 enum cell_flag {
   CELL_NONE		= 0x00,
-  CELL_INST		= 0x04,	/* Marked as instruction */
   CELL_FETCH_BRK	= 0x08,	/* Fetch breakpoint */
   CELL_READ_ONLY	= 0x10, /* Cell is readonly */
   CELL_NON_DECODED	= 0x40	/* Cell is not decoded (yet) */
 };
 
 
-#define CELL_GENERAL	(CELL_NORMAL|CELL_INST|CELL_FETCH_BRK)
+#define CELL_GENERAL	(CELL_NORMAL|CELL_FETCH_BRK)
 
 extern t_mem def_data;
 
@@ -350,6 +349,8 @@ class cl_memory_cell: public cl_cell_data
   virtual void decode(class cl_memory_chip *chip, t_addr addr);
   virtual void decode(void *data_ptr);
   virtual void decode(void *data_ptr, t_mem bit_mask);
+  virtual void decode(class cl_memory_cell *src_cell)
+  { decode(src_cell->get_data()); }
   
   virtual t_mem read(void);
   virtual t_mem R(void) { return read(); }
@@ -376,7 +377,12 @@ class cl_memory_cell: public cl_cell_data
 
   virtual void print_info(const char *pre, class cl_console_base *con);
   virtual void print_operators(const char *pre, class cl_console_base *con);
+
+  virtual class cl_memory_cell &operator=(t_mem v);
 };
+
+typedef class cl_memory_cell MCELL;
+typedef class cl_memory_cell *MCELLP;
 
 /*
 class cl_bit_cell: public cl_memory_cell
@@ -400,6 +406,9 @@ class cl_cell8: public cl_memory_cell
   virtual void dl(t_mem v);
 };
 
+typedef class cl_cell8 C8;
+typedef class cl_cell8 *CP8;
+
 class cl_bit_cell8: public cl_memory_cell
 {
  public:
@@ -422,6 +431,9 @@ class cl_cell16: public cl_memory_cell
   virtual void dl(t_mem v);
 };
 
+typedef class cl_cell16 C16;
+typedef class cl_cell16 *CP16;
+
 class cl_bit_cell16: public cl_memory_cell
 {
  public:
@@ -442,6 +454,9 @@ class cl_cell32: public cl_memory_cell
   virtual void d(t_mem v);
   virtual void dl(t_mem v);
 };
+
+typedef class cl_cell32 C32;
+typedef class cl_cell32 *CP32;
 
 class cl_mc32: public cl_cell32
 {

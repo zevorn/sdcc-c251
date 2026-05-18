@@ -1,6 +1,6 @@
-# generated automatically by aclocal 1.16.5 -*- Autoconf -*-
+# generated automatically by aclocal 1.18.1 -*- Autoconf -*-
 
-# Copyright (C) 1996-2021 Free Software Foundation, Inc.
+# Copyright (C) 1996-2025 Free Software Foundation, Inc.
 
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
@@ -24,8 +24,8 @@ m4_ifndef([AC_CONFIG_MACRO_DIRS], [m4_defun([_AM_CONFIG_MACRO_DIRS], [])m4_defun
 #
 #   Check for baseline language coverage in the compiler for the specified
 #   version of the C++ standard.  If necessary, add switches to CXX and
-#   CXXCPP to enable support.  VERSION may be '11', '14', '17', or '20' for
-#   the respective C++ standard version.
+#   CXXCPP to enable support.  VERSION may be '11', '14', '17', '20', or
+#   '23' for the respective C++ standard version.
 #
 #   The second argument, if specified, indicates whether you insist on an
 #   extended mode (e.g. -std=gnu++11) or a strict conformance mode (e.g.
@@ -51,13 +51,14 @@ m4_ifndef([AC_CONFIG_MACRO_DIRS], [m4_defun([_AM_CONFIG_MACRO_DIRS], [])m4_defun
 #   Copyright (c) 2019 Enji Cooper <yaneurabeya@gmail.com>
 #   Copyright (c) 2020 Jason Merrill <jason@redhat.com>
 #   Copyright (c) 2021 Jörn Heusipp <osmanx@problemloesungsmaschine.de>
+#   Copyright (c) 2015, 2022, 2023, 2024 Olly Betts
 #
 #   Copying and distribution of this file, with or without modification, are
 #   permitted in any medium without royalty provided the copyright notice
 #   and this notice are preserved.  This file is offered as-is, without any
 #   warranty.
 
-#serial 15
+#serial 23
 
 dnl  This macro is based on the code from the AX_CXX_COMPILE_STDCXX_11 macro
 dnl  (serial version number 13).
@@ -67,6 +68,7 @@ AC_DEFUN([AX_CXX_COMPILE_STDCXX], [dnl
         [$1], [14], [ax_cxx_compile_alternatives="14 1y"],
         [$1], [17], [ax_cxx_compile_alternatives="17 1z"],
         [$1], [20], [ax_cxx_compile_alternatives="20"],
+        [$1], [23], [ax_cxx_compile_alternatives="23"],
         [m4_fatal([invalid first argument `$1' to AX_CXX_COMPILE_STDCXX])])dnl
   m4_if([$2], [], [],
         [$2], [ext], [],
@@ -89,7 +91,7 @@ AC_DEFUN([AX_CXX_COMPILE_STDCXX], [dnl
       ac_success=yes
     fi])
 
-  m4_if([$2], [noext], [], [dnl
+  m4_if([$2], [noext], [dnl
   if test x$ac_success = xno; then
     for alternative in ${ax_cxx_compile_alternatives}; do
       switch="-std=gnu++${alternative}"
@@ -113,14 +115,23 @@ AC_DEFUN([AX_CXX_COMPILE_STDCXX], [dnl
     done
   fi])
 
-  m4_if([$2], [ext], [], [dnl
+  m4_if([$2], [ext], [dnl
   if test x$ac_success = xno; then
     dnl HP's aCC needs +std=c++11 according to:
     dnl http://h21007.www2.hp.com/portal/download/files/unprot/aCxx/PDF_Release_Notes/769149-001.pdf
     dnl Cray's crayCC needs "-h std=c++11"
+    dnl MSVC needs -std:c++NN for C++17 and later (default is C++14)
     for alternative in ${ax_cxx_compile_alternatives}; do
-      for switch in -std=c++${alternative} +std=c++${alternative} "-h std=c++${alternative}"; do
-        cachevar=AS_TR_SH([ax_cv_cxx_compile_cxx$1_$switch])
+      for switch in -std=c++${alternative} +std=c++${alternative} "-h std=c++${alternative}" MSVC; do
+        if test x"$switch" = xMSVC; then
+          dnl AS_TR_SH maps both `:` and `=` to `_` so -std:c++17 would collide
+          dnl with -std=c++17.  We suffix the cache variable name with _MSVC to
+          dnl avoid this.
+          switch=-std:c++${alternative}
+          cachevar=AS_TR_SH([ax_cv_cxx_compile_cxx$1_${switch}_MSVC])
+        else
+          cachevar=AS_TR_SH([ax_cv_cxx_compile_cxx$1_$switch])
+        fi
         AC_CACHE_CHECK(whether $CXX supports C++$1 features with $switch,
                        $cachevar,
           [ac_save_CXX="$CXX"
@@ -164,31 +175,41 @@ AC_DEFUN([AX_CXX_COMPILE_STDCXX], [dnl
 dnl  Test body for checking C++11 support
 
 m4_define([_AX_CXX_COMPILE_STDCXX_testbody_11],
-  _AX_CXX_COMPILE_STDCXX_testbody_new_in_11
+  [_AX_CXX_COMPILE_STDCXX_testbody_new_in_11]
 )
 
 dnl  Test body for checking C++14 support
 
 m4_define([_AX_CXX_COMPILE_STDCXX_testbody_14],
-  _AX_CXX_COMPILE_STDCXX_testbody_new_in_11
-  _AX_CXX_COMPILE_STDCXX_testbody_new_in_14
+  [_AX_CXX_COMPILE_STDCXX_testbody_new_in_11
+   _AX_CXX_COMPILE_STDCXX_testbody_new_in_14]
 )
 
 dnl  Test body for checking C++17 support
 
 m4_define([_AX_CXX_COMPILE_STDCXX_testbody_17],
-  _AX_CXX_COMPILE_STDCXX_testbody_new_in_11
-  _AX_CXX_COMPILE_STDCXX_testbody_new_in_14
-  _AX_CXX_COMPILE_STDCXX_testbody_new_in_17
+  [_AX_CXX_COMPILE_STDCXX_testbody_new_in_11
+   _AX_CXX_COMPILE_STDCXX_testbody_new_in_14
+   _AX_CXX_COMPILE_STDCXX_testbody_new_in_17]
 )
 
 dnl  Test body for checking C++20 support
 
 m4_define([_AX_CXX_COMPILE_STDCXX_testbody_20],
+  [_AX_CXX_COMPILE_STDCXX_testbody_new_in_11
+   _AX_CXX_COMPILE_STDCXX_testbody_new_in_14
+   _AX_CXX_COMPILE_STDCXX_testbody_new_in_17
+   _AX_CXX_COMPILE_STDCXX_testbody_new_in_20]
+)
+
+dnl  Test body for checking C++23 support
+
+m4_define([_AX_CXX_COMPILE_STDCXX_testbody_23],
   _AX_CXX_COMPILE_STDCXX_testbody_new_in_11
   _AX_CXX_COMPILE_STDCXX_testbody_new_in_14
   _AX_CXX_COMPILE_STDCXX_testbody_new_in_17
   _AX_CXX_COMPILE_STDCXX_testbody_new_in_20
+  _AX_CXX_COMPILE_STDCXX_testbody_new_in_23
 )
 
 
@@ -206,7 +227,17 @@ m4_define([_AX_CXX_COMPILE_STDCXX_testbody_new_in_11], [[
 // MSVC always sets __cplusplus to 199711L in older versions; newer versions
 // only set it correctly if /Zc:__cplusplus is specified as well as a
 // /std:c++NN switch:
+//
 // https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
+//
+// The value __cplusplus ought to have is available in _MSVC_LANG since
+// Visual Studio 2015 Update 3:
+//
+// https://learn.microsoft.com/en-us/cpp/preprocessor/predefined-macros
+//
+// This was also the first MSVC version to support C++14 so we can't use the
+// value of either __cplusplus or _MSVC_LANG to quickly rule out MSVC having
+// C++11 or C++14 support, but we can check _MSVC_LANG for C++17 and later.
 #elif __cplusplus < 201103L && !defined _MSC_VER
 
 #error "This is not a C++11 compiler"
@@ -622,7 +653,7 @@ m4_define([_AX_CXX_COMPILE_STDCXX_testbody_new_in_17], [[
 
 #error "This is not a C++ compiler"
 
-#elif __cplusplus < 201703L && !defined _MSC_VER
+#elif (defined _MSVC_LANG ? _MSVC_LANG : __cplusplus) < 201703L
 
 #error "This is not a C++17 compiler"
 
@@ -988,7 +1019,7 @@ namespace cxx17
 
 }  // namespace cxx17
 
-#endif  // __cplusplus < 201703L && !defined _MSC_VER
+#endif  // (defined _MSVC_LANG ? _MSVC_LANG : __cplusplus) < 201703L
 
 ]])
 
@@ -1001,7 +1032,7 @@ m4_define([_AX_CXX_COMPILE_STDCXX_testbody_new_in_20], [[
 
 #error "This is not a C++ compiler"
 
-#elif __cplusplus < 202002L && !defined _MSC_VER
+#elif (defined _MSVC_LANG ? _MSVC_LANG : __cplusplus) < 202002L
 
 #error "This is not a C++20 compiler"
 
@@ -1018,7 +1049,37 @@ namespace cxx20
 
 }  // namespace cxx20
 
-#endif  // __cplusplus < 202002L && !defined _MSC_VER
+#endif  // (defined _MSVC_LANG ? _MSVC_LANG : __cplusplus) < 202002L
+
+]])
+
+
+dnl  Tests for new features in C++23
+
+m4_define([_AX_CXX_COMPILE_STDCXX_testbody_new_in_23], [[
+
+#ifndef __cplusplus
+
+#error "This is not a C++ compiler"
+
+#elif (defined _MSVC_LANG ? _MSVC_LANG : __cplusplus) < 202302L
+
+#error "This is not a C++23 compiler"
+
+#else
+
+#include <version>
+
+namespace cxx23
+{
+
+// As C++23 supports feature test macros in the standard, there is no
+// immediate need to actually test for feature availability on the
+// Autoconf side.
+
+}  // namespace cxx23
+
+#endif  // (defined _MSVC_LANG ? _MSVC_LANG : __cplusplus) < 202302L
 
 ]])
 
@@ -1062,7 +1123,7 @@ namespace cxx20
 AX_REQUIRE_DEFINED([AX_CXX_COMPILE_STDCXX])
 AC_DEFUN([AX_CXX_COMPILE_STDCXX_11], [AX_CXX_COMPILE_STDCXX([11], [$1], [$2])])
 
-# Copyright (C) 1999-2021 Free Software Foundation, Inc.
+# Copyright (C) 1999-2025 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
@@ -1096,10 +1157,12 @@ AC_DEFUN([AM_PATH_PYTHON],
   dnl Find a Python interpreter.  Python versions prior to 2.0 are not
   dnl supported. (2.0 was released on October 16, 2000).
   m4_define_default([_AM_PYTHON_INTERPRETER_LIST],
-[python python2 python3 dnl
- python3.11 python3.10 dnl
+[python python3 dnl
+ python3.20 python3.19 python3.18 python3.17 python3.16 dnl
+ python3.15 python3.14 python3.13 python3.12 python3.11 python3.10 dnl
  python3.9 python3.8 python3.7 python3.6 python3.5 python3.4 python3.3 dnl
  python3.2 python3.1 python3.0 dnl
+ python2 dnl
  python2.7 python2.6 python2.5 python2.4 python2.3 python2.2 python2.1 dnl
  python2.0])
 
@@ -1294,15 +1357,29 @@ try:
     if python_implementation() == 'CPython' and sys.version[[:3]] == '2.7':
         can_use_sysconfig = 0
 except ImportError:
-    pass"
+    pass" # end of am_python_setup_sysconfig
+
+  # More repeated code, for figuring out the installation scheme to use.
+  am_python_setup_scheme="if hasattr(sysconfig, 'get_default_scheme'):
+      scheme = sysconfig.get_default_scheme()
+    else:
+      scheme = sysconfig._get_default_scheme()
+    if scheme == 'posix_local':
+      if '$am_py_prefix' == '/usr':
+        scheme = 'deb_system' # should only happen during Debian package builds
+      else:
+        # Debian's default scheme installs to /usr/local/ but we want to
+        # follow the prefix, as we always have.
+        # See bugs#54412, #64837, et al.
+        scheme = 'posix_prefix'" # end of am_python_setup_scheme
 
   dnl emacs-page Set up 4 directories:
 
   dnl 1. pythondir: where to install python scripts.  This is the
   dnl    site-packages directory, not the python standard library
-  dnl    directory like in previous automake betas.  This behavior
+  dnl    directory as in early automake betas.  This behavior
   dnl    is more consistent with lispdir.m4 for example.
-  dnl Query distutils for this directory.
+  dnl Query sysconfig or distutils (per above) for this directory.
   dnl
   AC_CACHE_CHECK([for $am_display_PYTHON script directory (pythondir)],
   [am_cv_python_pythondir],
@@ -1314,14 +1391,11 @@ except ImportError:
    am_cv_python_pythondir=`$PYTHON -c "
 $am_python_setup_sysconfig
 if can_use_sysconfig:
-  if hasattr(sysconfig, 'get_default_scheme'):
-    scheme = sysconfig.get_default_scheme()
-  else:
-    scheme = sysconfig._get_default_scheme()
-  if scheme == 'posix_local':
-    # Debian's default scheme installs to /usr/local/ but we want to find headers in /usr/
-    scheme = 'posix_prefix'
-  sitedir = sysconfig.get_path('purelib', scheme, vars={'base':'$am_py_prefix'})
+  try:
+    $am_python_setup_scheme
+    sitedir = sysconfig.get_path('purelib', scheme, vars={'base':'$am_py_prefix'})
+  except:
+    sitedir = sysconfig.get_path('purelib', vars={'base':'$am_py_prefix'})
 else:
   from distutils import sysconfig
   sitedir = sysconfig.get_python_lib(0, 0, prefix='$am_py_prefix')
@@ -1351,7 +1425,8 @@ sys.stdout.write(sitedir)"`
 
   dnl 3. pyexecdir: directory for installing python extension modules
   dnl    (shared libraries).
-  dnl Query distutils for this directory.
+  dnl Query sysconfig or distutils for this directory.
+  dnl Much of this is the same as for prefix setup above.
   dnl
   AC_CACHE_CHECK([for $am_display_PYTHON extension module directory (pyexecdir)],
   [am_cv_python_pyexecdir],
@@ -1363,14 +1438,11 @@ sys.stdout.write(sitedir)"`
    am_cv_python_pyexecdir=`$PYTHON -c "
 $am_python_setup_sysconfig
 if can_use_sysconfig:
-  if hasattr(sysconfig, 'get_default_scheme'):
-    scheme = sysconfig.get_default_scheme()
-  else:
-    scheme = sysconfig._get_default_scheme()
-  if scheme == 'posix_local':
-    # Debian's default scheme installs to /usr/local/ but we want to find headers in /usr/
-    scheme = 'posix_prefix'
-  sitedir = sysconfig.get_path('platlib', scheme, vars={'platbase':'$am_py_exec_prefix'})
+  try:
+    $am_python_setup_scheme
+    sitedir = sysconfig.get_path('platlib', scheme, vars={'platbase':'$am_py_exec_prefix'})
+  except:
+    sitedir = sysconfig.get_path('platlib', vars={'platbase':'$am_py_exec_prefix'})
 else:
   from distutils import sysconfig
   sitedir = sysconfig.get_python_lib(1, 0, prefix='$am_py_exec_prefix')
@@ -1421,7 +1493,7 @@ for i in list(range(0, 4)): minverhex = (minverhex << 8) + minver[[i]]
 sys.exit(sys.hexversion < minverhex)"
   AS_IF([AM_RUN_LOG([$1 -c "$prog"])], [$3], [$4])])
 
-# Copyright (C) 2001-2021 Free Software Foundation, Inc.
+# Copyright (C) 2001-2025 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,

@@ -6,10 +6,9 @@
 
 #ifdef __SDCC
 #pragma std_c99
-#pragma disable_warning 93
 #endif
 
-// TODO: Enable when sdcc supports struct!
+// TODO: Enable when sdcc supports this union pointer assignment!
 #if 0
 union u {
   struct { int i1, i2; } t;

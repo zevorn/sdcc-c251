@@ -240,7 +240,7 @@ termScanAtFunc (const lineNode *pl, int rIdx)
     ftype = ftype->next;
   if (IFFUNC_ISBANKEDCALL(ftype) && banked_reg)
     return S4O_ABORT;
-  if (FUNC_ARGS (ftype) && getSize (FUNC_ARGS (ftype)->type) > 4)
+  if (mcs51IsParmInCall (ftype, regs8051[rIdx].name))
     return S4O_ABORT;
   if (FUNC_CALLEESAVES(ftype))
     return S4O_CONTINUE;

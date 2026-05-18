@@ -77,7 +77,8 @@ cl_serial::init(void)
     }
 
   class cl_hw *t2= uc->get_hw(HW_TIMER, 2, 0);
-  if (((there_is_t2= t2) != 0))
+  there_is_t2= t2!=NULL;
+  if (there_is_t2)
     {
       t_mem d= sfr->get(T2CON);
       t2_baud= d & (bmRCLK | bmTCLK);
@@ -287,7 +288,7 @@ cl_serial::serial_bit_cnt(void)
 int
 cl_serial::tick(int cycles)
 {
-  char c;
+  u8_t c;
 
   serial_bit_cnt(/*_mode*/);
   if (s_sending &&
@@ -321,15 +322,14 @@ cl_serial::tick(int cycles)
   if (s_receiving &&
       (s_rec_bit >= _bits))
     {
-      c= input;
-      uc->sim->app->debug("UART%d received %d,%c\n", id,
-			  c,isprint(c)?c:' ');
-      input_avail= false;
-      s_in= c;
-      sbuf->set(s_in);
-      received(c);
-      s_receiving= false;
-      s_rec_bit-= _bits;
+      if (get_input(&c))
+	{
+	  s_in= c;
+	  sbuf->set(s_in);
+	  received(c);
+	  s_receiving= false;
+	  s_rec_bit-= _bits;
+	}
     }
   
   int l;

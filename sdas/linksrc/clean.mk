@@ -12,7 +12,7 @@ clean:
 # Deleting all files created by configuring or building the program
 # -----------------------------------------------------------------
 distclean: clean
-	rm -f Makefile *.dep Makefile asxxxx_config.h
+	rm -f Makefile *.dep Makefile
 
 
 # Like clean but some files may still exist

@@ -9,6 +9,10 @@
  * was not handled
  */
 
+#ifdef __SDCC
+#pragma disable_warning 356
+#endif
+
 #include <testfwk.h>
 #include <stdint.h>
 

@@ -9,7 +9,7 @@
 // Disable for ds390: bug #3211
 // Absolute addressing has some issues for pdk. And if those are fixed, there might be  alack of memory, still.
 // mcs51 fails tests. Don't know if that is a bug or just a bad choice for ABS_ADDR1 and ABS_ADDR2 below.
-#if defined(__SDCC_ds390) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) || defined(__SDCC_mcs51)
+#if defined(__SDCC_ds390) || defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15) || defined(__SDCC_mcs51)
 #define DUMMY_CASE
 #endif
 
@@ -71,7 +71,7 @@ typedef struct
 #elif defined(__SDCC_stm8)
     #define ABS_ADDR1 0x1000
     #define ABS_ADDR2 0x1004
-#elif defined(__SDCC_f8)
+#elif defined(__SDCC_f8) || defined(__SDCC_f8l)
     #define ABS_ADDR1 0x3000
     #define ABS_ADDR2 0x3004
 #else

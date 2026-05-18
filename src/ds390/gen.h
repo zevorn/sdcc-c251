@@ -74,6 +74,7 @@ typedef struct asmop
     char *aop_str[5];           /* just a string array containing the location */
   }
   aopu;
+  struct valinfo valinfo;
 }
 asmop;
 

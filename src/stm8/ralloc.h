@@ -55,7 +55,7 @@ typedef struct reg_info
   short type;                   /* can have value 
                                    REG_GPR, REG_PTR or REG_CND */
   short rIdx;                   /* index into register table */
-  char *name;                   /* name */
+  const char *name;
 } reg_info;
 
 extern reg_info stm8_regs[];

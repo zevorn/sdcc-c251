@@ -74,7 +74,7 @@ bool uselessDecl = true;
 #define YYDEBUG 1
 
 %}
-%expect 3
+%expect 4
 
 %union {
     attribute  *attr;       /* attribute                              */
@@ -92,7 +92,7 @@ bool uselessDecl = true;
 
 %token <yychar> IDENTIFIER TYPE_NAME ADDRSPACE_NAME
 %token <val> CONSTANT
-%token SIZEOF LENGTHOF OFFSETOF
+%token SIZEOF COUNTOF OFFSETOF
 %token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP
 %token ATTR_START TOK_SEP
@@ -102,17 +102,17 @@ bool uselessDecl = true;
 %token TYPEDEF EXTERN STATIC AUTO REGISTER CONSTEXPR CODE EEPROM INTERRUPT SFR SFR16 SFR32 ADDRESSMOD
 %token AT SBIT REENTRANT USING  XDATA DATA IDATA PDATA ELLIPSIS CRITICAL
 %token NONBANKED BANKED SHADOWREGS SD_WPARAM
-%token SD_BOOL SD_CHAR SD_SHORT SD_INT SD_LONG SIGNED UNSIGNED SD_FLOAT DOUBLE FIXED16X16 SD_CONST VOLATILE SD_VOID BIT
+%token SD_BOOL SD_CHAR SD_SHORT SD_INT SD_LONG SIGNED UNSIGNED SD_FLOAT DOUBLE FIXED16X16 SD_CONST VOLATILE SD_VOID BIT OPTIONAL
 %token COMPLEX IMAGINARY
 %token STRUCT UNION ENUM RANGE SD_FAR
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
-%token NAKED JAVANATIVE OVERLAY TRAP
+%token NAKED JAVANATIVE OVERLAY TRAP BUILTIN
 %token <yystr> STRING_LITERAL INLINEASM FUNC
 %token IFX ADDRESS_OF GET_VALUE_AT_ADDRESS SET_VALUE_AT_ADDRESS SPIL UNSPIL GETABIT GETBYTE GETWORD
 %token BITWISEAND UNARYMINUS IPUSH IPUSH_VALUE_AT_ADDRESS IPOP PCALL ENDFUNCTION JUMPTABLE
 %token ROT
 %token CAST CALL PARAM NULLOP BLOCK LABEL RECEIVE SEND ARRAYINIT
-%token DUMMY_READ_VOLATILE ENDCRITICAL INLINE RESTRICT SMALLC RAISONANCE IAR COSMIC SDCCCALL PRESERVES_REGS Z88DK_FASTCALL Z88DK_CALLEE Z88DK_SHORTCALL Z88DK_PARAMS_OFFSET
+%token DUMMY_READ_VOLATILE ENDCRITICAL INLINE RESTRICT SMALLC RAISONANCE IAR COSMIC DYNAMICC SDCCCALL PRESERVES_REGS Z88DK_FASTCALL Z88DK_CALLEE Z88DK_SHORTCALL Z88DK_PARAMS_OFFSET
 
 /* C11 */
 %token	ALIGNAS ALIGNOF ATOMIC GENERIC NORETURN STATIC_ASSERT THREAD_LOCAL
@@ -147,7 +147,7 @@ bool uselessDecl = true;
 %type <lnk> pointer specifier_qualifier_list type_specifier_list_ type_specifier_qualifier type_specifier typeof_specifier type_qualifier_list type_qualifier_list_opt type_qualifier type_name
 %type <lnk> type_specifier_list_without_struct_or_union type_specifier_qualifier_without_struct_or_union type_specifier_without_struct_or_union
 %type <lnk> storage_class_specifier struct_or_union_specifier function_specifier alignment_specifier
-%type <lnk> declaration_specifiers declaration_specifiers_ sfr_reg_bit sfr_attributes
+%type <lnk> storage_class_specifiers storage_class_specifiers_ declaration_specifiers declaration_specifiers_ sfr_reg_bit sfr_attributes
 %type <lnk> function_attribute function_attributes enum_specifier enum_comma_opt enum_type_specifier simple_typed_enum_decl
 %type <lnk> abstract_declarator direct_abstract_declarator direct_abstract_declarator_opt array_abstract_declarator function_abstract_declarator
 %type <lnk> unqualified_pointer
@@ -167,7 +167,7 @@ bool uselessDecl = true;
 %type <asts> generic_selection generic_assoc_list generic_association generic_controlling_operand
 %type <asts> implicit_block statements_and_implicit block_item_list
 %type <dsgn> designator designator_list designation designation_opt
-%type <ilist> initializer initializer_list
+%type <ilist> initializer initializer_list braced_initializer
 %type <yyint> unary_operator assignment_operator struct_or_union
 %type <yystr> asm_string_literal
 
@@ -238,32 +238,63 @@ postfix_expression
                       { $$ = newNode(INC_OP,$1,NULL);}
    | postfix_expression DEC_OP
                       { $$ = newNode(DEC_OP,$1,NULL); }
-   | '(' type_name ')' '{' initializer_list '}'
+   | '(' type_name ')' braced_initializer
                       {
-                        /* if (!options.std_c99) */
+                        if (!options.std_c99)
                           werror(E_COMPOUND_LITERALS_C99);
 
-                        /* TODO: implement compound literals (C99) */
-                        $$ = newAst_VALUE (valueFromLit (0));
+                        /* create anonymous variable with the provided initializer list */
+                        symbol *sym = newSymbol(genSymName(NestLevel), NestLevel);
+                        /* imitate "init_declarator" */
+                        sym->ival = $4;
+                        /* NOTE: Do not increment seqPointNo here, because the initializer is part of a
+                                 compound literal. See Annex C.1 "Known Sequence Points" paragraph 4. */
+
+                        /* add the specifier list to the id */
+                        symbol *sym1 = prepareDeclarationSymbol(NULL, $2, sym);
+                        /* implicitly make the symbol a constexpr if the initializer allows it */
+                        sym1->etype = getSpec(sym1->type);
+                        if (constExprTree(list2expr(sym1->ival)))
+                          SPEC_CONSTEXPR(sym1->etype) = 1;
+
+                        /* mark as temporary symbol for compound literal, so that gatherImplicitVariables
+                           can attach it to a block, and add the temporary symbol to the symbol table */
+                        sym1->iscomplit = 1;
+                        addSymChain(&sym1);
+                        /* allocate memory for the symbol where no block handling does it */
+                        if (NestLevel == 0)
+                          allocVariables(sym1);
+
+                        /* use the anonymous variable in the AST */
+                        $$ = newAst_VALUE(symbolVal(sym1));
                       }
-   | '(' type_name ')' '{' initializer_list ',' '}'
-     {
-       // if (!options.std_c99)
-         werror(E_COMPOUND_LITERALS_C99);
+   | '(' storage_class_specifiers type_name ')' braced_initializer
+                      {
+                        if (!options.std_c23)
+                          werror(E_COMPLIT_SCLASS_C23);
 
-       // TODO: implement compound literals (C99)
-       $$ = newAst_VALUE (valueFromLit (0));
-     }
-   | '(' type_name ')' '{' '}'
-     {
-       if (!options.std_c23)
-         werror(W_EMPTY_INIT_C23);
-       // if (!options.std_c99)
-         werror(E_COMPOUND_LITERALS_C99);
+                        /* create anonymous variable with the provided initializer list */
+                        symbol *sym = newSymbol(genSymName(NestLevel), NestLevel);
+                        /* imitate "init_declarator" */
+                        sym->ival = $5;
+                        /* NOTE: Do not increment seqPointNo here, because the initializer is part of a
+                                 compound literal. See Annex C.1 "Known Sequence Points" paragraph 4. */
 
-       // TODO: implement compound literals (C99)
-       $$ = newAst_VALUE (valueFromLit (0));
-     }
+                        /* add the specifier list to the id */
+                        sym_link *merged = finalizeSpec(mergeDeclSpec($2, $3, "storage_class_specifiers type_name"));
+                        symbol *sym1 = prepareDeclarationSymbol(NULL, merged, sym);
+
+                        /* mark as temporary symbol for compound literal, so that gatherImplicitVariables
+                           can attach it to a block, and add the temporary symbol to the symbol table */
+                        sym1->iscomplit = 1;
+                        addSymChain(&sym1);
+                        /* allocate memory for the symbol where no block handling does it */
+                        if (NestLevel == 0)
+                          allocVariables(sym1);
+
+                        /* use the anonymous variable in the AST */
+                        $$ = newAst_VALUE(symbolVal(sym1));
+                      }
    ;
 
 argument_expr_list
@@ -277,8 +308,22 @@ unary_expression
    | DEC_OP unary_expression        { $$ = newNode (DEC_OP, NULL, $2); }
    | unary_operator cast_expression
        {
+         // &* is ignored except for removing the _Optional qualifier.
          if ($1 == '&' && IS_AST_OP ($2) && $2->opval.op == '*' && $2->right == NULL)
-           $$ = $2->left;
+           {
+             $$ = $2->left;
+             sym_link *type = typeofOp ($$);
+             if (isOptional (type->next))
+               {
+                 type = copyLinkChain (type);
+                 if (IS_DECL (type->next))
+                   DCL_PTR_OPTIONAL (type->next) = false;
+                 else
+                   SPEC_OPTIONAL (type->next) = false;
+                 $$ = newNode (CAST, newAst_LINK(type), $$);
+                 $$->values.cast.semDeref = true;
+               }
+           }
          else if ($1 == '*' && IS_AST_OP ($2) && $2->opval.op == '&' && $2->right == NULL)
            $$ = $2->left;
          else
@@ -286,11 +331,10 @@ unary_expression
        }
    | SIZEOF unary_expression        { $$ = newNode (SIZEOF, NULL, $2); }
    | SIZEOF '(' type_name ')'       { $$ = newAst_VALUE (sizeofOp ($3)); }
-   | LENGTHOF unary_expression      { $$ = newNode (LENGTHOF, NULL, $2); }
-   | LENGTHOF '(' type_name ')'     { $$ = newAst_VALUE (lengthofOp ($3)); }
+   | COUNTOF unary_expression       { $$ = newNode (COUNTOF, NULL, $2); }
+   | COUNTOF '(' type_name ')'      { $$ = newAst_VALUE (countofOp ($3)); }
    | ALIGNOF '(' type_name ')'      { $$ = newAst_VALUE (alignofOp ($3)); }
    | OFFSETOF '(' type_name ',' offsetof_member_designator ')' { $$ = offsetofOp($3, $5); }
-   | ROT '(' unary_expression ',' unary_expression ')'         { $$ = newNode (ROT, $3, $5); }
    ;
 
 unary_operator
@@ -373,6 +417,16 @@ conditional_expr
                      {
                         $$ = newNode(':',$4,$6);
                         $$ = newNode('?',$1,$$);
+                     }
+   | logical_or_expr '?' { seqPointNo++;} ':' conditional_expr
+                     {
+                        if (!options.std_c2y && !options.std_sdcc)
+                          werror (E_SYNTAX_ERROR);
+                        $$ = newNode(':',$1,$5);
+                        $$ = newNode('?',$1,$$);
+                        /* use a temporary variable to prevent the duplication of side effects, if applicable */
+                        if (hasSEFcalls ($$->left))
+                          $$->left = replaceAstWithTemporary (&$$->right->left);
                      }
    ;
 
@@ -477,9 +531,10 @@ declaration
                  sdef->level = NestLevel;
                  sdef->block = currBlockno;
                  sdef->tagsym = newSymbol (osdef->tagsym->name, NestLevel);
-                 addSym (StructTab, sdef, sdef->tag, sdef->level, currBlockno, 0);
+                 addSym (StructTab, sdef, sdef->tag, sdef->level, currBlockno, false);
                  uselessDecl = false;
                }
+             checkQualifiers (sdef->tagsym, $1, false, false);
            }
          if (uselessDecl)
            werror(W_USELESS_DECL);
@@ -554,6 +609,17 @@ simple_declaration
       }
    ;
 
+storage_class_specifiers
+   : storage_class_specifiers_ { $$ = finalizeSpec($1); };
+
+storage_class_specifiers_
+   : storage_class_specifier { $$ = $1; }
+   | storage_class_specifier storage_class_specifiers_
+      {
+         $$ = mergeDeclSpec($1, $2, "storage_class_specifier storage_class_specifiers - skipped");
+      }
+   ;
+
 storage_class_specifier
    : TYPEDEF   {
                   $$ = newLink (SPECIFIER);
@@ -582,7 +648,9 @@ storage_class_specifier
                }
    | CONSTEXPR {
                   $$ = newLink (SPECIFIER);
-                  werror (E_CONSTEXPR);
+                  SPEC_CONSTEXPR($$) = 1;
+                  if (!options.std_c23)
+                    werror (E_CONSTEXPR_C23);
                }
    ;
 
@@ -673,6 +741,16 @@ type_specifier_without_struct_or_union
                   $$=newLink(SPECIFIER);
                   werror (E_DECIMAL_FLOAT_UNSUPPORTED);
                }
+   | ATOMIC '(' type_name ')' {
+                  checkTypeSanity ($3, "(_Atomic)");
+                  $$=$3;
+                  if (SPEC_ATOMIC($$))
+                    werror (E_ATOMIC_SPEC_ATOMIC);
+                  if (SPEC_CONST($$) || SPEC_RESTRICT($$) || SPEC_VOLATILE($$) || SPEC_ATOMIC($$))
+                    werror (E_ATOMIC_SPEC_QUALIFIED);
+                  SPEC_ATOMIC($$) = 1;
+                  werror (E_ATOMIC_UNSUPPORTED);
+               }
    | DECIMAL128 {
                   $$=newLink(SPECIFIER);
                   werror (E_DECIMAL_FLOAT_UNSUPPORTED);
@@ -739,27 +817,17 @@ typeof_specifier
        $$ = $3;
      }
    | TYPEOF_UNQUAL '(' expression ')'
-     {
-       $$ = typeofOp ($3);
-       wassert ($$);
-       wassert (IS_SPEC ($$));
-       SPEC_CONST ($$) = 0;
-       SPEC_RESTRICT ($$) = 0;
-       SPEC_VOLATILE ($$) = 0;
-       SPEC_ATOMIC ($$) = 0;
-       SPEC_ADDRSPACE ($$) = 0;
-     }
+      {
+        $$ = typeofOp ($3);
+        wassert ($$);
+        removeQualifiers ($$);
+      }
    | TYPEOF_UNQUAL '(' type_name ')'
-     {
-       checkTypeSanity ($3, "(typeof_unqual)");
-       $$ = $3;
-       wassert (IS_SPEC ($$));
-       SPEC_CONST ($$) = 0;
-       SPEC_RESTRICT ($$) = 0;
-       SPEC_VOLATILE ($$) = 0;
-       SPEC_ATOMIC ($$) = 0;
-       SPEC_ADDRSPACE ($$) = 0;
-     }
+      {
+        checkTypeSanity ($3, "(typeof_unqual)");
+        $$ = $3;
+        removeQualifiers ($$);
+      }
 
 struct_or_union_specifier
    : struct_or_union attribute_specifier_sequence_opt opt_stag
@@ -769,7 +837,7 @@ struct_or_union_specifier
           if (!$3->tagsym)
             {
               /* no tag given, so new struct def for current scope */
-              addSym (StructTab, $3, $3->tag, $3->level, currBlockno, 0);
+              addSym (StructTab, $3, $3->tag, $3->level, currBlockno, false);
             }
           else
             {
@@ -788,14 +856,14 @@ struct_or_union_specifier
                     {
                       /* There is an existing struct def in an outer scope. */
                       /* Create new struct def for current scope */
-                      addSym (StructTab, $3, $3->tag, $3->level, currBlockno, 0);
+                      addSym (StructTab, $3, $3->tag, $3->level, currBlockno, false);
                     }
                 }
               else
                {
                  /* There is no existing struct def at all. */
                  /* Create new struct def for current scope */
-                 addSym (StructTab, $3, $3->tag, $3->level, currBlockno, 0);
+                 addSym (StructTab, $3, $3->tag, $3->level, currBlockno, false);
                }
             }
 
@@ -884,7 +952,7 @@ struct_or_union_specifier
           else
             {
               /* new struct def for current scope */
-              addSym (StructTab, $3, $3->tag, $3->level, currBlockno, 0);
+              addSym (StructTab, $3, $3->tag, $3->level, currBlockno, false);
             }
           $$ = newLink(SPECIFIER);
           SPEC_NOUN($$) = V_STRUCT;
@@ -944,6 +1012,22 @@ member_declaration
           ignoreTypedefType = 0;
           $$ = $3;
         }
+   | attribute_specifier_sequence_opt specifier_qualifier_list ';'
+     {
+       symbol *sym = newSymbol ("", NestLevel);
+       sym_link *btype = copyLinkChain($2);
+       pointerTypes(sym->type, btype);
+       if (!sym->type)
+         {
+           sym->type = btype;
+           sym->etype = getSpec(sym->type);
+         }
+       else
+         addDecl (sym, 0, btype);
+       checkTypeSanity(sym->etype, sym->name);
+      ignoreTypedefType = 0;
+      $$ = sym;
+     }
    ;
 
 type_specifier_qualifier
@@ -994,7 +1078,6 @@ member_declarator
           else
               $1->bitVar = bitsize;
         }
-   | { $$ = newSymbol ("", NestLevel); }
    ;
 
 enum_specifier
@@ -1029,7 +1112,7 @@ enum_specifier
 
           /* add this to the enumerator table */
           if (!csym)
-              addSym (enumTab, $2, $2->name, $2->level, $2->block, 0);
+              addSym (enumTab, $2, $2->name, $2->level, $2->block, false);
           $$ = copyLinkChain(enumtype);
         }
      | ENUM identifier enum_type_specifier '{' enumerator_list enum_comma_opt '}'
@@ -1053,7 +1136,7 @@ enum_specifier
 
           /* add this to the enumerator table */
           if (!csym)
-              addSym (enumTab, $2, $2->name, $2->level, $2->block, 0);
+              addSym (enumTab, $2, $2->name, $2->level, $2->block, false);
           $$ = copyLinkChain(enumtype);
         }
    | ENUM identifier
@@ -1165,9 +1248,14 @@ type_qualifier
                   $$=newLink(SPECIFIER);
                   SPEC_VOLATILE($$) = 1;
                }
-   | ATOMIC  {
+   | ATOMIC    {
                   $$=newLink(SPECIFIER);
+                  SPEC_ATOMIC($$) = 1;
                   werror (E_ATOMIC_UNSUPPORTED);
+               }
+   | OPTIONAL  {
+                  $$=newLink(SPECIFIER);
+                  SPEC_OPTIONAL($$) = true;
                }
    | ADDRSPACE_NAME {
                   $$=newLink(SPECIFIER);
@@ -1260,6 +1348,7 @@ array_declarator
 
        p = newLink (DECLARATOR);
        DCL_TYPE(p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNKNOWN;
        DCL_ELEM(p) = 0;
 
        if ($3)
@@ -1285,6 +1374,7 @@ array_declarator
 
        p = newLink (DECLARATOR);
        DCL_TYPE(p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNEVALUATED;
        DCL_ELEM_AST (p) = $4;
 
        if ($3)
@@ -1312,7 +1402,9 @@ array_declarator
 
        p = newLink (DECLARATOR);
        DCL_TYPE(p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNEVALUATED;
        DCL_ELEM_AST (p) = $5;
+       DCL_STATIC_ARRAY_PARAM (p) = true;
 
        if ($4)
          {
@@ -1340,7 +1432,9 @@ array_declarator
 
        p = newLink (DECLARATOR);
        DCL_TYPE(p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNEVALUATED;
        DCL_ELEM_AST (p) = $5;
+       DCL_STATIC_ARRAY_PARAM (p) = true;
 
        DCL_PTR_CONST(p) = SPEC_CONST ($3);
        DCL_PTR_RESTRICT(p) = SPEC_RESTRICT ($3);
@@ -1350,6 +1444,32 @@ array_declarator
        n = newLink (SPECIFIER);
        SPEC_NEEDSPAR(n) = 1;
        addDecl($1,0,n);
+     }
+   | direct_declarator '[' type_qualifier_list_opt '*' ']'
+     {
+       sym_link *p, *n;
+
+       p = newLink (DECLARATOR);
+       DCL_TYPE (p) = ARRAY;
+       DCL_ARRAY_LENGTH_TYPE (p) = ARRAY_LENGTH_UNSPECIFIED;
+       DCL_ELEM (p) = 0;
+
+       if ($3)
+         {
+           if (!options.std_c99)
+             werror (E_QUALIFIED_ARRAY_PARAM_C99);
+
+           DCL_PTR_CONST (p) = SPEC_CONST ($3);
+           DCL_PTR_RESTRICT (p) = SPEC_RESTRICT ($3);
+           DCL_PTR_VOLATILE (p) = SPEC_VOLATILE ($3);
+           DCL_PTR_ADDRSPACE (p) = SPEC_ADDRSPACE ($3);
+           addDecl ($1,0,p);
+           n = newLink (SPECIFIER);
+           SPEC_NEEDSPAR (n) = 1;
+           addDecl ($1,0,n);
+         }
+       else
+         addDecl ($1,0,p);
      }
    ;
 
@@ -1425,8 +1545,9 @@ function_declarator
 
           wassert (funcType);
 
-          FUNC_HASVARARGS(funcType) = IS_VARG($4);
-          FUNC_ARGS(funcType) = reverseVal($4);
+          FUNC_HASVARARGS(funcType) = !$4 || IS_VARG($4);
+          if ($4)
+            FUNC_ARGS(funcType) = $4;
 
           FUNC_SDCCCALL(funcType) = -1;
 
@@ -1436,9 +1557,10 @@ function_declarator
           currBlockno = STACK_POP(blockNum);
           seqPointNo++; /* not a true sequence point, but helps resolve scope */
 
-          // if this was a pointer (to a function)
-          if (!IS_FUNC($1->type))
-              cleanUpLevel(SymbolTab, NestLevel + LEVEL_UNIT);
+          // NOTE: Removed to fix bug 3822. It is unclear whether this was leftover code or still served a purpose.
+          // // if this was a pointer (to a function)
+          // if (!IS_FUNC($1->type))
+          //     cleanUpLevel(SymbolTab, NestLevel + LEVEL_UNIT);
 
           $$ = $1;
         }
@@ -1494,9 +1616,10 @@ function_declarator
           currBlockno = STACK_POP(blockNum);
           seqPointNo++; /* not a true sequence point, but helps resolve scope */
 
-          // if this was a pointer (to a function)
-          if (!IS_FUNC($1->type))
-              cleanUpLevel(SymbolTab, NestLevel + LEVEL_UNIT);
+          // NOTE: Removed to fix bug 3822. It is unclear whether this was leftover code or still served a purpose.
+          // // if this was a pointer (to a function)
+          // if (!IS_FUNC($1->type))
+          //     cleanUpLevel(SymbolTab, NestLevel + LEVEL_UNIT);
 
           $$ = $1;
         }
@@ -1522,6 +1645,7 @@ pointer
                  DCL_PTR_CONST($1) = SPEC_CONST($2);
                  DCL_PTR_VOLATILE($1) = SPEC_VOLATILE($2);
                  DCL_PTR_RESTRICT($1) = SPEC_RESTRICT($2);
+                 DCL_PTR_OPTIONAL($1) = SPEC_OPTIONAL($2);
                  DCL_PTR_ADDRSPACE($1) = SPEC_ADDRSPACE($2);
              }
              else
@@ -1560,6 +1684,7 @@ pointer
                  DCL_PTR_CONST($1) = SPEC_CONST($2);
                  DCL_PTR_VOLATILE($1) = SPEC_VOLATILE($2);
                  DCL_PTR_RESTRICT($1) = SPEC_RESTRICT($2);
+                 DCL_PTR_OPTIONAL($1) = SPEC_OPTIONAL($2);
                  DCL_PTR_ADDRSPACE($1) = SPEC_ADDRSPACE($2);
                  switch (SPEC_SCLS($2)) {
                  case S_XDATA:
@@ -1620,16 +1745,53 @@ type_qualifier_list_opt
   ;
 
 parameter_type_list
-        : parameter_list
-        | parameter_list ',' ELLIPSIS { $1->vArgs = 1;}
-        ;
+  : parameter_list
+    {
+      $$ = reverseVal ($1);
+      checkParameterTypeList (NULL, $$);
+    }
+  | ELLIPSIS
+    {
+      if (!options.std_c23)
+        werror (W_VARARG_ONLY_C23);
+      $$ = NULL;
+    }
+  | parameter_list ',' ELLIPSIS
+    {
+      if (IS_VOID ($1->type))
+        werror (E_VOID_SHALL_BE_LONELY);
+      $$ = reverseVal ($1);
+      $$->vArgs = 1;
+      checkParameterTypeList (NULL, $$);
+    }
+  | parameter_declaration ';' parameter_list
+    {
+       if (!options.std_sdcc)
+        werror (W_PARAM_FWD_DECL);
+      $$ = reverseVal ($3);
+      checkParameterTypeList ($1, $$);
+    }
+  | parameter_declaration ';' parameter_list ',' ELLIPSIS
+    {
+      if (!options.std_sdcc)
+        werror (W_PARAM_FWD_DECL);
+      if (IS_VOID ($3->type))
+        werror (E_VOID_SHALL_BE_LONELY);
+      $$ = reverseVal ($3);
+      $$->vArgs = 1;
+      checkParameterTypeList ($1, $$);
+    }
+    
+  ;
 
 parameter_list
    : parameter_declaration
    | parameter_list ',' parameter_declaration
          {
-            $3->next = $1;
-            $$ = $3;
+           if (IS_VOID ($1->type) || IS_VOID ($3->type))
+             werror (E_VOID_SHALL_BE_LONELY);
+           $3->next = $1;
+           $$ = $3;
          }
    ;
 
@@ -1639,25 +1801,58 @@ parameter_declaration
           symbol *loop;
 
           if (IS_SPEC ($1) && !IS_VALID_PARAMETER_STORAGE_CLASS_SPEC ($1))
-            {
-              werror (E_STORAGE_CLASS_FOR_PARAMETER, $2->name);
-            }
+            werror (E_STORAGE_CLASS_FOR_PARAMETER, $2->name);
           pointerTypes ($2->type, $1);
           if (IS_SPEC ($2->etype))
             SPEC_NEEDSPAR($2->etype) = 0;
           addDecl ($2, 0, $1);
+          if (IS_VOID ($2->type))
+            werror (E_VOID_SHALL_BE_LONELY);
           for (loop = $2; loop; loop->_isparm = 1, loop = loop->next)
             ;
           $$ = symbolVal ($2);
           ignoreTypedefType = 0;
         }
-   | type_name
+   | declaration_specifiers abstract_declarator  /* analogous to type_name */
         {
+          /* go to the end of the list */
+          sym_link *p;
+
+          if (IS_SPEC ($1) && !IS_VALID_PARAMETER_STORAGE_CLASS_SPEC ($1))
+            {
+              werror (E_STORAGE_CLASS_FOR_PARAMETER, "type name");
+            }
+          pointerTypes ($2,$1);
+          for (p = $2; p && p->next; p = p->next)
+            ;
+          if (!p)
+            {
+              werror(E_SYNTAX_ERROR, yytext);
+            }
+          else
+            {
+              p->next = $1;
+            }
+
+          $$ = newValue ();
+          $$->type = $2;
+          $$->etype = getSpec ($$->type);
+          ignoreTypedefType = 0;
+        }
+   | declaration_specifiers  /* analogous to type_name */
+        {
+          if (IS_VOID ($1) &&
+            (SPEC_EXTR ($1) || SPEC_STAT ($1) || SPEC_SCLS ($1) == S_AUTO || SPEC_SCLS ($1) == S_REGISTER || // No storage class specifier allowed with void
+            SPEC_CONST ($1) || SPEC_RESTRICT ($1) || SPEC_VOLATILE ($1) || SPEC_ATOMIC ($1))) // No qualifier allowed with void
+            werror (E_VOID_SHALL_BE_LONELY);
+          else if (IS_SPEC ($1) && !IS_VALID_PARAMETER_STORAGE_CLASS_SPEC ($1))
+            werror (E_STORAGE_CLASS_FOR_PARAMETER, "type name");
+
           $$ = newValue ();
           $$->type = $1;
           $$->etype = getSpec ($$->type);
           ignoreTypedefType = 0;
-         }
+        }
    ;
 
 abstract_declarator
@@ -1681,22 +1876,39 @@ direct_abstract_declarator_opt
    ;
 
 array_abstract_declarator
-   : direct_abstract_declarator_opt '[' ']'   {
-                                       $$ = newLink (DECLARATOR);
-                                       DCL_TYPE($$) = ARRAY;
-                                       DCL_ELEM($$) = 0;
-                                       if($1)
-                                         $$->next = $1;
-                                    }
+   : direct_abstract_declarator_opt '[' ']'
+      {
+        $$ = newLink (DECLARATOR);
+        DCL_TYPE ($$) = ARRAY;
+        DCL_ARRAY_LENGTH_TYPE ($$) = ARRAY_LENGTH_UNKNOWN;
+        DCL_ELEM ($$) = 0;
+        if ($1)
+          {
+            $1->next = $$;
+            $$ = $1;
+          }
+      }
    | direct_abstract_declarator_opt '[' constant_expr ']'
-                                    {
-                                       value *val;
-                                       $$ = newLink (DECLARATOR);
-                                       DCL_TYPE($$) = ARRAY;
-                                       DCL_ELEM($$) = (int) ulFromVal(val = constExprValue($3, true));
-                                       if($1)
-                                         $$->next = $1;
-                                    }
+      {
+        value *val = constExprValue ($3, true);
+        $$ = newLink (DECLARATOR);
+        DCL_TYPE ($$) = ARRAY;
+        if (val && SPEC_SCLS (val->etype) == S_LITERAL)
+          {
+            DCL_ARRAY_LENGTH_TYPE ($$) = ARRAY_LENGTH_KNOWN_CONST;
+            DCL_ELEM ($$) = (int) ulFromVal (val);
+          }
+        else
+          {
+            DCL_ARRAY_LENGTH_TYPE ($$) = ARRAY_LENGTH_SPECIFIED;
+            DCL_ELEM ($$) = 0;
+          }
+        if ($1)
+          {
+            $1->next = $$;
+            $$ = $1;
+          }
+      }
    ;
 
 function_abstract_declarator
@@ -1727,7 +1939,7 @@ function_abstract_declarator
           DCL_TYPE(p) = FUNCTION;
 
           FUNC_HASVARARGS(p) = IS_VARG($4);
-          FUNC_ARGS(p) = reverseVal($4);
+          FUNC_ARGS(p) = $4;
 
           /* nest level was incremented to take care of the parms  */
           NestLevel -= LEVEL_UNIT;
@@ -1746,7 +1958,11 @@ function_abstract_declarator
 
 initializer
    : assignment_expr                { $$ = newiList(INIT_NODE,$1); }
-   | '{' '}'
+   | braced_initializer
+   ;
+
+braced_initializer
+   : '{' '}'
      {
        if (!options.std_c23)
          werror(W_EMPTY_INIT_C23);
@@ -2322,8 +2538,11 @@ external_declaration
                   SPEC_EXTR($1->etype) = 1;
                 }
             }
+          if ($1 && $1->type && IS_REGISTER (getSpec ($1->type)))
+            werror (W_REGISTER_EXTERNAL_DECL);
           addSymChain (&$1);
-          allocVariables ($1);
+          if (!($1 && $1->type && IFFUNC_ISBUILTIN ($1->type)))
+            allocVariables ($1);
           cleanUpLevel (SymbolTab, 1);
         }
    | addressmod
@@ -2473,6 +2692,9 @@ function_attribute
                         FUNC_INTNO($$) = INTNO_TRAP;
                         FUNC_ISISR($$) = 1;
                      }
+   |  BUILTIN        {  $$ = newLink (SPECIFIER);
+                        FUNC_ISBUILTIN ($$) = 1;
+                     }
    |  SMALLC         {  $$ = newLink (SPECIFIER);
                         FUNC_ISSMALLC($$) = 1;
                      }
@@ -2484,6 +2706,9 @@ function_attribute
                      }
    |  COSMIC         {  $$ = newLink (SPECIFIER);
                         FUNC_ISCOSMIC($$) = 1;
+                     }
+   |  DYNAMICC       {  $$ = newLink (SPECIFIER);
+                        FUNC_ISDYNAMICC($$) = 1;
                      }
    |  SDCCCALL '(' constant_expr ')'
                      {  $$ = newLink (SPECIFIER);
@@ -2669,7 +2894,7 @@ opt_stag
           $$->level = NestLevel;
           $$->block = currBlockno;
           $$->tagsym = NULL;
-          //addSym (StructTab, $$, $$->tag, $$->level, currBlockno, 0);
+          //addSym (StructTab, $$, $$->tag, $$->level, currBlockno, false);
         }
    ;
 
@@ -2687,7 +2912,7 @@ stag
           //    $$ = newStruct($1->name);
           //    $$->level = NestLevel;
           //    $$->tagsym = $1;
-          //    //addSym (StructTab, $$, $$->tag, $$->level, currBlockno, 0);
+          //    //addSym (StructTab, $$, $$->tag, $$->level, currBlockno, false);
           //  }
         }
    ;
@@ -2756,7 +2981,7 @@ identifier_list
    ;
 
 type_name
-   : declaration_specifiers
+   : specifier_qualifier_list
         {
           if (IS_SPEC ($1) && !IS_VALID_PARAMETER_STORAGE_CLASS_SPEC ($1))
             {
@@ -2764,7 +2989,7 @@ type_name
             }
           $$ = $1; ignoreTypedefType = 0;
         }
-   | declaration_specifiers abstract_declarator
+   | specifier_qualifier_list abstract_declarator
         {
           /* go to the end of the list */
           sym_link *p;
@@ -2903,35 +3128,7 @@ kr_declaration
    : declaration_specifiers init_declarator_list ';'
       {
          /* add the specifier list to the id */
-         symbol *sym , *sym1;
-
-         for (sym1 = sym = reverseSyms($2);sym != NULL;sym = sym->next) {
-             sym_link *lnk = copyLinkChain($1);
-             sym_link *l0 = NULL, *l1 = NULL, *l2 = NULL;
-             /* check illegal declaration */
-             for (l0 = sym->type; l0 != NULL; l0 = l0->next)
-               if (IS_PTR (l0))
-                 break;
-             /* check if creating instances of structs with flexible arrays */
-             for (l1 = lnk; l1 != NULL; l1 = l1->next)
-               if (IS_STRUCT (l1) && SPEC_STRUCT (l1)->b_flexArrayMember)
-                 break;
-             if (!options.std_c99 && l0 == NULL && l1 != NULL && SPEC_EXTR($1) != 1)
-               werror (W_FLEXARRAY_INSTRUCT, sym->name);
-             /* check if creating instances of function type */
-             for (l1 = lnk; l1 != NULL; l1 = l1->next)
-               if (IS_FUNC (l1))
-                 break;
-             for (l2 = lnk; l2 != NULL; l2 = l2->next)
-               if (IS_PTR (l2))
-                 break;
-             if (l0 == NULL && l2 == NULL && l1 != NULL)
-               werrorfl(sym->fileDef, sym->lineDef, E_TYPE_IS_FUNCTION, sym->name);
-             /* do the pointer stuff */
-             pointerTypes(sym->type,lnk);
-             addDecl (sym,0,lnk);
-         }
-
+         symbol *sym1 = prepareDeclarationSymbol (NULL, $1, $2);
          uselessDecl = true;
          $$ = sym1;
       }
@@ -3094,7 +3291,7 @@ addressmod
        werrorfl (sym->fileDef, sym->lineDef, E_PREVIOUS_DEF);
      if (!findSymWithLevel (SymbolTab, $2))
        werror (E_ID_UNDEF, $2->name);
-     addSym (AddrspaceTab, $3, $3->name, $3->level, $3->block, 0);
+     addSym (AddrspaceTab, $3, $3->name, $3->level, $3->block, false);
      sym = findSymWithLevel (AddrspaceTab, $3);
      sym->addressmod[0] = findSymWithLevel (SymbolTab, $2);
      sym->addressmod[1] = 0;
@@ -3106,7 +3303,7 @@ addressmod
        werrorfl (sym->fileDef, sym->lineDef, E_PREVIOUS_DEF);
      if (!findSymWithLevel (SymbolTab, $2))
        werror (E_ID_UNDEF, $2->name);
-     addSym (AddrspaceTab, $4, $4->name, $4->level, $4->block, 0);
+     addSym (AddrspaceTab, $4, $4->name, $4->level, $4->block, false);
      sym = findSymWithLevel (AddrspaceTab, $4);
      sym->addressmod[0] = findSymWithLevel (SymbolTab, $2);
      sym->addressmod[1] = 0;

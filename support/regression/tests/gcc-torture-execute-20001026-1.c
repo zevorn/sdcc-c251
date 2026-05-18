@@ -6,12 +6,11 @@
 
 #ifdef __SDCC
 #pragma std_c99
+#pragma disable_warning 85
 #endif
 
 #include <string.h>
 
-// TODO: Enable when sdcc supports struct!
-#if 0
 typedef struct {
   long r[(19 + sizeof (long))/(sizeof (long))];
 } realvaluetype;
@@ -42,12 +41,10 @@ build_real_from_int_cst_1 (data)
   struct brfic_args *args = (struct brfic_args *) data;
   args->d = real_value_from_int_cst (args->type, args->i);
 }
-#endif
 
 void
 testTortureExecute (void)
 {
-#if 0
   struct brfic_args args;
 
   memset (&args, 0, sizeof(args));
@@ -56,6 +53,5 @@ testTortureExecute (void)
   if (args.d.r[0] == 0)
     ASSERT (0);
   return;
-#endif
 }
 

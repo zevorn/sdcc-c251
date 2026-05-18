@@ -367,6 +367,14 @@ struct dis_entry disass_z80n_ed[]=
    { 0, 0, 0, 0, NULL }
 };
 
+struct dis_entry disass_z180_ed[]= {
+  { 0x004c, 0x00ff, ' ', 1, "MLT BC" },
+  { 0x005c, 0x00ff, ' ', 1, "MLT DE" },
+  { 0x006c, 0x00ff, ' ', 1, "MLT HL" },
+  { 0x007c, 0x00ff, ' ', 1, "MLT SP" },
+  { 0, 0, 0, 0, NULL }
+};
+  
 struct dis_entry disass_z80_ed[]= {
   { 0x0000, 0x00ff, ' ', 1, "RLC B" },
   { 0x0040, 0x00ff, ' ', 1, "IN B,(C)" },
@@ -1465,25 +1473,6 @@ u16_t z80_ttab_fdcb[256]= {
 };
 
 #undef T
-
-struct cpu_entry cpus_z80[]=
-  {
-    {"Z80"    , CPU_Z80,     0			, ""		, ""},
-
-    {"Z180"   , CPU_Z180,    0			, ""		, ""},
-
-    {"GB80"   , CPU_GB80,    0			, ""		, ""},
-    {"LR35902", CPU_LR35902, 0			, ""		, ""},
-    {"LR"     , CPU_LR35902, 0			, ""		, ""},
-
-    {"EZ80"   , CPU_EZ80,    0			, ""		, ""},
-
-    {"Z80N"   , CPU_Z80N,    0                  , ""            , ""},
-
-    {"R800"   , CPU_R800,    0                  , ""            , ""},
-    
-    {NULL, CPU_NONE, 0, "", ""}
-  };
 
 
 /* End of z80.src/glob.cc */

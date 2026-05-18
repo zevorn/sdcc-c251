@@ -62,7 +62,7 @@ typedef struct initList
 {
   int type;
   int lineno;
-  char *filename;
+  const char *filename;
   bool isempty;                         // C23 empty initializer
   struct designation *designation;
   union
@@ -158,6 +158,7 @@ value *valueFromLit (double);
 initList *newiList (int, void *);
 initList *revinit (initList *);
 initList *copyIlist (initList *);
+initList *checkScalariList (const symbol *sym, sym_link *type, initList *ilist, bool typecheck);
 double list2int (initList *);
 value *list2val (initList *, int);
 struct ast *list2expr (initList *);
@@ -180,7 +181,9 @@ unsigned long double2ul (double val);
 unsigned char byteOfVal (value *, int);
 int csdOfVal (int *topbit, int *nonzero, unsigned long long *csd_add, unsigned long long *csd_sub, value *val, unsigned long long mask);
 int isEqualVal (value *, int);
-TYPE_TARGET_ULONGLONG ullFromLit (sym_link * lit);
-value * valRecastLitVal (sym_link * dtype, value * val);
+TYPE_TARGET_ULONGLONG ullFromLit (sym_link *lit);
+value *valRecastLitVal (sym_link * dtype, value *val);
+void checkParameterTypeList (value *forward_declaration, value *parameters);
 
 #endif
+

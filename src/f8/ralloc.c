@@ -348,7 +348,7 @@ packRegsForAssign (iCode *ic, eBBlock *ebp)
   // Optimize out short-lived extra temporary.
   else if ((dic->op == CAST ||
     dic->op == UNARYMINUS || dic->op == '+' || dic->op == '-' || dic->op == '*' || dic->op == '%' ||
-    dic->op == '~' || dic->op == '^' || dic->op == '|' || dic->op == BITWISEAND ||
+    dic->op == '^' || dic->op == '|' || dic->op == BITWISEAND ||
     dic->op == LEFT_OP || dic->op == RIGHT_OP ||
     dic->op == ROT || dic->op == GETABIT) &&
     dic->next == ic && IS_ITEMP (IC_RESULT (ic)))

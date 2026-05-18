@@ -135,83 +135,22 @@ void foo(void)
 }
 #endif
 
-/* This test has been disabled. I don't think that signed/unsigned bool */
-/* is a valid type. -- EEP */
 #ifdef TEST3_DISABLED
+
 #include <stdbool.h>
 
-void foo(void)
-{
-#if defined(PORT_HOST)
-   volatile bool sb, ub;
+#ifdef __SDCC_mcs51
+#define btype __bit
 #else
-   volatile   signed bool sb;
-   volatile unsigned bool ub;
+#define btype bool
 #endif
 
-  sb = -2;
-  sb = -1;
-  sb =  0;
-  sb =  1;
+signed btype sbit;              /* ERROR */
+long btype longbit;             /* ERROR */
+short btype shortbit;           /* ERROR */
+volatile   signed bool sb;      /* ERROR */
+volatile unsigned bool ub;      /* ERROR */
 
-  ub = -1;
-  ub =  0;
-  ub =  1;
-  ub =  2;
-
-  ASSERT (! (-2 == sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  (-1 == sb));
-  ASSERT (  ( 0 == sb));
-  ASSERT (! ( 1 == sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-2 != sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  (-1 != sb));
-  ASSERT (  ( 0 != sb));
-  ASSERT (  ( 1 != sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-2 <  sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  (-1 <  sb));
-  ASSERT (! ( 0 <  sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-1 <= sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  ( 0 <= sb));
-  ASSERT (! ( 1 <= sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (! (-1 >  sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  ( 0 >  sb));
-  ASSERT (  ( 1 >  sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (! (-2 >= sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-  ASSERT (  (-1 >= sb));
-  ASSERT (  ( 0 >= sb));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-
-  ASSERT (! (-1 == ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 0 == ub));
-  ASSERT (  ( 1 == ub));
-  ASSERT (! ( 2 == ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-1 != ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 0 != ub));
-  ASSERT (  ( 1 != ub));
-  ASSERT (  ( 2 != ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  (-1 <  ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 0 <  ub));
-  ASSERT (! ( 1 <  ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (  ( 0 <= ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 1 <= ub));
-  ASSERT (! ( 2 <= ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (! ( 0 >  ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 1 >  ub));
-  ASSERT (  ( 2 >  ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-
-  ASSERT (! (-1 >= ub));	/* WARNING(SDCC) */
-  ASSERT (  ( 0 >= ub));
-  ASSERT (  ( 1 >= ub));	/* WARNING(SDCC_mcs51|SDCC_ds390) */
-}
 #endif
 
 #ifdef TEST4

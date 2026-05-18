@@ -1,7 +1,7 @@
 /* z80.h */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -155,9 +155,21 @@
 #define	S_SBC	82
 
 /*
- * CPU Types
+ * CPU Type Split
  */
 #define	S_CPU	84
+
+/*
+ * 8085 Undocumented Instructions
+ */
+#define	X_INH1	85
+#define	X_ADI	86
+#define	X_JP	87
+
+/*
+ * CPU Type Split
+ */
+#define	X_CPU	88
 
 /*
  * HD64180 Instructions
@@ -174,9 +186,12 @@
  */
 #define	X_Z80	0
 #define	X_HD64	1
-#define	X_ZXN	2
-#define	X_EZ80	3
-#define X_R800  4
+#define	X_8080	2
+#define	X_8085	3
+#define	X_8085X	4
+#define	X_ZXN	12
+#define	X_EZ80	13
+#define X_R800  14
 
 /*
  * Z80-ZX Next Instructions
@@ -242,8 +257,6 @@ extern	struct	adsym	CND[];
 
 	/* machine dependent functions */
 
-#ifdef	OTHERSYSTEM
-	
 	/* z80adr.c */
 extern	int		addr(struct expr *esp);
 extern	int		admode(struct adsym *sp);
@@ -252,24 +265,9 @@ extern	int		srch(char *str);
 	/* z80mch.c */
 extern	int		genop(int pop, int op, struct expr *esp, int f);
 extern	int		gixiy(int v);
-extern	VOID		glilsis(int sfx, struct expr *esp);
-extern	VOID		machine(struct mne *mp);
+extern	void		glilsis(int sfx, struct expr *esp);
+extern	void		machine(struct mne *mp);
 extern	int		mchpcr(struct expr *esp);
-extern	VOID		minit(void);
+extern	int		mchtyp;
+extern	void		minit(void);
 
-#else
-
-	/* z80adr.c */
-extern	int		addr();
-extern	int		admode();
-extern	int		srch();
-
-	/* z80mch.c */
-extern	int		genop();
-extern	int		gixiy();
-extern	VOID		glilsis();
-extern	VOID		machine();
-extern	int		mchpcr();
-extern	VOID		minit();
-
-#endif

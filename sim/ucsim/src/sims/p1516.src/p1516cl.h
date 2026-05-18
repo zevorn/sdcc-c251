@@ -38,15 +38,16 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 enum flags
   {
-   S= 1,
-   N= 1,
-   C= 2,
-   Z= 4,
-   O= 8,
-   V= 8,
-   // p2223 flags
-   P= 0x10, // 1:Pre 0:Post
-   U= 0x20 // 1:Up  0:Down
+    NON= 0,
+    S= 1,
+    N= 1,
+    C= 2,
+    Z= 4,
+    O= 8,
+    V= 8,
+    // p2223 flags
+    P= 0x10, // 1:Pre 0:Post
+    U= 0x20 // 1:Up  0:Down
   };
 
 
@@ -96,8 +97,6 @@ public:
   
   virtual struct dis_entry *dis_tbl(void);
   virtual char *disassc(t_addr addr, chars *comment);
-  virtual void analyze_start(void);
-  virtual void analyze(t_addr addr);
   virtual int inst_length(t_addr addr) { return 1; }
   virtual void print_regs(class cl_console_base *con);
 
@@ -109,9 +108,9 @@ public:
   virtual void btn_edge(int btn, bool press);
 };
 
-#define SET_C(v) ( cF.W( (F&~C) | ((v)?C:0) ))
-#define SET_Z(v) ( cF.W( (F&~Z) | (((v)==0)?Z:0) ))
-#define SET_S(v) ( cF.W( (F&~S) | ((v)?S:0) ))
+#define SET_C(v) ( cF.W( (F&~C) | ((v)?C:NON) ))
+#define SET_Z(v) ( cF.W( (F&~Z) | (((v)==0)?Z:NON) ))
+#define SET_S(v) ( cF.W( (F&~S) | ((v)?S:NON) ))
 
 #endif
 

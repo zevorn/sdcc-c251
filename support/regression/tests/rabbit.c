@@ -312,7 +312,7 @@ void testRabbit(void)
    // Test without IV
    ASSERT(!rabbit_key_setup(&instance, zero, 128/8));
    ASSERT(!rabbit_cipher(&instance, zero, buffer, 384/8));
-#if !defined(__SDCC_f8) && !defined(__SDCC_ds390) // bug
+#if !defined(__SDCC_ds390) // bug
    ASSERT(!memcmp(s, buffer, 384/8));
 #endif
    ASSERT(!rabbit_key_setup(&instance, zero, 128/8));
@@ -323,7 +323,7 @@ void testRabbit(void)
    ASSERT(!rabbit_key_setup(&instance, zero, 128/8));
    ASSERT(!rabbit_iv_setup(&instance, &instance, zero, 64/8));
    ASSERT(!rabbit_cipher(&instance, zero, buffer, 384/8));
-#if !defined(__SDCC_f8) && !defined(__SDCC_ds390) // bug
+#if !defined(__SDCC_ds390) // bug
    ASSERT(!memcmp(i, buffer, 384/8));
 #endif
    ASSERT(!rabbit_key_setup(&instance, zero, 128/8));

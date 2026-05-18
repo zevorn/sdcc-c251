@@ -16,11 +16,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+#include <stdint.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <asxxxx_config.h>
 
 #include "aslink.h"
 
@@ -29,11 +29,11 @@ static int execStartLSB;
 static char execStartMSBfound;
 static char execStartLSBfound;
 
-typedef TYPE_UDWORD Elf32_Addr;
-typedef TYPE_WORD Elf32_Half;
-typedef TYPE_UDWORD Elf32_Off;
-typedef TYPE_DWORD Elf32_Sword;
-typedef TYPE_UDWORD Elf32_Word;
+typedef uint32_t Elf32_Addr;
+typedef int16_t Elf32_Half;
+typedef uint32_t Elf32_Off;
+typedef int32_t Elf32_Sword;
+typedef uint32_t Elf32_Word;
 
 enum
 {

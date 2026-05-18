@@ -112,6 +112,21 @@ reg_info z80_regs[] = {
   {REG_CND, CND_IDX, "c", 1}
 };
 
+reg_info r4k_regs[] = {
+  {REG_GPR, A_IDX, "a", 1},
+  {REG_GPR, C_IDX, "c", 1},
+  {REG_GPR, B_IDX, "b", 1},
+  {REG_GPR, E_IDX, "e", 1},
+  {REG_GPR, D_IDX, "d", 1},
+  {REG_GPR, L_IDX, "l", 1},
+  {REG_GPR, H_IDX, "h", 1},
+  {REG_GPR, IYL_IDX, "iyl", 1},
+  {REG_GPR, IYH_IDX, "iyh", 1},
+  {REG_GPR, K_IDX, "k", 1},
+  {REG_GPR, J_IDX, "j", 1},
+  {REG_CND, CND_IDX, "c", 1}
+};
+
 reg_info *regsZ80;
 
 /** Number of usable registers (all but C) */
@@ -147,7 +162,7 @@ freeReg (reg_info *reg)
 {
   wassert (!reg->isFree);
   reg->isFree = 1;
-  D (D_ALLOC, ("freeReg: freed %p\n", reg));
+  D (D_ALLOC, ("freeReg: freed %p\n", (void *)reg));
 }
 
 /** noOverLap - will iterate through the list looking for over lap
@@ -209,7 +224,7 @@ createStackSpil (symbol *sym)
   symbol *sloc = NULL;
   struct dbuf_s dbuf;
 
-  D (D_ALLOC, ("createStackSpil: for sym %p (%s)\n", sym, sym->name));
+  D (D_ALLOC, ("createStackSpil: for sym %p (%s)\n", (void *)sym, sym->name));
 
   /* first go try and find a free one that is already
      existing on the stack */
@@ -280,7 +295,7 @@ z80SpillThis (symbol * sym)
 {
   int i;
 
-  D (D_ALLOC, ("z80SpillThis: spilling %p (%s)\n", sym, sym->name));
+  D (D_ALLOC, ("z80SpillThis: spilling %p (%s)\n", (void *)sym, sym->name));
 
   /* if this is rematerializable or has a spillLocation
      we are okay, else we need to create a spillLocation
@@ -288,7 +303,7 @@ z80SpillThis (symbol * sym)
   if (!(sym->remat || sym->usl.spillLoc) || (sym->usl.spillLoc && !sym->usl.spillLoc->onStack)) // z80 port currently only supports on-stack spill locations in code generation.
     createStackSpil (sym);
   else
-    D (D_ALLOC, ("Already has spilllocation %p, %s\n", sym->usl.spillLoc, sym->usl.spillLoc->name));
+    D (D_ALLOC, ("Already has spilllocation %p, %s\n", (void *)(sym->usl.spillLoc), sym->usl.spillLoc->name));
 
   /* mark it as spilt & put it in the spilt set */
   sym->isspilt = sym->spillA = 1;
@@ -359,7 +374,7 @@ deassignLRs (iCode *ic, eBBlock *ebp)
       if (!bitVectBitValue (_G.regAssigned, sym->key))
         continue;
 
-      D (D_ALLOC, ("deassignLRs: in loop on sym %p nregs %u\n", sym, sym->nRegs));
+      D (D_ALLOC, ("deassignLRs: in loop on sym %p nregs %u\n", (void *)sym, sym->nRegs));
 
       if (sym->nRegs)
         {
@@ -498,7 +513,7 @@ regTypeNum (void)
             }
         }
 
-      D (D_ALLOC, ("regTypeNum: loop on sym %p\n", sym));
+      D (D_ALLOC, ("regTypeNum: loop on sym %p\n", (void *)sym));
 
       /* if the live range is a temporary */
       if (sym->isitmp)
@@ -518,13 +533,13 @@ regTypeNum (void)
 
           /* if not then we require registers */
           D (D_ALLOC,
-             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, sym->type));
+             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, (void *)(sym->type)));
           sym->nRegs =
             ((IS_AGGREGATE (sym->type)
               || sym->isptr) ? getSize (sym->type = aggrToPtr (sym->type, FALSE)) : getSize (sym->type));
-          D (D_ALLOC, ("regTypeNum: setting nRegs of %s (%p) to %u\n", sym->name, sym, sym->nRegs));
+          D (D_ALLOC, ("regTypeNum: setting nRegs of %s (%p) to %u\n", sym->name, (void *)sym, sym->nRegs));
 
-          D (D_ALLOC, ("regTypeNum: setup to assign regs sym %p\n", sym));
+          D (D_ALLOC, ("regTypeNum: setup to assign regs sym %p\n", (void *)sym));
 
           if (sym->nRegs > 8)
             {
@@ -542,7 +557,7 @@ regTypeNum (void)
           /* for the first run we don't provide */
           /* registers for true symbols we will */
           /* see how things go                  */
-          D (D_ALLOC, ("regTypeNum: #2 setting num of %p to 0\n", sym));
+          D (D_ALLOC, ("regTypeNum: #2 setting num of %p to 0\n", (void *)sym));
           sym->nRegs = 0;
         }
     }
@@ -580,7 +595,7 @@ packRegsForAssign (iCode * ic, eBBlock * ebp)
 {
   iCode *dic, *sic;
 
-  D (D_ALLOC, ("packRegsForAssign: running on ic %p\n", ic));
+  D (D_ALLOC, ("packRegsForAssign: running on ic %p\n", (void *)ic));
 
   if (!IS_ITEMP (IC_RIGHT (ic)) || OP_SYMBOL (IC_RIGHT (ic))->isind || OP_LIVETO (IC_RIGHT (ic)) > ic->seq)
     return 0;
@@ -669,10 +684,13 @@ packRegsForAssign (iCode * ic, eBBlock * ebp)
         }
     }
 
-  /* Keep assignment if it is an sfr write  - not all of code generation can deal with result in sfr */
-  if (IC_RESULT (ic) && IS_TRUE_SYMOP (IC_RESULT (ic)) && SPEC_OCLS (OP_SYMBOL (IC_RESULT (ic))->etype) && IN_REGSP (SPEC_OCLS (OP_SYMBOL (IC_RESULT (ic))->etype)) &&
-    (dic->op == LEFT_OP || dic->op == RIGHT_OP))
-    return 0;
+  // Keep assignment if it is an sfr write  - shifts can't deal with result in __sfr or __far.
+  if (ic->result && IS_TRUE_SYMOP (ic->result))
+    {
+      memmap *space = SPEC_OCLS (OP_SYMBOL (ic->result)->etype);
+      if ((IN_REGSP (space) || IN_FARSPACE (space)) && (dic->op == LEFT_OP || dic->op == RIGHT_OP))
+        return 0;
+    }
 
   /* found the definition */
 
@@ -783,7 +801,7 @@ packRegsForOneuse (iCode * ic, operand * op, eBBlock * ebp)
   iCode *dic, *sic;
 
   // PENDING: Disable
-  D (D_ALLOC, ("packRegsForOneUse: running on ic %p\n", ic));
+  D (D_ALLOC, ("packRegsForOneUse: running on ic %p\n", (void *)ic));
 
   /* if returning a literal then do nothing */
   if (!IS_SYMOP (op))
@@ -944,7 +962,7 @@ packRegisters (eBBlock * ebp)
 
   for (ic = ebp->sch; ic; ic = ic->next)
     {
-      D (D_ALLOC, ("packRegisters: looping on ic %p\n", ic));
+      D (D_ALLOC, ("packRegisters: looping on ic %p\n", (void *)ic));
 
       /* Safe: address of a true sym is always constant. */
       /* if this is an itemp & result of a address of a true sym
@@ -978,7 +996,8 @@ packRegisters (eBBlock * ebp)
         {
           sym_link *to_type = operandType (IC_LEFT (ic));
           sym_link *from_type = operandType (IC_RIGHT (ic));
-          if ((IS_PTR (to_type) || IS_INT (to_type)) && IS_PTR (from_type))
+          if ((IS_PTR (to_type) || IS_INT (to_type)) && IS_PTR (from_type) &&
+            !(IS_RAB && (IS_FARPTR (to_type) ^ IS_FARPTR (from_type)))) // Except Rabbit casts of pointers to/from __far - could remat in principle, but would require work in codegen first.
             {
               OP_SYMBOL (IC_RESULT (ic))->remat = 1;
               OP_SYMBOL (IC_RESULT (ic))->rematiCode = ic;
@@ -1158,7 +1177,7 @@ serialRegMark (eBBlock ** ebbs, int count)
             {
               symbol *sym = OP_SYMBOL (IC_RESULT (ic));
 
-              D (D_ALLOC, ("serialRegAssign: in loop on result %p (%s)\n", sym, sym->name));
+              D (D_ALLOC, ("serialRegAssign: in loop on result %p (%s)\n", (void *)sym, sym->name));
 
               /* Make sure any spill location is definitely allocated */
               if (sym->isspilt && !sym->remat && sym->usl.spillLoc && !sym->usl.spillLoc->allocreq)

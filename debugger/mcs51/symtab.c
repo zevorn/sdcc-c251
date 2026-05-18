@@ -836,7 +836,7 @@ static void lnkCSrc (char *s)
   mod = NULL;
   if (!applyToSet(modules,moduleWithCName,mname,&mod))
     {
-      mod = parseModule(mname, FALSE);
+      mod = parseModule(mname, false);
       mod->c_name = alloccpy(mname,strlen(mname));
       mod->cfullname=searchDirsFname(mod->c_name);
       mod->cLines = loadFile(mod->c_name,&mod->ncLines);

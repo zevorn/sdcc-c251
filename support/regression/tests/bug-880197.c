@@ -4,6 +4,10 @@
 
 #include <testfwk.h>
 
+#ifdef __SDCC
+#pragma disable_warning 357
+#endif
+
 // no need to call this, it generates compiler error:
 //   error: FATAL Compiler Internal Error in file 'gen.c'
 //   line number '8381' : genPointerSet: illegal pointer type

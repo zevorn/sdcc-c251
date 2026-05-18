@@ -59,6 +59,20 @@ public:
   virtual void option_changed(void);
 };
 
+
+class cl_bitsfr: public cl_memory_operator
+{
+public:
+  class cl_address_space *sfr;
+  t_addr addr;
+  t_mem bitmask;
+public:
+  cl_bitsfr(MCELL *acell, class cl_address_space *the_sfr, t_addr bitaddr);
+  virtual t_mem read(void);
+  virtual t_mem write(t_mem val);
+};
+
+
 class cl_51core: public cl_uc
 {
 public:
@@ -124,7 +138,6 @@ public:
   
   virtual void   reset(void);
   virtual void   clear_sfr(void);
-  virtual void   analyze(t_addr addr);
 
   virtual int    do_inst(void);
   virtual int    do_emu(void);
@@ -135,6 +148,8 @@ public:
   virtual int  do_interrupt(void);
   virtual int  accept_it(class it_level *il);
   virtual bool it_enabled(void);
+
+  virtual int sim_stop_result(void);
 
   virtual void stack_check_overflow(class cl_stack_op *op);
   

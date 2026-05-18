@@ -179,7 +179,6 @@ emitRegularMap (memmap *map, bool addPublics, bool arFlag)
       /* if allocation required check is needed
          then check if the symbol really requires
          allocation only for local variables */
-
       if (arFlag && !IS_AGGREGATE (sym->type) && !(sym->_isparm && !IS_REGPARM (sym->etype)) && !sym->allocreq && sym->level)
         continue;
 
@@ -230,10 +229,7 @@ emitRegularMap (memmap *map, bool addPublics, bool arFlag)
                 }
               else
                 {
-                  if (getNelements (tsym->type, tsym->ival) > 1)
-                    {
-                      werrorfl (tsym->fileDef, tsym->lineDef, W_EXCESS_INITIALIZERS, "scalar", tsym->name);
-                    }
+                  checkScalariList (sym, sym->type, sym->ival, false);
                   ival = newNode ('=', newAst_VALUE (symbolVal (tsym)),
                                   decorateType (resolveSymbols (list2expr (tsym->ival)), RESULT_TYPE_NONE, true));
                 }
@@ -316,10 +312,7 @@ emitRegularMap (memmap *map, bool addPublics, bool arFlag)
                 }
               else
                 {
-                  if (getNelements (sym->type, sym->ival) > 1)
-                    {
-                      werrorfl (sym->fileDef, sym->lineDef, W_EXCESS_INITIALIZERS, "scalar", sym->name);
-                    }
+                  checkScalariList (sym, sym->type, sym->ival, false);
                   ival = newNode ('=', newAst_VALUE (symbolVal (sym)),
                                   decorateType (resolveSymbols (list2expr (sym->ival)), RESULT_TYPE_NONE, true));
                 }
@@ -350,7 +343,7 @@ emitRegularMap (memmap *map, bool addPublics, bool arFlag)
          an equate for this no need to allocate space */
       if (SPEC_ABSA (sym->etype) && !sym->ival)
         {
-          char *equ = "=";
+          const char *equ = "=";
 
           /* print extra debug info if required */
           if (options.debug)
@@ -413,7 +406,7 @@ initValPointer (ast *expr)
           if (sclass == S_CODE)
             {
               DCL_TYPE (val->type) = CPOINTER;
-              CodePtrPointsToConst (val->type);
+              checkCodePtrPointsToConst (val->type, expr->filename, expr->lineno);
             }
           else if (oclass)
             DCL_TYPE (val->type) = oclass->ptrType;
@@ -480,7 +473,7 @@ initValPointer (ast *expr)
       if (SPEC_SCLS (expr->etype) == S_CODE)
         {
           DCL_TYPE (val->type) = CPOINTER;
-          CodePtrPointsToConst (val->type);
+          checkCodePtrPointsToConst (val->type, expr->filename, expr->lineno);
         }
       else if (oclass)
         DCL_TYPE (val->type) = oclass->ptrType;
@@ -1077,7 +1070,10 @@ printIvalStruct (symbol *sym, sym_link *type, initList *ilist, struct dbuf_s *oB
     {
       if (ilist->type != INIT_DEEP)
         {
-          werrorfl (sym->fileDef, sym->lineDef, E_INIT_STRUCT, sym->name);
+          if (SPEC_CONSTEXPR (type))
+            printIvalStruct (sym, type, ilist->init.node->opval.val->sym->ival, oBuf);
+          else
+            werrorfl (sym->fileDef, sym->lineDef, E_INIT_STRUCT, sym->name);
           return;
         }
 
@@ -1171,7 +1167,10 @@ printIvalChar (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *o
               if (sym && IS_STRUCT (sym->type))
                 sym->flexArrayLength = size;
               else
-                DCL_ELEM (type) = size;
+                {
+                  DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (type) = size;
+                }
             }
 
           if (check && DCL_ELEM (val->type) > size)
@@ -1231,7 +1230,10 @@ printIvalChar16 (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s 
               if (sym && IS_STRUCT (sym->type))
                 sym->flexArrayLength = size;
               else
-                DCL_ELEM (type) = size;
+                {
+                  DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (type) = size;
+                }
             }
 
           if (check && DCL_ELEM (val->type) > size)
@@ -1290,7 +1292,10 @@ printIvalChar32 (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s 
               if (sym && IS_STRUCT (sym->type))
                 sym->flexArrayLength = size;
               else
-                DCL_ELEM (type) = size;
+                {
+                  DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+                  DCL_ELEM (type) = size;
+                }
             }
 
           if (check && DCL_ELEM (val->type) > size)
@@ -1417,7 +1422,10 @@ printIvalArray (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *
       if (IS_STRUCT (sym->type))
         sym->flexArrayLength = size * getSize (type->next);
       else
-        DCL_ELEM (type) = size;
+        {
+          DCL_ARRAY_LENGTH_TYPE (type) = ARRAY_LENGTH_KNOWN_CONST;
+          DCL_ELEM (type) = size;
+        }
     }
 
   return;
@@ -1504,7 +1512,7 @@ printIvalFuncPtr (sym_link * type, initList * ilist, struct dbuf_s *oBuf)
 /* printIvalCharPtr - generates initial values for character pointers */
 /*--------------------------------------------------------------------*/
 int
-printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s *oBuf)
+printIvalCharPtr (symbol *sym, sym_link *type, value *val, struct dbuf_s *oBuf)
 {
   int size = 0;
   char *p;
@@ -1527,12 +1535,17 @@ printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s *oBu
         {
           dbuf_tprintf (oBuf, "\t!dbs\n", val->name);
         }
-      else if (size == FARPTRSIZE)
+      else if (size == FARPTRSIZE || TARGET_Z80_LIKE /* An ugly hack, but so is everything else in this file. Lots of MCS-51 assumptions everywhere. */)
         {
           if (TARGET_PDK_LIKE && !TARGET_IS_PDK16)
             {
               dbuf_printf (oBuf, "\tret #<%s\n", val->name);
               dbuf_printf (oBuf, IN_CODESPACE (SPEC_OCLS (val->etype)) ? "\tret #>(%s + 0x8000)\n" : "\tret #0\n", val->name);
+            }
+          else if ((TARGET_IS_EZ80 || TARGET_RABBIT_LIKE || TARGET_IS_TLCS90) && IS_FARPTR(type))
+            {
+              _printPointerType (oBuf, val->name, FARPTRSIZE);
+              dbuf_printf (oBuf, "\n");
             }
           else if (port->use_dw_for_init)
             dbuf_tprintf (oBuf, "\t!dws\n", val->name);
@@ -1760,9 +1773,14 @@ printIvalPtr (symbol *sym, sym_link *type, initList *ilist, struct dbuf_s *oBuf)
     {
       dbuf_tprintf (oBuf, "\t!dbs\n", val->name);
     }
-  else if (size == FARPTRSIZE)
+  else if (size == FARPTRSIZE || TARGET_Z80_LIKE /* An ugly hack, but so is everything else in this file. Lots of MCS-51 assumptions everywhere. Like the assumtion that __far pointers are 2 bytes, and generic ones are 3 bytes. For Rabbits it's the opposite. */)
     {
-      if (port->use_dw_for_init)
+      if ((TARGET_IS_EZ80 || TARGET_RABBIT_LIKE || TARGET_IS_TLCS90) && IS_FARPTR(type))
+        {
+          _printPointerType (oBuf, val->name, FARPTRSIZE);
+          dbuf_printf (oBuf, "\n");
+        }
+      else if (port->use_dw_for_init)
         dbuf_tprintf (oBuf, "\t!dws\n", val->name);
       else
         printPointerType (oBuf, val->name);
@@ -1782,8 +1800,6 @@ printIvalPtr (symbol *sym, sym_link *type, initList *ilist, struct dbuf_s *oBuf)
 void
 printIval (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf, bool check)
 {
-  sym_link *itype;
-
   /* Handle designated initializers */
   if (ilist && ilist->type==INIT_DEEP)
     ilist = reorderIlist (type, ilist);
@@ -1818,53 +1834,7 @@ printIval (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s *oBuf,
     }
 
   if (ilist)
-    {
-      // not an aggregate, ilist must be a node
-      if (ilist->type != INIT_NODE)
-        {
-          // or a 1-element list
-          if (ilist->init.deep->next)
-            {
-              werrorfl (sym->fileDef, sym->lineDef, W_EXCESS_INITIALIZERS, "scalar", sym->name);
-            }
-          else
-            {
-              ilist = ilist->init.deep;
-            }
-        }
-
-      // Give up here, to avoid reading invalid memory below.
-      if (ilist->init.node->isError)
-        goto ilist_done;
-
-      // and the type must match
-      itype = ilist->init.node->ftype;
-
-      if (compareType (type, itype, false) == 0)
-        {
-          // special case for literal strings
-          if (IS_ARRAY (itype) && IS_CHAR (getSpec (itype)) &&
-              // which are really code pointers
-              IS_CODEPTR (type))
-            {
-              // no sweat
-            }
-          else if (IS_CODEPTR (type) && IS_FUNC (type->next))   /* function pointer */
-            {
-              if (ilist)
-                werrorfl (ilist->filename, ilist->lineno, E_INCOMPAT_TYPES);
-              else
-                werror (E_INCOMPAT_TYPES);
-              printFromToType (itype, type->next);
-            }
-          else
-            {
-              werrorfl (ilist->filename, ilist->lineno, E_TYPE_MISMATCH, "assignment", " ");
-              printFromToType (itype, type);
-            }
-        }
-    }
-ilist_done:
+    ilist = checkScalariList (sym, type, ilist, true);
 
   /* if this is a pointer */
   if (IS_PTR (type))
@@ -2052,6 +2022,11 @@ emitMaps (void)
     {
       emitRegularMap (xidata, TRUE, TRUE);
     }
+  if (xconst)
+    {
+      dbuf_tprintf (&xconst->oBuf, "\t!areacode\n", xconst->sname);
+      emitStaticSeg (xconst, &xconst->oBuf);
+    }
   emitRegularMap (sfr, publicsfr, FALSE);
   emitRegularMap (sfrbit, publicsfr, FALSE);
   emitRegularMap (home, TRUE, FALSE);
@@ -2133,12 +2108,12 @@ createInterruptVect (struct dbuf_s *vBuf)
     }
 }
 
-char *iComments1 = {
+const char *iComments1 = {
   ";--------------------------------------------------------\n"
   "; File Created by SDCC : free open source ISO C Compiler\n"
 };
 
-char *iComments2 = {
+const char *iComments2 = {
   ";--------------------------------------------------------\n"
 };
 
@@ -2338,21 +2313,9 @@ glue (void)
   /* print module name */
   tfprintf (asmFile, "\t!module\n", moduleName);
 
-  // TODO: Move this stuff from here to port-specific genAssemblerStart?
+  // TODO: Move this from here to port-specific genAssemblerStart (like we did for the z80-related ports already)?
   if (TARGET_IS_S08)
     fprintf (asmFile, "\t.cs08\n");
-  else if (TARGET_IS_Z180)
-    fprintf (asmFile, "\t.hd64\n");
-  else if (TARGET_IS_R3KA)
-    fprintf (asmFile, "\t.r3k\n");
-  else if (TARGET_IS_EZ80_Z80)
-    fprintf (asmFile, "\t.ez80\n");
-  else if (TARGET_IS_Z80N)
-    fprintf (asmFile, "\t.zxn\n");
-  else if (TARGET_IS_R800)
-    fprintf (asmFile, "\t.r800\n");
-  else if (TARGET_IS_Z80 && options.allow_undoc_inst)
-    fprintf (asmFile, "\t.allow_undocumented\n");
 
   tfprintf (asmFile, "\t!fileprelude\n");
 
@@ -2509,7 +2472,7 @@ glue (void)
     }
 
   /* copy external ram data */
-  if (xdata && (mcs51_like || TARGET_MOS6502_LIKE ))
+  if (xdata && (mcs51_like || TARGET_MOS6502_LIKE || TARGET_IS_EZ80 || TARGET_RABBIT_LIKE || TARGET_IS_TLCS90))
     {
       fprintf (asmFile, "%s", iComments2);
       fprintf (asmFile, "; uninitialized external ram data\n");
@@ -2574,14 +2537,16 @@ glue (void)
         }
       else
         {
-          assert (0);
+          assert (TARGET_RABBIT_LIKE); // Only the Rabbits use a combination of crt0-based startup code with a compiler-generated interrupt table.
         }
     }
   dbuf_write_and_destroy (&statsg->oBuf, asmFile);
+  if (xconst)
+    dbuf_write_and_destroy (&xconst->oBuf, asmFile);
 
   /* STM8 / PDK14 note: there are no such instructions supported.
      Also, we don't need this logic as well. */
-  if (port->general.glue_up_main && mainf && IFFUNC_HASBODY (mainf->type))
+  if (port->general.glue_up_main && mainf && IFFUNC_HASBODY (mainf->type) && !TARGET_RABBIT_LIKE)
     {
       /* This code is generated in the post-static area.
        * This area is guaranteed to follow the static area
@@ -2590,7 +2555,7 @@ glue (void)
       tfprintf (asmFile, "\t!area\n", port->mem.post_static_name);
       if(TARGET_IS_STM8)
         fprintf (asmFile, options.model == MODEL_LARGE ? "\tjpf\t__sdcc_program_startup\n" : "\tjp\t__sdcc_program_startup\n");
-      else if (TARGET_IS_F8)
+      else if (TARGET_F8_LIKE)
         fprintf (asmFile, "\tjp\t#__sdcc_program_startup\n");
       else if(TARGET_PDK_LIKE)
         fprintf (asmFile, "\tgoto\t__sdcc_program_startup\n");
@@ -2602,7 +2567,7 @@ glue (void)
   tfprintf (asmFile, "\t!areahome\n", HOME_NAME);
   dbuf_write_and_destroy (&home->oBuf, asmFile);
 
-  if (mainf && IFFUNC_HASBODY (mainf->type))
+  if (mainf && IFFUNC_HASBODY (mainf->type) && !TARGET_RABBIT_LIKE)
     {
       /* STM8 note: there is no need to call main().
          Instead of that, it's address is specified in the
@@ -2615,12 +2580,24 @@ glue (void)
       /* put in jump or call to main */
       if(TARGET_IS_STM8)
         fprintf (asmFile, options.model == MODEL_LARGE ? "\tjpf\t_main\n" : "\tjp\t_main\n");
-      else if(TARGET_IS_F8)
+      else if(TARGET_F8_LIKE)
         fprintf (asmFile, "\tjp\t#_main\n");
       else if(TARGET_PDK_LIKE)
         fprintf (asmFile, "\tgoto\t_main\n");
       else
-        fprintf (asmFile, "\t%cjmp\t_main\n", options.acall_ajmp ? 'a' : 'l');        /* needed? */
+        {
+          if (IFFUNC_ISNORETURN (mainf->type))
+            fprintf (asmFile, "\t%cjmp\t_main\n", options.acall_ajmp ? 'a' : 'l');
+          else
+            {
+              /* for simulator runs it can be useful to have a main function that
+                 actually returns.  uCsim should break on following label and
+		 return value of main(). */
+              fprintf (asmFile, "\t%ccall\t_main\n", options.acall_ajmp ? 'a' : 'l');
+              fprintf (asmFile, "__sdcc_program_exit:\n");
+              fprintf (asmFile, "\tsjmp\t.\n");
+            }
+        }
       fprintf (asmFile, ";\treturn from main will return to caller\n");
     }
   /* copy over code */

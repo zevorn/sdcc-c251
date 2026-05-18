@@ -63,13 +63,14 @@ void testBitIntBitField(void)
   ASSERT (ubf2.b2 == 2);
   ASSERT (ubf2.b3 == 7);
   ASSERT (ubf2.b4 == 5);
-
+#if !defined (__SDCC_pdk13) // Lack of memory
   sbf.b3 = -1;
   sbf.b4 = 0;
   sbf.b = -1;
   ASSERT (sbf.b3 == -1);
   ASSERT (sbf.b4 == 0);
   ASSERT (sbf.b == -1);
+#endif
 #endif
 }
 

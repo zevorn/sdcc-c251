@@ -1,7 +1,7 @@
 /* lkarea.c */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2025  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,85 +22,81 @@
  * Kent, Ohio  44240
  */
 
-/*
- * 02-Apr-98 JLH: add code to link 8051 data spaces
- */
-
 #include "aslink.h"
 
-/*)Module       lkarea.c
+/*)Module	lkarea.c
  *
- *      The module lkarea.c contains the functions which
- *      create and link together all area definitions read
- *      from the .rel file(s).
+ *	The module lkarea.c contains the functions which
+ *	create and link together all area definitions read
+ *	from the .rel file(s).
  *
- *      lkarea.c contains the following functions:
- *              VOID    lnkarea()
- *              VOID    lnksect()
- *              VOID    lkparea()
- *              VOID    newarea()
- *              VOID    setarea()
+ *	lkarea.c contains the following functions:
+ *		void	lnkarea()
+ *		void	lnksect()
+ *		void	lkparea()
+ *		void	newarea()
+ *		void	setarea()
  *
- *      lkarea.c contains no global variables.
+ *	lkarea.c contains no global variables.
  */
 
-/*)Function VOID        newarea()
+/*)Function	void	newarea(void)
+ * 
+ *	The function newarea() creates and/or modifies area
+ *	and areax structures for each A directive read from
+ *	the .rel file(s).  The function lkparea() is called
+ *	to find tha area structure associated with this name.
+ *	If the area does not yet exist then a new area
+ *	structure is created and linked to any existing
+ *	linked area structures. The area flags are copied
+ *	into the area flag variable.  For each occurence of
+ *	an A directive an areax structure is created and
+ *	linked to the areax structures associated with this
+ *	area.  The size of this area section is placed into
+ *	the areax structure.  The flag value for all subsequent
+ *	area definitions for the same area are compared and
+ *	flagged as an error if they are not identical.
+ *	The areax structure created for every occurence of
+ *	an A directive is loaded with a pointer to the base
+ *	area structure and a pointer to the associated
+ *	head structure.  And finally, a pointer to this
+ *	areax structure is loaded into the list of areax
+ *	structures in the head structure.  Refer to lkdata.c
+ *	for details of the structures and their linkage.
  *
- *      The function newarea() creates and/or modifies area
- *      and areax structures for each A directive read from
- *      the .rel file(s).  The function lkparea() is called
- *      to find the area structure associated with this name.
- *      If the area does not yet exist then a new area
- *      structure is created and linked to any existing
- *      linked area structures. The area flags are copied
- *      into the area flag variable.  For each occurence of
- *      an A directive an areax structure is created and
- *      linked to the areax structures associated with this
- *      area.  The size of this area section is placed into
- *      the areax structure.  The flag value for all subsequent
- *      area definitions for the same area are compared and
- *      flagged as an error if they are not identical.
- *      The areax structure created for every occurence of
- *      an A directive is loaded with a pointer to the base
- *      area structure and a pointer to the associated
- *      head structure.  And finally, a pointer to this
- *      areax structure is loaded into the list of areax
- *      structures in the head structure.  Refer to lkdata.c
- *      for details of the structures and their linkage.
+ *	local variables:
+ *		areax **halp		pointer to an array of pointers
+ *		a_uint	i		value
+ *		char	id[]		id string
+ *		int	k		counter, loop variable
+ *		int	narea		number of areas in this head structure
+ *		areax *	taxp		pointer to an areax structure
+ *					to areax structures
  *
- *      local variables:
- *              areax **halp            pointer to an array of pointers
- *              a_uint  i               value
- *              char    id[]            id string
- *              int     k               counter, loop variable
- *              int     narea           number of areas in this head structure
- *              areax * taxp            pointer to an areax structure
- *                                      to areax structures
+ *	global variables:
+ *		area	*ap		Pointer to the current
+ *				 	area structure
+ *		areax	*axp		Pointer to the current
+ *				 	areax structure
+ *		head	*hp		Pointer to the current
+ *				 	head structure
+ *		int	lkerr		error flag
  *
- *      global variables:
- *              area    *ap             Pointer to the current
- *                                      area structure
- *              areax   *axp            Pointer to the current
- *                                      areax structure
- *              head    *hp             Pointer to the current
- *                                      head structure
- *              int     lkerr           error flag
+ *	functions called:
+ *		a_uint	eval()		lkeval.c
+ *		void	exit()		c_library
+ *		int	fprintf()	c_library
+ *		void	getid()		lklex.c
+ *		void	lkparea()	lkarea.c
+ *		void	skip()		lklex.c
  *
- *      functions called:
- *              a_uint  eval()          lkeval.c
- *              VOID    exit()          c_library
- *              int     fprintf()       c_library
- *              VOID    getid()         lklex.c
- *              VOID    lkparea()       lkarea.c
- *              VOID    skip()          lklex.c
- *
- *      side effects:
- *              The area and areax structures are created and
- *              linked with the appropriate head structures.
- *              Failure to allocate area or areax structure
- *              space will terminate the linker.  Other internal
- *              errors most likely caused by corrupted .rel
- *              files will also terminate the linker.
+ *	side effects:
+ *		The area and areax structures are created and
+ *		linked with the appropriate head structures.
+ *		Failure to allocate area or areax structure
+ *		space will terminate the linker.  Other internal
+ *		errors most likely caused by corrupted .rel
+ *		files will also terminate the linker.
  */
 
 /*
@@ -114,237 +110,237 @@
  *   `---------------------------------  ap->a_id
  *
  */
-VOID
+void
 newarea(void)
 {
-        a_uint i;
-        int k, narea;
-        struct areax *taxp;
-        struct areax **halp;
-        char id[NCPS];
+	a_uint i;
+	int k, narea;
+	struct areax *taxp;
+	struct areax **halp;
+	char id[NCPS];
 
-        if (headp == NULL) {
-                fprintf(stderr, "No header defined\n");
-                lkexit(ER_FATAL);
-        }
-        /*
-         * Create Area entry
-         */
-        getid(id, -1);
-        lkparea(id);
-        /*
+	if (headp == NULL) {
+		fprintf(stderr, "?ASlink-Error-No header defined\n");
+		lkexit(ER_FATAL);
+	}
+	/*
+	 * Create Area entry
+	 */
+	getid(id, -1);
+	lkparea(id);
+	/*
          * Evaluate area size
-         */
+	 */
         skip(-1);
         axp->a_size = eval();
-        /*
+	/*
          * Evaluate flags
-         */
+	 */
         skip(-1);
         i = 0;
-        taxp = ap->a_axp;
-        while (taxp->a_axp) {
+	taxp = ap->a_axp;
+	while (taxp->a_axp) {
                 ++i;
-                taxp = taxp->a_axp;
-        }
+		taxp = taxp->a_axp;
+	}
         if (i == 0) {
                 ap->a_flag = eval();
-        } else {
-                i = eval();
+	} else {
+		i = eval();
                 if ((!is_sdld() || TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_GB) &&
                         i && (ap->a_flag != i)) {
-                        fprintf(stderr, "Conflicting flags in area %8s\n", id);
-                        lkerr++;
-                }
-        }
+                        fprintf(stderr, "?ASlink-Error-Conflicting flags in area %8s\n", id);
+			lkerr++;
+		}
+	}
         if (is_sdld() && !(TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_GB)) {
-                /*
+		/*
                  * Evaluate area address
-                 */
+		 */
                 skip(-1);
                 axp->a_addr = eval();
-        }
-        /*
-         * Place pointer in header area list
-         */
-        narea = hp->h_narea;
-        halp = hp->a_list;
-        for (k=0; k < narea ;++k) {
-                if (halp[k] == NULL) {
-                        halp[k] = taxp;
-                        return;
-                }
-        }
-        fprintf(stderr, "Header area list overflow\n");
-        lkexit(ER_FATAL);
+	}
+	/*
+	 * Place pointer in header area list
+	 */
+	narea = hp->h_narea;
+	halp = hp->a_list;
+	for (k=0; k < narea ;++k) {
+		if (halp[k] == NULL) {
+			halp[k] = taxp;
+			return;
+		}
+	}
+	fprintf(stderr, "?ASlink-Error-Header area list overflow\n");
+	lkexit(ER_FATAL);
 }
 
-/*)Function     VOID    lkparea(id)
+/*)Function	void	lkparea(id)
  *
- *              char *  id              pointer to the area name string
+ *		char *	id		pointer to the area name string
  *
- *      The function lkparea() searches the linked area structures
- *      for a name match.  If the name is not found then an area
- *      structure is created.  An areax structure is created and
- *      appended to the areax structures linked to the area structure.
- *      The associated base area and head structure pointers are
- *      loaded into the areax structure.
+ *	The function lkparea() searches the linked area structures
+ *	for a name match.  If the name is not found then an area
+ *	structure is created.  An areax structure is created and
+ *	appended to the areax structures linked to the area structure.
+ *	The associated base area and head structure pointers are
+ *	loaded into the areax structure.
  *
- *      local variables:
- *              area *  tap             pointer to an area structure
- *              areax * taxp            pointer to an areax structure
+ *	local variables:
+ *		area *	tap		pointer to an area structure
+ *		areax *	taxp		pointer to an areax structure
  *
- *      global variables:
- *              area    *ap             Pointer to the current
- *                                      area structure
- *              area    *areap          The pointer to the first
- *                                      area structure of a linked list
- *              areax   *axp            Pointer to the current
- *                                      areax structure
+ *	global variables:
+ *		area	*ap		Pointer to the current
+ *				 	area structure
+ *		area	*areap		The pointer to the first
+ *				 	area structure of a linked list
+ *		areax	*axp		Pointer to the current
+ *				 	areax structure
  *
- *      functions called:
- *              VOID *  new()           lksym()
- *              char *  strsto()        lksym.c
- *              int     symeq()         lksym.c
+ *	functions called:
+ *		void *	new()		lksym()
+ *		char *	strsto()	lksym.c
+ *		int	symeq()		lksym.c
  *
- *      side effects:
- *              Area and/or areax structures are created.
- *              Failure to allocate space for created structures
- *              will terminate the linker.
+ *	side effects:
+ *		Area and/or areax structures are created.
+ *		Failure to allocate space for created structures
+ *		will terminate the linker.
  */
 
-VOID
+void
 lkparea(char *id)
 {
-        struct area *tap;
-        struct areax *taxp;
+	struct area *tap;
+	struct areax *taxp;
 
-        ap = areap;
-        axp = (struct areax *) new (sizeof(struct areax));
+	ap = areap;
+	axp = (struct areax *) new (sizeof(struct areax));
         if (is_sdld() && !(TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_GB))
                 axp->a_addr = -1; /* default: no address yet */
-        while (ap) {
-                if (symeq(id, ap->a_id, 1)) {
-                        taxp = ap->a_axp;
-                        while (taxp->a_axp)
-                                taxp = taxp->a_axp;
-                        taxp->a_axp = axp;
-                        axp->a_bap = ap;
-                        axp->a_bhp = hp;
-                        return;
-                }
-                ap = ap->a_ap;
-        }
-        ap = (struct area *) new (sizeof(struct area));
-        if (areap == NULL) {
-                areap = ap;
-        } else {
-                tap = areap;
-                while (tap->a_ap)
-                        tap = tap->a_ap;
-                tap->a_ap = ap;
-        }
-        ap->a_axp = axp;
-        axp->a_bap = ap;
-        axp->a_bhp = hp;
-        ap->a_id = strsto(id);
+	while (ap) {
+		if (symeq(id, ap->a_id, 1)) {
+			taxp = ap->a_axp;
+			while (taxp->a_axp)
+				taxp = taxp->a_axp;
+			taxp->a_axp = axp;
+			axp->a_bap = ap;
+			axp->a_bhp = hp;
+			return;
+		}
+		ap = ap->a_ap;
+	}
+	ap = (struct area *) new (sizeof(struct area));
+	if (areap == NULL) {
+		areap = ap;
+	} else {
+		tap = areap;
+		while (tap->a_ap)
+			tap = tap->a_ap;
+		tap->a_ap = ap;
+	}
+	ap->a_axp = axp;
+	axp->a_bap = ap;
+	axp->a_bhp = hp;
+	ap->a_id = strsto(id);
         if (is_sdld() && !(TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_GB))
                 ap->a_addr = 0;
 }
 
-/*)Function     VOID    lnkarea()
+/*)Function	void	lnkarea(void)
  *
- *      The function lnkarea() resolves all area addresses.
- *      The function evaluates each area structure (and all
- *      the associated areax structures) in sequence.  The
- *      linking process supports four (4) possible area types:
+ *	The function lnkarea() resolves all area addresses.
+ *	The function evaluates each area structure (and all
+ *	the associated areax structures) in sequence.  The
+ *	linking process supports four (4) possible area types:
  *
- *      ABS/OVR -       All sections (each individual areax
- *                      section) starts at the identical base
- *                      area address overlaying all other
- *                      areax sections for this area.  The
- *                      size of the area is largest of the area
- *                      sections.
+ *	ABS/OVR	-	All sections (each individual areax
+ *			section) starts at the identical base
+ *			area address overlaying all other
+ *			areax sections for this area.  The
+ *			size of the area is largest of the area
+ *			sections.
  *
- *      ABS/CON -       All sections (each individual areax
- *                      section) are concatenated with the
- *                      first section starting at the base
- *                      area address.  The size of the area
- *                      is the sum of the section sizes.
+ *	ABS/CON -	All sections (each individual areax
+ *			section) are concatenated with the
+ *			first section starting at the base
+ *			area address.  The size of the area
+ *			is the sum of the section sizes.
  *
- *      NOTE:           Multiple absolute (ABS) areas are
- *                      never concatenated with each other,
- *                      thus absolute area A and absolute area
- *                      B will overlay each other if they begin
- *                      at the same location (the default is
- *                      always address 0 for absolute areas).
+ *		NOTE:	Multiple absolute (ABS) areas are
+ *			never concatenated with each other,
+ *			thus absolute area A and absolute area
+ *			B will overlay each other if they begin
+ *			at the same location (the default is
+ *			always address 0 for absolute areas).
  *
- *      REL/OVR -       All sections (each individual areax
- *                      section) starts at the identical base
- *                      area address overlaying all other
- *                      areax sections for this area.  The
- *                      size of the area is largest of the area
- *                      sections.
+ *	REL/OVR	-	All sections (each individual areax
+ *			section) starts at the identical base
+ *			area address overlaying all other
+ *			areax sections for this area.  The
+ *			size of the area is largest of the area
+ *			sections.
  *
- *      REL/CON -       All sections (each individual areax
- *                      section) are concatenated with the
- *                      first section starting at the base
- *                      area address.  The size of the area
- *                      is the sum of the section sizes.
+ *	REL/CON -	All sections (each individual areax
+ *			section) are concatenated with the
+ *			first section starting at the base
+ *			area address.  The size of the area
+ *			is the sum of the section sizes.
  *
- *              NOTE:   Relocatable (REL) areas are always concatenated
- *                      with each other, thus relocatable area B
- *                      (defined after area A) will follow
- *                      relocatable area A independent of the
- *                      starting address of area A.  Within a
- *                      specific area each areax section may be
- *                      overlayed or concatenated with other
- *                      areax sections.
+ *		NOTE:	Relocatable (REL) areas are always concatenated
+ *			with each other, thus relocatable area B
+ *			(defined after area A) will follow
+ *			relocatable area A independent of the
+ *			starting address of area A.  Within a
+ *			specific area each areax section may be
+ *			overlayed or concatenated with other
+ *			areax sections.
  *
  *
- *      If a base address for an area is specified then the
- *      area will start at that address.  Any relocatable
- *      areas defined subsequently will be concatenated to the
- *      previous relocatable area if it does not have a base
- *      address specified.
+ *	If a base address for an area is specified then the
+ *	area will start at that address.  Any relocatable
+ *	areas defined subsequently will be concatenated to the
+ *	previous relocatable area if it does not have a base
+ *	address specified.
  *
- *      The names s_<areaname> and l_<areaname> are created to
- *      define the starting address and length of each area.
+ *	The names s_<areaname> and l_<areaname> are created to
+ *	define the starting address and length of each area.
  *
- *      local variables:
- *              a_uint  rloc            ;current relocation address
- *              char    temp[]          ;temporary string
- *              struct symbol   *sp     ;symbol structure
+ *	local variables:
+ *		a_uint	rloc		;current relocation address
+ *		char	temp[]		;temporary string
+ *		struct symbol	*sp	;symbol structure
  *
- *      global variables:
- *              area    *ap             Pointer to the current
- *                                      area structure
- *              area    *areap          The pointer to the first
- *                                      area structure of a linked list
+ *	global variables:
+ *		area	*ap		Pointer to the current
+ *				 	area structure
+ *		area	*areap		The pointer to the first
+ *				 	area structure of a linked list
  *
- *      functions called:
- *              int     fprintf()       c_library
- *              VOID    lnksect()       lkarea.c
- *              symbol *lkpsym()        lksysm.c
- *              char *  strncpy()       c_library
- *              int     symeq()         lksysm.c
+ *	functions called:
+ *		int	fprintf()	c_library
+ *		void	lnksect()	lkarea.c
+ *		symbol *lkpsym()	lksysm.c
+ *		char *	strncpy()	c_library
+ *		int	symeq()		lksysm.c
  *
- *      side effects:
- *              All area and areax addresses and sizes are
- *              determined and saved in their respective
- *              structures.
+ *	side effects:
+ *		All area and areax addresses and sizes are
+ *		determined and saved in their respective
+ *		structures.
  */
 
 /* sdld6808 specific */
 unsigned long codemap6808[2048];
 /* end sdld6808 specific */
 /* sdld specific */
-VOID lnksect(struct area *tap);
+void lnksect(struct area *tap);
 /* end sdld specific */
 /*
  * Resolve all bank/area addresses.
  */
-VOID
+void
 lnkarea(void)
 {
         /* sdld specific */
@@ -361,8 +357,8 @@ lnkarea(void)
         struct area *abs_ap = NULL;
         struct area *gs0_ap = NULL;
         /* end sdld6800 specific */
-        char temp[NCPS+2];
-        struct sym *sp;
+	char temp[NCPS+2];
+	struct sym *sp;
 
         if (TARGET_IS_6808) {
                 memset(codemap6808, 0, sizeof(codemap6808));
@@ -378,11 +374,11 @@ lnkarea(void)
                                 ap->a_ap = abs_ap->a_ap;
                                 abs_ap->a_ap = areap;
                                 areap = abs_ap;
-                        }
+			}
                         else {
                                 ap = ap->a_ap;
-                        }
-                }
+			}
+		}
 
                 /* next accumulate all GSINITx/GSFINAL area sizes
                    into GSINIT so they stay together */
@@ -397,98 +393,98 @@ lnkarea(void)
                                         {
                                                 ap->a_size += axp->a_size;
                                                 axp = axp->a_axp;
-                                        }
-                                }
+					}
+				}
                                 gs_size += ap->a_size;
                                 if (!strcmp(ap->a_id, "GSINIT0"))
                                 {/* GSINIT0 area */
                                         gs0_ap = ap;
-                                }
-                        }
+				}
+			}
                         ap = ap->a_ap;
-                }
+		}
                 if (gs0_ap)
                         gs0_ap->a_size = gs_size;
-        }
+	}
 
-        ap = areap;
-        while (ap) {
+	ap = areap;
+	while (ap) {
                 if(TARGET_IS_GB && ap->a_addr == 0) {
                         if(!strncmp(ap->a_id, "_CODE_", 6) && atoi(ap->a_id+6)!=0) {
                                 // set sane default values for rom banking
                                 // 0x4000 is correct for MBC1,2,3,5,7
                                 ap->a_addr = (atoi(ap->a_id+6) << 16) + 0x4000;
-                        }
+			}
                         if(!strncmp(ap->a_id, "_DATA_", 6)) {
                                 // set sane default values for ram banking
                                 ap->a_addr = (atoi(ap->a_id+6) << 16) + 0xA000;
-                        }
-                }
+			}
+		}
                 if (ap->a_flag & A3_ABS) {
-                        /*
-                         * Absolute sections
-                         */
-                        lnksect(ap);
-                } else {
+			/*
+			 * Absolute sections
+			 */
+			lnksect(ap);
+		} else {
                         /* sdld specific */
                         /* Determine memory space */
                         locIndex = 0;
                         if ((TARGET_IS_8051)) {
                                 if (ap->a_flag & A_CODE) {
                                         locIndex = 1;
-                                }
+				}
                                 if (ap->a_flag & A_XDATA) {
                                         locIndex = 2;
-                                }
+				}
                                 if (ap->a_flag & A_BIT) {
                                         locIndex = 3;
-                                }
-                        }
-                        /*
-                         * Relocatable sections
-                         */
+				}
+			}
+			/*
+			 * Relocatable sections
+			 */
                         if (!is_sdld() || TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_GB) {
                                 if (ap->a_addr == 0)
                                         ap->a_addr = rloc[locIndex];
-                        }
+			}
                         else if (ap->a_bset == 0) {
                                 if ((TARGET_IS_6808 || TARGET_IS_STM8) && ap->a_flag & A_NOLOAD) {
                                         locIndex = 2;
                                         ap->a_addr = 0;
-                                }
+				}
                                 else {
                                         ap->a_addr = rloc[locIndex];
-                                }
-                                ap->a_bset = 1;
-                        }
-                        lnksect(ap);
+				}
+				ap->a_bset = 1;
+			}
+			lnksect(ap);
                         rloc[ locIndex ] = ap->a_addr + ap->a_size;
                         /* end sdld specific */
-                }
+		}
 
-                /*
-                 * Create symbols called:
+		/*
+		 * Create symbols called:
                  *      s_<areaname>    the start address of the area
                  *      l_<areaname>    the length of the area
-                 */
+		 */
 
-                if (! symeq(ap->a_id, _abs_, 1)) {
+		if (! symeq(ap->a_id, _abs_, 1)) {
                         strcpy(temp+2, ap->a_id);
                         *(temp+1) = '_';
 
                         *temp = 's';
-                        sp = lkpsym(temp, 1);
-                        sp->s_addr = ap->a_addr;
+			sp = lkpsym(temp, 1);
+			sp->s_addr = ap->a_addr;
                         if (!is_sdld() || TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_GB)
                                 sp->s_axp = NULL;
-                        sp->s_type |= S_DEF;
+			sp->s_type |= S_DEF;
 
                         *temp = 'l';
-                        sp = lkpsym(temp, 1);
-                        sp->s_addr = ap->a_size;
-                        sp->s_axp = NULL;
-                        sp->s_type |= S_DEF;
-                }
+			sp = lkpsym(temp, 1);
+			sp->s_addr = ap->a_size;
+			sp->s_axp = NULL;
+			sp->s_type |= S_DEF;
+		}
 
                 if (is_sdld() && !(TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_GB)) {
                         /*JCF: Since area BSEG is defined just before BSEG_BYTES, use the bit size of BSEG
@@ -498,7 +494,7 @@ lnkarea(void)
                                         ap->a_ap->a_axp->a_size += ((ap->a_addr + ap->a_size + 7)/8); /*Bits to bytes*/
                                 else
                                         ap->a_ap->a_axp->a_size=(ap->a_addr/8)+((ap->a_size+7)/8); /*Bits to bytes*/
-                        }
+			}
                         else if (!strcmp(ap->a_id, "REG_BANK_0")) ta[0]=ap;
                         else if (!strcmp(ap->a_id, "REG_BANK_1")) ta[1]=ap;
                         else if (!strcmp(ap->a_id, "REG_BANK_2")) ta[2]=ap;
@@ -512,13 +508,13 @@ lnkarea(void)
                                         if ( (ta[j]->a_size==0) && (ta[j-1]->a_size==0) )
                                         {
                                                 rloc[0]-=8;
-                                        }
+					}
                                         else break;
-                                }
-                        }
-                }
-                ap = ap->a_ap;
-        }
+				}
+			}
+		}
+		ap = ap->a_ap;
+	}
 }
 
 /* sdld specific */
@@ -536,9 +532,9 @@ a_uint find_empty_space(a_uint start, a_uint size, char *id, unsigned long *map,
                 mask = -(1 << (start & 0x1F));
 
                 if (j > map_size) {
-                        fprintf(stderr, "internal memory limit is exceeded for %s; memory size = 0x%06X, address = 0x%06X\n", id, map_size << 5, start + size - 1);
+                        fprintf(stderr, "?ASlink-Error-internal memory limit is exceeded for %s; memory size = 0x%06X, address = 0x%06X\n", id, map_size << 5, start + size - 1);
                         break;
-                }
+		}
                 else {
                         while (i < j) {
                                 if (map[i] & mask) {
@@ -546,14 +542,14 @@ a_uint find_empty_space(a_uint start, a_uint size, char *id, unsigned long *map,
                                         for (b=0x80000000; b!=0; b>>=1, k--) {
                                                 if (map[i] & b)
                                                         break;
-                                        }
+					}
                                         start = a + k;
-                                        break;
-                                }
+					break;
+				}
                                 i++;
                                 mask = 0xFFFFFFFF;
                                 a += 32;
-                        }
+			}
                         if (start > a)
                                 continue;
 
@@ -563,13 +559,13 @@ a_uint find_empty_space(a_uint start, a_uint size, char *id, unsigned long *map,
                                 for (b=0x80000000; b!=0; b>>=1, k--) {
                                         if (map[i] & b)
                                                 break;
-                                }
+				}
                                 start = (a & ~0x1F) + k;
-                        }
+			}
                         if (start <= a)
                                 break;
-                }
-        }
+		}
+	}
         return start;
 }
 
@@ -585,193 +581,193 @@ a_uint allocate_space(a_uint start, a_uint size, char *id, unsigned long *map,  
         map_size /= sizeof(*map); /* Convert from bytes to number of elements */
 
         if (j > map_size) {
-                fprintf(stderr, "internal memory limit is exceeded for %s; memory size = 0x%06X, address = 0x%06X\n", id, map_size << 5, start + size - 1);
-        }
+                fprintf(stderr, "?ASlink-Error-internal memory limit is exceeded for %s; memory size = 0x%06X, address = 0x%06X\n", id, map_size << 5, start + size - 1);
+	}
         else {
                 while (i < j) {
                         if (map[i] & mask) {
-                                fprintf(stderr, "memory overlap near 0x%X for %s\n", a, id);
-                        }
+                                fprintf(stderr, "?ASlink-Error-memory overlap near 0x%X for %s\n", a, id);
+			}
                         map[i++] |= mask;
                         mask = 0xFFFFFFFF;
                         a += 32;
-                }
+		}
                 mask &= (1 << ((start + size) & 0x1F)) - 1;
                 if (i < map_size && map[i] & mask) {
                         fprintf(stderr, "memory overlap near 0x%X for %s\n", a, id);
-                }
+		}
                 map[i] |= mask;
-        }
+	}
         return start;
 }
 /* end sdld specific */
 
-/*)Function VOID        lnksect(tap)
+/*)Function	void	lnksect(tap)
  *
- *              area *  tap                     pointer to an area structure
+ *		area *	tap		pointer to an area structure
  *
- *      The function lnksect() is the function called by
- *      lnkarea() to resolve the areax addresses.  Refer
- *      to the function lnkarea() for more detail. Pageing
- *      boundary and length errors will be reported by this
+ *	The function lnksect() is the function called by
+ *	lnkarea() to resolve the areax addresses.  Refer
+ *	to the function lnkarea() for more detail. Pageing
+ *	boundary and length errors will be reported by this
  *      function.
  *
- *      local variables:
- *              a_uint  size            size of area
- *              a_uint  addr            address of area
- *              areax * taxp            pointer to an areax structure
+ *	local variables:
+ *		a_uint	size		size of area
+ *		a_uint	addr		address of area
+ *		areax *	taxp		pointer to an areax structure
  *
- *      global variables:
- *              int             lkerr           error flag
+ *	global variables:
+ *		int	lkerr		error flag
  *
- *      functions called:
+ *	functions called:
  *              none
  *
- *      side effects:
+ *	side effects:
  *              All area and areax addresses and sizes are determined
  *              and linked into the structures.
  */
 
-VOID
+void
 lnksect(struct area *tap)
 {
-        a_uint size, addr;
-        struct areax *taxp;
+	a_uint size, addr;
+	struct areax *taxp;
 
-        size = 0;
-        addr = tap->a_addr;
+	size = 0;
+	addr = tap->a_addr;
         taxp = tap->a_axp;
         if (tap->a_flag & A3_OVR) {
-                /*
+		/*
                  * Overlayed sections
-                 */
+		 */
                 while (taxp) {
                         taxp->a_addr = addr;
                         if (taxp->a_size > size)
-                                size = taxp->a_size;
+				size = taxp->a_size;
                         taxp = taxp->a_axp;
-                }
+		}
         } else if (TARGET_IS_6808 && tap->a_flag & A3_ABS) {
-                /*
+		/*
                  * Absolute sections
-                 */
+		 */
                 while (taxp) {
                         allocate_space(taxp->a_addr, taxp->a_size, tap->a_id, codemap6808, sizeof (codemap6808));
                         taxp->a_addr = 0; /* reset to zero so relative addresses become absolute */
-                        size += taxp->a_size;
+			size += taxp->a_size;
                         taxp = taxp->a_axp;
-                }
-        } else {
-                /*
+		}
+	} else {
+		/*
                  * Concatenated sections
-                 */
+		 */
                 if (TARGET_IS_6808 && tap->a_size && !(ap->a_flag & A_NOLOAD)) {
                         addr = find_empty_space(addr, tap->a_size, tap->a_id, codemap6808, sizeof (codemap6808));
-                }
+		}
                 while (taxp) {
                         /* find next unused address now */
                         if (TARGET_IS_6808 && taxp->a_size && !(ap->a_flag & A_NOLOAD)) {
                                 addr = find_empty_space(addr, taxp->a_size, tap->a_id, codemap6808, sizeof (codemap6808));
                                 allocate_space(addr, taxp->a_size, tap->a_id, codemap6808, sizeof (codemap6808));
-                        }
+			}
                         taxp->a_addr = addr;
-                        addr += taxp->a_size;
-                        size += taxp->a_size;
+			addr += taxp->a_size;
+			size += taxp->a_size;
                         taxp = taxp->a_axp;
-                }
-        }
-        tap->a_size = size;
+		}
+	}
+	tap->a_size = size;
         tap->a_addr = tap->a_axp->a_addr;
         for (taxp = tap->a_axp; taxp && !taxp->a_size; taxp = taxp->a_axp)
         {
-        }
+	}
         if (taxp)
         {
                 tap->a_addr = taxp->a_addr;
-        }
+	}
 
         if ((tap->a_flag & A3_PAG) && (size > 256)) {
                 fprintf(stderr,
                         "\n?ASlink-Warning-Paged Area %s Length Error\n",
                         tap->a_id);
                 lkerr++;
-        }
+	}
         if (TARGET_IS_8051 &&
                 (tap->a_flag & A3_PAG) && (tap->a_size) &&
                 ((tap->a_addr & 0xFFFFFF00) != ((addr-1) & 0xFFFFFF00)))
         {
                 fprintf(stderr,
-                        "\n?ASlink-Warning-Paged Area %s Boundary Error\n",
+                        "\n?ASlink-Error-Paged Area %s Boundary Error\n",
                         tap->a_id);
                 lkerr++;
-        }
+	}
 }
 
 
-/*)Function     VOID    setarea()
+/*)Function	void	setarea(void)
  *
- *      The function setarea() scans the base address lines in the
- *      basep structure, evaluates the arguments, and sets the beginning
- *      address of the specified areas.
+ *	The function setarea() scans the base address lines in the
+ *	basep structure, evaluates the arguments, and sets the beginning
+ *	address of the specified areas.
  *
- *      local variables:
- *              a_uint  v               expression value
- *              char    id[]            base id string
+ *	local variables:
+ *		a_uint	v		expression value
+ *		char	id[]		base id string
  *
- *      global variables:
- *              area    *ap             Pointer to the current
- *                                      area structure
- *              area    *areap          The pointer to the first
- *                                      area structure of a linked list
- *              base    *basep          The pointer to the first
- *                                      base structure
- *              base    *bsp            Pointer to the current
- *                                      base structure
- *              char    *ip             pointer into the REL file
- *                                      text line in ib[]
- *              int     lkerr           error flag
+ *	global variables:
+ *		area	*ap		Pointer to the current
+ *				 	area structure
+ *		area	*areap		The pointer to the first
+ *				 	area structure of a linked list
+ *		base	*basep		The pointer to the first
+ *				 	base structure
+ *		base	*bsp		Pointer to the current
+ *				 	base structure
+ *		char	*ip		pointer into the REL file
+ *				 	text line in ib[]
+ *		int	lkerr		error flag
  *
- *       functions called:
- *              a_uint  expr()          lkeval.c
- *              int     fprintf()       c_library
- *              VOID    getid()         lklex.c
- *              int     getnb()         lklex.c
- *              int     symeq()         lksym.c
+ *	 functions called:
+ *		a_uint	expr()		lkeval.c
+ *		int	fprintf()	c_library
+ *		void	getid()		lklex.c
+ *		int	getnb()		lklex.c
+ *		int	symeq()		lksym.c
  *
- *      side effects:
- *              The base address of an area is set.
+ *	side effects:
+ *		The base address of an area is set.
  */
 
-VOID
+void
 setarea(void)
 {
-        a_uint v;
-        char id[NCPS];
+	a_uint v;
+	char id[NCPS];
 
-        bsp = basep;
-        while (bsp) {
-                ip = bsp->b_strp;
-                getid(id, -1);
-                if (getnb() == '=') {
-                        v = expr(0);
-                        for (ap = areap; ap != NULL; ap = ap->a_ap) {
-                                if (symeq(id, ap->a_id, 1))
-                                        break;
-                        }
-                        if (ap == NULL) {
-                                fprintf(stderr,
-                                "ASlink-Warning-No definition of area %s\n", id);
-                                lkerr++;
-                        } else {
-                                ap->a_addr = v;
-                                ap->a_bset = 1;
-                        }
-                } else {
-                        fprintf(stderr, "ASlink-Warning-No '=' in base expression");
-                        lkerr++;
-                }
-                bsp = bsp->b_base;
-        }
+	bsp = basep;
+	while (bsp) {
+		ip = bsp->b_strp;
+		getid(id, -1);
+		if (getnb() == '=') {
+			v = expr(0);
+			for (ap = areap; ap != NULL; ap = ap->a_ap) {
+				if (symeq(id, ap->a_id, 1))
+					break;
+			}
+			if (ap == NULL) {
+				fprintf(stderr,
+                                "ASlink-Error-No definition of area %s\n", id);
+				lkerr++;
+			} else {
+				ap->a_addr = v;
+				ap->a_bset = 1;
+			}
+		} else {
+                        fprintf(stderr, "ASlink-Error-No '=' in base expression");
+			lkerr++;
+		}
+		bsp = bsp->b_base;
+	}
 }
 
 
@@ -785,13 +781,13 @@ a_uint dram_start = 0;
 a_uint iram_start = 0;
 
 /*Modified version of the functions for packing variables in internal data memory*/
-VOID lnkarea2 (void)
+void lnkarea2 (void)
 {
         a_uint rloc[4]={0, 0, 0, 0};
         a_uint gs_size = 0;
         int  locIndex;
-        char temp[NCPS+2];
-        struct sym *sp;
+	char temp[NCPS+2];
+	struct sym *sp;
         int j;
         struct area *bseg_ap = NULL;
         struct area *abs_ap = NULL;
@@ -803,7 +799,7 @@ VOID lnkarea2 (void)
         memset(xdatamap, 0, sizeof(xdatamap));
 
         /* first sort all absolute areas to the front */
-        ap = areap;
+	ap = areap;
         /* no need to check first area, it's in front anyway */
         while (ap && ap->a_ap)
         {
@@ -814,23 +810,23 @@ VOID lnkarea2 (void)
                         ap->a_ap = abs_ap->a_ap;
                         abs_ap->a_ap = areap;
                         areap = abs_ap;
-                }
+		}
                 else
                 {
                         ap = ap->a_ap;
-                }
-        }
+		}
+	}
 
         /* next accumulate all GSINITx/GSFINAL area sizes
            into GSINIT so they stay together */
-        ap = areap;
+	ap = areap;
         abs_ap = areap;
         while (ap)
         {
                 if (ap->a_flag & A3_ABS)
                 {
                         abs_ap = ap; /* Remember the last abs area */
-                }
+		}
                 if (!strncmp(ap->a_id, "GS", 2))
                 {/* GSxxxxx area */
                         if (ap->a_size == 0)
@@ -840,14 +836,14 @@ VOID lnkarea2 (void)
                                 {
                                         ap->a_size += axp->a_size;
                                         axp = axp->a_axp;
-                                }
-                        }
+				}
+			}
                         gs_size += ap->a_size;
                         if (!strcmp(ap->a_id, "GSINIT0"))
                         {/* GSINIT0 area */
                                 gs0_ap = ap;
-                        }
-                }
+			}
+		}
                 /*Since area BSEG is defined just before BSEG_BYTES, use the bit size of BSEG
                 to compute the byte size of BSEG_BYTES: */
                 else if (!strcmp(ap->a_id, "BSEG"))
@@ -860,22 +856,22 @@ VOID lnkarea2 (void)
                         bseg_ap->a_ap = abs_ap->a_ap;
                         abs_ap->a_ap = bseg_ap;                    //inserted BSEG_BYTES after abs
                         bseg_ap = ap;                              //BSEG
-                }
+		}
                 else if (!strcmp(ap->a_id, "DSEG"))
                 {
                         dseg_ap = ap; /*Need it later*/
                         dram_start = ap->a_addr;
-                }
+		}
                 else if (!strcmp(ap->a_id, "ISEG"))
                 {
                         iram_start = ap->a_addr;
-                }
-                ap = ap->a_ap;
-        }
+		}
+		ap = ap->a_ap;
+	}
         if (gs0_ap)
                 gs0_ap->a_size = gs_size;
 
-        ap = areap;
+	ap = areap;
         while (ap)
         {
                 /* Determine memory space */
@@ -887,27 +883,27 @@ VOID lnkarea2 (void)
                 if (ap->a_flag & A3_ABS) /* Absolute sections */
                 {
                         lnksect2(ap, locIndex);
-                }
+		}
                 else /* Relocatable sections */
                 {
-                        if (ap->a_bset == 0)
+			if (ap->a_bset == 0)
                         {
                                 ap->a_addr = rloc[locIndex];
-                                ap->a_bset = 1;
-                        }
+				ap->a_bset = 1;
+			}
 
                         rloc[locIndex] = lnksect2(ap, locIndex);
-                }
+		}
 
                 if (!strcmp(ap->a_id, "BSEG_BYTES") && (ap->a_axp->a_addr >= 0x20))
                 {
                         bseg_ap->a_addr += (ap->a_axp->a_addr - 0x20) * 8; /*Bytes to bits*/
-                }
-                /*
-                 * Create symbols called:
+		}
+		/*
+		 * Create symbols called:
                  *      s_<areaname>    the start address of the area
                  *      l_<areaname>    the length of the area
-                 */
+		 */
 
                 if (! symeq(ap->a_id, _abs_, 1))
                 {
@@ -915,21 +911,21 @@ VOID lnkarea2 (void)
                         *(temp+1) = '_';
 
                         *temp = 's';
-                        sp = lkpsym(temp, 1);
-                        sp->s_addr = ap->a_addr;
-                        sp->s_type |= S_DEF;
+			sp = lkpsym(temp, 1);
+			sp->s_addr = ap->a_addr;
+			sp->s_type |= S_DEF;
                         if (!strcmp(ap->a_id, "DSEG")) sp_dseg_s=sp;
 
                         *temp = 'l';
-                        sp = lkpsym(temp, 1);
-                        sp->s_addr = ap->a_size;
-                        sp->s_axp = NULL;
-                        sp->s_type |= S_DEF;
+			sp = lkpsym(temp, 1);
+			sp->s_addr = ap->a_size;
+			sp->s_axp = NULL;
+			sp->s_type |= S_DEF;
                         if (!strcmp(ap->a_id, "DSEG")) sp_dseg_l=sp;
-                }
+		}
 
-                ap = ap->a_ap;
-        }
+		ap = ap->a_ap;
+	}
 
         /*Compute the size of DSEG*/
         if(dseg_ap!=NULL)
@@ -937,15 +933,15 @@ VOID lnkarea2 (void)
                 dseg_ap->a_addr=0;
                 dseg_ap->a_size=0;
                 for(j=0; j<0x80; j++) if(idatamap[j]!=' ') dseg_ap->a_size++;
-        }
+	}
         if(sp_dseg_s!=NULL) sp_dseg_s->s_addr=0;
         if(sp_dseg_l!=NULL) sp_dseg_l->s_addr=dseg_ap->a_size;
 }
 
 a_uint lnksect2 (struct area *tap, int locIndex)
 {
-        a_uint size, addr;
-        struct areax *taxp;
+	a_uint size, addr;
+	struct areax *taxp;
         int j, k, ramlimit, ramstart;
         char fchar=' ', dchar='a';
         char ErrMsg[]="?ASlink-Error-Could not get %d consecutive byte%s"
@@ -962,7 +958,7 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                         ramlimit = 0x100;
                 else
                         ramlimit = ramstart + iram_size;
-        }
+	}
         else
         {
                 ramstart = dram_start;
@@ -971,10 +967,10 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                         ramlimit = 0x80;
                 else
                         ramlimit = ramstart + iram_size;
-        }
+	}
 
-        size = 0;
-        addr = tap->a_addr;
+	size = 0;
+	addr = tap->a_addr;
         taxp = tap->a_axp;
 
         /*Use a letter to identify each area in the internal RAM layout map*/
@@ -1002,17 +998,17 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                         fchar='T';
                 else
                         fchar=' ';/*???*/
-        }
+	}
         else if (locIndex == 1)
         {
                 /**/ if(!strcmp(tap->a_id, "GSINIT"))
                         fchar='G';
-        }
+	}
         else if (locIndex == 2)
         {
                 /**/ if(!strcmp(tap->a_id, "XSTK"))
                         fchar='K';
-        }
+	}
 
         if (tap->a_flag & A3_OVR) /* Overlayed sections */
         {
@@ -1020,9 +1016,9 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                 {
                         if(taxp->a_size == 0)
                         {
-                                taxp = taxp->a_axp;
+				taxp = taxp->a_axp;
                                 continue;
-                        }
+			}
 
                         if ( (fchar=='0')||(fchar=='1')||(fchar=='2')||(fchar=='3') ) /*Reg banks*/
                         {
@@ -1031,7 +1027,7 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                 size=taxp->a_size;
                                 for(j=addr; (j<(int)(addr+size)) && (j<ramlimit); j++)
                                         idatamap[j]=fchar;
-                        }
+			}
                         else if( (fchar=='S') || (fchar=='Q') ) /*Overlay and stack in internal RAM*/
                         {
                                 /*Find the size of the space currently used for this areax overlay*/
@@ -1047,14 +1043,14 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                 {
                                                         if((++k)>(int)taxp->a_size)
                                                                 taxp->a_size=k;
-                                                }
+						}
                                                 else
                                                 {
                                                         k=0;
-                                                }
-                                        }
+						}
+					}
                                         stacksize=taxp->a_size;
-                                }
+				}
 
                                 /*If more space required, release the previously allocated areax in
                                 internal RAM and search for a bigger one*/
@@ -1074,7 +1070,7 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                         k=0;
                                         if(k==(int)taxp->a_size)
                                                         break;
-                                        }
+					}
 
                                         /*Mark the memory used for overlay*/
                                         if(k==(int)taxp->a_size)
@@ -1082,19 +1078,19 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                 addr = j-k+1;
                                                 for(j=addr; (j<(int)(addr+size)); j++)
                                                         idatamap[j]=fchar;
-                                        }
+					}
                                         else /*Couldn't find a chunk big enough: report the problem.*/
                                         {
                                                 tap->a_unaloc=taxp->a_size;
                                                 fprintf(stderr, ErrMsg, taxp->a_size, taxp->a_size>1?"s":"", tap->a_id);
                                                 lkerr++;
-                                        }
+					}
 
                                         /* avoid redundant processing SSEG */
                                         if (fchar == 'S')
                                                 break;
-                                }
-                        }
+				}
+			}
                         else if (fchar=='T') /*Bit addressable bytes in internal RAM*/
                         {
                                 /*Find the size of the space currently used for this areax overlay*/
@@ -1119,7 +1115,7 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                         k=0;
                                                 if(k==(int)taxp->a_size)
                                                         break;
-                                        }
+					}
 
                                         /*Mark the memory used for overlay*/
                                         if(k==(int)size)
@@ -1127,30 +1123,30 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                 addr = j-k+1;
                                                 for(j=addr; (j<(int)(addr+size)); j++)
                                                         idatamap[j]=fchar;
-                                        }
+					}
                                         else /*Couldn't find a chunk big enough: report the problem.*/
                                         {
                                                 tap->a_unaloc=taxp->a_size;
                                                 fprintf(stderr, ErrMsg, taxp->a_size, taxp->a_size>1?"s":"", tap->a_id);
                                                 lkerr++;
-                                        }
-                                }
-                        }
+					}
+				}
+			}
                         else /*Overlay areas not in internal ram*/
                         {
                                 taxp->a_addr = addr;
                                 if (taxp->a_size > size) size = taxp->a_size;
-                        }
+			}
                         taxp = taxp->a_axp;
-                }
+		}
                 /*Now set all overlayed areax to the same start address*/
                 taxp = tap->a_axp;
                 while (taxp)
                 {
                         taxp->a_addr = addr;
                         taxp = taxp->a_axp;
-                }
-        }
+		}
+	}
         else if (tap->a_flag & A3_ABS) /* Absolute sections */
         {
                 while (taxp)
@@ -1162,32 +1158,32 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                         if (idatamap[j] == ' ')
                                                 idatamap[j] = 'A';
                                         else
-                                                fprintf(stderr, "memory overlap at 0x%X for %s\n", j, tap->a_id);
-                                }
-                        }
+                                                fprintf(stderr, "?ASlink-Error-memory overlap at 0x%X for %s\n", j, tap->a_id);
+				}
+			}
                         else if (locIndex == 1)
                         {
                                 allocate_space(taxp->a_addr, taxp->a_size, tap->a_id, codemap8051, sizeof (codemap8051));
-                        }
+			}
                         else if (locIndex == 2)
                         {
                                 allocate_space(taxp->a_addr, taxp->a_size, tap->a_id, xdatamap, sizeof (xdatamap));
-                        }
+			}
                         taxp->a_addr = 0; /* reset to zero so relative addresses become absolute */
-                        size += taxp->a_size;
+			size += taxp->a_size;
                         taxp = taxp->a_axp;
-                }
-        }
+		}
+	}
         else /* Concatenated sections */
         {
                 if ((locIndex == 1) && tap->a_size)
                 {
                         addr = find_empty_space(addr, tap->a_size, tap->a_id, codemap8051, sizeof (codemap8051));
-                }
+		}
                 if ((locIndex == 2) && tap->a_size)
                 {
                         addr = find_empty_space(addr, tap->a_size, tap->a_id, xdatamap, sizeof (xdatamap));
-                }
+		}
                 while (taxp)
                 {
                         if (taxp->a_size)
@@ -1203,7 +1199,7 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                         k=0;
                                                 if(k==(int)taxp->a_size)
                                                         break;
-                                        }
+					}
 
                                         if(k==(int)taxp->a_size)
                                         {
@@ -1215,7 +1211,7 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                         idatamap[j]=(fchar=='D')?dchar:fchar;
                                                 if((taxp->a_size>0)&&(fchar=='D'))dchar++;
                                                 if((dchar<'a')||(dchar>'z')) dchar='D'; /*Ran out of letters?*/
-                                        }
+					}
                                         else /*We are in trouble, there is not enough memory for an areax chunk*/
                                         {
                                                 taxp->a_addr = addr;
@@ -1224,8 +1220,8 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                 tap->a_unaloc+=taxp->a_size;
                                                 fprintf(stderr, ErrMsg, taxp->a_size, taxp->a_size>1?"s":"", tap->a_id);
                                                 lkerr++;
-                                        }
-                                }
+					}
+				}
                                 else if (fchar=='B')
                                 {
                                         /*Search for a space large enough in data memory for this areax*/
@@ -1236,7 +1232,7 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                 else
                                                         k=0;
                                                 if(k==(int)taxp->a_size) break;
-                                        }
+					}
 
                                         /*Mark the memory used*/
                                         if(k==(int)taxp->a_size)
@@ -1244,54 +1240,54 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                                                 taxp->a_addr = j-k+1;
                                                 for(j=taxp->a_addr; (j<(int)(taxp->a_addr+taxp->a_size)) && (j<0x30); j++)
                                                         idatamap[j]=fchar;
-                                        }
+					}
                                         else /*Couldn't find a chunk big enough: report the problem.*/
                                         {
                                                 tap->a_unaloc=taxp->a_size;
                                                 fprintf(stderr, ErrMsg, taxp->a_size, taxp->a_size>1?"s":"", tap->a_id);
                                                 lkerr++;
-                                        }
+					}
                                         size += taxp->a_size;
-                                }
+				}
                                 else /*For concatenated BIT, CODE, and XRAM areax's*/
                                 {
                                         //expand external stack
                                         if((fchar=='K') && (taxp->a_size == 1))
                                         {
                                                 taxp->a_size = 256-(addr & 0xFF);
-                                        }
+					}
                                         //find next unused address now
                                         if (locIndex == 1)
                                         {
                                                 addr = find_empty_space(addr, taxp->a_size, tap->a_id, codemap8051, sizeof (codemap8051));
                                                 allocate_space(addr, taxp->a_size, tap->a_id, codemap8051, sizeof (codemap8051));
-                                        }
+					}
                                         if (locIndex == 2)
                                         {
                                                 addr = find_empty_space(addr, taxp->a_size, tap->a_id, xdatamap, sizeof (xdatamap));
                                                 allocate_space(addr, taxp->a_size, tap->a_id, xdatamap, sizeof (xdatamap));
-                                        }
+					}
                                         taxp->a_addr = addr;
                                         addr += taxp->a_size;
                                         size += taxp->a_size;
-                                }
-                        }
+				}
+			}
                         else
                         {
                             taxp->a_addr = addr;
-                        }
+			}
                         taxp = taxp->a_axp;
-                }
-        }
-        tap->a_size = size;
+		}
+	}
+	tap->a_size = size;
         tap->a_addr = tap->a_axp->a_addr;
         for (taxp = tap->a_axp; taxp && !taxp->a_size; taxp = taxp->a_axp)
         {
-        }
+	}
         if (taxp)
         {
                 tap->a_addr = taxp->a_addr;
-        }
+	}
 
         if ((tap->a_flag & A3_PAG) && (size > 256))
         {
@@ -1299,15 +1295,15 @@ a_uint lnksect2 (struct area *tap, int locIndex)
                         "\n?ASlink-Warning-Paged Area %s Length Error\n",
                         tap->a_id);
                 lkerr++;
-        }
+	}
         if ((tap->a_flag & A3_PAG) && (tap->a_size) &&
                 ((tap->a_addr & 0xFFFFFF00) != ((addr-1) & 0xFFFFFF00)))
         {
                 fprintf(stderr,
-                        "\n?ASlink-Warning-Paged Area %s Boundary Error\n",
+                        "\n?ASlink-Error-Paged Area %s Boundary Error\n",
                         tap->a_id);
                 lkerr++;
-        }
+	}
         return addr;
 }
 /* end sdld specific */

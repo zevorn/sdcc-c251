@@ -82,7 +82,7 @@ testBool(void)
 	ASSERT((E ? 1 : 0) == (!(!E)));
 	ASSERT((E += 2) == 1);
 	ASSERT((--E, --E, E) == E);
-
+#if !defined (__SDCC_pdk13) // Lack of memory
 	E = 0;   ASSERT(!E); // sets E to 0
 	E = 1;   ASSERT(E);  // sets E to 1
 	E = 4;   ASSERT(E);  // sets E to 1
@@ -100,6 +100,7 @@ testBool(void)
 	s2.b = true;
 	fieldassign();
 	ASSERT(s2.b1);
+#endif
 #endif
 }
 

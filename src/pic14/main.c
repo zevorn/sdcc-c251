@@ -399,6 +399,7 @@ PORT pic_port =
     "ISEG    (DATA)",
     NULL, /* pdata */
     "XSEG    (XDATA)",
+    NULL,                  // xconst_name
     "BSEG    (BIT)",
     "RSEG    (DATA)",
     "GSINIT  (CODE)",
@@ -476,8 +477,10 @@ PORT pic_port =
   0,            /* leave == */
   FALSE,        /* No array initializer support. */
   0,            /* no CSE cost estimation yet */
-  NULL,         /* no builtin functions */
+  "",           // no builtin functions
   GPOINTER,     /* treat unqualified pointers as "generic" pointers */
+  true,
+  false,
   1,            /* reset labelKey to 1 */
   1,            /* globals & local static allowed */
   0,            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

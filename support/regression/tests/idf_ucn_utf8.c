@@ -2,6 +2,9 @@
 */
 #include <testfwk.h>
 
+// Some on the identifiers tested here are corner cases allowed by the C11 and C23 standard, but not UTS #39.
+#pragma disable_warning 341 // Disable UTS #39 warning
+
 #if !defined(PORT_HOST) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
 const unsigned long µ_div = 1000;
 #endif
@@ -37,3 +40,4 @@ testSquared(void)
   ASSERT(e\u00B2 == e_squared);
 #endif
 }
+

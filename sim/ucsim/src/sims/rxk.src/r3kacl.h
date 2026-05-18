@@ -37,13 +37,16 @@ class cl_r3ka: public cl_r3k
 {
 public:
   u8_t rSU;
-  u8_t edmr;
+  //u8_t edmr;
+  bool sysmode;
   class cl_cell8 cSU;
 public:
   cl_r3ka(class cl_sim *asim);
+  cl_r3ka(class cl_sim *asim, t_addr arom_size);
   virtual int init();
   virtual const char *id_string(void);
   virtual void reset(void);
+  virtual void make_cpu_hw(void);
 
   virtual struct dis_entry *dis_entry(t_addr addr);
   virtual char *disassc(t_addr addr, chars *comment= NULL);
@@ -73,7 +76,19 @@ public:
   virtual int instruction_5b(t_mem code);
 };
 
+class cl_r3ka_cpu: public cl_rxk_cpu
+{
+protected:
+  class cl_r3ka *r3kauc;
+  class cl_memory_cell *mmidr;
+public:
+  cl_r3ka_cpu(class cl_uc *auc);
+  virtual int init(void);
+  virtual t_mem read(class cl_memory_cell *cell);
+  virtual void write(class cl_memory_cell *cell, t_mem *val);
+};
 
+  
 #endif
 
 /* End of rxk.src/r3kacl.h */

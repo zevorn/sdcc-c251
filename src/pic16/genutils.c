@@ -121,6 +121,8 @@ release:
 #if defined(GEN_Cpl)
 /*-----------------------------------------------------------------*/
 /* pic16_genCpl - generate code for complement                     */
+/* no longer used; todo: chekc if something from here could still  */
+/* be useful in genXor, then remove genCpl!                        */
 /*-----------------------------------------------------------------*/
 void pic16_genCpl (iCode *ic)
 {

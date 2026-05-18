@@ -84,6 +84,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define raL    (aJKHL.r32.r16l.r.L)
 
 enum {
+  flagNON= 0,
   flagS = 0x80,
   flagZ = 0x40,
   flagL = 0x04,
@@ -100,8 +101,13 @@ enum {
 #define cond_LT(f)	( ((f) ^ ((f)<<5)) & 0x80 )
 #define cond_LTU(f)	( (f)&flagC )
 #define cond_V(f)	( (f)&flagV )
+#define cond_GE(f)	( !cond_LT(f) )
+#define cond_LE(f)	( cond_LT(f) || (f & flagZ) )
+#define cond_LEU(f)	( (f & flagC) || (f & flagZ) )
 
 #define CPU ((class cl_rxk_cpu *)cpu)
+
+#define MP t_mem code
 
 
 class cl_rxk_base: public cl_uc
@@ -109,6 +115,7 @@ class cl_rxk_base: public cl_uc
 public:
   cl_rxk_base(class cl_sim *asim);
 #include "r4kcl_instructions.h"
+#include "r6kcl_instructions.h"
 #include "dd_instructions.h"
 #include "ed_instructions.h"
 };
@@ -136,10 +143,13 @@ public:
   class cl_cell16 caAF, caBC, caDE, caHL;
   class cl_cell16 *cIR;
   class cl_memory_cell *XPC;
+  t_addr rom_size;
   class cl_ras *mem;
-  class cl_address_space *ioi, *ioe;
+  class cl_ioi *ioi;
+  class cl_address_space *ioe;
   class cl_address_space *rwas;
   bool prefix, altd, atomic;
+  u8_t kmode;
 public:
   cl_rxk(class cl_sim *asim);
   virtual int init(void);
@@ -150,7 +160,7 @@ public:
   virtual void mk_hw_elements(void);
   virtual void make_cpu_hw(void);
   virtual void make_memories(void);
-  virtual t_addr chip_size() { return 0x100000; }
+  virtual t_addr chip_size() { return rom_size?rom_size:0x100000; }
 
   virtual double def_xtal(void) { return 1000000; }
   virtual int clock_per_cycle(void) { return 1; }
@@ -158,6 +168,7 @@ public:
   virtual struct dis_entry *dis_entry(t_addr addr);
   virtual char *disassc(t_addr addr, chars *comment= NULL);
   virtual char *disassc_cb(t_addr addr, chars *comment= NULL);
+  virtual char *disassc_cb_6(t_addr addr, chars *comment= NULL);
   virtual char *disassc_dd_cb(t_addr addr, chars *comment= NULL);
   virtual int inst_length(t_addr addr);
   virtual int longest_inst(void) { return 4; }
@@ -208,6 +219,8 @@ public:
   u16_t op16_BC(void);
   u16_t op16_DE(void);
   u16_t op16_HL(void);
+  u16_t op16_iIRd(void);
+  u32_t op32_iIRd(void);
   void write8(u16_t a, u8_t v) { vc.wr++; rom->write(a, v); }
   void write8io(u16_t a, u8_t v) { vc.wr++; rwas->write(a, v); }
   void write16(u16_t a, u16_t v) { vc.wr+=2;
@@ -226,11 +239,11 @@ public:
     l= rwas->read(a); h= rwas->read(a+1);
     return h*256+l;
   }
-  u32_t read32(u16_t a) { u16_t l, h; vc.rd+=4;
+  u32_t read32(u16_t a) { u16_t l, h;
     l= read16(a); h= read16(a+2);
     return (h<<16)+l;
   }
-  u32_t read32io(u16_t a) { u16_t l, h; vc.rd+=4;
+  u32_t read32io(u16_t a) { u16_t l, h;
     l= read16io(a); h= read16io(a+2);
     return (h<<16)+l;
   }
@@ -298,21 +311,27 @@ public:
   virtual int add_hl_ss(u16_t op);
   virtual int adc_hl_ss(u16_t op);
   virtual int add8(u8_t op2, bool cy);				// 0f,4t,0r,0w
+  virtual int add8(class cl_cell8 &cRes, u8_t op1, u8_t op2, bool cy);
+  virtual int add16(class cl_cell16 &cRes, u16_t op1, u16_t op2, bool cy);
+  virtual int add32(class cl_cell32 &cRes, u32_t op1, u32_t op2, bool cy);
   virtual int sub8(u8_t op2, bool cy);				// 0f,4t,0r,0w
+  virtual int sub8(class cl_cell8 &cRes, u8_t op1, u8_t op2, bool cy);
   virtual int sub16(u16_t op2, bool cy);			// 0f,4t,0r,0w
-  virtual int sub32(u32_t op1, u32_t op2, class cl_cell32 &cRes, bool cy);
+  virtual int sub16(class cl_cell16 &cRes, u16_t op1, u16_t op2, bool cy);
+  virtual int sub32(class cl_cell32 &cRes, u32_t op1, u32_t op2, bool cy);
   
   virtual int inc_i8(t_addr addr);
   virtual int dec_i8(t_addr addr);
   virtual int add_ir_xy(u16_t op);				// 0f,4t,0r,0r
   virtual int xor8(class cl_cell8 &dest, u8_t op1, u8_t op2);	// 0f,1t,0r,0w
   virtual int xor16(class cl_cell16 &dest, u16_t op1,u16_t op2);// 0f,4t,0r,0w
+  virtual int xor32(class cl_cell32 &dest, u32_t op1,u32_t op2);// 0f,?t,0r,0w
   virtual int or8(class cl_cell8 &dest, u8_t op1, u8_t op2);	// 0f,1t,0r,0w
-  virtual int or16(class cl_cell16 &dest,
-		    u16_t op1, u16_t op2);			// 0f,1t,0r,0w
+  virtual int or16(class cl_cell16 &dest, u16_t op1,u16_t op2);	// 0f,1t,0r,0w
+  virtual int or32(class cl_cell32 &dest,u32_t op1,u32_t op2);	// 0f,?t,0r,0w
   virtual int and8(class cl_cell8 &dest, u8_t op1, u8_t op2);	// 0f,1t,0r,0w
-  virtual int and16(class cl_cell16 &dest,
-		    u16_t op1, u16_t op2);			// 0f,1t,0r,0w
+  virtual int and16(class cl_cell16 &dest,u16_t op1,u16_t op2);	// 0f,1t,0r,0w
+  virtual int and32(class cl_cell32 &dest,u32_t op1,u32_t op2);	// 0f,?t,0r,0w
   virtual int cp8(u8_t op1, u8_t op2);				// 0f,3t,0r,0w
   virtual int cp16(u16_t op1, u16_t op2);			// 0f,4t,0r,0w
   virtual int cp32(u32_t op1, u32_t op2);			// 0f,4t,0r,0w
@@ -467,6 +486,7 @@ public:
   virtual int EX_DE_HL(t_mem code);
   virtual int LD_HL_iIXd(t_mem code);
   virtual int LD_iIXd_HL(t_mem code);
+  virtual int LD_iIRd_HL(t_mem code);
   virtual int AND_n(t_mem code) { tick(2); return and8(destA(), rA, fetch()); }
   virtual int JP_HL(t_mem code) { tick(3); PC= rHL; return resGO; }
   virtual int XOR_n(t_mem code) { tick(3); return xor8(destA(), rA, fetch()); }
@@ -591,7 +611,8 @@ public:
   virtual int CP_A_A(t_mem code) { return cp8(rA, rA); }
 
   virtual int PAGE_CB(t_mem code);
-
+  virtual int page_cb_6(t_mem code) { return resINV_INST; }
+  
   // Page ED, 3k mode
   virtual int LD_EIR_A(t_mem code);
   virtual int LD_IIR_A(t_mem code);

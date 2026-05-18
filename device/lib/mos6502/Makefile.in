@@ -37,14 +37,11 @@ MOS6502_INT = $(COMMON_INT) \
   _modsint.c
 
 MOS6502_LONG = $(COMMON_LONG) \
-  _divulong.c \
-  _mullong.c
+  _mullong.c \
+  _divslong.c \
+  _divulong.c
 
 MOS6502_LONGLONG = $(COMMON_LONGLONG) \
-  _srulonglong.c \
-  _srslonglong.c \
-  _slulonglong.c \
-  _slslonglong.c \
   _mullonglong.c \
   _divslonglong.c \
   _divulonglong.c \
@@ -71,7 +68,9 @@ MOS6502_SDCC = $(COMMON_SDCC) \
 MOS6502SOURCES = $(addprefix ../,$(MOS6502_FLOAT) $(MOS6502_INT) $(MOS6502_LONG) $(MOS6502_LONGLONG) $(MOS6502_SDCC))
 MOS6502OBJECTS = $(patsubst %.c,%.rel,$(MOS6502_FLOAT) $(MOS6502_INT) $(MOS6502_LONG) $(MOS6502_LONGLONG) $(MOS6502_SDCC))
 
-OBJ = _dptr.rel _temp.rel _ret01.rel _ret23.rel _ret4567.rel _setjmp.rel atomic_flag_test_and_set.rel __sdcc_indirect_jsr.rel
+OBJ = __sdcc_regs.rel __sdcc_indirect_jsr.rel\
+      _setjmp.rel atomic_flag_test_and_set.rel \
+      _floatlib.rel
 
 LIB = mos6502.lib
 AS = $(SAS)

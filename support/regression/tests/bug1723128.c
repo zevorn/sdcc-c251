@@ -6,6 +6,7 @@
 
 #ifdef __SDCC
 #pragma std_sdcc99
+#pragma disable_warning 356
 #endif
 
 #include <stdbool.h>

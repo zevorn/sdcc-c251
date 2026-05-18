@@ -181,6 +181,8 @@ testSizeof(void)
   TEST_OP_NOPROMO ((TEST_VAR_OTHER++, TEST_VAR += 1));
 #endif
 
+#ifndef __SDCC_pdk13 // Lack of memory
+
 #ifdef TEST_POINTERS
 
   TEST_OP_CHAR_PTR(VAR_TYPE *);
@@ -380,6 +382,8 @@ testSizeof(void)
   TEST_OP (c || 0);
   TEST_OP (0 || c);
 #endif
+
+#endif // Lack of pdk13 memory
 
 #endif //DUMMY_TEST
 }

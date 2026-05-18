@@ -15,10 +15,8 @@ int f(void)
 
 void testBug(void)
 {
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) // Enable when bug is fixed.
 	ua = 1;
 	ub = 2;
 	ASSERT (f());
-#endif
 }
 

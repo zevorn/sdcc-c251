@@ -11,13 +11,13 @@
 # define ADDRESS(x) (0x01 ## x)
 #elif defined(__SDCC_stm8)
 # define ADDRESS(x) (0x10 ## x)
-#elif defined(__SDCC_f8)
+#elif defined(__SDCC_f8) || defined(__SDCC_f8l)
 # define ADDRESS(x) (0x30 ## x)
 #else
 # define ADDRESS(x) (0xCA ## x)
 #endif
 
-#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // TODO: Make test suitable for pdk
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // TODO: Make test suitable for pdk
 typedef struct
 {
   int a, b;
@@ -46,7 +46,7 @@ char z = 'z';
 void
 testAbsolute(void)
 {
-#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // TODO: Make test suitable for pdk
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // TODO: Make test suitable for pdk
 #if !defined(PORT_HOST)
   static {mem} char __at(ADDRESS(B6)) s = 's';
   char {mem} *pC = (char {mem} *)(ADDRESS(B0));

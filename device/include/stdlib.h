@@ -2,7 +2,7 @@
    stdlib.h - General utilities (ISO C 11 7.22)
 
    Copyright (C) 1998, Sandeep Dutta . sandeep.dutta@usa.net
-   Copyright (c) 2016-2021, Philipp Klaus Krause, pkk@spth.de
+   Copyright (c) 2016-2025, Philipp Klaus Krause, pkk@spth.de, philipp@colecovision.eu
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -30,12 +30,6 @@
 #ifndef __STDC_VERSION_STDLIB_H__
 #define __STDC_VERSION_STDLIB_H__ 201710L /* TODO: replace by __STDC_VERSION__ when this header becomes C23-compliant! */
 
-#if !defined(__SDCC_pic14)
-#if __STDC_VERSION__ >= 199901L
-#define __SDCC_LONGLONG
-#endif
-#endif
-
 #if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_ds400) && !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16) && !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15)
 #define __reentrant
 #endif
@@ -61,19 +55,25 @@
 #if __STDC_VERSION__ >= 202311L
 typedef bool once_flag;
 #define ONCE_FLAG_INIT false
-void call_once(once_flag *flag, void (*func)(void));
+void call_once(once_flag flag[static 1], void (*func)(void));
 #endif
 
 /* Numeric conversion functions (ISO C11 7.22.1) */
+#if __STDC_VERSION__ >= 199901L
+extern float atof (const char nptr[static 1]);
+extern int atoi (const char nptr[static 1]);
+extern long int atol (const char nptr[static 1]);
+extern long int strtol(const char nptr[restrict static 1], char **restrict endptr, int base);
+extern unsigned long int strtoul(const char nptr[restrict static 1], char **restrict endptr, int base);
+extern long long int atoll (const char nptr[static 1]);
+extern long long int strtoll(const char nptr[restrict static 1], char **restrict endptr, int base);
+extern unsigned long long int strtoull(const char nptr[restrict static 1], char **restrict endptr, int base);
+#else
 extern float atof (const char *nptr);
 extern int atoi (const char *nptr);
 extern long int atol (const char *nptr);
 extern long int strtol(const char *nptr, char **endptr, int base);
 extern unsigned long int strtoul(const char *nptr, char **endptr, int base);
-#ifdef __SDCC_LONGLONG
-extern long long int atoll (const char *nptr);
-extern long long int strtoll(const char *nptr, char **endptr, int base);
-extern unsigned long long int strtoull(const char *nptr, char **endptr, int base);
 #endif
 
 /* SDCC extensions */
@@ -125,14 +125,20 @@ extern void *bsearch(const void *key, const void *base, size_t nmemb, size_t siz
 extern void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *) __reentrant);
 
 /* Integer arithmetic functions (ISO C11 7.22.6) */
-#if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka) || defined(__SDCC_tlcs90) || defined (__SDCC_ez80_z80) || defined (__SDCC_z80n) || defined(__SDCC_r800)
+#if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_r2k) || defined(__SDCC_r2ka) || defined(__SDCC_r3ka) || defined(__SDCC_r4k) || defined(__SDCC_r5k) || defined(__SDCC_r6k) || defined(__SDCC_tlcs90) || defined (__SDCC_ez80) || defined (__SDCC_z80n) || defined(__SDCC_r800)
 int abs(int j) __preserves_regs(b, c, iyl, iyh);
 #else
 int abs(int j);
 #endif
 long int labs(long int j);
-#ifdef __SDCC_LONGLONG
+#if __STDC_VERSION__ >= 199901L
 long long int llabs(long long int j);
+#endif
+/* C2y Integer arithmetic functions */
+#if __STDC_VERSION__ > 202311L
+unsigned int uabs(int j);
+unsigned long int ulabs(unsigned long int j);
+unsigned long long int ullabs(long long int j);
 #endif
 
 typedef struct
@@ -171,7 +177,7 @@ size_t mbstowcs(wchar_t *restrict pwcs, const char *restrict s, size_t n);
 size_t wcstombs(char *restrict s, const wchar_t *restrict pwcs, size_t n);
 #endif
 
-/* C2X Alignment of memory */
+/* C23 Alignment of memory */
 #if __STDC_VERSION__ >= 202311L
 size_t memalignment(const void *p);
 #endif

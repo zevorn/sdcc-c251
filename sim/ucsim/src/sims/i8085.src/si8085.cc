@@ -32,15 +32,16 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 // local
 #include "i8080cl.h"
 #include "simi8085cl.h"
-#include "glob.h"
+#include "globals.h"
 
 int
 main(int argc, char *argv[])
 {
+  int retval;
   class cl_sim *sim;
 
   app_start_at= dnow();
-  cpus= cpus_8085;
+  cpus= cpus_i8085;
   /* Replace 1s to flagP in p table */
   for (int i= 0; i<256; i++)
     if (ptab[i])
@@ -52,11 +53,10 @@ main(int argc, char *argv[])
   if (sim->init())
     sim->state|= SIM_QUIT;
   application->set_simulator(sim);
-  //sim->main();
-  application->run();
+  retval= application->run();
   application->done();
   delete application;
-  return 0;
+  return retval;
 }
 
 /* End of i8085.src/si8085.cc */

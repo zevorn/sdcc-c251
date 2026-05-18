@@ -27,6 +27,7 @@ volatile char c = 1;
 
 void testBitIntArith(void)
 {
+#ifndef __SDCC_pdk13 // Lack of memory
 #ifndef __clang_major__ // clang 11 doesn't support == between _BitInt and int
 #if __SDCC_BITINT_MAXWIDTH >= {width} // TODO: When we can regression-test in --std-c23 mode, use the standard macro from limits.h instead!
 #if ({width} <= 40 || !defined (__SDCC_pdk14)) && ({width} <= 48 || !defined (__SDCC_pdk15)) // Lack of memory
@@ -63,7 +64,7 @@ void testBitIntArith(void)
 	ASSERT(ua + ub == (ubitinttype)(23) + (ubitinttype)(-42));
 	ASSERT(ua - ub == (ubitinttype)(23) - (ubitinttype)(-42));
 
-#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
+#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
 
 #if {width} >= 11 // Signed overflow is undefined behaviour
 	ASSERT(a * b == (bitinttype)(23) * (bitinttype)(-42));
@@ -94,6 +95,10 @@ void testBitIntArith(void)
 	ASSERT(--ua == 0);
 	ASSERT(--ua == (ubitinttype)0xffffffffffffffffull);
 	ASSERT(++ua == 0);
+
+	ua = 1ull << ({width} - 1);
+	ASSERT(ua / 4 == (1ull << ({width} - 1)) / 4ull); // Underlying issue of bug #3855: a signed division was used for some unsigned _BitInt divisions.
+#endif
 #endif
 #endif
 #endif

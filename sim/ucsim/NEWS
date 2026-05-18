@@ -1,3 +1,22 @@
+0.9.x
+
+- Bugfixes, pre-relases of 0.10: partial implmentations of
+  new features
+
+- New device type in m6800 simulator: m6801.
+
+- New device type in mos6502 simulator: huc6280.
+
+- New device type in tlcs simulator: tlcs870c, tlcs870c1
+
+- Implement most of the R6K specific instructions of the Rabbit
+  simulator
+
+- Code analyzer removed
+
+- Use input specifier add parameters to input filename
+
+
 0.9
 
 - Intel 8048 simulator.

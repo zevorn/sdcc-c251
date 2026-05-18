@@ -62,7 +62,7 @@ structdef **structs = NULL; /* all structures */
 int nLinkrecs = 0;
 linkrec **linkrecs = NULL; /* all linkage editor records */
 context *currCtxt = NULL;
-short fullname = 0;
+bool fullname = 0;
 short showfull = 0;
 char userinterrupt = 0;
 char nointerrupt = 0;
@@ -573,7 +573,7 @@ static void loadModules (void)
         {
           /* for module records do */
           case MOD_REC:
-            currMod = parseModule(loop->line, TRUE);
+            currMod = parseModule(loop->line, true);
             currModName = currMod->name ;
 
             /* search the c source file and load it into buffer */
@@ -1906,7 +1906,7 @@ static void parseCmdLine (int argc, char **argv)
 
           if (strcmp(argv[i], "-fullname") == 0)
             {
-              fullname = TRUE;
+              fullname = true;
               continue;
             }
 

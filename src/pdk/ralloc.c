@@ -103,7 +103,7 @@ regTypeNum (void)
       if ((sym->liveTo - sym->liveFrom) == 0 && getSize (sym->type) <= 2)
         continue;
 
-      D (D_ALLOC, ("regTypeNum: loop on sym %p\n", sym));
+      D (D_ALLOC, ("regTypeNum: loop on sym %p\n", (void *)sym));
 
       /* if the live range is a temporary */
       if (sym->isitmp)
@@ -123,13 +123,13 @@ regTypeNum (void)
 
           /* if not then we require registers */
           D (D_ALLOC,
-             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, sym->type));
+             ("regTypeNum: isagg %u nRegs %u type %p\n", IS_AGGREGATE (sym->type) || sym->isptr, sym->nRegs, (void *)(sym->type)));
           sym->nRegs =
             ((IS_AGGREGATE (sym->type)
               || sym->isptr) ? getSize (sym->type = aggrToPtr (sym->type, FALSE)) : getSize (sym->type));
-          D (D_ALLOC, ("regTypeNum: setting nRegs of %s (%p) to %u\n", sym->name, sym, sym->nRegs));
+          D (D_ALLOC, ("regTypeNum: setting nRegs of %s (%p) to %u\n", sym->name, (void *)sym, sym->nRegs));
 
-          D (D_ALLOC, ("regTypeNum: setup to assign regs sym %p\n", sym));
+          D (D_ALLOC, ("regTypeNum: setup to assign regs sym %p\n", (void *)sym));
 
           if (sym->nRegs > 8)
             {
@@ -147,7 +147,7 @@ regTypeNum (void)
           /* for the first run we don't provide */
           /* registers for true symbols we will */
           /* see how things go                  */
-          D (D_ALLOC, ("regTypeNum: #2 setting num of %p to 0\n", sym));
+          D (D_ALLOC, ("regTypeNum: #2 setting num of %p to 0\n", (void *)sym));
           sym->nRegs = 0;
         }
     }
@@ -431,7 +431,7 @@ packRegisters (eBBlock * ebp)
 
   for (ic = ebp->sch; ic; ic = ic->next)
     {
-      D (D_ALLOC, ("packRegisters: looping on ic %p\n", ic));
+      D (D_ALLOC, ("packRegisters: looping on ic %p\n", (void *)ic));
 
       /* Safe: address of a true sym is always constant. */
       /* if this is an itemp & result of a address of a true sym
@@ -582,7 +582,7 @@ serialRegMark (eBBlock **ebbs, int count)
             {
               symbol *sym = OP_SYMBOL (IC_RESULT (ic));
 
-              D (D_ALLOC, ("serialRegAssign: in loop on result %p %s\n", sym, sym->name));
+              D (D_ALLOC, ("serialRegAssign: in loop on result %p %s\n", (void *)sym, sym->name));
 
               if (sym->isspilt && sym->usl.spillLoc) // todo: Remove once remat is supported!
                 {

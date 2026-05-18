@@ -55,7 +55,7 @@ static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
     return;
 
   // Todo: More fine-grained control for these.
-  if (!(ic->op == '+' || ic->op == '-' || ic->op == UNARYMINUS && !IS_FLOAT (operandType (left)) || ic->op == '~' ||
+  if (!(ic->op == '+' || ic->op == '-' || ic->op == UNARYMINUS && !IS_FLOAT (operandType (left)) ||
     ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND ||
     ic->op == GET_VALUE_AT_ADDRESS))
     return;
@@ -232,7 +232,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
   iCode *ic = G[i].ic;
   float c;
 
-  wassert(TARGET_IS_F8);
+  wassert(TARGET_F8_LIKE);
   wassert(ic);
 
   if(!inst_sane(a, i, G, I))
@@ -269,7 +269,6 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 #endif
       return(0.0f);
     case '!':
-    case '~':
     case UNARYMINUS:
     case '+':
     case '-':
@@ -495,7 +494,7 @@ iCode *f8_ralloc2_cc(ebbIndex *ebbi)
   iCode *ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
 
   if(optimize.genconstprop)
-    recomputeValinfos(ic, ebbi, "_2");
+    recomputeValinfos(ic, ebbi, "_3");
 
   guessCounts(ic, ebbi);
 

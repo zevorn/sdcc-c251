@@ -4,6 +4,6 @@ set error memory off
 set error stack off
 set hw simif xram 0xff03
 pc 0x100
-step 100000000 vclk
+step 500000000 vclk
 state
 quit

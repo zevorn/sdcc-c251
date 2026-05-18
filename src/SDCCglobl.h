@@ -23,7 +23,6 @@
 
 #include <memory.h>
 #include <stdlib.h>
-#include <setjmp.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -208,6 +207,7 @@ struct optimize
     int noLoopReverse;
     int codeSpeed;
     int codeSize;
+    bool purity;
     int lospre;
     int genconstprop;
     int allow_unsafe_read;
@@ -276,6 +276,7 @@ struct options
     char *peep_file;            /* additional rules for peep hole */
     int nostdlib;               /* Don't use standard lib files */
     int nostdinc;               /* Don't use standard include files */
+    bool norestartseqatomics;   /* Don't omit retsratable sequence support routines for atomics */
     int noRegParams;            /* Disable passing some parameters in registers */
     int verbose;                /* Show what the compiler is doing */
     int lessPedantic;           /* disable some warnings */
@@ -320,6 +321,8 @@ struct options
     int std_sdcc;               /* enable SDCC extensions to C */
     int dollars_in_ident;       /* zero means dollar signs are punctuation */
     int signed_char;            /* use signed for char without signed/unsigned modifier */
+    bool const_stringlit;       /* make string literals const, like in C++ */
+    bool const_code;            /* make objects in read-only __code space implicitly const */
     char *code_seg;             /* segment name to use instead of CSEG */
     char *const_seg;            /* segment name to use instead of CONST */
     char *data_seg;             /* segment name to use instead of DATA */
@@ -394,10 +397,11 @@ enum {
   DUMP_GCSE,
   DUMP_DEADCODE,
   DUMP_LOOP,
+  DUMP_GENCONSTPROP1,
   DUMP_LOOPG,
   DUMP_LOOPD,
   DUMP_LOSPRE,
-  DUMP_GENCONSTPROP,
+  DUMP_GENCONSTPROP2,
   DUMP_RANGE,
   DUMP_PACK,
   DUMP_RASSGN,
@@ -408,7 +412,7 @@ enum {
 
 struct _dumpFiles {
   int id;
-  char *ext;
+  const char *ext;
   FILE *filePtr;
 };
 

@@ -8,7 +8,7 @@
 #pragma std_c99
 #endif
 
-// TODO: Enable when sdcc supports struct passing!
+// TODO: What to do abaout implicit strcmp?
 #if 0
 struct s {
   char text[11];

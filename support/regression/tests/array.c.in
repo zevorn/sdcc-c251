@@ -22,7 +22,7 @@ volatile unsigned {type} idx2;
 void
 testArrayAccess(void)
 {
-#ifndef __SDCC_pdk14 // Not enough RAM for all the temporaries.
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Not enough RAM for all the temporaries.
   idx = 2;
 
   ASSERT(array_const_char[idx] == TC(2));

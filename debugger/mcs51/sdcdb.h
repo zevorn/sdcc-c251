@@ -42,6 +42,7 @@ extern int sdcdbDebug;
 #define Dprintf(f, fs) { }
 #endif
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,11 +57,6 @@ extern int sdcdbDebug;
 #endif
 #include "src/SDCCset.h"
 #include "src/SDCChasht.h"
-
-#define TRUE 1
-#define FALSE !TRUE
-
-typedef short bool;
 
 #ifndef max
 #define max(a,b) (a > b ? a : b)
@@ -279,7 +275,7 @@ char  *alloccpy(char *,int );
 char *gc_strdup(const char *s);
 srcLine **loadFile (char *name, int *nlines);
 
-extern short fullname;
+extern bool fullname;
 extern int srcMode;
 extern char contsim;
 char *searchDirsFname (char *);

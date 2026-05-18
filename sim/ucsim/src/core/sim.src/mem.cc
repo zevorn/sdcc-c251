@@ -280,7 +280,7 @@ cl_memory::dump(int smart,
 
   while ((step>0)?(ads->start < ads->stop):(ads->start > ads->stop))
     {
-      if (smart && step > 0 && this == uc->rom && uc->inst_at(ads->start))
+      if (smart && step > 0 && this == uc->rom)
         {
           uc->print_disass(ads->start, con, true);
           ads->start += uc->inst_length(ads->start);
@@ -484,7 +484,7 @@ cl_memory::dump(int smart,
         {
           if (smart && n)
             {
-              if (uc->inst_at(ads->start+n*step) || (var = vi.first(this, ads->start+n*step)))
+              if ((var = vi.first(this, ads->start+n*step)))
                 break;
             }
           con->dd_printf(" ");
@@ -1199,7 +1199,7 @@ cl_memory_cell::decode(void *data_ptr, t_mem bit_mask)
     }
   mask= bit_mask;
 }
-  
+
 t_mem
 cl_memory_cell::read(void)
 {
@@ -1224,7 +1224,7 @@ cl_memory_cell::read(enum hw_cath skip)
 #endif
   if (ops && ops[0])
     {
-      t_mem r;
+      t_mem r= 0;
       for (int i=0; ops[i]; i++)
 	r= ops[i]->read(skip);
       return r;
@@ -1476,8 +1476,6 @@ void
 cl_memory_cell::print_info(const char *pre, class cl_console_base *con)
 {
   con->dd_printf("%sFlags:", pre);
-  if (flags & CELL_INST)
-    con->dd_printf(" INST");
   if (flags & CELL_FETCH_BRK)
     con->dd_printf(" FBRK");
   if (flags & CELL_READ_ONLY)
@@ -1496,6 +1494,13 @@ cl_memory_cell::print_operators(const char *pre, class cl_console_base *con)
       if (con) con->dd_printf("%s [%d] %s\n", pre, i, (ops[i])->get_name("?"));
       else printf("%s [%d] %s\n", pre, i, (ops[i])->get_name("?"));
     }
+}
+
+class cl_memory_cell &
+cl_memory_cell::operator=(t_mem v)
+{
+  write(v);
+  return *this;
 }
 
 
@@ -2840,11 +2845,23 @@ cl_banker::print_info(const char *pre, class cl_console_base *con)
 
   class cl_address_decoder *dc;
   int i;
+  bool dotted= false;
   for (i= 0; i < nuof_banks; i++)
     {
       dc= (class cl_address_decoder *)(banks[i]);
+      if (nuof_banks > 8)
+	{
+	  if ((i != 0) && (i != nuof_banks-1))
+	    {
+	      if (!dotted)
+		con->dd_printf(pre),
+		  con->dd_printf("      ....\n"),
+		  dotted= true;
+	      continue;
+	    }
+	}
       con->dd_printf(pre);
-      con->dd_printf("    %c %2d. ", (b==i)?'*':' ', i);
+      con->dd_printf("    %c %3d. ", (b==i)?'*':' ', i);
       if (dc)
 	{
 	  if (dc->memchip)

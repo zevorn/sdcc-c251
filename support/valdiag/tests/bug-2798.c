@@ -4,12 +4,12 @@
  */
 
 #ifdef TEST1
-#if !defined(__SDCC_stm8) && !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) && !defined(__SDCC_tlcs90) && !defined(__SDCC_sm83) 
+#if !defined(__SDCC_stm8) && !defined(__SDCC_f8) && !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) && !defined(__SDCC_tlcs90) && !defined(__SDCC_sm83) 
 __sfr __at 0x1234 x; /* IGNORE */
 
 unsigned char *foo(void)
 {
-    return &x; /* WARNING(SDCC_z80|SDCC_z180|SDCC_r2k|SDCC_r2ka|SDCC_r3ka|SDCC_pdk13|SDCC_pdk14|SDCC_pdk15) */
+    return &x; /* WARNING(SDCC_z80|SDCC_z180|SDCC_r2k|SDCC_r2ka|SDCC_r3ka|SDCC_r4k|SDCC_r5k|SDCC_r6k|SDCC_pdk13|SDCC_pdk14|SDCC_pdk15) */
 }
 
 #endif

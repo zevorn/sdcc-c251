@@ -1,7 +1,7 @@
 /* Data structures and declarations used for reading and writing
    GIMPLE to a file stream.
 
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2023 Free Software Foundation, Inc.
    Contributed by Doug Kwan <dougkwan@google.com>
 
 This file is part of GCC.
@@ -122,7 +122,7 @@ along with GCC; see the file COPYING3.  If not see
      form followed by the data for the string.  */
 
 #define LTO_major_version GCC_major_version
-#define LTO_minor_version 0
+#define LTO_minor_version 1
 
 typedef unsigned char	lto_decl_flags_t;
 
@@ -311,6 +311,7 @@ private:
     int line, col;
     bool sysp;
     tree block;
+    unsigned discr;
   };
 
   /* The location cache.  */
@@ -333,6 +334,7 @@ private:
   bool current_sysp;
   location_t current_loc;
   tree current_block;
+  unsigned current_discr;
 };
 
 /* Structure used as buffer for reading an LTO file.  */
@@ -724,6 +726,7 @@ struct output_block
   bool reset_locus;
   bool emit_pwd;
   tree current_block;
+  unsigned current_discr;
 
   /* Cache of nodes written in this section.  */
   struct streamer_tree_cache_d *writer_cache;
@@ -967,7 +970,7 @@ extern const char *lto_section_name[];
 extern vec<lto_out_decl_state_ptr> lto_function_decl_states;
 
 /* Return true if LTO tag TAG corresponds to a tree code.  */
-static inline bool
+inline bool
 lto_tag_is_tree_code_p (enum LTO_tags tag)
 {
   return tag > LTO_first_tree_tag && (unsigned) tag <= MAX_TREE_CODES;
@@ -975,7 +978,7 @@ lto_tag_is_tree_code_p (enum LTO_tags tag)
 
 
 /* Return true if LTO tag TAG corresponds to a gimple code.  */
-static inline bool
+inline bool
 lto_tag_is_gimple_code_p (enum LTO_tags tag)
 {
   return (unsigned) tag >= LTO_first_gimple_tag
@@ -986,7 +989,7 @@ lto_tag_is_gimple_code_p (enum LTO_tags tag)
 
 /* Return the LTO tag corresponding to gimple code CODE.  See enum
    LTO_tags for details on the conversion.  */
-static inline enum LTO_tags
+inline enum LTO_tags
 lto_gimple_code_to_tag (enum gimple_code code)
 {
   return (enum LTO_tags) ((unsigned) code + LTO_first_gimple_tag);
@@ -995,7 +998,7 @@ lto_gimple_code_to_tag (enum gimple_code code)
 
 /* Return the GIMPLE code corresponding to TAG.  See enum LTO_tags for
    details on the conversion.  */
-static inline enum gimple_code
+inline enum gimple_code
 lto_tag_to_gimple_code (enum LTO_tags tag)
 {
   gcc_assert (lto_tag_is_gimple_code_p (tag));
@@ -1005,7 +1008,7 @@ lto_tag_to_gimple_code (enum LTO_tags tag)
 
 /* Return the LTO tag corresponding to tree code CODE.  See enum
    LTO_tags for details on the conversion.  */
-static inline enum LTO_tags
+inline enum LTO_tags
 lto_tree_code_to_tag (enum tree_code code)
 {
   return (enum LTO_tags) ((unsigned) code + LTO_first_tree_tag);
@@ -1014,7 +1017,7 @@ lto_tree_code_to_tag (enum tree_code code)
 
 /* Return the tree code corresponding to TAG.  See enum LTO_tags for
    details on the conversion.  */
-static inline enum tree_code
+inline enum tree_code
 lto_tag_to_tree_code (enum LTO_tags tag)
 {
   gcc_assert (lto_tag_is_tree_code_p (tag));
@@ -1022,7 +1025,7 @@ lto_tag_to_tree_code (enum LTO_tags tag)
 }
 
 /* Check that tag ACTUAL == EXPECTED.  */
-static inline void
+inline void
 lto_tag_check (enum LTO_tags actual, enum LTO_tags expected)
 {
   if (actual != expected)
@@ -1031,7 +1034,7 @@ lto_tag_check (enum LTO_tags actual, enum LTO_tags expected)
 }
 
 /* Check that tag ACTUAL is in the range [TAG1, TAG2].  */
-static inline void
+inline void
 lto_tag_check_range (enum LTO_tags actual, enum LTO_tags tag1,
 		     enum LTO_tags tag2)
 {
@@ -1044,7 +1047,7 @@ lto_tag_check_range (enum LTO_tags actual, enum LTO_tags tag1,
 }
 
 /* Initialize an lto_out_decl_buffer ENCODER.  */
-static inline void
+inline void
 lto_init_tree_ref_encoder (struct lto_tree_ref_encoder *encoder)
 {
   encoder->tree_hash_table = new hash_map<tree, unsigned> (251);
@@ -1054,7 +1057,7 @@ lto_init_tree_ref_encoder (struct lto_tree_ref_encoder *encoder)
 
 /* Destroy an lto_tree_ref_encoder ENCODER by freeing its contents.  The
    memory used by ENCODER is not freed by this function.  */
-static inline void
+inline void
 lto_destroy_tree_ref_encoder (struct lto_tree_ref_encoder *encoder)
 {
   /* Hash table may be delete already.  */
@@ -1064,14 +1067,14 @@ lto_destroy_tree_ref_encoder (struct lto_tree_ref_encoder *encoder)
 }
 
 /* Return the number of trees encoded in ENCODER. */
-static inline unsigned int
+inline unsigned int
 lto_tree_ref_encoder_size (struct lto_tree_ref_encoder *encoder)
 {
   return encoder->trees.length ();
 }
 
 /* Return the IDX-th tree in ENCODER. */
-static inline tree
+inline tree
 lto_tree_ref_encoder_get_tree (struct lto_tree_ref_encoder *encoder,
 			       unsigned int idx)
 {
@@ -1079,7 +1082,7 @@ lto_tree_ref_encoder_get_tree (struct lto_tree_ref_encoder *encoder,
 }
 
 /* Return number of encoded nodes in ENCODER.  */
-static inline int
+inline int
 lto_symtab_encoder_size (lto_symtab_encoder_t encoder)
 {
   return encoder->nodes.length ();
@@ -1091,7 +1094,7 @@ lto_symtab_encoder_size (lto_symtab_encoder_t encoder)
 /* Look up NODE in encoder.  Return NODE's reference if it has been encoded
    or LCC_NOT_FOUND if it is not there.  */
 
-static inline int
+inline int
 lto_symtab_encoder_lookup (lto_symtab_encoder_t encoder,
 			   symtab_node *node)
 {
@@ -1100,35 +1103,35 @@ lto_symtab_encoder_lookup (lto_symtab_encoder_t encoder,
 }
 
 /* Return true if iterator LSE points to nothing.  */
-static inline bool
+inline bool
 lsei_end_p (lto_symtab_encoder_iterator lsei)
 {
   return lsei.index >= (unsigned)lto_symtab_encoder_size (lsei.encoder);
 }
 
 /* Advance iterator LSE.  */
-static inline void
+inline void
 lsei_next (lto_symtab_encoder_iterator *lsei)
 {
   lsei->index++;
 }
 
 /* Return the node pointed to by LSI.  */
-static inline symtab_node *
+inline symtab_node *
 lsei_node (lto_symtab_encoder_iterator lsei)
 {
   return lsei.encoder->nodes[lsei.index].node;
 }
 
 /* Return the node pointed to by LSI.  */
-static inline struct cgraph_node *
+inline struct cgraph_node *
 lsei_cgraph_node (lto_symtab_encoder_iterator lsei)
 {
   return dyn_cast<cgraph_node *> (lsei.encoder->nodes[lsei.index].node);
 }
 
 /* Return the node pointed to by LSI.  */
-static inline varpool_node *
+inline varpool_node *
 lsei_varpool_node (lto_symtab_encoder_iterator lsei)
 {
   return dyn_cast<varpool_node *> (lsei.encoder->nodes[lsei.index].node);
@@ -1136,7 +1139,7 @@ lsei_varpool_node (lto_symtab_encoder_iterator lsei)
 
 /* Return the cgraph node corresponding to REF using ENCODER.  */
 
-static inline symtab_node *
+inline symtab_node *
 lto_symtab_encoder_deref (lto_symtab_encoder_t encoder, int ref)
 {
   if (ref == LCC_NOT_FOUND)
@@ -1146,7 +1149,7 @@ lto_symtab_encoder_deref (lto_symtab_encoder_t encoder, int ref)
 }
 
 /* Return an iterator to the first node in LSI.  */
-static inline lto_symtab_encoder_iterator
+inline lto_symtab_encoder_iterator
 lsei_start (lto_symtab_encoder_t encoder)
 {
   lto_symtab_encoder_iterator lsei;
@@ -1157,7 +1160,7 @@ lsei_start (lto_symtab_encoder_t encoder)
 }
 
 /* Advance iterator LSE.  */
-static inline void
+inline void
 lsei_next_in_partition (lto_symtab_encoder_iterator *lsei)
 {
   lsei_next (lsei);
@@ -1167,7 +1170,7 @@ lsei_next_in_partition (lto_symtab_encoder_iterator *lsei)
 }
 
 /* Return an iterator to the first node in LSI.  */
-static inline lto_symtab_encoder_iterator
+inline lto_symtab_encoder_iterator
 lsei_start_in_partition (lto_symtab_encoder_t encoder)
 {
   lto_symtab_encoder_iterator lsei = lsei_start (encoder);
@@ -1181,7 +1184,7 @@ lsei_start_in_partition (lto_symtab_encoder_t encoder)
 }
 
 /* Advance iterator LSE.  */
-static inline void
+inline void
 lsei_next_function_in_partition (lto_symtab_encoder_iterator *lsei)
 {
   lsei_next (lsei);
@@ -1192,7 +1195,7 @@ lsei_next_function_in_partition (lto_symtab_encoder_iterator *lsei)
 }
 
 /* Return an iterator to the first node in LSI.  */
-static inline lto_symtab_encoder_iterator
+inline lto_symtab_encoder_iterator
 lsei_start_function_in_partition (lto_symtab_encoder_t encoder)
 {
   lto_symtab_encoder_iterator lsei = lsei_start (encoder);
@@ -1207,7 +1210,7 @@ lsei_start_function_in_partition (lto_symtab_encoder_t encoder)
 }
 
 /* Advance iterator LSE.  */
-static inline void
+inline void
 lsei_next_variable_in_partition (lto_symtab_encoder_iterator *lsei)
 {
   lsei_next (lsei);
@@ -1218,7 +1221,7 @@ lsei_next_variable_in_partition (lto_symtab_encoder_iterator *lsei)
 }
 
 /* Return an iterator to the first node in LSI.  */
-static inline lto_symtab_encoder_iterator
+inline lto_symtab_encoder_iterator
 lsei_start_variable_in_partition (lto_symtab_encoder_t encoder)
 {
   lto_symtab_encoder_iterator lsei = lsei_start (encoder);

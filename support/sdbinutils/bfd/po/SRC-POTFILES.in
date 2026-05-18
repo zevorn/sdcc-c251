@@ -1,4 +1,3 @@
-aix386-core.c
 aix5ppc-core.c
 aout-cris.c
 aout-ns32k.c
@@ -13,7 +12,6 @@ archive64.c
 archures.c
 bfd.c
 bfdio.c
-bfdwin.c
 binary.c
 cache.c
 cf-i386lynx.c
@@ -44,6 +42,7 @@ corefile.c
 cpu-aarch64.c
 cpu-aarch64.h
 cpu-alpha.c
+cpu-amdgcn.c
 cpu-arc.c
 cpu-arm.c
 cpu-arm.h
@@ -69,8 +68,7 @@ cpu-ia64.c
 cpu-iamcu.c
 cpu-ip2k.c
 cpu-iq2000.c
-cpu-k1om.c
-cpu-l1om.c
+cpu-kvx.c
 cpu-lm32.c
 cpu-loongarch.c
 cpu-m10200.c
@@ -94,7 +92,6 @@ cpu-msp430.c
 cpu-mt.c
 cpu-nds32.c
 cpu-nfp.c
-cpu-nios2.c
 cpu-ns32k.c
 cpu-or1k.c
 cpu-pdp11.c
@@ -123,7 +120,6 @@ cpu-v850_rh850.c
 cpu-vax.c
 cpu-visium.c
 cpu-wasm32.c
-cpu-xc16x.c
 cpu-xgate.c
 cpu-xstormy16.c
 cpu-xtensa.c
@@ -136,6 +132,7 @@ ecoff.c
 ecofflink.c
 ecoffswap.h
 elf-attrs.c
+elf-attrs.h
 elf-bfd.h
 elf-eh-frame.c
 elf-hppa.h
@@ -144,10 +141,9 @@ elf-linker-x86.h
 elf-linux-core.h
 elf-m10200.c
 elf-m10300.c
-elf-nacl.c
-elf-nacl.h
 elf-properties.c
 elf-s390.h
+elf-sframe.c
 elf-strtab.c
 elf-vxworks.c
 elf-vxworks.h
@@ -201,8 +197,6 @@ elf32-msp430.c
 elf32-mt.c
 elf32-nds32.c
 elf32-nds32.h
-elf32-nios2.c
-elf32-nios2.h
 elf32-or1k.c
 elf32-pj.c
 elf32-ppc.c
@@ -232,13 +226,13 @@ elf32-v850.h
 elf32-vax.c
 elf32-visium.c
 elf32-wasm32.c
-elf32-xc16x.c
 elf32-xgate.c
 elf32-xstormy16.c
 elf32-xtensa.c
 elf32-z80.c
 elf32.c
 elf64-alpha.c
+elf64-amdgcn.c
 elf64-bpf.c
 elf64-gen.c
 elf64-hppa.c
@@ -263,6 +257,7 @@ elfxx-aarch64.c
 elfxx-aarch64.h
 elfxx-ia64.c
 elfxx-ia64.h
+elfxx-kvx.c
 elfxx-loongarch.c
 elfxx-loongarch.h
 elfxx-mips.c
@@ -274,19 +269,18 @@ elfxx-sparc.h
 elfxx-tilegx.c
 elfxx-tilegx.h
 elfxx-x86.c
-elfxx-x86.c
 elfxx-x86.h
 format.c
 genlink.h
 go32stub.h
 hash.c
+hidden.h
 hpux-core.c
 i386aout.c
 i386bsd.c
 i386lynx.c
 i386msdos.c
 ihex.c
-init.c
 irix-core.c
 libaout.h
 libbfd.c
@@ -313,7 +307,9 @@ ns32knetbsd.c
 opncls.c
 osf-core.c
 pc532-mach.c
+pdb.c
 pdp11.c
+pe-aarch64.c
 pe-arm-wince.c
 pe-arm.c
 pe-i386.c
@@ -328,7 +324,9 @@ pei-arm-wince.c
 pei-arm.c
 pei-i386.c
 pei-ia64.c
+pei-loongarch64.c
 pei-mcore.c
+pei-riscv64.c
 pei-sh.c
 pei-x86_64.c
 peicode.h
@@ -338,7 +336,6 @@ ppcboot.c
 reloc.c
 reloc16.c
 rs6000-core.c
-sco5-core.c
 section.c
 simple.c
 som.c
@@ -365,5 +362,6 @@ xcofflink.c
 xcofflink.h
 xsym.c
 xsym.h
+xtensa-dynconfig.c
 xtensa-isa.c
 xtensa-modules.c

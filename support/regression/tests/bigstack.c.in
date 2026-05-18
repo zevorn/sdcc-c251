@@ -13,7 +13,9 @@
 volatile {type1} int1;
 volatile {type2} int2;
 
-#ifdef __SDCC_pdk14
+#ifdef __SDCC_pdk13
+#define ARRAYSIZE 20
+#elif defined (__SDCC_pdk14)
 #define ARRAYSIZE 30
 #elif defined (__SDCC_pdk15) || defined (__SDCC_mcs51) || defined (__SDCC_mos6502) || defined (__SDCC_mos65c02)
 #define ARRAYSIZE 60

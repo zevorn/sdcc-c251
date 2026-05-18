@@ -12,7 +12,6 @@ char s[12 + 1];
 void
 test_sprintf (void)
 {
-#if !defined( __SDCC_pdk14) && !defined(__SDCC_pdk15) && !defined(__SDCC_pic14) // Lack of memory
 #ifndef __SDCC_pic16
   s[12] = 0x12;
 
@@ -55,7 +54,6 @@ test_sprintf (void)
 #endif
 
   ASSERT (s[12] == 0x12);
-#endif
 #endif
 }
 

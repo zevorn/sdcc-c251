@@ -19,7 +19,7 @@ struct s
 }
 
 // Caller
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined( __SDCC_pdk13) && !defined( __SDCC_pdk14) // Lack of memory
 {type} g({type} i, {type} j)
 {
 	struct s s = {i, j};
@@ -29,7 +29,7 @@ struct s
 
 void testParam (void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined( __SDCC_pdk13) && !defined( __SDCC_pdk14) // Lack of memory
 	ASSERT (g(23, 42) == 23 + 42);
 #endif
 }

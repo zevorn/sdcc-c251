@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
-;  crt0.s - Generic crt0.s for a bare metal 6502
+;  crt0.s - Generic crt0.s for a bare metal 65c02
 ;
-;  Copyright (C) 2021-2023, Gabriele Gorla
+;  Copyright (C) 2021-2026, Gabriele Gorla
 ;  Copyright (C) 2023, Maarten Brock
 ;
 ;  This library is free software; you can redistribute it and/or modify it
@@ -29,7 +29,9 @@
 
 	.module crt0
 
-	;; Ordering of segments for the linker.
+;--------------------------------------------------------
+;  Ordering of segments for the linker.
+;--------------------------------------------------------
 	.area ZP      (PAG)
 	.area OSEG    (PAG, OVR)
 
@@ -44,13 +46,18 @@
 	.area RODATA
 	.area XINIT
 
-	;; Reset/interrupt vectors
+;--------------------------------------------------------
+;  Reset/interrupt vectors
+;--------------------------------------------------------
 	.area CODEIVT (ABS)
 	.org  0xfffa
 	.dw	__sdcc_gs_init_startup ; NMI
 	.dw	__sdcc_gs_init_startup ; RESET
 	.dw	__sdcc_gs_init_startup ; IRQ/BRK
 
+;--------------------------------------------------------
+;  Startup Code
+;--------------------------------------------------------
 	.area GSINIT
 __sdcc_gs_init_startup:
 	ldx	#0xff
@@ -66,7 +73,7 @@ __sdcc_gs_init_startup:
 	jmp	__sdcc_program_startup
 
 __sdcc_init_data:
-;; clear ZP
+; clear ZP
 	lda	#0x00
 	ldx	#<s_ZP
 	ldy	#<l_ZP
@@ -78,7 +85,7 @@ __sdcc_init_data:
 	bne	00100$
 00101$:
 
-;; initialize DATA
+; initialize DATA
 	lda	#>l_XINIT
 	sta	*___memcpy_PARM_3+1
 	lda	#<l_XINIT
@@ -91,7 +98,7 @@ __sdcc_init_data:
 	ldx	#>s_DATA
 	jsr	___memcpy
 
-;; clear BSS
+; clear BSS
 	lda	#>l_BSS
 	sta	*_memset_PARM_3+1
 	lda	#<l_BSS
@@ -102,6 +109,9 @@ __sdcc_init_data:
 	ldx	#>s_BSS
 	jsr	_memset
 
+;--------------------------------------------------------
+;  Final Cleanup
+;--------------------------------------------------------
 	.area GSFINAL
 __sdcc_program_startup:
 	jsr	_main

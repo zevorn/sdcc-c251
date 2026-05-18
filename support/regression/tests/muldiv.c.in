@@ -9,7 +9,7 @@
 void
 testUnsignedModDiv(void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
     {attr} {storage} unsigned {type} i;
     unsigned {type} result;
@@ -34,7 +34,7 @@ testUnsignedModDiv(void)
 void
 testUnsignedMul(void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
     {attr} {storage} unsigned {type} i;
     unsigned {type} result;
 
@@ -52,7 +52,7 @@ testUnsignedMul(void)
 void
 testMul(void)
 {
-#ifndef __SDCC_pdk14 // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Lack of memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
     {attr} {storage} signed {type} i;
     signed {type} result;
@@ -82,7 +82,7 @@ void mark(void)
 void
 testDiv(void)
 {
-#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
     {attr} {storage} signed {type} i;
 
     i = 100;
@@ -105,9 +105,15 @@ testDiv(void)
 void 
 test16to32(void)
 {
-#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
    {attr} {storage} int i, j;
    {attr} {storage} unsigned int ui, uj;
+
+   i = 123;
+   j = 0xaa;
+   ASSERT((long)i * (long)j == 123l * (long)0xaa);
+   i = -i;
+   ASSERT((long)i * (long)j == -123l * (long)0xaa);
 
    i = 42;
    j = 42;
@@ -140,7 +146,7 @@ test16to32(void)
 void
 testMod(void)
 {
-#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
+#if !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
     {attr} {storage} signed {type} i;
 
     // Disabled the LOG functions due to a bug in sdcc involving
@@ -164,3 +170,4 @@ testMod(void)
     ASSERT(i%4 == -1);
 #endif
 }
+

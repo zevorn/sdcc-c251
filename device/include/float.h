@@ -100,6 +100,10 @@ unsigned int __fs2uint (float) __SDCC_FLOAT_NONBANKED;
 signed int __fs2sint (float) __SDCC_FLOAT_NONBANKED;
 unsigned long __fs2ulong (float) __SDCC_FLOAT_NONBANKED;
 signed long __fs2slong (float) __SDCC_FLOAT_NONBANKED;
+#ifdef __SDCC_LONGLONG
+unsigned long long __fs2ulonglong (float) __SDCC_FLOAT_NONBANKED;
+signed long long __fs2longlong (float) __SDCC_FLOAT_NONBANKED;
+#endif
 
 float __fsadd (float, float) __SDCC_FLOAT_NONBANKED;
 float __fssub (float, float) __SDCC_FLOAT_NONBANKED;

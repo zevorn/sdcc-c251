@@ -1,6 +1,6 @@
 /* bug-3801.c
 
-   A bug resulting in negative array sizes notbeing diagnosed.
+   A bug resulting in negative array sizes not being diagnosed.
  */
 
 #ifdef TEST1

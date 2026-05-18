@@ -5,6 +5,7 @@
 
 #include <testfwk.h>
 #include <stddef.h>
+#include <stdint.h>
 
 struct tail {
   int t;
@@ -35,9 +36,9 @@ typedef struct st st_t;
 typedef union bla bla_t;
 
 #define check(type, element) \
-  { int x, y; \
+  { intptr_t x, y; \
     union { long bits; type *ptr; } nul; nul.bits = 0;      \
-    x = (int) &(nul.ptr->element); \
+    x = (intptr_t) &(nul.ptr->element); \
     y = offsetof (type, element); \
     ASSERT (x == y); \
   }

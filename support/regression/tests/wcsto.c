@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <wchar.h>
 
-#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !defined(__SDCC_mcs51) // Lack of memory
+#if !defined(__SDCC_mcs51) // Lack of memory
 wchar_t string0[] = L"-2";
 wchar_t string1[] = L"-9999999999999999999999";
 wchar_t string2[] = L"9999999999999999999999";
@@ -21,7 +21,7 @@ wchar_t string6[] = L"-0x23test";
 void
 testWcsto(void)
 {
-#if !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !defined(__SDCC_mcs51) // Lack of memory
+#if !defined(__SDCC_mcs51) // Lack of memory
   wchar_t *e;
 
   ASSERT(wcstoul(L"", 0, 10) == 0);

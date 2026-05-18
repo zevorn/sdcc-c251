@@ -100,6 +100,7 @@ static bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, 
   return(false);
 }
 
+// Return true, iff the operand is placed in ax
 template <class G_t, class I_t>
 static bool operand_is_ax(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {  
@@ -117,7 +118,6 @@ static bool operand_is_ax(const operand *o, const assignment &a, unsigned short 
   if (oi2 == oi_end)
     return(false);
   
-  // Register combinations code generation cannot handle yet (AX, AH, XH, HA).
   if(std::binary_search(a.local.begin(), a.local.end(), oi->second) && std::binary_search(a.local.begin(), a.local.end(), oi2->second))
     {
       const reg_t l = a.global[oi->second];
@@ -136,7 +136,6 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   // Instructions that can handle anything.
   if(ic->op == '!' ||
-    ic->op == '~' ||
     ic->op == UNARYMINUS ||
     ic->op == CALL ||
     ic->op == PCALL ||
@@ -177,10 +176,10 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   const i_assignment_t &ia = a.i_assignment;
 
   bool unused_A = (ia.registers[REG_A][1] < 0);
-  bool unused_H = (ia.registers[REG_H][1] < 0);
   bool unused_X = (ia.registers[REG_X][1] < 0);
+  bool unused_H = (ia.registers[REG_H][1] < 0);
 
-  if(unused_X && unused_A && unused_H)
+  if(unused_A && unused_H && unused_X)
     return(true);
 
 #if 0
@@ -192,16 +191,16 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   const operand *result = IC_RESULT(ic);
 
   bool result_in_A = operand_in_reg(result, REG_A, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
-  bool result_in_H = operand_in_reg(result, REG_H, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
   bool result_in_X = operand_in_reg(result, REG_X, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
-  bool left_in_A = operand_in_reg(result, REG_A, ia, i, G);
-  bool left_in_X = operand_in_reg(result, REG_X, ia, i, G);
+  bool result_in_H = operand_in_reg(result, REG_H, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
+  bool left_in_A = operand_in_reg(left, REG_A, ia, i, G);
+  bool left_in_X = operand_in_reg(left, REG_X, ia, i, G);
 
   const cfg_dying_t &dying = G[i].dying;
 
   bool dying_A = result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end();
-  bool dying_H = result_in_H || dying.find(ia.registers[REG_H][1]) != dying.end() || dying.find(ia.registers[REG_H][0]) != dying.end();
   bool dying_X = result_in_X || dying.find(ia.registers[REG_X][1]) != dying.end() || dying.find(ia.registers[REG_X][0]) != dying.end();
+  bool dying_H = result_in_H || dying.find(ia.registers[REG_H][1]) != dying.end() || dying.find(ia.registers[REG_H][0]) != dying.end();
 
   bool result_only_XA = (result_in_X || unused_X || dying_X) && (result_in_A || unused_A || dying_A);
 
@@ -240,7 +239,6 @@ static bool AXinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   const i_assignment_t &ia = a.i_assignment;
 
   if(ic->op == '!' ||
-    ic->op == '~' ||
     ic->op == IPUSH ||
     ic->op == CALL ||
     ic->op == FUNCTION ||
@@ -282,10 +280,10 @@ static bool AXinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   bool result_in_A = operand_in_reg(result, REG_A, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
   bool result_in_X = operand_in_reg(result, REG_X, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
-  bool left_in_A = operand_in_reg(result, REG_A, ia, i, G);
-  bool left_in_X = operand_in_reg(result, REG_X, ia, i, G);
-  bool right_in_A = operand_in_reg(result, REG_A, ia, i, G);
-  bool right_in_X = operand_in_reg(result, REG_X, ia, i, G);
+  bool left_in_A = operand_in_reg(left, REG_A, ia, i, G);
+  bool left_in_X = operand_in_reg(left, REG_X, ia, i, G);
+  bool right_in_A = operand_in_reg(right, REG_A, ia, i, G);
+  bool right_in_X = operand_in_reg(right, REG_X, ia, i, G);
 
   bool result_is_ax = operand_is_ax (result, a, i, G, I);
   bool left_is_ax = operand_is_ax (left, a, i, G, I);
@@ -311,6 +309,7 @@ static void set_surviving_regs(const assignment &a, unsigned short int i, const 
       if(a.global[*v] < 0)
         continue;
       ic->rMask = bitVectSetBit(ic->rMask, a.global[*v]);
+
       if(G[i].dying.find(*v) == G[i].dying.end())
         if(!((IC_RESULT(ic) && !POINTER_SET(ic)) && IS_SYMOP(IC_RESULT(ic)) && OP_SYMBOL_CONST(IC_RESULT(ic))->key == I[*v].v))
           ic->rSurv = bitVectSetBit(ic->rSurv, a.global[*v]);
@@ -330,17 +329,17 @@ static void assign_operand_for_cost(operand *o, const assignment &a, unsigned sh
       if(a.global[v] >= 0)
         { 
           sym->regs[I[v].byte] = regshc08 + a.global[v];   
+          sym->accuse = 0;
           sym->isspilt = false;
           sym->nRegs = I[v].size;
-          sym->accuse = 0;
         }
       else
         {
-          for(int i = 0; i < I[v].size; i++)
-            sym->regs[i] = 0;
+          sym->isspilt = true;
           sym->accuse = 0;
           sym->nRegs = I[v].size;
-          sym->isspilt = true;
+          for(int i = 0; i < I[v].size; i++)
+            sym->regs[i] = 0;
         }
     }
 }
@@ -355,9 +354,7 @@ static void assign_operands_for_cost(const assignment &a, unsigned short int i, 
   assign_operand_for_cost(IC_RESULT(ic), a, i, G, I);
     
   if(ic->op == SEND && ic->builtinSEND)
-    {
-      assign_operands_for_cost(a, *(adjacent_vertices(i, G).first), G, I);
-    }
+    assign_operands_for_cost(a, (unsigned short)*(adjacent_vertices(i, G).first), G, I);
 }
 
 // Check that the operand is either fully in registers or fully in memory.
@@ -424,6 +421,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
   float c;
 
   wassert (TARGET_IS_HC08 || TARGET_IS_S08);
+  wassert(ic);
 
   if(!inst_sane(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
@@ -457,7 +455,6 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case INLINEASM:
       return(0.0f);
     case '!':
-    case '~':
     case UNARYMINUS:
     case '+':
     case '-':
@@ -610,9 +607,9 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
       if(winner.global[v] >= 0)
         { 
           sym->regs[I[v].byte] = regshc08 + winner.global[v];   
+          sym->accuse = 0;
           sym->isspilt = false;
           sym->nRegs = I[v].size;
-          sym->accuse = 0;
         }
       else
         {
@@ -646,12 +643,12 @@ iCode *hc08_ralloc2_cc(ebbIndex *ebbi)
   iCode *ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
 
   if (optimize.genconstprop)
-    recomputeValinfos (ic, ebbi, "_2");
-
-  guessCounts(ic, ebbi);
+    recomputeValinfos (ic, ebbi, "_3");
 
   if(options.dump_graphs)
     dump_cfg(control_flow_graph);
+
+  guessCounts(ic, ebbi);
 
   if(options.dump_graphs)
     dump_con(conflict_graph);

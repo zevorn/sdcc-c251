@@ -38,7 +38,7 @@ _Static_assert(WEOF <= WINT_MAX, "WEOF out of wint_t range");
 static void
 wcharnorestart(void)
 {
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199409L && !defined(__SDCC_pdk14) // Not enough memory
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199409L && !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) // Not enough memory
 #if !(defined (__SDCC_pdk15) && defined(__SDCC_STACK_AUTO)) // Lack of code memory
 	wchar_t w;
 	char c[MB_LEN_MAX];
@@ -67,7 +67,7 @@ wcharnorestart(void)
 static void
 wcharstringnorestart(void)
 {
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199409L && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Not enough memory
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199409L && !defined(__SDCC_pdk13) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Not enough memory
 	wchar_t wcs1[5] = L"Test";
 	wchar_t wcs2[5];
 	char mbs[5 * MB_LEN_MAX];
@@ -106,7 +106,7 @@ wcharstringnorestart(void)
 static void
 wcharrestart(void)
 {
-#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
+#if !defined( __SDCC_pdk13) && !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 	static mbstate_t ps;
 	wchar_t w;
@@ -134,7 +134,7 @@ wcharrestart(void)
 static void
 char16restart(void)
 {
-#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
+#if !defined( __SDCC_pdk13) && !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L && !(defined(__SDCC_mcs51) && defined(__SDCC_MODEL_SMALL))
 #if !defined(__APPLE__) && !defined(__OpenBSD__) // As of 2023, macOS and OpenBSD are still not fully C11-compliant: they lack uchar.h.
 #if !defined(__FreeBSD__) || __FreeBSD_version >= 1302000 // Known FreeBSD 13.2 bug #272758.
@@ -179,7 +179,7 @@ char16restart(void)
 static void
 char32restart(void)
 {
-#if !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
+#if !defined( __SDCC_pdk13) && !defined( __SDCC_pdk14) && !defined( __SDCC_pdk15) // Lack of memory
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #if !defined(__APPLE__) && !defined(__OpenBSD__) // As of 2023, macOS and OpenBSD are still not fully C11-compliant: they lack uchar.h.
 #if !defined(__FreeBSD__) || __FreeBSD_version >= 1302000 // Known FreeBSD 13.2 bug #272758.
@@ -206,3 +206,4 @@ testwchar(void)
 {
 	{test}();
 }
+

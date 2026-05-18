@@ -7,6 +7,7 @@
 */
 #include <testfwk.h>
 
+#if !defined(__SDCC_pdk13) // Lack of memory
 const int C0[] = {0,1,2};
 int S0[] = {5,0,1};
 
@@ -138,15 +139,18 @@ int r3(void)
 }
 #endif
 #endif
+#endif
 
 void testShift(void)
 {
+#if !defined(__SDCC_pdk13)
 	ASSERT (r0() == 0);
 #if !defined(__SDCC_pdk14)
 	ASSERT (r1() == 2);
 #if !defined(__SDCC_pdk15)
 	ASSERT (r2() == 0);
 	ASSERT (r3() == -2);
+#endif
 #endif
 #endif
 }

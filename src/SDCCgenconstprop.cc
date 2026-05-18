@@ -101,10 +101,15 @@ getTypeValinfo (sym_link *type, bool loose)
   struct valinfo v;
   v.anything = true;
   v.nothing = false;
+  v.nonnull = false;
   // Initialize all members of v, to ensure we don't read uninitalized memory later.
   v.min = v.max = 0ll;
   v.knownbitsmask = 0ull;
   v.knownbits = 0ull;
+  v.minsize = 0;
+  v.maxsize = ULONG_MAX;
+  v.maybeminsize = 0;
+  v.maybemaxsize = ULONG_MAX;
 
   if (IS_BOOLEAN (type))
     {
@@ -120,6 +125,8 @@ getTypeValinfo (sym_link *type, bool loose)
       v.min = 0;
       if (IS_FUNCPTR (type))
         v.max = (1ll << ((IFFUNC_ISBANKEDCALL (type->next) ? BFUNCPTRSIZE : FUNCPTRSIZE) * 8)) - 1;
+      else if (IS_FARPTR (type))
+        v.max = (1ll << (FARPTRSIZE * 8)) - 1;
       else
         v.max = (1ll << (GPTRSIZE * 8)) - 1;
       v.knownbitsmask = ~((unsigned long long)v.max);
@@ -150,6 +157,8 @@ getTypeValinfo (sym_link *type, bool loose)
           else
             wassert (0);
         }
+      v.maxsize = v.max;
+      v.maybemaxsize = v.max;
     }
   else if (IS_INTEGRAL (type) && IS_UNSIGNED (type) && bitsForType (type) < 64)
     {
@@ -173,7 +182,33 @@ getTypeValinfo (sym_link *type, bool loose)
 }
 
 static void
-valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right);
+valinfoUpdate (struct valinfo *v);
+
+static void
+valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right, sym_link *sourcetype);
+
+static struct valinfo
+getParamValinfo (const operand *op)
+{
+  wassert (op);
+  sym_link *type = operandType (op);
+  struct valinfo v = getTypeValinfo (type, true);
+  if (IS_SYMOP (op) && OP_SYMBOL_CONST (op)->ismyparm &&
+    IS_DECL (type) && DCL_ELEM (type) && !isOptional (type->next))
+    {
+      if (DCL_STATIC_ARRAY_PARAM (type)) // Valid pointer to an array of at least DCL_ELEM (type) elements.
+        {
+          v.nonnull = true;
+          v.min = 1;
+          v.minsize = DCL_ELEM (type) * getSize (type->next);
+          v.max -= v.minsize;
+        }
+      else
+        v.maybemaxsize = DCL_ELEM (type) * getSize (type->next);
+      v.maybeminsize = DCL_ELEM (type) * getSize (type->next);
+    }
+  return (v);
+}
 
 struct valinfo
 getOperandValinfo (const iCode *ic, const operand *op)
@@ -183,6 +218,7 @@ getOperandValinfo (const iCode *ic, const operand *op)
   struct valinfo v;
   v.anything = true;
   v.nothing = false;
+  v.nonnull = false;
   v.min = v.max = 0;
   v.knownbitsmask = 0ull;
   v.knownbits = 0ull;
@@ -193,7 +229,8 @@ getOperandValinfo (const iCode *ic, const operand *op)
   sym_link *type = operandType (op);
 
   if (IS_INTEGRAL (type) && bitsForType (type) < 64 && !IS_OP_VOLATILE (op) && // Todo: More exact check than this bits thing?
-    (IS_OP_LITERAL (op) || IS_SYMOP (op) && SPEC_CONST (type) && OP_SYMBOL_CONST (op)->ival && IS_AST_VALUE (list2expr (OP_SYMBOL_CONST (op)->ival))))
+    (IS_OP_LITERAL (op) || IS_SYMOP (op) && SPEC_CONST (type) && OP_SYMBOL_CONST (op)->ival && IS_AST_VALUE (list2expr (OP_SYMBOL_CONST (op)->ival))) ||
+    (TARGET_Z80_LIKE || TARGET_IS_STM8 || TARGET_F8_LIKE || IS_GENPTR (type)) && IS_PTR (type) && IS_OP_LITERAL (op)) // Port has no tag bits in pointers
     {
       struct valinfo v2;
       long long litval;
@@ -203,23 +240,42 @@ getOperandValinfo (const iCode *ic, const operand *op)
         litval = ullFromVal (list2expr (OP_SYMBOL_CONST (op)->ival)->opval.val);
       v2.anything = false;
       v2.nothing = false;
+      v2.nonnull = litval;
       v2.min = litval;
       v2.max = litval;
       v2.knownbitsmask = ~0ull;
       v2.knownbits = litval;
-      valinfoCast (&v, type, v2); // Need to cast: ival could be out of range of type.
-      return (v);
+      v2.minsize = 0;
+      v2.maxsize = ULONG_MAX;
+      v2.maybeminsize = 0;
+      v2.maybemaxsize = ULONG_MAX;
+      valinfoCast (&v, type, v2, NULL); // Need to cast: ival could be out of range of type.
+      valinfoUpdate (&v);
     }
-  else if (IS_ITEMP (op) && !IS_OP_VOLATILE (op))
+#if 1
+  else if (IS_SYMOP (op) && !IS_OP_VOLATILE (op) && ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end ())
+    return (ic->valinfos->map[op->key].anything ? getTypeValinfo (type, true) : ic->valinfos->map[op->key]);
+#else
+  else if (IS_SYMOP (op) && !IS_OP_VOLATILE (op) && ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end () && !ic->valinfos->map[op->key].anything)
     {
-      if (ic->valinfos && ic->valinfos->map.find (op->key) != ic->valinfos->map.end ())
-        return (ic->valinfos->map[op->key]);
+      if (IS_ITEMP (op))
+        v = ic->valinfos->map[op->key];
+      else
+        {
+          valinfoCast (&v, type, ic->valinfos->map[op->key], NULL); // Need to cast, since updates for global/pointed-to operands might have been too pessimistic.
+          valinfoUpdate (&v);
+        }
+    }
+#endif
+  else if (IS_ITEMP (op))
+    {
       v.nothing = true;
       v.anything = false;
-      return (v);
     }
   else
-    return (getTypeValinfo (type, true));
+    v = getTypeValinfo (type, true);
+
+  return (v);
 }
 
 bool
@@ -232,6 +288,9 @@ valinfo_union (struct valinfo *v0, const struct valinfo v1)
   auto new_nothing = v0->nothing && v1.nothing;
   change |= (v0->nothing != new_nothing);
   v0->nothing = new_nothing;
+  auto new_nonnull = v0->nonnull && v1.nonnull;
+  change |= (v0->nonnull != new_nonnull);
+  v0->nonnull = new_nonnull;
   auto new_min = std::min (v0->min, v1.min);
   change |= (v0->min != new_min);
   v0->min = new_min;
@@ -241,21 +300,30 @@ valinfo_union (struct valinfo *v0, const struct valinfo v1)
   auto new_knownbitsmask = v0->knownbitsmask & v1.knownbitsmask & ~(v0->knownbits ^ v1.knownbits);
   change |= (v0->knownbitsmask != new_knownbitsmask);
   v0->knownbitsmask = new_knownbitsmask;
+  auto new_minsize = std::min (v0->minsize, v1.minsize);
+  change |= (v0->minsize != new_minsize);
+  v0->minsize = new_minsize;
+  auto new_maxsize = std::max (v0->maxsize, v1.maxsize);
+  change |= (v0->maxsize != new_maxsize);
+  v0->maxsize = new_maxsize;
+  auto new_maybeminsize = std::min (v0->maybeminsize, v1.maybeminsize);
+  change |= (v0->maybeminsize != new_maybeminsize);
+  v0->maybeminsize = new_maybeminsize;
+  auto new_maybemaxsize = std::max (v0->maybemaxsize, v1.maybemaxsize);
+  change |= (v0->maybemaxsize != new_maybemaxsize);
+  v0->maybemaxsize = new_maybemaxsize;
   return (change);
 }
 
 bool
-valinfos_union (iCode *ic, int key, const struct valinfo &v)
+valinfos_union (iCode *ic, const int key, const struct valinfo &v)
 {
   if (!ic /*|| !bitVectBitValue(ic->rlive, key)*/) // Unfortunately, rlive info is inaccurate, so we can't rely on it.
     return (false);
-
   if (ic->valinfos && ic->valinfos->map.find (key) != ic->valinfos->map.end())
     return (valinfo_union (&ic->valinfos->map[key], v));
   else
     {
-      if (!ic->valinfos)
-        ic->valinfos = new struct valinfos;
       ic->valinfos->map[key] = v;
       return (true);
     }
@@ -280,7 +348,7 @@ dump_op_info (std::ostream &os, const iCode *ic, operand *op)
   if (v.anything)
     os << "*";
   else
-    os << "[" << v.min << ", " << v.max << "] " << v.knownbitsmask;
+    os << "[" << v.min << ", " << v.max << "] " << "[" << v.minsize << ", " << v.maxsize << "] " << v.knownbitsmask;
 }
 
 // Dump cfg.
@@ -310,7 +378,7 @@ dump_cfg_genconstprop (const cfg_t &cfg, const std::string& suffix)
           else if (ic->resultvalinfo->anything)
             os << "*";
           else
-            os << "[" << ic->resultvalinfo->min << ", " << ic->resultvalinfo->max << "] " << ic->resultvalinfo->knownbitsmask;
+            os << "[" << ic->resultvalinfo->min << ", " << ic->resultvalinfo->max << "] " << "[" << ic->resultvalinfo->minsize << ", " << ic->resultvalinfo->maxsize << "] " << ic->resultvalinfo->knownbitsmask;
         }
       name[i] = os.str();
     }
@@ -331,7 +399,6 @@ valinfoUpdate (struct valinfo *v)
     {
       v->knownbitsmask = ~0ull;
       v->knownbits = v->min;
-      return;
     }
   for (int i = 0; i < 62; i++) // Leading zeroes.
     {
@@ -352,6 +419,17 @@ valinfoUpdate (struct valinfo *v)
       if (bitmin > (unsigned long long)(v->min))
         v->min = bitmin;
     }
+
+  if (v->min > 0 || v->max < 0)
+    v->nonnull = true;
+
+  if (v->max == 0) // Null pointer points to zero bytes
+   {
+     v->minsize = 0;
+     v->maxsize = 0;
+     v->maybeminsize = 0;
+     v->maybemaxsize = 0;
+   }
 }
 
 static void
@@ -386,6 +464,23 @@ valinfoPlus (struct valinfo *result, sym_link *resulttype, const struct valinfo 
           result->knownbitsmask |= (left.knownbitsmask & 0x8000ull);
           result->knownbits = result->knownbits & ~0x8000ull | left.knownbits & 0x8000ull;
         }
+      result->nonnull |= left.nonnull;
+      if ((long long)(left.minsize) >= right.max)
+        result->minsize = (long long)(left.minsize) - right.max;
+      else
+        result->minsize = 0;
+      if ((long long)(left.maxsize) >= right.min)
+        result->maxsize = (long long)(left.maxsize) - right.min;
+      else
+        result->maxsize = 0;
+      if ((long long)(left.maybeminsize) >= right.max)
+        result->maybeminsize = (long long)(left.maybeminsize) - right.max;
+      else
+        result->maybeminsize = 0;
+      if ((long long)(left.maybemaxsize) >= right.min)
+        result->maybemaxsize = (long long)(left.maybemaxsize) - right.min;
+      else
+        result->maybemaxsize = 0;
     }
   if (!left.anything && !right.anything &&
     left.min >= 0 && right.min >= 0)
@@ -430,6 +525,7 @@ valinfoMinus (struct valinfo *result, sym_link *resulttype, const struct valinfo
           result->knownbitsmask |= (left.knownbitsmask & 0x8000ull);
           result->knownbits = result->knownbits & ~0x8000ull | left.knownbits & 0x8000ull;
         }
+      result->nonnull |= left.nonnull;
     }
   // todo: rewrite using ckd_sub when we can assume host compiler has c2x support!
   if (!left.anything && !right.anything &&
@@ -529,8 +625,8 @@ valinfoAnd (struct valinfo *result, sym_link *resulttype, const struct valinfo &
 {
   // In iCode, bitwise and sometimes has operands of different type.
   struct valinfo left, right;
-  valinfoCast (&left, resulttype, left_orig);
-  valinfoCast (&right, resulttype, right_orig);
+  valinfoCast (&left, resulttype, left_orig, NULL);
+  valinfoCast (&right, resulttype, right_orig, NULL);
 
   if (!left.anything && !right.anything &&
     (left.min >= 0 || right.min >= 0))
@@ -627,15 +723,19 @@ valinfoRight (struct valinfo *result, const struct valinfo &left, const struct v
     }
 }
 
+// sourcetype is optional
 static void
-valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right)
+valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo &right, sym_link *sourcetype)
 {
+  bool genptrtarget = IS_GENPTR (targettype) || (TARGET_Z80_LIKE && !IS_FARPTR (targettype) && !IS_FARPTR (sourcetype) || TARGET_IS_TLCS90 || TARGET_F8_LIKE || TARGET_IS_STM8); // Some ports have no tag bits in pointers.
+
   *result = getTypeValinfo (targettype, false);
   if (right.nothing)
     result->nothing = true;
-  else if (!right.anything && (IS_INTEGRAL (targettype) || IS_GENPTR (targettype)) && 
+  else if (!right.anything && (IS_INTEGRAL (targettype) || genptrtarget) && 
     (!result->anything && right.min >= result->min && right.max <= result->max || result->anything))
     {
+      result->anything = false;
       result->min = right.min;
       result->max = right.max;
       if (result->min >= 0)
@@ -658,10 +758,39 @@ valinfoCast (struct valinfo *result, sym_link *targettype, const struct valinfo 
       result->knownbitsmask = ~0ull;
       result->knownbits = result->min;
     }
+
+  if (!right.anything && genptrtarget && right.nonnull)
+    result->nonnull = true;
+
+  if (!right.anything && IS_PTR (targettype) && sourcetype && IS_PTR (sourcetype))
+    {
+      if (result->minsize < right.minsize)
+        result->minsize = right.minsize;
+      if (result->maxsize > right.maxsize)
+        result->maxsize = right.maxsize;
+      if (result->minsize)
+        result->nonnull = true;
+      if (result->maybeminsize < right.maybeminsize)
+        result->maybeminsize = right.maybeminsize;
+      if (result->maybemaxsize > right.maybemaxsize)
+        result->maybemaxsize = right.maybemaxsize;
+    }
+}
+
+static void update_out_edges (cfg_t &G, unsigned int i, int key_false, int key_true, const valinfo &v_false, const valinfo &v_true, int opkey)
+{
+  typedef /*typename*/ boost::graph_traits<cfg_t>::out_edge_iterator out_iter_t;
+  out_iter_t out, out_end;
+  boost::tie(out, out_end) = boost::out_edges(i, G);
+  for(; out != out_end; ++out)
+    if (G[boost::target(*out, G)].ic->key == key_true)
+      G[*out].map[opkey] = v_true;
+    else if (G[boost::target(*out, G)].ic->key == key_false)
+      G[*out].map[opkey] = v_false;
 }
 
 static void
-recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<unsigned int>, std::set<unsigned int> > &todo, bool externchange, int end_it_quickly)
+recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<unsigned int>, std::set<unsigned int> > &todo, const valinfos &global_operands, const std::map <int, sym_link *>& global_types, bool externchange, int end_it_quickly)
 {
   iCode *const ic = G[i].ic;
   bool change = externchange;
@@ -712,47 +841,69 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
               todo.second.insert (boost::target(*out, G));
             }
         }
-      if (ic->op == IFX && bitVectnBitsOn (OP_DEFS (ic->left)) == 1) // Propagate some info on the condition into the branches.
+      if (ic->op == IFX) // Propagate some info on the condition into the branches.
         {
-          iCode *cic = (iCode *)hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (ic->left)));
-          struct valinfo v = getOperandValinfo (ic, cic->left);
-          if (cic->op == '>' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
-            IS_OP_LITERAL (IC_RIGHT (cic)) && !v.anything && !v.nothing && operandLitValueUll(IC_RIGHT (cic)) < +1000)
+          int key_true = IC_TRUE (ic) ? eBBWithEntryLabel(ebbi, IC_TRUE(ic))->sch->key : ic->next->key;
+          int key_false = IC_FALSE (ic) ? eBBWithEntryLabel(ebbi, IC_FALSE(ic))->sch->key : ic->next->key;
+          if (IS_SYMOP (ic->left) && !IS_OP_VOLATILE (ic->left))
             {
-              long long litval = operandLitValueUll (IC_RIGHT (cic));
+              struct valinfo v = getOperandValinfo (ic, ic->left);
               struct valinfo v_true = v;
               struct valinfo v_false = v;
-              v_true.min = std::max (v.min, litval + 1);
-              v_false.max = std::min (v.max, litval);
+              if (v_true.min == 0)
+                v_true.min = 1;
+              v_true.nonnull = true;
+              v_false.min = 0;
+              v_false.max = 0;
               valinfoUpdate (&v_true);
               valinfoUpdate (&v_false);
-              int key_true = IC_TRUE (ic) ? eBBWithEntryLabel(ebbi, IC_TRUE(ic))->sch->key : ic->next->key;
-              int key_false = IC_FALSE (ic) ? eBBWithEntryLabel(ebbi, IC_FALSE(ic))->sch->key : ic->next->key;
-              boost::tie(out, out_end) = boost::out_edges(i, G);
-              for(; out != out_end; ++out)
-                if (G[boost::target(*out, G)].ic->key == key_true)
-                  G[*out].map[cic->left->key] = v_true;
-                else if (G[boost::target(*out, G)].ic->key == key_false)
-                  G[*out].map[cic->left->key] = v_false;
+              for (iCode *extraic = ic->prev; extraic; extraic = extraic->prev)
+                {
+                  if (extraic->op == '=' && !POINTER_SET (extraic) && isOperandEqual (extraic->right, ic->left) &&
+                    IS_SYMOP (extraic->result) && !IS_OP_VOLATILE (extraic->result) && (bitVectnBitsOn (OP_DEFS (extraic->result)) <= 1 || extraic->next == ic))
+                    update_out_edges (G, i, key_false, key_true, v_false, v_true, extraic->result->key);
+                  else if (extraic->op == '=' && !POINTER_SET (extraic) && isOperandEqual (extraic->result, ic->left) &&
+                    IS_SYMOP (extraic->right) && !IS_OP_VOLATILE (extraic->right) && (bitVectnBitsOn (OP_DEFS (extraic->right)) <= 1 || extraic->next == ic))
+                    update_out_edges (G, i, key_false, key_true, v_false, v_true, extraic->right->key);
+                  if (extraic->op == LABEL || bitVectBitValue (OP_DEFS (ic->left), extraic->key) ||
+                    (global_operands.map.find (ic->left->key) != global_operands.map.end()) && (POINTER_SET (extraic) || extraic->op == CALL || extraic->op == PCALL))
+                    {
+                      extraic = NULL;
+                      break;
+                    }
+                }
+              update_out_edges (G, i, key_false, key_true, v_false, v_true, ic->left->key);
             }
-          if (cic->op == '<' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
-            IS_OP_LITERAL (IC_RIGHT (cic)) && !v.anything && !v.nothing && operandLitValueUll(IC_RIGHT (cic)) < 0xffffffff)
+          if (IS_SYMOP (ic->left) && !OP_SYMBOL (ic->left)->addrtaken && !IS_OP_VOLATILE (ic->left) &&
+            (bitVectnBitsOn (OP_DEFS (ic->left)) == 1 && !OP_SYMBOL (ic->left)->ismyparm || ic->prev && !POINTER_SET (ic->prev) && isOperandEqual (ic->left, ic->prev->result)))
             {
-              long long litval = operandLitValueUll (IC_RIGHT (cic));
-              struct valinfo v_true = v;
-              struct valinfo v_false = v;
-              v_true.max = std::min (v.max, litval - 1);
-              v_false.min = std::max (v.min, litval);
-              valinfoUpdate (&v_true);
-              valinfoUpdate (&v_false);
-              int key_true = IC_TRUE (ic) ? eBBWithEntryLabel(ebbi, IC_TRUE(ic))->sch->key : ic->next->key;
-              int key_false = IC_FALSE (ic) ? eBBWithEntryLabel(ebbi, IC_FALSE(ic))->sch->key : ic->next->key;
-              boost::tie(out, out_end) = boost::out_edges(i, G);
-              for(; out != out_end; ++out)
-                if (G[boost::target(*out, G)].ic->key == key_true)
-                  G[*out].map[cic->left->key] = v_true;
-                else if (G[boost::target(*out, G)].ic->key == key_false)
-                  G[*out].map[cic->left->key] = v_false;
+              iCode *cic = (iCode *)hTabItemWithKey (iCodehTab, bitVectFirstBit (OP_DEFS (ic->left)));
+              wassert (cic);
+              struct valinfo v = getOperandValinfo (ic, cic->left);
+              if (cic->op == '>' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
+                IS_OP_LITERAL (cic->right) && !v.anything && !v.nothing && operandLitValueUll(cic->right) < +1000)
+                {
+                  long long litval = operandLitValueUll (cic->right);
+                  struct valinfo v_true = v;
+                  struct valinfo v_false = v;
+                  v_true.min = std::max (v.min, litval + 1);
+                  v_false.max = std::min (v.max, litval);
+                  valinfoUpdate (&v_true);
+                  valinfoUpdate (&v_false);
+                  update_out_edges (G, i, key_false, key_true, v_false, v_true, cic->left->key);
+                }
+              if (cic->op == '<' && IS_ITEMP (cic->left) && !IS_OP_VOLATILE (cic->left) && IS_INTEGRAL (operandType (cic->left)) &&
+                IS_OP_LITERAL (cic->right) && !v.anything && !v.nothing && operandLitValueUll(cic->right) < 0xffffffff)
+                {
+                  long long litval = operandLitValueUll (cic->right);
+                  struct valinfo v_true = v;
+                  struct valinfo v_false = v;
+                  v_true.max = std::min (v.max, litval - 1);
+                  v_false.min = std::max (v.min, litval);
+                  valinfoUpdate (&v_true);
+                  valinfoUpdate (&v_false);
+                  update_out_edges (G, i, key_false, key_true, v_false, v_true, cic->left->key);
+                }
             }
         }
       break;
@@ -761,16 +912,35 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
       if (ic->resultvalinfo)
         G[*out].map[ic->result->key] = *ic->resultvalinfo;
 
+      // Invalidate valinfo for operands that might have been written via pointer, from other functions, etc.
+      if (ic->op == SET_VALUE_AT_ADDRESS || POINTER_SET (ic) || ic->op == FUNCTION || (ic->op == CALL || ic->op == PCALL) && (!IS_SYMOP (ic->left) || !OP_SYMBOL (ic->left)->funcPure))
+        {
+          for (std::map <int, struct valinfo>::const_iterator i = global_operands.map.begin(); i != global_operands.map.end(); ++i)
+            if (ic->op == SET_VALUE_AT_ADDRESS || POINTER_SET (ic))
+              {
+                wassert (global_types.find (i->first) != global_types.end());
+                valinfo v;
+                valinfoCast (&v, global_types.find (i->first)->second, rightvalinfo, NULL);
+                valinfo_union (&G[*out].map[i->first], v);
+              }
+            else
+              G[*out].map[i->first] = i->second;
+        }
+
       if (resultsym)
-        resultvalinfo = getTypeValinfo (operandType (IC_RESULT (ic)), true);
+        resultvalinfo = getTypeValinfo (operandType (ic->result), true);
       else
         resultvalinfo.anything = true;
 
 #ifdef DEBUG_GCP_ANALYSIS
+      std::cout << "Recompute node " << i << " ic " << ic->key << "\n";
       if (localchange && resultsym)
-        {
-          std::cout << "Recompute node " << i << " ic " << ic->key << "\n";
-          std::cout << "getTypeValinfo: resultvalinfo anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << std::dec << " min " << resultvalinfo.min << "\n";
+        { 
+          std::cout << "getTypeValinfo: resultvalinfo anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << std::dec << " min " << resultvalinfo.min << " max " << resultvalinfo.max << " maxsize "<< resultvalinfo.maxsize << "\n";
+          if (ic->left)
+            std::cout << "leftvalinfo op " << ic->left->key << " anything " << leftvalinfo.anything << " min " << leftvalinfo.min << " max " << leftvalinfo.max << " maxsize "<< leftvalinfo.maxsize << "\n";
+          if (ic->right)
+            std::cout << "rightvalinfo op " << ic->right->key << " anything " << rightvalinfo.anything << " min " << rightvalinfo.min << " max " << rightvalinfo.max << " maxsize "<< rightvalinfo.maxsize << "\n";
         }
 #endif
 
@@ -788,6 +958,65 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
         resultsym = 0;
       else if (IS_OP_VOLATILE (ic->result)) // No point trying to find out what we write to a volatile operand. At the next use, it could be anything, anyway.
         ;
+      else if (ic->op == RECEIVE)
+        {
+          sym_link *type = operandType (ic->result);
+          if (IS_DECL (type) && DCL_ELEM (type) && !isOptional (type->next))
+            {
+              if (DCL_STATIC_ARRAY_PARAM (type))
+                {
+                  // Valid pointer to an array of at least DCL_ELEM (type) elements.
+                  resultvalinfo.min = 1;
+                  resultvalinfo.minsize = DCL_ELEM (type) * getSize (type->next);
+                  resultvalinfo.max -= resultvalinfo.minsize;
+                  resultvalinfo.nonnull = true;
+                }
+              else
+                resultvalinfo.maybemaxsize = DCL_ELEM (type) * getSize (type->next);
+              resultvalinfo.maybeminsize = DCL_ELEM (type) * getSize (type->next);
+            }
+        }
+      else if (ic->op == ADDRESS_OF)
+        {
+          if(resultvalinfo.min <= 0)
+            resultvalinfo.min = 1;
+          resultvalinfo.nonnull = true;
+          sym_link *objtype = operandType (ic->left);
+          unsigned long roff = operandLitValue (ic->right);
+
+          // This assumes a map where code (flash) is before data (ram) in the 64K address space.
+          if (TARGET_RABBIT_LIKE && IS_SPEC (objtype) && IN_CODESPACE (SPEC_OCLS (getSpec (objtype))) &&
+            !getAddrspace (objtype) && !IN_FARSPACE (SPEC_OCLS (getSpec (objtype))) && resultvalinfo.max >= options.data_loc)
+            {
+              // In Rabbit Root segement, which extends from 0x0 to somewhere just before the start of the "Data" of unknown size which in turn is just before the "Stack" segement at __data_loc.
+              resultvalinfo.max = options.data_loc - 1;
+            }
+          else if (TARGET_RABBIT_LIKE && IS_SPEC (objtype) && !IN_CODESPACE (SPEC_OCLS (getSpec (objtype))) &&
+            !getAddrspace (objtype) && !IN_FARSPACE (SPEC_OCLS (getSpec (objtype))) && resultvalinfo.min < options.data_loc)
+            {
+              // In Rabbit Stack segement, which extends from data_loc to 0xdfff, just before the XPC segment.
+              resultvalinfo.min = options.data_loc;
+              resultvalinfo.max = 0xdfff;
+            }
+
+          if (!IS_ARRAY (objtype) && !(IS_STRUCT (objtype) && SPEC_STRUCT (objtype)->b_flexArrayMember)) // Single object. We know the size unless it has a flexible array memeber.
+            {
+              if (getSize (objtype) >= roff)
+                resultvalinfo.maybeminsize = resultvalinfo.maybemaxsize = resultvalinfo.minsize = resultvalinfo.maxsize = getSize (objtype) - roff;
+              else
+                resultvalinfo.maybeminsize = resultvalinfo.maybemaxsize = resultvalinfo.minsize = resultvalinfo.maxsize = 0;
+            }
+          else if (IS_ARRAY (objtype) && DCL_ARRAY_LENGTH_TYPE (objtype) == ARRAY_LENGTH_KNOWN_CONST)
+            {
+              unsigned long lsize = DCL_ELEM (objtype) * getSize (objtype->next);
+              wassert (lsize); // There are no arrays of known constant length 0 in SDCC.
+              if (lsize >= roff)
+                resultvalinfo.maybeminsize = resultvalinfo.maybemaxsize = resultvalinfo.minsize = resultvalinfo.maxsize = lsize - roff;
+              else
+                resultvalinfo.maybeminsize = resultvalinfo.maybemaxsize = resultvalinfo.minsize = resultvalinfo.maxsize = 0;
+            }
+          resultvalinfo.max -= resultvalinfo.minsize;
+        }
       else if (ic->op == '!')
         {
           resultvalinfo.nothing = leftvalinfo.nothing;
@@ -849,9 +1078,15 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
           resultvalinfo.max = 1;
           resultvalinfo.knownbitsmask = ~1ull;
           resultvalinfo.knownbits = 0ull;
-          if (!leftvalinfo.anything && !rightvalinfo.anything && leftvalinfo.min == leftvalinfo.max && rightvalinfo.min == rightvalinfo.max)
+          if (IS_INTEGRAL (operandType (left)) && !leftvalinfo.anything && !rightvalinfo.anything && leftvalinfo.min == leftvalinfo.max && rightvalinfo.min == rightvalinfo.max)
             {
               bool one = (leftvalinfo.min == rightvalinfo.min) ^ (ic->op == NE_OP);
+              resultvalinfo.min = one;
+              resultvalinfo.max = one;
+            }
+          else if (IS_PTR (operandType (left)) && !leftvalinfo.anything && !rightvalinfo.anything && leftvalinfo.nonnull && rightvalinfo.min == 0 && rightvalinfo.max == 0)
+            {
+              bool one = (ic->op == NE_OP);
               resultvalinfo.min = one;
               resultvalinfo.max = one;
             }
@@ -880,13 +1115,13 @@ recompute_node (cfg_t &G, unsigned int i, ebbIndex *ebbi, std::pair<std::queue<u
         valinfoRight (&resultvalinfo, leftvalinfo, rightvalinfo);
       else if (ic->op == '=' && !POINTER_SET (ic) || ic->op == CAST)
         //resultvalinfo = rightvalinfo; // Doesn't work for = - sometimes = with mismatched types arrive here.
-        valinfoCast (&resultvalinfo, operandType (IC_RESULT (ic)), rightvalinfo);
+        valinfoCast (&resultvalinfo, operandType (ic->result), rightvalinfo, operandType (ic->right));
 
       if (resultsym)
         {
           valinfoUpdate (&resultvalinfo);
 #ifdef DEBUG_GCP_ANALYSIS
-          std::cout << "resultvalinfo anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << " knownbits 0x" << resultvalinfo.knownbits << std::dec << " min " << resultvalinfo.min << " max " << resultvalinfo.max << "\n";
+          std::cout << "resultvalinfo op " << ic->result->key << " anything " << resultvalinfo.anything << " knownbitsmask 0x" << std::hex << resultvalinfo.knownbitsmask << " knownbits 0x" << resultvalinfo.knownbits << std::dec << " min " << resultvalinfo.min << " max " << resultvalinfo.max << " nonnull " << resultvalinfo.nonnull << " maxsize " << resultvalinfo.maxsize << "\n";
 #endif
           if (!ic->resultvalinfo)
             ic->resultvalinfo = new struct valinfo;
@@ -916,16 +1151,47 @@ recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix)
   create_cfg_genconstprop(G, sic, ebbi);
 
   std::pair <std::queue<unsigned int>, std::set<unsigned int> > todo; // Nodes where valinfos need to be updated. We need a pair of a queue and a set to implement a queue with uniqe entries. A plain set wouldn't work, as we'd be working on some nodes all the time while never getting to others before we reach the round limit.
+  valinfos global_operands;                // Set of operands that are global or had their address taken, and thus need to be invalidated at every potential pointer write (or function call).
+  std::map <int, sym_link *> global_types; // Types for above.
 
-  // Process each node at least once.
+  // Process each node at least once, and handle incoming non-register parameters.
+  typedef /*typename*/ boost::graph_traits<cfg_t>::out_edge_iterator out_iter_t;
+  out_iter_t out, out_end;
+  boost::tie(out, out_end) = boost::out_edges(0, G);
   for (unsigned int i = 0; i < boost::num_vertices (G); i++)
     {
       delete G[i].ic->valinfos;
-      G[i].ic->valinfos = NULL;
+      G[i].ic->valinfos = new struct valinfos;;
       delete G[i].ic->resultvalinfo;
       G[i].ic->resultvalinfo = NULL;
-      recompute_node (G, i, ebbi, todo, true, 0);
+      if (G[i].ic->left && IS_SYMOP (G[i].ic->left) && OP_SYMBOL (G[i].ic->left)->ismyparm)
+        G[0].ic->valinfos->map[G[i].ic->left->key] = getParamValinfo (G[i].ic->left);
+      if (G[i].ic->right && IS_SYMOP (G[i].ic->right) && OP_SYMBOL (G[i].ic->right)->ismyparm)
+        G[0].ic->valinfos->map[G[i].ic->right->key] = getParamValinfo (G[i].ic->right);
+      if (POINTER_SET (G[i].ic) && IS_SYMOP (G[i].ic->result) && OP_SYMBOL (G[i].ic->result)->ismyparm)
+        G[0].ic->valinfos->map[G[i].ic->result->key] = getParamValinfo (G[i].ic->result);
+      // Need to include static objects here, since they might revert their state via setjmp/longjmp.
+      if (G[i].ic->left && !IS_ITEMP(G[i].ic->left) && IS_SYMOP (G[i].ic->left) &&
+        (!OP_SYMBOL_CONST (G[i].ic->left)->islocal && !OP_SYMBOL_CONST (G[i].ic->left)->ismyparm || OP_SYMBOL_CONST (G[i].ic->left)->addrtaken || IS_STATIC (OP_SYMBOL_CONST (G[i].ic->left)->etype)))
+        {
+          global_operands.map[G[i].ic->left->key] = getOperandValinfo (G[i].ic, G[i].ic->left);
+          global_types[G[i].ic->left->key] = operandType (G[i].ic->left);
+        }
+      if (G[i].ic->right && !IS_ITEMP(G[i].ic->right) && IS_SYMOP (G[i].ic->right) &&
+        (!OP_SYMBOL_CONST (G[i].ic->right)->islocal && !OP_SYMBOL_CONST (G[i].ic->right)->ismyparm || OP_SYMBOL_CONST (G[i].ic->right)->addrtaken || IS_STATIC (OP_SYMBOL_CONST (G[i].ic->right)->etype)))
+        {
+          global_operands.map[G[i].ic->right->key] = getOperandValinfo (G[i].ic, G[i].ic->right);
+          global_types[G[i].ic->right->key] = operandType (G[i].ic->right);
+        }
+      if (G[i].ic->result && !IS_ITEMP(G[i].ic->result) && IS_SYMOP (G[i].ic->result) &&
+        (!OP_SYMBOL_CONST (G[i].ic->result)->islocal && !OP_SYMBOL_CONST (G[i].ic->result)->ismyparm || OP_SYMBOL_CONST (G[i].ic->result)->addrtaken || IS_STATIC (OP_SYMBOL_CONST (G[i].ic->result)->etype)))
+        {
+          global_operands.map[G[i].ic->result->key] = getOperandValinfo (G[i].ic, G[i].ic->result);
+          global_types[G[i].ic->result->key] = operandType (G[i].ic->result);
+        }
     }
+  for (unsigned int i = 0; i < boost::num_vertices (G); i++)
+    recompute_node (G, i, ebbi, todo, global_operands, global_types, true, 0);
 
   // Forward pass to get first approximation.
   for (unsigned long round = 0; !todo.first.empty (); round++)
@@ -939,7 +1205,7 @@ recomputeValinfos (iCode *sic, ebbIndex *ebbi, const char *suffix)
       std::cout << "Round " << round << " node " << i << " ic " << G[i].ic->key << "\n"; std::cout.flush();
 #endif
 
-      recompute_node (G, i, ebbi, todo, false, (round >= max_rounds) + (round >= max_rounds * 2));
+      recompute_node (G, i, ebbi, todo, global_operands, global_types, false, (round >= max_rounds) + (round >= max_rounds * 2));
     }
 
   // Refinement backward pass.
@@ -972,27 +1238,36 @@ optimizeValinfoConst (iCode *sic)
             {
               const valinfo &vresult = *ic->resultvalinfo;
 #ifdef DEBUG_GCP_OPT
-              std::cout << "Replace result at " << ic->key << ". anything " << vresult.anything << " min " << vresult.min << " max " << vresult.max << "\n";
+              std::cout << "Replace result at " << ic->key << ". anything " << vresult.anything << " nothing " << vresult.nothing << " min " << vresult.min << " max " << vresult.max << "\n";
 #endif
               detachiCodeOperand (&ic->left, ic);
               detachiCodeOperand (&ic->right, ic);
               ic->op = '=';
               ic->right = operandFromValue (valCastLiteral (operandType (result), vresult.min, vresult.min), false);
+              ic->result->isaddr = 0; // Don't know how this can be 1, but it happened once, and made a test fail. Apparently some issue in an early stage (the isaddr flag is already set at dumpraw0).
             }
           else
             {
-              if (left && IS_ITEMP (left) && !vleft.anything && vleft.min == vleft.max)
+              if (left && IS_SYMOP (left) && ic->op != ADDRESS_OF && ic->op != CALL && !vleft.anything && vleft.min == vleft.max) // TODO: Why doesn't CALL work here? It makes a tinyaes test fail for z80, where the memcpy of symbol gets replaced?
                 {
 #ifdef DEBUG_GCP_OPT
-                  std::cout << "Replace left (" << OP_SYMBOL(left)->name << "), key " << left->key << " at " << ic->key << "\n";std::cout << "anything " << vleft.anything << " min " << vleft.min << " max " << vleft.max << "\n";
+                  std::cout << "Replace left (" << OP_SYMBOL(left)->name << "), key " << left->key << " at " << ic->key << "\n";
+                  std::cout << "anything " << vleft.anything << " nothing " << vleft.nothing << " min " << vleft.min << " max " << vleft.max << "\n";
 #endif
+                  if (vleft.nothing)
+                    werrorfl (ic->filename, ic->lineno, W_LOCAL_NOINIT, (OP_SYMBOL (left)->prereqv ? OP_SYMBOL (left)->prereqv : OP_SYMBOL (left))->name);
+                  bool isaddr = ic->left->isaddr; // Preserve isaddr in GET_VALUE_AT_ADDRESS, as otherwise CSE might fail to recognize potential pointer aliasing.
                   attachiCodeOperand (operandFromValue (valCastLiteral (operandType (left), vleft.min, vleft.min), false), &ic->left, ic);
+                  ic->left->isaddr = isaddr;
                 }
-              if (right && IS_ITEMP (right) && !vright.anything && vright.min == vright.max)
+              if (right && IS_SYMOP (right) && !vright.anything && vright.min == vright.max)
                 {
 #ifdef DEBUG_GCP_OPT
-                  std::cout << "Replace right at " << ic->key << "\n";std::cout << "anything " << vleft.anything << " min " << vleft.min << " max " << vleft.max << "\n";
+                  std::cout << "Replace right at " << ic->key << "\n";
+                  std::cout << "anything " << vleft.anything << " nothing " << vleft.nothing << " min " << vleft.min << " max " << vleft.max << "\n";
 #endif
+                  if (vright.nothing)
+                    werrorfl (ic->filename, ic->lineno, W_LOCAL_NOINIT, (OP_SYMBOL (right)->prereqv ? OP_SYMBOL (right)->prereqv : OP_SYMBOL (right))->name);
                   attachiCodeOperand (operandFromValue (valCastLiteral (operandType (right), vright.min, vright.min), false), &ic->right, ic);
                 }
             }
@@ -1073,7 +1348,7 @@ optimizeNarrowOpNet (iCode *ic)
   unsigned int ptropwidth = 0; // Width of pointers that an integer net is added to (only bits within address space count, not tag bits).
 
 #if 0
-  std::cout << "optimizeNarrowOpNet at ic " << ic->key << ": " << OP_SYMBOL (ic->result)->name << "\n"; std::cout.flush();
+  std::cout << "optimizeNarrowOpNet op " << ic->result->key << " at ic " << ic->key << ": " << OP_SYMBOL (ic->result)->name << " uses " << bitVectnBitsOn (OP_USES (ic->result)) << "\n"; std::cout.flush();
 #endif
 
   while (!checknet.empty())
@@ -1124,8 +1399,9 @@ optimizeNarrowOpNet (iCode *ic)
       for (int key = bitVectFirstBit (uses); bitVectnBitsOn (uses); bitVectUnSetBit (uses, key), key = bitVectFirstBit (uses))
         {
           iCode *uic = (iCode *)hTabItemWithKey (iCodehTab, key);
+          wassert (uic || TARGET_IS_MCS51 && (options.model == MODEL_LARGE || options.model == MODEL_HUGE)); // Shouldn't happen, but does for some mcs51 models.
           if (!uic)
-            bitVectUnSetBit (OP_USES (op), key); // Looks like some earlier optimization didn't clean up properly. Do it now.
+            bitVectUnSetBit (OP_USES (op), key); // Looks like some earlier optimization didn't clean up properly. Do it now. Shouldn't happen, see lines above.
           else if (uic->op == CAST && !IS_FLOAT (operandType (uic->result)))
             valinfo_union (&v, getOperandValinfo (uic, uic->right));
           else if (uic->op == EQ_OP || uic->op == NE_OP || uic->op == '<' || uic->op == LE_OP || uic->op == '>' || uic->op == GE_OP)
@@ -1198,7 +1474,7 @@ optimizeNarrowOpNet (iCode *ic)
             }
           else if ((uic->op == LEFT_OP || uic->op == RIGHT_OP || uic->op == ROT) && !isOperandEqual (uic->left, op))
             ;
-          else if ((uic->op == LEFT_OP || uic->op == RIGHT_OP || uic->op == UNARYMINUS || uic->op == '~') && isOperandEqual (uic->left, op)) // Not ROT, since the size affects semantics.
+          else if ((uic->op == LEFT_OP || uic->op == RIGHT_OP || uic->op == UNARYMINUS) && isOperandEqual (uic->left, op)) // Not ROT, since the size affects semantics.
             {
               if (net.find(uic->result) == net.end())
                 {
@@ -1324,9 +1600,6 @@ optimizeMult (iCode *ic)
     return;
 
   if (bitsForType (oldresulttype) <= 16 && (leftv.max > 0xff || rightv.max > 0xff))
-    return;
-
-  if (ic->op == '*' && bitsForType (oldresulttype) <= 16)
     return;
 
   sym_link *newoptype;

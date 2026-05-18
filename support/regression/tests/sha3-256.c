@@ -9,10 +9,16 @@
 
 #include <stdint.h>
 #include <string.h>
+#if __STDC_VERSION__ >= 202311L || defined(__SDCC)
+#include <stdbit.h>
+#else // Fall back to GCC-specific macro
+#define __STDC_ENDIAN_NATIVE__ __BYTE_ORDER__
+#define __STDC_ENDIAN_LITTLE___ _ORDER_LITTLE_ENDIAN__
+#endif
 
-#if !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) // mos6052/mos65c02 can't return struct this large yet.
+#if !defined(SDCC_MOS) // mos6052/mos65c02 can't return struct this large yet.
 #if !defined(__SDCC_hc08) && !defined(__SDCC_s08) && !defined(__SDCC_ds390) // hc08/s08/ds390 can't return struct yet.
-#if !defined(__SDCC_mcs51) && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) && !( (defined (__SDCC_mos6502) || defined(__SDCC_mos65c02 )) && defined(__SDCC_STACK_AUTO) ) // Lack of memory
+#if !defined(__SDCC_mcs51) && !defined (SDCC_SMALL_STACK) // Lack of memory
 
 #define SHA3_256_MD_LEN 32      // 256-bit digest length in bytes.
 #define SHA3_256_ROUNDS 24      // KECCAK rounds to perform for SHA3-256.
@@ -210,10 +216,10 @@ const struct pair pairs[] = {
 void
 testSha (void)
 {
-#if __STDC_ENDIAN_NATIVE__ // The implementation assumes little-endian
-#if !defined(__SDCC_mos6502) && !defined(__SDCC_mos65c02) // mos6502/mos65c02 can't return struct this large yet
+#if __STDC_ENDIAN_NATIVE__ == __STDC_ENDIAN_LITTLE__ // The implementation assumes little-endian
+#if !defined(SDCC_MOS) // mos6502/mos65c02 can't return struct this large yet
 #if !defined(__SDCC_ds390) // ds390 can't return struct yet.
-#if !__SDCC_mcs51 && !defined(__SDCC_pdk14) && !defined(__SDCC_pdk15) // Lack of memory
+#if !defined(__SDCC_mcs51) // Lack of memory
     int i;
 
     for (i = 0; i < sizeof(pairs)/sizeof(pairs[0]); i++) {

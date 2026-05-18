@@ -28,6 +28,7 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 intmax_t strtoimax(const char * restrict nptr, char ** restrict endptr, int base)
 {
