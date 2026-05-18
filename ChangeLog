@@ -1,3 +1,8 @@
+2026-05-18 Gabriele Gorla <gorlik@yahoo.com>
+    * support/regression/MakeList,
+      support/regression/cases/Makefile.in:
+      Enable several regression tests.
+
 2026-05-17 Gabriele Gorla <gorlik@yahoo.com>
 
     * device/lib/mos65c02/labs.s:
