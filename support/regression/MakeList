@@ -7,7 +7,11 @@
 
 # does not compile (expected)
 EXCLUDE_host += \
-	tst_genericnonintrinsicnaddr
+	tst_genericnonintrinsicnaddr \
+    gte_20001111-1 \
+    gte_931004-12 \
+    gte_960802-1 \
+    gte_loop-2b
 
 ###############################################
 
@@ -90,6 +94,10 @@ EXCLUDE_host += \
 EXCLUDE_host += \
 	gte_pr94809
 
+# infinite loop while compiling bug #3990
+EXCLUDE_stm8-large += \
+    smallserpent
+
 # does not compile on ds390
 EXCLUDE_ds390 += \
 	gte_memcpy-1
@@ -134,6 +142,7 @@ EXCLUDE_ARCH_mcs51 += \
 
 # Bug?
 EXCLUDE_pdk15-stack-auto += \
+    gte_20000910-1 \
 	gte_pr100453
 
 # SDCC Bug #3395
@@ -141,6 +150,15 @@ EXCLUDE_mcs51-small-stack-auto += \
 	gte_pr30185
 EXCLUDE_mcs51-large-stack-auto += \
 	gte_pr30185
+
+# SDCC bug 3599
+EXCLUDE_s08-stack-auto += \
+    gcc-torture-execute-930628-1
+
+# SDCC bug 3600
+EXCLUDE_s08-stack-auto += \
+    gcc-torture-execute-ssad-run \
+    gcc-torture-execute-usad-run
 
 # SDCC bug #3982 -> feature request #1019 - implement structreturn of size >8
 EXCLUDE_ARCH_mos6502 += \
