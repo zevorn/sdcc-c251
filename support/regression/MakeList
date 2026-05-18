@@ -153,12 +153,12 @@ EXCLUDE_mcs51-large-stack-auto += \
 
 # SDCC bug 3599
 EXCLUDE_s08-stack-auto += \
-    gcc-torture-execute-930628-1
+    tst_gcc-torture-execute-930628-1
 
 # SDCC bug 3600
 EXCLUDE_s08-stack-auto += \
-    gcc-torture-execute-ssad-run \
-    gcc-torture-execute-usad-run
+    tst_gcc-torture-execute-ssad-run \
+    tst_gcc-torture-execute-usad-run
 
 # SDCC bug #3982 -> feature request #1019 - implement structreturn of size >8
 EXCLUDE_ARCH_mos6502 += \
