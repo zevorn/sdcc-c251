@@ -1,7 +1,13 @@
+2026-05-19 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/sdbinutils/bfd/development.sh:
+	  Fix bug #3991.
+
 2026-05-18 Gabriele Gorla <gorlik@yahoo.com>
-    * support/regression/MakeList,
-      support/regression/cases/Makefile.in:
-      Enable several regression tests.
+
+	* support/regression/MakeList,
+	  support/regression/cases/Makefile.in:
+	  Enable several regression tests.
 
 2026-05-17 Gabriele Gorla <gorlik@yahoo.com>
 

@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Controls whether to enable development-mode features by default.
-development=true
+#development=true
+development=false # Get rid of -Werror. -Werror is a sure way to make compilation fail with future host compilers.
 
 # Indicate whether this is a release branch.
 experimental=false
