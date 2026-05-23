@@ -6,11 +6,11 @@ For Linux users:
 To install:
 
 * Extract the binary kit to a temporary directory.
-  This will create a new directory called 'sdcc-4.5.0' in the temporary directory.
+  This will create a new directory called 'sdcc-4.6.0' in the temporary directory.
     cd ~
     mkdir tmp
     cd tmp
-    tar xjf path/to/binary/kit/sdcc-4.5.0-amd64-unknown-linux2.5.tar.bz2
+    tar xjf path/to/binary/kit/sdcc-4.6.0-amd64-unknown-linux2.5.tar.bz2
 
 * Change to the sdcc directory and copy all files to /usr/local
     cd sdcc-4.5.0
@@ -33,14 +33,14 @@ relocatable. Try `sdcc --print-search-dirs` if you have problems with header
 or library files. See sdccman.pdf for more detailed information.
 
 
-For Windows 9X/NT/2000/XP/Vista/7/8 users:
+For Windows users:
 ==========================================
 To install:
 
 * If you would like to keep a copy of your previous version,
   rename the directory where it's installed first
-* Run sdcc-4.5.0-setup.exe for 32 bit Windows or
-  Run sdcc-4.5.0-x64-setup.exe for 64 bit Windows
+* Run sdcc-4.6.0-setup.exe for 32 bit Windows or
+  Run sdcc-4.6.0-x64-setup.exe for 64 bit Windows
 
 By default this will install sdcc binaries into: C:\Program Files\SDCC\bin\
 header files into:                               C:\Program Files\SDCC\include\

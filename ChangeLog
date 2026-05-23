@@ -2,6 +2,10 @@
 
 	* sdcc/support/regression/MakeList:
 	  Exclude a test for hosts where it doesn't make sense due to different implementation-defined struct layout.
+	* .version,
+	  doc/INSTALL.txt,
+	  sdcc.spec:
+	  Bump version to prepare for SDCC 4.6.0 release.
 
 2026-05-19 Philipp Klaus Krause <philipp@colecovision.eu>
 
