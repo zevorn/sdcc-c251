@@ -1,3 +1,8 @@
+2026-05-23 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* sdcc/support/regression/MakeList:
+	  Exclude a test for hosts where it doesn't make sense due to different implementation-defined struct layout.
+
 2026-05-19 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/sdbinutils/bfd/development.sh:

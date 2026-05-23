@@ -70,6 +70,10 @@ EXCLUDE_host += \
 	gte_compndlit-1 \
 	tst_gcc-torture-execute-pr34176
 
+# Implementation-defined struct layout (no padding) that happens to hold for SDCC, but not all hosts.
+EXCLUDE_host += \
+	pr103255.c
+
 #segfault (BUG?)
 EXCLUDE_host += \
 	gte_20041218-1 \
