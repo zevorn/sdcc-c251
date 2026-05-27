@@ -147,8 +147,7 @@ EXCLUDE_PORTS = \
 
 # unstable
 EXCLUDE_PORTS += \
-	mcs51-xstack-auto \
-	uc6502-stack-auto
+	mcs51-xstack-auto
 
 # not enough ram
 EXCLUDE_PORTS += \
