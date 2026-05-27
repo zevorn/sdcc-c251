@@ -1,6 +1,11 @@
 2026-05-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* sdcc/support/regression/Makefile.in:
+	  Update/fix description of dependencies for regression testing.
+
+2026-05-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* sdcc/support/regression/Makefile.in:
 	  --mmos6502 --stack-auto has been stable for a while, include it in default target for regression testing.
 
 2026-05-23 Philipp Klaus Krause <philipp@colecovision.eu>
