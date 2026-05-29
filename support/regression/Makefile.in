@@ -189,7 +189,7 @@ all: print-summary
 print-summary: test-ports
 	@cat $(RESULTS_DIR)/*.sum
 
-.PHONY: print-summary
+.PHONY: print-summary clean clean-results
 
 # Test all ports that you normally would want to test,
 # normally a subset of all ports.
