@@ -4,6 +4,8 @@
 	  Mark clean target of regression testing as phony.
 	* src/z80/gen.c:
 	  Fix bug #3994.
+	* src/mcs51/gen.c:
+	  Fix the main issue for #3995.
 
 2026-05-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
