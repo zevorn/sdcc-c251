@@ -538,7 +538,7 @@ aopIsLitVal (const asmop *aop, int offset, int size, unsigned long long int val)
       val >>= 8;
 
       // Leading zeroes
-      if (aop->size <= offset && !b && aop->type != AOP_LIT)
+      if (aop->size <= offset && !b && aop->type != AOP_LIT || aop->type == AOP_STL && offset >= 2)
         continue;
 
       // Information from generalized constant propagation analysis
