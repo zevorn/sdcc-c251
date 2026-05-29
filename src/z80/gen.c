@@ -4549,6 +4549,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
     (to->type == AOP_DIR || to->type == AOP_HL || to->type == AOP_IY || to->type == AOP_EXSTK || to->type == AOP_STK) && (from->type == AOP_HL || from->type == AOP_IY || from->type == AOP_EXSTK || from->type == AOP_STK) ||
     (to->type == AOP_HL || to->type == AOP_EXSTK) && (aopInReg(from, from_offset, L_IDX) || aopInReg(from, from_offset, H_IDX)) ||
     to->type == AOP_PAIRPTR && from->type == AOP_PAIRPTR ||
+    to->type == AOP_PAIRPTR && to->aopu.aop_pairId == PAIR_DE && from->type == AOP_LIT ||
     to->type == AOP_DIR && (from->type == AOP_REG || from->type == AOP_LIT)))
     {
       if (!a_dead)

@@ -2,6 +2,8 @@
 
 	* sdcc/support/regression/Makefile.in:
 	  Mark clean target of regression testing as phony.
+	* src/z80/gen.c:
+	  Fix part of bug #3994.
 
 2026-05-27 Philipp Klaus Krause <philipp@colecovision.eu>
 
