@@ -5186,13 +5186,13 @@ genRet (iCode *ic)
           reg_info *tempRegs[2];
 
           if (getTempRegs (tempRegs, 2, ic))
-            {
+            {emitcode(";", "A");
               emitcode ("mov", "a,%s", bp);
               emitcode ("add", "a,#0x%02x", offset & 0xffu);
               emitcode ("mov", "%s,a", preg->name);
-              emitcode ("mov", "%s,@%s", tempRegs[0]->name, preg->name);
+              emitcode ("mov", "%s,@%s", tempRegs[0]->dname, preg->name);
               emitcode ("inc", "%s", preg->name);
-              emitcode ("mov", "%s,@%s", tempRegs[1]->name, preg->name);
+              emitcode ("mov", "%s,@%s", tempRegs[1]->dname, preg->name);
               emitcode ("inc", "%s", preg->name);
               emitcode ("mov", "b,@%s", preg->name);
               for (int i = 0; i < size; i++)
