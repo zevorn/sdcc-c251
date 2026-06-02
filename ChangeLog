@@ -1,3 +1,11 @@
+2026-06-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  support/regression/tests/bug-3997.c:
+	  Fix bug #3997.
+	* support/regression/tests/bug-3988.c:
+	  Fix bug description comment.
+
 2026-05-29 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* sdcc/support/regression/Makefile.in:

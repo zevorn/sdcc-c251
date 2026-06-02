@@ -1,6 +1,6 @@
 /*
-   bug-2988.c
-   todo
+   bug-3988.c
+   z80 codegen issue resulting in silent generation of wrong code
  */
 
 #include <testfwk.h>
