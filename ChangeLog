@@ -36,6 +36,16 @@
 	* sdcc/support/regression/Makefile.in:
 	  --mmos6502 --stack-auto has been stable for a while, include it in default target for regression testing.
 
+2026-05-26 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/MakeList:
+	  Fix typo in host test exclusion.
+
+2026-05-25 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* support/regression/MakeList:
+	  Fix typo in host test exclusion.
+
 2026-05-23 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* sdcc/support/regression/MakeList:

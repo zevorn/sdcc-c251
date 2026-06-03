@@ -72,7 +72,7 @@ EXCLUDE_host += \
 
 # Implementation-defined struct layout (no padding) that happens to hold for SDCC, but not all hosts.
 EXCLUDE_host += \
-	pr103255.c
+	gte_pr103255
 
 #segfault (BUG?)
 EXCLUDE_host += \
