@@ -2007,7 +2007,7 @@ killiCode (eBBlock **ebbs, int i, int count, iCode *ic)
   bool volLeft = IS_SYMOP (IC_LEFT (ic)) && isOperandVolatile (IC_LEFT (ic), FALSE);
   bool volRight = IS_SYMOP (IC_RIGHT (ic))  && isOperandVolatile (IC_RIGHT (ic), FALSE);
 
-  // A dead address-of operation should die, even if takingthe address of a volatile object.
+  // A dead address-of operation should die, even if taking the address of a volatile object.
   if (ic->op == ADDRESS_OF)
     volLeft = false;
 
@@ -2091,7 +2091,7 @@ killiCode (eBBlock **ebbs, int i, int count, iCode *ic)
 /* killDeadCode - eliminates dead assignments                      */
 /*-----------------------------------------------------------------*/
 int
-killDeadCode (ebbIndex * ebbi)
+killDeadCode (ebbIndex *ebbi)
 {
   eBBlock **ebbs = ebbi->dfOrder;
   int count = ebbi->count;
@@ -2122,8 +2122,15 @@ killDeadCode (ebbIndex * ebbi)
           /* for all instructions in the block do */
           for (ic = ebbs[i]->sch; ic; ic = ic->next)
             {
-              int kill, j;
-              kill = 0;
+              int j;
+              bool kill = false;
+
+              // Get rid of computations in unreachable blocks early, so we don't leave dead defs/uses for iTemps, that might confuse other optimizations.
+              if (ebbs[i]->noPath && (IS_ITEMP (ic->result) || IS_ITEMP (ic->left) || IS_ITEMP (ic->right)))
+                {
+                  kill = true;
+                  goto kill;
+                }
 
               if (SKIP_IC (ic) && ic->op != RECEIVE &&
                 !(ic->op == CALL && IS_SYMOP (ic->left) && OP_SYMBOL (ic->left)->funcPure && optimize.purity) ||
@@ -2162,7 +2169,7 @@ killDeadCode (ebbIndex * ebbi)
               /* does this definition reach the end of the block
                  or the usage is zero then we can kill */
               if (!bitVectBitValue (ebbs[i]->outDefs, ic->key))
-                kill = 1;       /* if not we can kill it */
+                kill = true;       // if not we can kill it
               else
                 {
                   /* if this is a global variable or function parameter */
@@ -2175,7 +2182,7 @@ killDeadCode (ebbIndex * ebbi)
                   /* if we are sure there are no usages */
                   if (bitVectIsZero (OP_USES (IC_RESULT (ic))))
                     {
-                      kill = 1;
+                      kill = true;
                       goto kill;
                     }
 
@@ -2186,11 +2193,10 @@ killDeadCode (ebbIndex * ebbi)
                   if (applyToSet (ebbs[i]->succList, isDefAlive, ic))
                     continue;
 
-                  kill = 1;
+                  kill = true;
                 }
 
-            kill:
-              /* kill this one if required */
+            kill: // kill this one if required    
               if (kill)
                 {
                   if (ic->op == CALL) // Also kill parameter passing iCodes

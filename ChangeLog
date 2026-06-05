@@ -1,3 +1,45 @@
+2026-06-05 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* Merge next branch.
+
+2026-06-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCopt.c,
+	  support/regression/tests/bug-3998.c:
+	  Fix bug #3998.
+
+2026-06-03 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/SDCCBBlock.c:
+	  Fix dump filenames (iCode vs graph dump for generalized constant propagation).
+
+2026-06-02 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
+	  support/regression/tests/bug-3997.c:
+	  Fix bug #3997.
+	* support/regression/tests/bug-3988.c:
+	  Fix bug description comment.
+
+2026-05-29 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* sdcc/support/regression/Makefile.in:
+	  Mark clean target of regression testing as phony.
+	* src/z80/gen.c:
+	  Fix bug #3994.
+	* src/mcs51/gen.c:
+	  Fix bug #3995.
+
+2026-05-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* sdcc/support/regression/Makefile.in:
+	  Update/fix description of dependencies for regression testing.
+
+2026-05-27 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* sdcc/support/regression/Makefile.in:
+	  --mmos6502 --stack-auto has been stable for a while, include it in default target for regression testing.
+
 2026-05-26 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* support/regression/MakeList:

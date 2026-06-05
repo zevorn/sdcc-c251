@@ -2380,6 +2380,10 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
     {
       aopPut (to, "a", to_offset);
     }
+  else if (aopInRn (to, to_offset) && (from->type == AOP_R0 || from->type == AOP_R1))
+    {
+      emitcode ("mov", "%s, %s", to->aopu.aop_reg[to_offset]->dname, aopGet (from, from_offset, false, true));
+    }
   else if (aopInRn (to, to_offset) && (!aopGetUsesAcc (from, from_offset) || a_dead))
     {
       emitcode ("mov", "%s, %s", to->aopu.aop_reg[to_offset]->name, aopGet (from, from_offset, false, true));
@@ -5166,7 +5170,7 @@ genRet (iCode *ic)
 
   if (bigreturn)
     {
-      bool framepointer = (IFFUNC_ISREENT (currFunc->type) || options.stackAuto) && !options.omitFramePtr && (currFunc->stack || FUNC_HASSTACKPARM (currFunc->type)); // This needs to match the logic in genFunction - could be factored out, but there is a major rewrite ofmcs51 codegenplanned anyaway, at which time we might consider porting the frame pointer omission mechanism from the z80 port instead.
+      bool framepointer = (IFFUNC_ISREENT (currFunc->type) || options.stackAuto) && !options.omitFramePtr && (currFunc->stack || FUNC_HASSTACKPARM (currFunc->type)); // This needs to match the logic in genFunction - could be factored out, but there is a major rewrite ofm cs51 codegen planned anyaway, at which time we might consider porting the frame pointer omission mechanism from the z80 port instead.
       asmop *aop = newAsmop (0);
       reg_info *preg = getFreePtr (ic, aop, false);
       const char *bp = options.useXstack ? (framepointer ? "_bpx" : "_spx") : (framepointer ? "_bp" : "sp");
@@ -5182,13 +5186,13 @@ genRet (iCode *ic)
           reg_info *tempRegs[2];
 
           if (getTempRegs (tempRegs, 2, ic))
-            {
+            {emitcode(";", "A");
               emitcode ("mov", "a,%s", bp);
               emitcode ("add", "a,#0x%02x", offset & 0xffu);
               emitcode ("mov", "%s,a", preg->name);
-              emitcode ("mov", "%s,@%s", tempRegs[0]->name, preg->name);
+              emitcode ("mov", "%s,@%s", tempRegs[0]->dname, preg->name);
               emitcode ("inc", "%s", preg->name);
-              emitcode ("mov", "%s,@%s", tempRegs[1]->name, preg->name);
+              emitcode ("mov", "%s,@%s", tempRegs[1]->dname, preg->name);
               emitcode ("inc", "%s", preg->name);
               emitcode ("mov", "b,@%s", preg->name);
               for (int i = 0; i < size; i++)
@@ -5292,7 +5296,6 @@ genRet (iCode *ic)
       freeAsmop (0, aop, ic, true);
       goto jumpret;
     }
- 
 
   if (IS_BIT (_G.currentFunc->etype))
     {

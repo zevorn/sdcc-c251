@@ -25,14 +25,16 @@
 # The others use uCsim.
 
 # Dependencies:
+#   * python 2 or above
+#   * uCsim for the mcs51 port
+# Extra dependencies for test-rrz80 and test-rrgbz80 targets only:
 #   * The sdcc-extra package, available from svn.
 #       o svn co https://sdcc.svn.sourceforge.net/svnroot/sdcc/trunk/sdcc-extra
 #       o Provides the emulators
 #   * The gbdk-lib package from gbdk.
 #       o cvs -d cvs.gbdk.sourceforge.net:/cvsroot/gbdk co gbdk-lib
 #       o Provides mul, div, and include files for the z80 tests.
-#   * python 1.5 or above
-#   * uCsim for the mcs51 port
+
 #
 # The paths below assume that sdcc, sdcc-extra, and gbdk-lib all reside in
 # the same directory.
@@ -147,8 +149,7 @@ EXCLUDE_PORTS = \
 
 # unstable
 EXCLUDE_PORTS += \
-	mcs51-xstack-auto \
-	uc6502-stack-auto
+	mcs51-xstack-auto
 
 # not enough ram
 EXCLUDE_PORTS += \
@@ -188,7 +189,7 @@ all: print-summary
 print-summary: test-ports
 	@cat $(RESULTS_DIR)/*.sum
 
-.PHONY: print-summary
+.PHONY: print-summary clean clean-results
 
 # Test all ports that you normally would want to test,
 # normally a subset of all ports.
