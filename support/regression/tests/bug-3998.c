@@ -17,8 +17,10 @@ inline void my_func2(unsigned int a){
     }
 }
 
-void my_func3(void){    
+void my_func3(void){
+#if 0 // Fix for bug #3998, disabled for SDCC 4.6.0 RC2 since it causes regression in diagnostics.
     my_func2((unsigned int)loadedCharacters[1]);
+#endif
 }
 
 void
