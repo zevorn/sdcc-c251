@@ -3897,7 +3897,7 @@ m6502_copy (operand * result, operand * source)
 	    }
 	  else
 	    {
-	      m6502_loadRegFromAop (m6502_reg_a, AOP(source), offset);
+                m6502_loadRegFromAop (m6502_reg_a, AOP(source), offset);
 	      m6502_storeRegToAop (m6502_reg_a, AOP(result), offset);
 	      m6502_freeReg(m6502_reg_a);
 	    }
@@ -5361,6 +5361,7 @@ genCmp (iCode * ic, iCode * ifx)
   symbol *true_lbl = NULL;
   symbol *false_lbl = NULL;
   bool needloada = false;
+  symbol *skiplbl = NULL;
 
   opcode = ic->op;
 
@@ -5415,6 +5416,8 @@ genCmp (iCode * ic, iCode * ifx)
 
   if (ifx)
     {
+      skiplbl = m6502_safeNewiTempLabel (NULL);
+
       if (IC_TRUE (ifx))
         {
           ifx_jmp_lbl = IC_TRUE (ifx);
@@ -5437,7 +5440,7 @@ genCmp (iCode * ic, iCode * ifx)
     br_inst = "bpl";
 
   if (sign && right_zero && m6502_aopCanBit(AOP(left))
-      && (opcode=='<' || opcode ==GE_OP) )
+      && (opcode=='<' || opcode==GE_OP) )
     {
       m6502_accopWithAop ("bit", AOP (left), size-1);
     }
@@ -5452,11 +5455,11 @@ genCmp (iCode * ic, iCode * ifx)
 
       if(ifx)
         {
-          symbol *skiplbl = m6502_safeNewiTempLabel (NULL);
+          symbol *skiplbl1 = m6502_safeNewiTempLabel (NULL);
 
-          m6502_emitBranch ("bpl", skiplbl);
+          m6502_emitBranch ("bpl", skiplbl1);
           m6502_emitBranch ("jmp", ifx_jmp_lbl);
-          m6502_safeEmitLabel (skiplbl);
+          m6502_safeEmitLabel (skiplbl1);
         }
       else
         {
@@ -5467,7 +5470,7 @@ genCmp (iCode * ic, iCode * ifx)
       if(size==2)
         {
           if(ifx)
-            m6502_emitBranch ("bne", ifx_jmp_lbl);
+            m6502_emitBranch ("bne", skiplbl);
           else
             m6502_emitBranch ("bne", true_lbl);
 
@@ -5607,8 +5610,6 @@ genCmp (iCode * ic, iCode * ifx)
 
   if (ifx)
     {
-      symbol *skiplbl = m6502_safeNewiTempLabel (NULL);
-
       if(needloada)
         {
 	  if (!strcmp(br_inst, "bcc") || !strcmp(br_inst, "bcs"))
@@ -5638,7 +5639,7 @@ genCmp (iCode * ic, iCode * ifx)
     }
   else
     {
-      symbol *skiplbl = m6502_safeNewiTempLabel (NULL);
+      symbol *skiplbl2 = m6502_safeNewiTempLabel (NULL);
 
       if (!needloada)
         needloada = storeRegTempIfSurv (m6502_reg_a);
@@ -5649,10 +5650,10 @@ genCmp (iCode * ic, iCode * ifx)
 
       m6502_loadRegFromConst (m6502_reg_a, 0);
       // FIXME: for 6502 change this to beq when optimizing for size
-      m6502_emitBranch ("bra", skiplbl);
+      m6502_emitBranch ("bra", skiplbl2);
       m6502_safeEmitLabel (true_lbl);
       m6502_loadRegFromConst (m6502_reg_a, 1);
-      m6502_safeEmitLabel (skiplbl);
+      m6502_safeEmitLabel (skiplbl2);
       m6502_dirtyReg (m6502_reg_a);
       m6502_storeRegToFullAop (m6502_reg_a, AOP (result), false);
       m6502_loadOrFreeRegTemp (m6502_reg_a, needloada);

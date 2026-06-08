@@ -1,3 +1,8 @@
+2026-06-08 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/gen.c:
+	  Fix bug #3999.
+
 2026-06-08 Maarten Brock <sourceforge.brock AT dse.nl>
 
 	* device/lib/ds390/__sdcc_atomic_maybe_rollback.c,
