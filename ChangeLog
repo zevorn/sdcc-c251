@@ -2,6 +2,8 @@
 
 	* src/mos6502/gen.c:
 	  Fix bug #3999.
+	* src/mos6502/gen.c:
+	  Fix bug #3993.
 
 2026-06-08 Maarten Brock <sourceforge.brock AT dse.nl>
 

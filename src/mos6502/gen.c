@@ -3884,10 +3884,17 @@ m6502_copy (operand * result, operand * source)
     {
       m6502_emitComment (TRACEGEN|VVDBG, "      %s (SOF)", __func__);
       bool save_a, save_x;
+      bool lsb_preload = false;
       save_a = storeRegTempIfSurv(m6502_reg_a);
       save_x = storeRegTempIfSurv(m6502_reg_x);
 
-      for(offset=size-1; offset>=0; offset--)
+      if(srcsize==1 && AOP_TYPE(source)==AOP_REG)
+        {
+          m6502_transferRegReg(AOP(source)->aopu.aop_reg[0], m6502_reg_a, true);
+          lsb_preload = true;
+        }
+
+      for(offset=0; offset<size; offset++)
 	{
 	  if(offset >= srcsize)
 	    {
@@ -3897,11 +3904,14 @@ m6502_copy (operand * result, operand * source)
 	    }
 	  else
 	    {
+	      if(offset!=0 || !lsb_preload)
                 m6502_loadRegFromAop (m6502_reg_a, AOP(source), offset);
+
 	      m6502_storeRegToAop (m6502_reg_a, AOP(result), offset);
 	      m6502_freeReg(m6502_reg_a);
 	    }
 	}
+
       m6502_loadOrFreeRegTemp(m6502_reg_x, save_x);
       m6502_loadOrFreeRegTemp(m6502_reg_a, save_a);
 
