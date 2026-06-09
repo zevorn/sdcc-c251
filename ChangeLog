@@ -1,3 +1,16 @@
+2026-06-08 Gabriele Gorla <gorlik@yahoo.com>
+
+	* src/mos6502/gen.c:
+	  Fix bug #3999.
+	* src/mos6502/gen.c:
+	  Fix bug #3993.
+
+2026-06-08 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* device/lib/ds390/__sdcc_atomic_maybe_rollback.c,
+	* device/lib/mcs51/__sdcc_atomic_maybe_rollback.asm: Fix nested interrupt bug mentioned
+	  in RFE #624 by applying modified patch from Oleg Endo, thanks!
+
 2026-06-06 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/SDCCopt.c,

@@ -40,12 +40,11 @@
 
 	.area HOME    (CODE)
 
-	ar0 = 0x00
-
 ; This relies on the restartable implementations being aligned properly.
 
 sdcc_atomic_maybe_rollback::
-	push ar0
+	push acc
+	xch  a,r0
 	mov  r0, SP
 	dec  r0
 	push psw
@@ -70,9 +69,10 @@ sdcc_atomic_maybe_rollback::
 	anl  a, #0xf8
 	mov  @r0, a
 3$:	; inner skip
-	pop acc
+	pop  acc
 4$:	; outer skip
-	pop psw
-	pop ar0
+	pop  psw
+	xch  a,r0
+	pop  acc
 	reti
 
