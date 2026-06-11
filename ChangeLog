@@ -1,6 +1,12 @@
 2026-06-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
 	* src/z80/gen.c,
+	  support/regression/tests/bug-4007.c:
+	  Fix bug #4007.
+
+2026-06-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
+	* src/z80/gen.c,
 	  support/regression/tests/bug-4008.c:
 	  Fix bug #4008.
 

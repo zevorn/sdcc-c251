@@ -12,7 +12,7 @@
 void vdu_tiles_put( uint16_t tile, const uint8_t *pixels, const uint8_t *colours ) {
 
     static uint16_t i;
-    ASSERT(tile == 15 + i++ * 256);
+    ASSERT( tile == 15 + i++ * 256 );
 }
 
 ///< Load pixel data for patch
