@@ -1,5 +1,13 @@
 2026-06-11 Philipp Klaus Krause <philipp@colecovision.eu>
 
+	* src/ds390/gen.c,
+	  src/hc08/gen.c,
+	  src/mcs51/gen.c,
+	  src/pic14/gen.c:
+	  #if 0 unused genCpl.
+
+2026-06-11 Philipp Klaus Krause <philipp@colecovision.eu>
+
 	* src/z80/gen.c,
 	  support/regression/tests/bug-4007.c:
 	  Fix bug #4007.
