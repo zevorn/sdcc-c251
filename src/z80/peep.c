@@ -401,7 +401,7 @@ z80MightReadFlag(const lineNode *pl, const char *what)
   if(IS_EZ80 && lineIsInst (pl, "push.l"))
     return (argCont(pl->line + 6, "af"));
 
-  printf("z80MightReadFlag unknown asm inst line: %s\n", pl->line);
+  printf("Warning: z80MightReadFlag unknown asm inst line: %s\n", pl->line);
 
   return true; // Fail-safe: we have no idea what happens at this line, so assume it might read anything.
 }
@@ -450,14 +450,22 @@ z80MightRead(const lineNode *pl, const char *what)
   if(IS_RAB && (lineIsInst (pl, "lret") || lineIsInst (pl, "llret"))) // So do the Rabbit ports with lret and llret.
     return(z80IsReturned(what) || z80MightBeParmInCallFromCurrentFunction(what));
 
-  if(!strcmp(pl->line, "ex\t(sp), hl") || !strcmp(pl->line, "ex\t(sp),hl"))
-    return(!strcmp(what, "h") || !strcmp(what, "l") || strcmp(what, "sp") == 0);
-  if(!strcmp(pl->line, "ex\t(sp), ix") || !strcmp(pl->line, "ex\t(sp),ix"))
-    return(!!strstr(what, "ix") || strcmp(what, "sp") == 0);
-  if(!strcmp(pl->line, "ex\t(sp), iy") || !strcmp(pl->line, "ex\t(sp),iy"))
-    return(!!strstr(what, "iy") || strcmp(what, "sp") == 0);
-  if(!strcmp(pl->line, "ex\tde, hl") || !strcmp(pl->line, "ex\tde,hl"))
-    return(!strcmp(what, "h") || !strcmp(what, "l") || !strcmp(what, "d") || !strcmp(what, "e"));
+  if (!IS_SM83 && lineIsInst (pl, "ex") && larg && rarg)
+    {
+      if (!strncmp (larg, "(sp)", 4) && !strncmp (rarg, "hl", 2))
+        return(!strcmp (what, "h") || !strcmp (what, "l") || !strcmp (what, "sp"));
+      if (!strncmp (larg, "(sp)", 4) && !strncmp (rarg, "ix", 2))
+        return(!strcmp (what, "ix") || !strcmp (what, "sp"));
+      if (!strncmp (larg, "(sp)", 4) && !strncmp (rarg, "iy", 2))
+        return(!strcmp (what, "iy") || !strcmp (what, "sp"));
+      if (!IS_TLCS870 && !IS_TLCS870C && !IS_TLCS870C1 && !strncmp (larg, "af", 2) && !strncmp (rarg, "af'", 3))
+        return(!strcmp (what, "a"));
+      if (!strncmp (larg, "de", 2) && !strncmp (rarg, "hl", 2))
+        return(!strcmp (what, "h") || !strcmp (what, "l") || !strcmp (what, "d") || !strcmp (what, "e"));
+    }
+  if (!IS_SM83 && !IS_TLCS870 && !IS_TLCS870C && !IS_TLCS870C1 && lineIsInst (pl, "exx"))
+    return(!strcmp (what, "b") || !strcmp (what, "c") ||!strcmp (what, "d") || !strcmp (what, "e") || !strcmp (what, "h") || !strcmp (what, "l") || !strcmp (what, "j") || !strcmp (what, "k"));
+
   if(IS_RAB && lineIsInst (pl, "ldp") && !strcmp(what, "a")) // All ldp use the value in a.
     return(true);
   if(lineIsInst (pl, "ld") ||
@@ -744,7 +752,7 @@ z80MightRead(const lineNode *pl, const char *what)
   if(lineIsInst (pl, "rst"))
     return(true);
 
-  printf("z80MightRead unknown asm inst line: %s\n", pl->line);
+  printf("Warning: z80MightRead unknown asm inst line: %s\n", pl->line);
 
   return(true);
 }

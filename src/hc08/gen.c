@@ -3392,10 +3392,10 @@ genNot (iCode * ic)
   freeAsmop (IC_LEFT (ic), NULL, ic, true);
 }
 
-
+#if 0
 /*-----------------------------------------------------------------*/
 /* genCpl - generate code for complement                           */
-/* no longer used; todo: chekc if something from here could still  */
+/* no longer used; todo: check if something from here could still  */
 /* be useful in genXor, then remove genCpl!                        */
 /*-----------------------------------------------------------------*/
 static void
@@ -3471,6 +3471,7 @@ release:
   freeAsmop (IC_RESULT (ic), NULL, ic, true);
   freeAsmop (IC_LEFT (ic), NULL, ic, true);
 }
+#endif
 
 /*-----------------------------------------------------------------*/
 /* genUminusFloat - unary minus for floating points                */

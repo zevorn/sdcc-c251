@@ -9358,6 +9358,7 @@ genPlusIncr (const iCode *ic)
       if (size == 2 && icount == 256 && ic->result->aop->type == AOP_REG && ic->left->aop->type == AOP_REG && ic->result->aop->aopu.aop_reg[0]->rIdx == ic->left->aop->aopu.aop_reg[0]->rIdx &&
         (HAS_IYL_INST || !aopInReg (ic->result->aop, 1, IYL_IDX) && !aopInReg (ic->result->aop, 1, IYH_IDX)))
         {
+          cheapMove (ic->result->aop, 1, ic->left->aop, 1, isRegDead (A_IDX, ic));
           emit3_o (A_INC, ic->result->aop, 1, 0, 0);
           return true;
         }
@@ -16370,19 +16371,25 @@ _moveFrom_tpair_ (asmop * aop, int offset, PAIR_ID pair)
 
 static void offsetPair (PAIR_ID pair, PAIR_ID extrapair, bool save_extrapair, int val)
 {
-  if (abs (val) < (save_extrapair ? 6 : 4) || pair != PAIR_HL && pair != PAIR_IY && pair != PAIR_IX)
+  if (IS_TLCS90 && (pair == PAIR_HL || pair == PAIR_IX || pair == PAIR_IY) && abs(val) > (optimize.codeSpeed ? 1 : 2))
     {
-      while (val)
+      emit2 ("add %s, #%d", _pairs[pair].name, val);
+      cost (3, 6);
+    }
+  else if ((IS_EZ80 || IS_R6K) && (pair == PAIR_IX || pair == PAIR_IY) && abs(val) > 1)
+    {
+      if (IS_EZ80)
         {
-          emit2 (val > 0 ? "inc %s" : "dec %s", _pairs[pair].name);
-          cost2 (1, 1, 1, 1 , 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
-          if (val > 0)
-            val--;
-          else
-            val++;
+          emit2 ("lea %s, %s, #%d", _pairs[pair].name, _pairs[pair].name, val);
+          cost (3, 3);
+        }
+      else
+        {
+          emit2 ("add %s, #%d", _pairs[pair].name, val);
+          cost (3, 6);
         }
     }
-  else
+  else if (abs (val) >= (save_extrapair ? 6 : 4) && (pair == PAIR_HL || pair == PAIR_IX || pair == PAIR_IY))
     {
       if (save_extrapair)
         _push (extrapair);
@@ -16398,6 +16405,21 @@ static void offsetPair (PAIR_ID pair, PAIR_ID extrapair, bool save_extrapair, in
         cost2 (2, 2, -1, 2, 15, 10, 4, 4, -1, 8, -1, 4, 3, 2, 2);
       if (save_extrapair)
         _pop (extrapair);
+    }
+  else
+    {
+      while (val)
+        {
+          emit2 (val > 0 ? "inc %s" : "dec %s", _pairs[pair].name);
+          if (pair == PAIR_IX || pair == PAIR_IY)
+            cost2 (2, 1, -1, 1, 10, 7, 4, 4, -1, 4, -1, 2, 2, 2, 2);
+          else
+            cost2 (1, 1, 1, 1 , 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
+          if (val > 0)
+            val--;
+          else
+            val++;
+        }
     }
 }
 
@@ -17308,33 +17330,9 @@ genPointerGet (const iCode *ic)
             }
         }
       if (!isPairDead (pair, ic))
-        if ((IS_EZ80 || IS_R6K) && pair == PAIR_IY && last_offset > 1)
-          {
-            if (IS_EZ80)
-              {
-                emit2 ("lea iy, iy, #%d", -last_offset);
-                cost (3, 3);
-              }
-            else
-              {
-                emit2 ("add iy, #%d", -last_offset);
-                cost (3, 6);
-              }
-          }
-        else if (IS_TLCS90 && (pair == PAIR_HL || pair == PAIR_IY) && last_offset > (optimize.codeSpeed ? 1 : 2))
-          {
-            emit2 ("add hl, #%d", -last_offset);
-            cost (3, 6);
-          }
-        else
-          while (last_offset --> 0)
-            {
-              emit2 ("dec %s", _pairs[pair].name);
-              cost2 (1, 1, 1, 1 , 6, 4, 2, 2, 8, 4, 2, 2, 2, 1, 1);
-              _G.pairs[pair].offset--;
-            }
-      else if (rightval || last_offset)
-         spillPair (pair);
+        offsetPair (pair, extrapair, true, -(rightval + last_offset));
+      else if (rightval + last_offset)
+        spillPair (pair);
     }
 
 release:

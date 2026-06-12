@@ -2330,9 +2330,10 @@ release:
   freeAsmop (IC_LEFT (ic), NULL, ic, (RESULTONSTACK (ic) ? 0 : 1));
 }
 
+#if 0
 /*-----------------------------------------------------------------*/
 /* genCpl - generate code for complement                           */
-/* no longer used; todo: chekc if something from here could still  */
+/* no longer used; todo: check if something from here could still  */
 /* be useful in genXor for AOP_CRY, then remove genCpl!            */
 /*-----------------------------------------------------------------*/
 static void
@@ -2396,6 +2397,7 @@ release:
   freeAsmop (IC_RESULT (ic), NULL, ic, TRUE);
   freeAsmop (IC_LEFT (ic), NULL, ic, (RESULTONSTACK (ic) ? 0 : 1));
 }
+#endif
 
 /*-----------------------------------------------------------------*/
 /* genUminusFloat - unary minus for floating points                */
