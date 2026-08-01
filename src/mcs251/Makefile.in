@@ -77,6 +77,7 @@ check-qemu: all check-official-qemu check-gdbstub
 		--optimization-runtime-source \
 			$(srcdir)/tests/optimization-runtime.c \
 		--abi-regression-source $(srcdir)/tests/abi-regression-runtime.c \
+		--longlong-source $(srcdir)/tests/longlong-runtime.c \
 		--startup-memory-source $(srcdir)/tests/startup-memory.c \
 		--setjmp-spx-source $(srcdir)/tests/setjmp-spx-runtime.c \
 		--aggregate-source $(srcdir)/tests/aggregate-return.c \
@@ -119,8 +120,11 @@ check-mcs51-qemu: all
 		--sdcc $(top_builddir)/bin/sdcc \
 		--qemu $(QEMU_MCS51) \
 		--source $(srcdir)/tests/mcs51-regression.c \
+		--longlong-source $(srcdir)/tests/longlong-runtime.c \
 		--device-include $(top_srcdir)/device/include \
 		--library-dir $(top_builddir)/device/lib/build/small \
+		--stack-auto-library-dir \
+			$(top_builddir)/device/lib/build/small-stack-auto \
 		--baseline-digest $(srcdir)/tests/mcs51-regression.sha256
 
 include $(srcdir)/../port.mk

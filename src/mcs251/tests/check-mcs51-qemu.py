@@ -11,6 +11,13 @@ import tempfile
 
 
 MACHINE_CANDIDATES = ("stc8g1k08a", "stc8g1k08a-evb")
+LONGLONG_SYMBOLS = (
+    "__mullonglong",
+    "__divulonglong",
+    "__modulonglong",
+    "__divslonglong",
+    "__modslonglong",
+)
 
 
 def run(command, *, env=None):
@@ -32,6 +39,25 @@ def build(sdcc, source, device_include, library_dir, output_dir, stem):
         "-o", str(image), str(source),
     ], env=env)
     return assembly, image
+
+
+def build_longlong(sdcc, source, device_include, library_dir, output_dir):
+    env = os.environ.copy()
+    env["PATH"] = f"{sdcc.parent}{os.pathsep}{env.get('PATH', '')}"
+    image = output_dir / "longlong.hex"
+
+    run([
+        str(sdcc), "-mmcs51", "--stack-auto", "--no-xinit-opt",
+        f"-I{device_include}", f"-I{device_include / 'mcs51'}",
+        f"-L{library_dir}", "-o", str(image), str(source),
+    ], env=env)
+    link_map = image.with_suffix(".map").read_text()
+    for symbol in LONGLONG_SYMBOLS:
+        if symbol not in link_map:
+            raise SystemExit(
+                f"MCS-51 64-bit image did not link {symbol}"
+            )
+    return image
 
 
 def resolve_machine(qemu, requested):
@@ -114,8 +140,10 @@ def main():
     parser.add_argument("--qemu", required=True)
     parser.add_argument("--machine")
     parser.add_argument("--source", required=True)
+    parser.add_argument("--longlong-source", required=True)
     parser.add_argument("--device-include", required=True)
     parser.add_argument("--library-dir", required=True)
+    parser.add_argument("--stack-auto-library-dir", required=True)
     parser.add_argument("--baseline-digest")
     parser.add_argument("--baseline-sdcc")
     parser.add_argument("--baseline-library-dir")
@@ -124,9 +152,14 @@ def main():
     sdcc = Path(args.sdcc).resolve()
     qemu = Path(args.qemu).resolve()
     source = Path(args.source).resolve()
+    longlong_source = Path(args.longlong_source).resolve()
     device_include = Path(args.device_include).resolve()
     library_dir = Path(args.library_dir).resolve()
-    required = (sdcc, qemu, source, device_include, library_dir)
+    stack_auto_library_dir = Path(args.stack_auto_library_dir).resolve()
+    required = (
+        sdcc, qemu, source, longlong_source, device_include, library_dir,
+        stack_auto_library_dir,
+    )
     for path in required:
         if not path.exists():
             parser.error(f"required path does not exist: {path}")
@@ -192,6 +225,12 @@ def main():
 
         if baseline_digest is not None:
             print("MCS-51 upstream 4.6.0 digest comparison passed")
+
+        longlong_image = build_longlong(
+            sdcc, longlong_source, device_include,
+            stack_auto_library_dir, output_dir,
+        )
+        run_qemu(qemu, machine, longlong_image)
 
 
 if __name__ == "__main__":

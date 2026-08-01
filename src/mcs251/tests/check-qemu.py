@@ -103,6 +103,7 @@ def main():
     parser.add_argument("--runtime-source", required=True)
     parser.add_argument("--optimization-runtime-source", required=True)
     parser.add_argument("--abi-regression-source", required=True)
+    parser.add_argument("--longlong-source", required=True)
     parser.add_argument("--startup-memory-source", required=True)
     parser.add_argument("--setjmp-spx-source", required=True)
     parser.add_argument("--aggregate-source", required=True)
@@ -128,6 +129,7 @@ def main():
     optimization_runtime_source = \
         Path(args.optimization_runtime_source).resolve()
     abi_regression_source = Path(args.abi_regression_source).resolve()
+    longlong_source = Path(args.longlong_source).resolve()
     startup_memory_source = Path(args.startup_memory_source).resolve()
     setjmp_spx_source = Path(args.setjmp_spx_source).resolve()
     aggregate_source = Path(args.aggregate_source).resolve()
@@ -144,6 +146,7 @@ def main():
     for path in (sdcc, sdas251, qemu, main_source, far_source, crt0,
                  runtime_source, optimization_runtime_source,
                  abi_regression_source,
+                 longlong_source,
                  startup_memory_source, setjmp_spx_source,
                  aggregate_source,
                  memory_model_main_source,
@@ -336,6 +339,35 @@ def main():
             ], env=env)
             sys.stdout.buffer.write(run_qemu(
                 qemu, machine, abi_image, trace_for(abi_image),
+            ))
+
+        longlong_configurations = (
+            runtime_configurations[1],
+            runtime_configurations[3],
+        )
+        for longlong_name, model_flags, longlong_library_dir in \
+                longlong_configurations:
+            longlong_image = tmpdir / f"longlong-{longlong_name}.hex"
+            run([
+                str(sdcc), "-mmcs251", *model_flags, "--no-xinit-opt",
+                *board_link_flags, f"-I{device_include}",
+                f"-I{device_include / 'mcs51'}", f"-L{longlong_library_dir}",
+                "-o", str(longlong_image), str(longlong_source),
+            ], env=env)
+            longlong_map = longlong_image.with_suffix(".map").read_text()
+            for symbol in (
+                "__mullonglong",
+                "__divulonglong",
+                "__modulonglong",
+                "__divslonglong",
+                "__modslonglong",
+            ):
+                if symbol not in longlong_map:
+                    raise SystemExit(
+                        f"{longlong_name} 64-bit image did not link {symbol}"
+                    )
+            sys.stdout.buffer.write(run_qemu(
+                qemu, machine, longlong_image, trace_for(longlong_image),
             ))
 
         aggregate_image = tmpdir / "aggregate-return.hex"
