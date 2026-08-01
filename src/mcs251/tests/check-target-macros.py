@@ -133,9 +133,11 @@ COMMON_MACROS = {
 PORT_MACROS = {
     "mcs51": {
         "__BYTE_ORDER__": "__ORDER_LITTLE_ENDIAN__",
+        "__STDC_ENDIAN_NATIVE__": "__STDC_ENDIAN_LITTLE__",
     },
     "mcs251": {
         "__BYTE_ORDER__": "__ORDER_BIG_ENDIAN__",
+        "__STDC_ENDIAN_NATIVE__": "__STDC_ENDIAN_BIG__",
     },
 }
 
@@ -211,7 +213,9 @@ def normalize_macro(value):
 def check_macros(sdcc, source, port, mode):
     mode_name = mode if mode else "default"
     macros = read_macros(sdcc, source, port, mode)
-    expected = COMMON_MACROS | PORT_MACROS[port]
+    expected = COMMON_MACROS | {
+        "__BYTE_ORDER__": PORT_MACROS[port]["__BYTE_ORDER__"],
+    }
 
     failures = []
     for name, value in expected.items():
@@ -249,9 +253,11 @@ def check_char_signedness(sdcc, source, port):
 
 def check_macro_semantics(sdcc, source, port):
     expected_byte_order = PORT_MACROS[port]["__BYTE_ORDER__"]
+    expected_stdc_endian = PORT_MACROS[port]["__STDC_ENDIAN_NATIVE__"]
     source.write_text(
         "\n".join(
             (
+                "#include <stdbit.h>",
                 "_Static_assert(sizeof(__INT8_TYPE__) == 1, \"int8\");",
                 "_Static_assert(sizeof(__INT16_TYPE__) == 2, \"int16\");",
                 "_Static_assert(sizeof(__INT32_TYPE__) == 4, \"int32\");",
@@ -262,6 +268,8 @@ def check_macro_semantics(sdcc, source, port):
                 "_Static_assert(__UINT64_C(1) == 1ULL, \"uint64 constant\");",
                 f"_Static_assert(__BYTE_ORDER__ == {expected_byte_order}, "
                 '"byte order");',
+                f"_Static_assert(__STDC_ENDIAN_NATIVE__ == "
+                f"{expected_stdc_endian}, \"stdbit byte order\");",
                 "",
             )
         )
@@ -270,6 +278,7 @@ def check_macro_semantics(sdcc, source, port):
         str(sdcc),
         f"-m{port}",
         "--std=gnu17",
+        "--Werror",
         "--syntax-only",
         str(source),
     ]

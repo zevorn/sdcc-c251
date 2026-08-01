@@ -85,7 +85,8 @@ typedef unsigned long long int  uint_fast64_t;
 #define __STDC_ENDIAN_LITTLE__ 0
 #define __STDC_ENDIAN_BIG__ 1
 
-#if defined(__SDCC_hc08) || defined(__SDCC_s08) || defined(__SDCC_stm8)
+#if defined(__SDCC_hc08) || defined(__SDCC_s08) || defined(__SDCC_stm8) || \
+    defined(__SDCC_mcs251)
 #define __STDC_ENDIAN_NATIVE__ __STDC_ENDIAN_BIG__
 #else
 #define __STDC_ENDIAN_NATIVE__ __STDC_ENDIAN_LITTLE__
@@ -451,4 +452,3 @@ __STDC_STORE8(32)
 __STDC_STORE8(64)
 
 #endif
-
