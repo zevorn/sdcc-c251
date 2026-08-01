@@ -117,9 +117,16 @@ jobs:
             qemu-system-mcs51 \
             qemu-system-mcs251
 
-      - name: Test MCS-251 UART firmware smoke
+      - name: Test MCS-251 64-bit compiler regression
         run: |
-          make -C sdcc-build/src/mcs251 check-uart-qemu \
+          make -C sdcc-build/support/regression \
+            test-mcs251-stack-auto \
+            TEST_PREFIX=tst_mcs251-longlong \
+            QEMU_MCS251="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs251"
+
+      - name: Test MCS-251 compiler and runtime on QEMU
+        run: |
+          make -C sdcc-build/src/mcs251 check-qemu \
             QEMU_MCS251="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs251"
 
       - name: Test MCS-51 runtime and stability
