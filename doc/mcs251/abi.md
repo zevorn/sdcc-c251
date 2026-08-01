@@ -28,13 +28,13 @@ The MCS251 runtime libraries are built specifically for this ABI.
 | `long long` / `double` | 8 bytes |
 | `__bit` | 1 bit |
 
-Revision 1 retains SDCC's established MCS-51 little-endian object layout:
-the least-significant byte is at the lowest memory address and occupies the
-lowest-numbered byte register used by the calling convention.  This differs
-from the big-endian scalar layout of the Keil MCS251 ABI and from the native
-WR/DR memory interpretation of the processor.  Native word/dword operations
-may therefore be selected only when their byte ordering is provably
-equivalent or when the compiler performs an explicit conversion.
+Revision 1 uses the native MCS-251 big-endian scalar layout: the
+most-significant byte is at the lowest memory address.  A scalar held in an
+architectural WR or DR tuple likewise places its most-significant byte in the
+lowest-numbered byte register.  For example, WR6 holds bits `15:8` in R6 and
+bits `7:0` in R7.  This is the only object layout provided by `-mmcs251`;
+there is no little-endian MCS251 mode.  The separate `-mmcs51` target retains
+its established little-endian ABI.
 
 ## Pointer representation
 
@@ -47,17 +47,19 @@ equivalent or when the compiler performs an explicit conversion.
 | unqualified/generic pointer | 3 bytes | flat 24-bit address |
 | function pointer | 3 bytes | flat 24-bit code address |
 
-All 3-byte pointers store address bits `7:0`, `15:8`, and `23:16` in that
-order.  Revision 1 has no generic-pointer address-space tag.  Pointer
-arithmetic propagates carries through all 24 bits, including across a 64 KiB
-boundary.  A generic pointer cannot represent the separate direct SFR
+All 3-byte pointer objects store address bits `23:16`, `15:8`, and `7:0` at
+ascending addresses.  Revision 1 has no generic-pointer address-space tag.
+Pointer arithmetic propagates carries through all 24 bits, including across a
+64 KiB boundary.  A generic pointer cannot represent the separate direct SFR
 window; SFRs remain accessible through `__sfr` declarations and direct
 addressing.
 
 Converting a `__pdata` pointer to a flat pointer snapshots its byte offset,
-`P2`, and the STC `MXAX` region byte in that order.  This makes the converted
-address refer to the same byte as `MOVX @Ri`; changing either page register
-after the conversion does not retarget the resulting flat pointer.
+`P2`, and the STC `MXAX` region byte to form the numeric address
+`MXAX:P2:offset`.  Its 3-byte object representation remains high byte first.
+This makes the converted address refer to the same byte as `MOVX @Ri`;
+changing either page register after the conversion does not retarget the
+resulting flat pointer.
 
 DPX is the canonical hardware address register for flat pointers.  DPL,
 DPH, and DPXL hold bits `7:0`, `15:8`, and `23:16`, respectively.  Indirect
@@ -71,9 +73,15 @@ the Keil register allocator.
 
 - The first scalar argument and scalar return value use the normal SDCC
   return registers: byte in DPL, word in DPL/DPH, and four-byte scalar in
-  DPL/DPH/B/A.
+  DPL/DPH/B/A.  These names are listed from the logical least- to the
+  most-significant byte; a word is the numeric DPH:DPL pair and a four-byte
+  scalar is A:B:DPH:DPL when written most-significant byte first.
 - A 3-byte pointer passed or returned in the primary register slot uses
-  DPL/DPH/B, from least- to most-significant byte.
+  DPL/DPH/B from its logical least- to most-significant byte, or B:DPH:DPL
+  when written most-significant byte first.
+- A scalar assigned to a native WR or DR register tuple uses the architectural
+  big-endian order: the lowest-numbered register holds its most-significant
+  byte and the highest-numbered register holds its least-significant byte.
 - Remaining non-reentrant arguments use SDCC overlayable parameter areas.
 - Reentrant stack arguments use the ascending hardware stack.
 - Carry is used for bit results as in the MCS-51 port.
@@ -112,12 +120,13 @@ STC32G144K246 implements 16 KiB of edata at `00:0000`-`00:3fff`; builds for
 that device must reserve the startup stack and account for the deepest call,
 interrupt, and reentrant-frame nesting within that RAM.
 
-`jmp_buf` is seven bytes in every MCS251 data model: two little-endian bytes for
-SPX, three bytes for the complete `ECALL` return PC, and two private scratch
-bytes used to carry the normalized `longjmp` result into the naked restore
-helper.  `setjmp` snapshots the frame with interrupts excluded.  `longjmp`
-re-creates the three-byte frame, restores both bytes of SPX, restores the
-previous interrupt-enable state, and returns the requested nonzero value.
+`jmp_buf` is seven bytes in every MCS251 data model: two big-endian bytes for
+SPX, three big-endian bytes for the complete `ECALL` return PC, and two
+big-endian private scratch bytes used to carry the normalized `longjmp`
+result into the naked restore helper.  `setjmp` snapshots the frame with
+interrupts excluded.  `longjmp` re-creates the three-byte frame, restores both
+bytes of SPX, restores the previous interrupt-enable state, and returns the
+requested nonzero value.
 The QEMU conformance image sets SPX to `0x0120` before `setjmp` and verifies
 the restored SPX and `0x1234` result with both the small and large libraries.
 

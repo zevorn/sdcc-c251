@@ -30,11 +30,11 @@ compatibility macro。
 | `long long` / `double` | 8 bytes |
 | `__bit` | 1 bit |
 
-revision 1 保留 SDCC 既有的 MCS-51 little-endian object layout：least-significant
-byte 位于最低 memory address，也占用 calling convention 分配的最低编号 byte
-register。这与 Keil MCS251 ABI 的 big-endian scalar layout 不同，也与处理器原生
-WR/DR 的 memory interpretation 不同。只有 byte ordering 已证明等价，或编译器
-显式转换时，才能选用原生 word/dword operation。
+revision 1 采用 MCS-251 原生的 big-endian scalar layout：most-significant byte
+位于最低 memory address。scalar 放入架构 WR 或 DR register tuple 时，同样由最低
+编号的 byte register 保存最高有效字节。例如 WR6 的 R6 保存 bit `15:8`，R7 保存
+bit `7:0`。`-mmcs251` 只提供这一种 object layout，不设 little-endian MCS251
+模式；独立的 `-mmcs51` target 仍沿用既有的 little-endian ABI。
 
 ## 指针表示
 
@@ -47,14 +47,15 @@ WR/DR 的 memory interpretation 不同。只有 byte ordering 已证明等价，
 | unqualified/generic pointer | 3 bytes | flat 24-bit address |
 | function pointer | 3 bytes | flat 24-bit code address |
 
-所有三字节指针依次保存地址 bit `7:0`、`15:8` 和 `23:16`。revision 1 的 generic
-pointer 没有 address-space tag。pointer arithmetic 会把 carry 传播到全部 24 位，
-包括跨越 64 KiB boundary。generic pointer 不能表示独立的 direct SFR window；
-SFR 仍通过 `__sfr` declaration 和 direct addressing 访问。
+三字节 pointer object 在递增地址上依次保存地址 bit `23:16`、`15:8` 和 `7:0`。
+revision 1 的 generic pointer 没有 address-space tag。pointer arithmetic 会把
+carry 传播到全部 24 位，包括跨越 64 KiB boundary。generic pointer 不能表示独立
+的 direct SFR window；SFR 仍通过 `__sfr` declaration 和 direct addressing 访问。
 
-把 `__pdata` pointer 转为 flat pointer 时，按顺序快照其 byte offset、P2 和 STC
-`MXAX` region byte。转换结果因此继续指向与 `MOVX @Ri` 相同的 byte；转换后改变
-任一 page register，不会让所得 flat pointer 改指别处。
+把 `__pdata` pointer 转为 flat pointer 时，会快照其 byte offset、P2 和 STC
+`MXAX` region byte，组成数值地址 `MXAX:P2:offset`；对应的三字节 object
+representation 仍然高字节在前。转换结果因此继续指向与 `MOVX @Ri` 相同的 byte；
+转换后改变任一 page register，不会让所得 flat pointer 改指别处。
 
 DPX 是 flat pointer 的标准 hardware address register。DPL、DPH 和 DPXL 分别保存
 bit `7:0`、`15:8` 和 `23:16`。indirect function call 把零扩展的 24 位目标载入
@@ -65,9 +66,13 @@ DR28，再执行 `ECALL @DR28`。
 revision 1 扩展 SDCC MCS-51 calling convention，而不采用 Keil register allocator。
 
 - 第一个 scalar argument 和 scalar return value 使用 SDCC 常规 return register：
-  byte 用 DPL，word 用 DPL/DPH，四字节 scalar 用 DPL/DPH/B/A。
-- 主 register slot 中传递或返回三字节 pointer 时，按低字节到高字节使用
-  DPL/DPH/B。
+  byte 用 DPL，word 用 DPL/DPH，四字节 scalar 用 DPL/DPH/B/A。这里按逻辑上的
+  least-significant byte 到 most-significant byte 列出寄存器；若按高位在前书写，
+  word 是 DPH:DPL，四字节 scalar 是 A:B:DPH:DPL。
+- 主 register slot 中传递或返回三字节 pointer 时，按逻辑低位到高位使用
+  DPL/DPH/B；若按高位在前书写，则为 B:DPH:DPL。
+- scalar 分配到原生 WR 或 DR register tuple 时，遵循架构 big-endian 顺序：最低
+  编号的 register 保存最高有效字节，最高编号的 register 保存最低有效字节。
 - 其余 non-reentrant argument 使用 SDCC 可 overlay 的 parameter area。
 - reentrant stack argument 使用向高地址增长的 hardware stack。
 - bit result 与 MCS-51 后端相同，通过 carry 返回。
@@ -100,11 +105,11 @@ flat pointer，因此 frame 跨过 256-byte boundary 后，array 与 aggregate �
 STC32G144K246 在 `00:0000`–`00:3fff` 实现 16 KiB edata；针对该设备的构建必须
 预留 startup stack，并确保最深 call、interrupt 与 reentrant-frame 嵌套不会越界。
 
-所有 MCS251 data model 中，`jmp_buf` 都是七字节：两个 little-endian byte 保存
-SPX，三个 byte 保存完整 `ECALL` return PC，另两个 private scratch byte 把规范化
-后的 `longjmp` result 传给 naked restore helper。`setjmp` 在禁止中断时快照 frame；
-`longjmp` 重建三字节 frame，恢复 SPX 的两个 byte 与原 interrupt-enable state，并
-返回请求的非零值。
+所有 MCS251 data model 中，`jmp_buf` 都是七字节：两个 big-endian byte 保存 SPX，
+三个 big-endian byte 保存完整 `ECALL` return PC，另两个 big-endian private
+scratch byte 把规范化后的 `longjmp` result 传给 naked restore helper。`setjmp` 在
+禁止中断时快照 frame；`longjmp` 重建三字节 frame，恢复 SPX 的两个 byte 与原
+interrupt-enable state，并返回请求的非零值。
 
 QEMU conformance image 会在 `setjmp` 前把 SPX 设为 `0x0120`，随后以 small 与
 large 两套 library 验证 SPX 已恢复且结果为 `0x1234`。

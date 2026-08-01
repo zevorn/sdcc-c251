@@ -263,7 +263,7 @@ STC §2.15.3，印刷 79 / PDF 113，建议超过 64 KiB 程序选 Keil Code ROM
 |---|---|---|---|
 | 兼容身份 | `-mmcs251`，ABI revision 1，ASxxxx `.rel` + Intel HEX；明确不是 Keil ABI | Keil 使用自己的对象、段、库和调试生态 | 边界正确；必须继续拒绝不同 ABI revision 或 Keil 对象的无声明混链 |
 | opcode mode | 默认 Source mode；启动环境须保证 CPU 处于 Source | Intel 定义两种 opcode map；Keil 默认 Source；STC 推荐 Source | 架构一致；编译器/assembler mode 标记、启动寄存器和 QEMU 初态必须端到端一致，不能只改指令编码 |
-| 标量字节序 | 沿用 SDCC MCS-51 的 little-endian 对象布局 | Intel Chapter 5 §5.2.1.1，印刷 5-2 / PDF 84，规定 word/dword 在 memory 和 register file 中为 big-endian；Keil 的 [2 B](https://www.keil.com/support/man/docs/c251/c251_ap_2bytescalar.asp) / [4 B scalar](https://www.keil.com/support/man/docs/c251/c251_ap_4bytescalar.asp) 也是高字节先存 | 有意 ABI 差异；从内存直接用原生 WR/DR 多字节指令时必须证明字节序等价或显式转换 |
+| 标量字节序 | 采用 MCS-251 原生 big-endian 对象与 WR/DR register tuple 布局；不提供 little-endian 模式 | Intel Chapter 5 §5.2.1.1，印刷 5-2 / PDF 84，规定 word/dword 在 memory 和 register file 中为 big-endian；Keil 的 [2 B](https://www.keil.com/support/man/docs/c251/c251_ap_2bytescalar.asp) / [4 B scalar](https://www.keil.com/support/man/docs/c251/c251_ap_4bytescalar.asp) 也是高字节先存 | 与架构和 Keil 的标量端序一致；pointer size、calling convention 与 object format 仍是独立 ABI |
 | data model | `--model-small` 把普通对象放 page-zero edata；`--model-large` 放 XSEG | Keil 有 TINY/XTINY/SMALL/XSMALL/LARGE 五种，并把 code ROM model 单列 | 名称相似但语义不兼容；SDCC 文档和诊断必须始终使用自己的定义，不应承诺 Keil model 等价 |
 | `__data` / `__idata` pointer | 二者都是 1 B page-zero 地址 | Keil `data *` 为 1 B，`idata *` 为 2 B | `__idata` 明确不兼容 Keil；这只约束显式 near pointer，不限制使用 16 位 SPX 和 3 B flat address 的栈对象 |
 | `__xdata` / `__far` pointer | 3 B flat 24-bit | Keil `xdata *` 为 2 B；`far *` 为 4 B且只做 16 位算术 | 表示和语义都不兼容；SDCC `__far` 可跨 64 KiB 的行为更接近 Keil `huge`，但仍不是 Keil `huge` ABI |
@@ -279,7 +279,7 @@ STC §2.15.3，印刷 79 / PDF 113，建议超过 64 KiB 程序选 Keil Code ROM
 | XSEG 默认位置 | `0x010000`，允许 board 用 `--xram-loc` 改写 | Intel `DPXL` reset 为 `01h`；K246 的片内 xdata 从 `01:0000` 开始 | 对 K246 是合理默认，不应升级为所有 MCS-251 芯片的 ABI 常量 |
 | SFR | 不通过 flat generic pointer，到 `__sfr`/`__sbit` 专用寻址 | Intel SFR 是独立 512 B space，不属于 16 MiB memory | 架构一致；避免把 `0x000080` 与 `S:080` 合并别名 |
 
-最重要的结论是：rev1 选择了“3 B flat pointer + little-endian SDCC layout + 全远调用”，而 Keil 选择“2/4 B 分类型 pointer + big-endian layout + ROM model 决定调用距离”。两者都能符合硬件，但不会自然互操作。
+最重要的结论是：rev1 选择了“3 B flat pointer + 原生 big-endian layout + 全远调用”，而 Keil 选择“2/4 B 分类型 pointer + big-endian layout + ROM model 决定调用距离”。两者的标量端序相同，但 pointer representation、calling convention 与 object format 不同，因而不会自然互操作。
 
 ## SDCC 可以借鉴什么
 
@@ -297,7 +297,7 @@ STC §2.15.3，印刷 79 / PDF 113，建议超过 64 KiB 程序选 Keil Code ROM
 - 不复制 Keil CHM 的文字、表格排版、示例源码或专有库；本文只做必要的事实性概括。v5.60 包没有给这些内容附开放源码许可证。
 - 当前 SDCC ABI 不应把 Keil OMF251 对象格式、linker class/segment 命名、`?function?BYTE`/`?function?BIT` 固定参数符号、overlay 元数据或库 ABI 当作默认目标。若未来明确追求互操作，应另起 ABI/对象模式，依公开接口资料独立规范化、做授权审查和一致性测试，不复用 Keil 的实现或受保护资产。
 - 不因采用相似的 `near`/`far`/`huge` 名称、寄存器或调用指令，就声称与 Keil binary ABI、object format、library 或 debugger 兼容。
-- 不把 `PARM51`、Keil 的 register allocation、struct return、caller/callee-save、默认大端/字节布局等零散规则混入 SDCC 现有 ABI。若未来提供 Keil-compatible ABI，它必须是显式的独立模式，有完整对象布局、varargs、aggregate、bit、函数指针和跨模块测试。
+- 不把 `PARM51`、Keil 的 register allocation、struct return、caller/callee-save 等零散规则混入 SDCC 现有 ABI。SDCC 的大端布局独立遵循 MCS-251 架构，并不表示兼容 Keil。若未来提供 Keil-compatible ABI，它必须是显式的独立模式，有完整对象布局、varargs、aggregate、bit、函数指针和跨模块测试。
 - 不把 “Binary mode” 当作 C ABI 兼容承诺。它只说明 opcode 页；Keil/SDCC 生成的 Binary-mode C 程序仍可使用 251 指令，也仍有各自的调用和对象格式。
 - 不把 STC 的 K246 映射或推荐的 XSmall/Huge 选项宣称为所有 80MCS251 实现的默认值。
 
