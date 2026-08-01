@@ -3678,6 +3678,22 @@ propagateConstExpr (ast **ptree, RESULT_TYPE resultType, bool reduceTypeAllowed)
 }
 
 /*--------------------------------------------------------------------*/
+/* castBuiltinExpectArgument - apply __builtin_expect's long          */
+/*                             parameter conversion                   */
+/*--------------------------------------------------------------------*/
+static ast *
+castBuiltinExpectArgument (ast *argument)
+{
+  ast *type = newAst_LINK (newLongLink ());
+  ast *cast = newNode (CAST, type, argument);
+
+  copyAstLoc (cast, argument);
+  copyAstLoc (type, argument);
+  cast->values.cast.implicitCast = 1;
+  return decorateType (cast, RESULT_TYPE_OTHER, false);
+}
+
+/*--------------------------------------------------------------------*/
 /* decorateType - compute type for this tree, also does type checking.*/
 /* This is done bottom up, since type has to flow upwards.            */
 /* resultType flows top-down and forces e.g. char-arithmetic, if the  */
@@ -3805,7 +3821,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
     else
       resultTypeProp = RESULT_TYPE_OTHER;
 
-    if (tree->opval.op == GENERIC) // Preserve type of controlling expression for _Generic (and don't allocate string argument)
+    if (tree->opval.op == BUILTIN_EXPECT)
+      dtl = decorateType (tree->left, RESULT_TYPE_OTHER, false);
+    else if (tree->opval.op == GENERIC) // Preserve type of controlling expression for _Generic (and don't allocate string argument)
       {
         ++noAlloc;
         dtl = decorateType (tree->left, resultTypeProp, false);
@@ -3857,6 +3875,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
            there is resultType available */
         dtr = tree->right;
         break;
+      case BUILTIN_EXPECT:
+        dtr = decorateType (tree->right, RESULT_TYPE_OTHER, false);
+        break;
       case SIZEOF:
       case COUNTOF:
       case TYPEOF:
@@ -3890,6 +3911,32 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
 
   switch (tree->opval.op)
     {
+    case BUILTIN_EXPECT:
+      if (!IS_INTEGRAL (LTYPE (tree)) || !IS_INTEGRAL (RTYPE (tree)))
+        {
+          werrorfl (tree->filename, tree->lineno,
+                    E_BUILTIN_EXPECT_INTEGRAL);
+          goto errorTreeReturn;
+        }
+
+      tree->left = castBuiltinExpectArgument (tree->left);
+      tree->right = castBuiltinExpectArgument (tree->right);
+
+      if (IS_LITERAL (LTYPE (tree)) && IS_LITERAL (RTYPE (tree)))
+        {
+          value *result = valFromType (LTYPE (tree));
+
+          rewriteAstNodeVal (
+            tree,
+            valCastLiteral (newLongLink (), floatFromVal (result),
+                            (TYPE_TARGET_ULONGLONG) ullFromVal (result)));
+          return decorateType (tree, resultType, reduceTypeAllowed);
+        }
+
+      TRVAL (tree) = LRVAL (tree) = RRVAL (tree) = 1;
+      TETYPE (tree) = getSpec (TTYPE (tree) = newLongLink ());
+      return tree;
+
       /*------------------------------------------------------------------*/
       /*----------------------------*/
       /*        array node          */
@@ -8383,6 +8430,14 @@ ast_print (ast * tree, FILE * outfile, int indent)
       fprintf (outfile, ") to type (");
       printTypeChain (tree->ftype, outfile);
       fprintf (outfile, ")\n");
+      ast_print (tree->right, outfile, indent + 2);
+      return;
+
+    case BUILTIN_EXPECT:
+      fprintf (outfile, "BUILTIN_EXPECT (%p) type (", tree);
+      printTypeChain (tree->ftype, outfile);
+      fprintf (outfile, ")\n");
+      ast_print (tree->left, outfile, indent + 2);
       ast_print (tree->right, outfile, indent + 2);
       return;
 

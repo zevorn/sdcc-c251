@@ -10,9 +10,9 @@ is Zephyr 4.4 with its default C17 configuration.
 
 SDCC accepts strict ISO C17 for MCS-51 and MCS-251. This downstream also
 accepts `--std=gnu11` and `--std=gnu17`, provides common GNU keyword aliases
-and attribute syntax, and implements constant type-compatibility queries. The
-GNU subset implemented by the common frontend is still not sufficient for
-Zephyr.
+and attribute syntax, implements constant type-compatibility queries, and
+preserves GNU branch-expectation hints. The GNU subset implemented by the
+common frontend is still not sufficient for Zephyr.
 
 The two language modes alone do not provide Zephyr support. Stock Zephyr is
 also incompatible with the normal MCS-251 ABI and with the ASxxxx
@@ -44,6 +44,7 @@ Direct probes against the current MCS-251 compiler give this baseline:
 | `--std=gnu11`, `--std=gnu17` | accepted; enable the tested GNU subset |
 | `__typeof(...)`, `__typeof__(...)` | accepted, with expression limits |
 | `__builtin_types_compatible_p(type1, type2)` | accepted in GNU11/GNU17; integer constant expression |
+| `__builtin_expect(expression, expected)` | accepted in GNU11/GNU17; returns `long` expression and supplies a 90/10 branch hint when expected is constant |
 | basic `__asm__("instruction")` | accepted |
 | extended asm operands, constraints and clobbers | rejected |
 | statement expression `({ ... })` | rejected |
@@ -73,8 +74,8 @@ need compiler-specific equivalents for these facilities:
 
 - `__typeof__`, `__auto_type`, `_Generic`, statement expressions and variadic
   macro comma elision;
-- `__builtin_types_compatible_p` (implemented in GNU11/GNU17), plus the
-  remaining `__builtin_expect`, `__builtin_unreachable`, bit-counting and
+- `__builtin_types_compatible_p` and `__builtin_expect` (implemented in
+  GNU11/GNU17), plus the remaining `__builtin_unreachable`, bit-counting and
   overflow builtins;
 - `section`, `used`, `weak`, `packed`, `aligned`, `always_inline`, `noinline`,
   `noreturn`, `alias` and related attribute semantics;

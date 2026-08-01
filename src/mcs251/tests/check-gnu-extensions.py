@@ -49,6 +49,60 @@ def compile_source(sdcc, source, port, mode, expect_success, workspace):
     )
 
 
+def check_expect_hints(sdcc, source, port, mode, workspace):
+    dump_dir = workspace / f"{port}-{mode}-expect-dump"
+    dump_dir.mkdir()
+    command = [
+        str(sdcc),
+        f"-m{port}",
+        f"--std={mode}",
+        "--dump-i-code",
+        "-c",
+        str(source),
+    ]
+    result = subprocess.run(
+        command,
+        cwd=dump_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+    dump_file = dump_dir / f"{source.stem}.dumpraw0"
+    if result.returncode or not dump_file.is_file():
+        raise RuntimeError(
+            f"{port} --std={mode} did not dump {source.name}:\n"
+            f"{result.stdout}"
+        )
+
+    dump = dump_file.read_text()
+    side_effects = re.search(
+        r"proc _gnu_expect_side_effects\b.*?"
+        r"eproc _gnu_expect_side_effects\b",
+        dump,
+        re.DOTALL,
+    )
+    if not side_effects:
+        raise RuntimeError(
+            f"{port} --std={mode} lost the side-effect test function"
+        )
+    for symbol in (
+        "_gnu_expect_value_count",
+        "_gnu_expect_hint_count",
+    ):
+        if len(re.findall(rf"\b{symbol}\b", side_effects.group())) != 2:
+            raise RuntimeError(
+                f"{port} --std={mode} did not evaluate {symbol} once"
+            )
+    for expectation in ("true", "false"):
+        marker = f"expect {expectation}"
+        if marker not in dump:
+            raise RuntimeError(
+                f"{port} --std={mode} lost {marker} in {dump_file.name}"
+            )
+    print(f"PASS: {port} --std={mode} preserved branch expectations")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sdcc", required=True)
@@ -58,6 +112,8 @@ def main():
     parser.add_argument("--invalid-attribute-source", required=True)
     parser.add_argument("--types-compatible-source", required=True)
     parser.add_argument("--invalid-types-compatible-source", required=True)
+    parser.add_argument("--builtin-expect-source", required=True)
+    parser.add_argument("--invalid-builtin-expect-source", required=True)
     parser.add_argument("--empty-declaration-source", required=True)
     parser.add_argument("--compound-literal-source", required=True)
     args = parser.parse_args()
@@ -71,6 +127,10 @@ def main():
     invalid_types_compatible_source = Path(
         args.invalid_types_compatible_source
     ).resolve()
+    builtin_expect_source = Path(args.builtin_expect_source).resolve()
+    invalid_builtin_expect_source = Path(
+        args.invalid_builtin_expect_source
+    ).resolve()
     empty_declaration_source = Path(args.empty_declaration_source).resolve()
     compound_literal_source = Path(args.compound_literal_source).resolve()
     for path in (
@@ -81,6 +141,8 @@ def main():
         invalid_attribute_source,
         types_compatible_source,
         invalid_types_compatible_source,
+        builtin_expect_source,
+        invalid_builtin_expect_source,
         empty_declaration_source,
         compound_literal_source,
     ):
@@ -154,6 +216,39 @@ def main():
                 compile_source(
                     sdcc,
                     types_compatible_source,
+                    port,
+                    mode,
+                    False,
+                    workspace,
+                )
+            for mode in ("gnu11", "gnu17"):
+                compile_source(
+                    sdcc,
+                    builtin_expect_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                )
+                compile_source(
+                    sdcc,
+                    invalid_builtin_expect_source,
+                    port,
+                    mode,
+                    False,
+                    workspace,
+                )
+                check_expect_hints(
+                    sdcc,
+                    builtin_expect_source,
+                    port,
+                    mode,
+                    workspace,
+                )
+            for mode in ("c11", "c17", None):
+                compile_source(
+                    sdcc,
+                    builtin_expect_source,
                     port,
                     mode,
                     False,

@@ -155,6 +155,8 @@ typedef struct iCode
   bool parmEscapeAlive:1;       /* At this iCode, a stack parameter, a pointer to which has escaped (e.g. by having been stored in a global variable, cast to integer, passed to function) might be alive. */
   unsigned inlined:1;           /* from an inlined function */
   unsigned mergedElsewhere:1;   /* merged into another iCode during optimization */
+  bool hasBranchHint:1;         /* source supplied branch expectation */
+  bool branchHint:1;            /* expected truth value */
 
   struct iCode *next;           /* next in chain */
   struct iCode *prev;           /* previous in chain */

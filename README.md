@@ -128,6 +128,11 @@ The current GNU C compatibility boundary is:
   GNU17 modes and folds to an integer constant expression. It observes C type
   compatibility for qualifiers, arrays, function prototypes, structures and
   enumerations.
+- `__builtin_expect(expression, expected)` is accepted in GNU11 and GNU17.
+  Both integer arguments are converted to `long` and evaluated once, and the
+  result is the value of `expression`. A constant expectation supplies a
+  90/10 branch probability to the common optimizer; it does not change
+  program semantics.
 - `__asm__("instruction")` accepts a basic literal using `sdas251`/ASxxxx
   instruction syntax. GCC extended-asm operands and constraints are not
   accepted.

@@ -3534,7 +3534,18 @@ void guessCounts (iCode *start_ic, ebbIndex *ebbi)
           else if(ic->op == IFX) // Use a classic, simple branch prediction. Works well for typical loops.
             {
               iCode *target = hTabItemWithKey (labelDef, (IC_TRUE (ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key);
-              if(target->seq >= ic->seq)
+              if (ic->hasBranchHint)
+                {
+                  bool targetExpected = IC_TRUE (ic) ?
+                    ic->branchHint : !ic->branchHint;
+                  float targetProbability = targetExpected ? 0.9f : 0.1f;
+
+                  target->pcount += ic->pcount * targetProbability;
+                  if (ic->next)
+                    ic->next->pcount +=
+                      ic->pcount * (1.0f - targetProbability);
+                }
+              else if (target->seq >= ic->seq)
                 {
                   target->pcount += ic->pcount / 4;
                   if(ic->next)

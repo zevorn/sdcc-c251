@@ -281,6 +281,7 @@ static void checkCurrFile (const char *s);
 "__sfr32"               { count (); TKEYWORD (SFR32); }
 "__sbit"                { count (); TKEYWORD (SBIT); }
 "__builtin_offsetof"    { count (); return OFFSETOF; }
+"__builtin_expect"      { count (); return BUILTIN_EXPECT; }
 "__builtin_types_compatible_p" { count (); return BUILTIN_TYPES_COMPATIBLE_P; }
 "__using"               { count (); TKEYWORD (USING); }
 "__naked"               { count (); TKEYWORD (NAKED); }

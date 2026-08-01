@@ -787,6 +787,8 @@ struct
      "string literal assigned to pointer to non-const", 0 },
   {W_QUALIFIED_RETURN, ERROR_LEVEL_WARNING,
      "qualifier on return type has no effect", 0},
+  {E_BUILTIN_EXPECT_INTEGRAL, ERROR_LEVEL_ERROR,
+     "arguments to __builtin_expect must have integer type", 0},
 };
 
 /* -------------------------------------------------------------------------------

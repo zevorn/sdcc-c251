@@ -472,6 +472,9 @@ PRINTFUNC (picIfx)
 {
   dbuf_append_char (dbuf, '\t');
   dbuf_append_str (dbuf, "if ");
+  if (ic->hasBranchHint)
+    dbuf_printf (dbuf, "[expect %s] ",
+                 ic->branchHint ? "true" : "false");
   dbuf_printOperand (IC_COND (ic), dbuf);
 
   if (!IC_TRUE (ic))
@@ -800,6 +803,8 @@ copyiCode (iCode * ic)
   nic->block = ic->block;
   nic->level = ic->level;
   nic->parmBytes = ic->parmBytes;
+  nic->hasBranchHint = ic->hasBranchHint;
+  nic->branchHint = ic->branchHint;
 
   /* deal with the special cases first */
   switch (ic->op)
@@ -4069,12 +4074,62 @@ geniCodeReturn (operand *op)
 }
 
 /*-----------------------------------------------------------------*/
+/* astBranchExpectation - recover a boolean branch expectation     */
+/*-----------------------------------------------------------------*/
+static bool
+astBranchExpectation (const ast *tree, bool *expected)
+{
+  bool nested;
+
+  if (!IS_AST_OP (tree))
+    return false;
+
+  switch (tree->opval.op)
+    {
+    case BUILTIN_EXPECT:
+      if (!IS_AST_LIT_VALUE (tree->right))
+        return false;
+      *expected = floatFromVal (AST_VALUE (tree->right)) != 0.0;
+      return true;
+    case CAST:
+      return astBranchExpectation (tree->right, expected);
+    case '!':
+      if (!astBranchExpectation (tree->left, &nested))
+        return false;
+      *expected = !nested;
+      return true;
+    case EQ_OP:
+    case NE_OP:
+      if (IS_AST_LIT_VALUE (tree->left) &&
+          floatFromVal (AST_VALUE (tree->left)) == 0.0)
+        {
+          if (!astBranchExpectation (tree->right, &nested))
+            return false;
+        }
+      else if (IS_AST_LIT_VALUE (tree->right) &&
+               floatFromVal (AST_VALUE (tree->right)) == 0.0)
+        {
+          if (!astBranchExpectation (tree->left, &nested))
+            return false;
+        }
+      else
+        return false;
+      *expected = tree->opval.op == EQ_OP ? !nested : nested;
+      return true;
+    default:
+      return false;
+    }
+}
+
+/*-----------------------------------------------------------------*/
 /* geniCodeIfx - generates code for extended if statement          */
 /*-----------------------------------------------------------------*/
 void
 geniCodeIfx (ast * tree, int lvl)
 {
   iCode *ic;
+  bool branchHint = false;
+  bool hasBranchHint = astBranchExpectation (tree->left, &branchHint);
   operand *condition = ast2iCode (tree->left, lvl + 1);
   sym_link *cetype;
 
@@ -4106,6 +4161,8 @@ geniCodeIfx (ast * tree, int lvl)
   if (tree->trueLabel)
     {
       ic = newiCodeCondition (condition, tree->trueLabel, NULL);
+      ic->hasBranchHint = hasBranchHint;
+      ic->branchHint = branchHint;
       ADDTOCHAIN (ic);
 
       if (tree->falseLabel)
@@ -4114,6 +4171,8 @@ geniCodeIfx (ast * tree, int lvl)
   else
     {
       ic = newiCodeCondition (condition, NULL, tree->falseLabel);
+      ic->hasBranchHint = hasBranchHint;
+      ic->branchHint = branchHint;
       ADDTOCHAIN (ic);
     }
 
@@ -4913,6 +4972,21 @@ ast2iCode (ast * tree, int lvl)
                                          geniCodeRValue (right, FALSE), '|', operandType (left)), 0, 1);
     case ',':
       return geniCodeRValue (right, FALSE);
+
+    case BUILTIN_EXPECT:
+      {
+        operand *result = geniCodeRValue (left, FALSE);
+
+        geniCodeDummyRead (right);
+        if (IS_VOLATILE (operandType (result)))
+          {
+            operand *temporary = newiTempOperand (tree->ftype, 1);
+
+            geniCodeAssign (temporary, result, 0, 0);
+            return temporary;
+          }
+        return result;
+      }
 
     case CALL:
       return geniCodeCall (ast2iCode (tree->left, lvl + 1), tree->right, lvl);
