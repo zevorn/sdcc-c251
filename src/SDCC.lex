@@ -198,6 +198,22 @@ static void checkCurrFile (const char *s);
 "_Countof"              { count (); return COUNTOF; }
 "_Lengthof"             { count (); return COUNTOF; }  /* kept for compatibility with earlier drafts */
 
+ /* GNU alternate keyword spellings */
+"__alignof"             { count (); return ALIGNOF; }
+"__alignof__"           { count (); return ALIGNOF; }
+"__const"               { count (); return SD_CONST; }
+"__const__"             { count (); return SD_CONST; }
+"__inline"              { count (); return INLINE; }
+"__inline__"            { count (); return INLINE; }
+"__restrict"            { count (); return RESTRICT; }
+"__restrict__"          { count (); return RESTRICT; }
+"__signed"              { count (); return SIGNED; }
+"__signed__"            { count (); return SIGNED; }
+"__typeof"              { count (); return TYPEOF; }
+"__typeof__"            { count (); return TYPEOF; }
+"__volatile"            { count (); return VOLATILE; }
+"__volatile__"          { count (); return VOLATILE; }
+
  /* SDCC-specific intrinsic named address spaces (as per Embedded C TS) */
 "__code"                { count (); TKEYWORD (CODE); }
 "__data"                { count (); TKEYWORD (DATA); }
@@ -246,7 +262,6 @@ static void checkCurrFile (const char *s);
 "__z88dk_shortcall"     { count (); return Z88DK_SHORTCALL; }
 "__z88dk_params_offset" { count (); return Z88DK_PARAMS_OFFSET; }
 "__addressmod"          { count (); return ADDRESSMOD; }
-"__typeof"              { count (); return TYPEOF; }
 "_Optional"             { count (); return OPTIONAL; }
 
 ({L}|{UCN}|{UTF8IDF1ST})({L}|{D}|{UCN}|{UTF8IDF})*  {

@@ -24,7 +24,9 @@ check: all
 	$(PYTHON) $(srcdir)/tests/check-gnu-extensions.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--empty-aggregate-source \
-			$(srcdir)/tests/gnu-empty-aggregate.c
+			$(srcdir)/tests/gnu-empty-aggregate.c \
+		--keyword-alias-source \
+			$(srcdir)/tests/gnu-keyword-aliases.c
 	$(SHELL) $(srcdir)/tests/check-driver.sh \
 		$(top_builddir)/bin/sdcc \
 		$(srcdir)/tests/compiler-smoke.c \

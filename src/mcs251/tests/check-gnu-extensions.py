@@ -9,7 +9,7 @@ import tempfile
 
 def compile_source(sdcc, source, port, mode, expect_success, workspace):
     mode_name = mode if mode else "default"
-    object_file = workspace / f"{port}-{mode_name}.rel"
+    object_file = workspace / f"{port}-{mode_name}-{source.stem}.rel"
     command = [str(sdcc), f"-m{port}"]
     if mode:
         command.append(f"--std={mode}")
@@ -48,11 +48,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sdcc", required=True)
     parser.add_argument("--empty-aggregate-source", required=True)
+    parser.add_argument("--keyword-alias-source", required=True)
     args = parser.parse_args()
 
     sdcc = Path(args.sdcc).resolve()
-    source = Path(args.empty_aggregate_source).resolve()
-    for path in (sdcc, source):
+    empty_aggregate_source = Path(args.empty_aggregate_source).resolve()
+    keyword_alias_source = Path(args.keyword_alias_source).resolve()
+    for path in (sdcc, empty_aggregate_source, keyword_alias_source):
         if not path.exists():
             parser.error(f"required path does not exist: {path}")
 
@@ -60,9 +62,32 @@ def main():
         workspace = Path(tmp)
         for port in ("mcs51", "mcs251"):
             for mode in ("gnu11", "gnu17"):
-                compile_source(sdcc, source, port, mode, True, workspace)
+                compile_source(
+                    sdcc,
+                    empty_aggregate_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                )
             for mode in ("c11", "c17", None):
-                compile_source(sdcc, source, port, mode, False, workspace)
+                compile_source(
+                    sdcc,
+                    empty_aggregate_source,
+                    port,
+                    mode,
+                    False,
+                    workspace,
+                )
+            for mode in ("gnu11", "gnu17", "c11", "c17", None):
+                compile_source(
+                    sdcc,
+                    keyword_alias_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                )
 
 
 if __name__ == "__main__":
