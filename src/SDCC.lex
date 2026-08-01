@@ -85,6 +85,7 @@ int lexLineno = 1;
 
 /* local definitions */
 static struct dbuf_s asmbuff; /* reusable _asm buffer */
+static unsigned int gnuAttrDepth;
 
 /* forward declarations */
 int yyerror (char *s);
@@ -97,8 +98,43 @@ static int check_type (void);
 static void checkCurrFile (const char *s);
 %}
 
-%x asm
+%x asm gccattr
 %%
+ /* Accept the GNU spelling as a syntax carrier. Individual attributes acquire
+    semantics only when they have dedicated front-end and code-generation
+    support. */
+"__attribute"|"__attribute__" {
+  count ();
+  gnuAttrDepth = 0;
+  BEGIN (gccattr);
+}
+<gccattr>\"(\\.|[^\\\"\n])*\" {
+  count ();
+}
+<gccattr>'(\\.|[^\\'\n])*' {
+  count ();
+}
+<gccattr>"("          {
+  count ();
+  gnuAttrDepth++;
+}
+<gccattr>")"          {
+  count ();
+  if (gnuAttrDepth && --gnuAttrDepth == 0)
+    BEGIN (INITIAL);
+}
+<gccattr>\n           {
+  count ();
+}
+<gccattr>.            {
+  count ();
+}
+<gccattr><<EOF>>      {
+  BEGIN (INITIAL);
+  werror (E_SYNTAX_ERROR);
+  return 0;
+}
+
 "__asm"                {
   count ();
   if (asmbuff.buf == NULL)

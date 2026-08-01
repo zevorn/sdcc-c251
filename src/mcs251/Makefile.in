@@ -26,7 +26,11 @@ check: all
 		--empty-aggregate-source \
 			$(srcdir)/tests/gnu-empty-aggregate.c \
 		--keyword-alias-source \
-			$(srcdir)/tests/gnu-keyword-aliases.c
+			$(srcdir)/tests/gnu-keyword-aliases.c \
+		--attribute-source \
+			$(srcdir)/tests/gnu-attributes.c \
+		--invalid-attribute-source \
+			$(srcdir)/tests/gnu-attribute-invalid.c
 	$(SHELL) $(srcdir)/tests/check-driver.sh \
 		$(top_builddir)/bin/sdcc \
 		$(srcdir)/tests/compiler-smoke.c \
