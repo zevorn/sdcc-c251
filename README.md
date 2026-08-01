@@ -211,6 +211,137 @@ shell. It uses the packaged compiler, preprocessor, assemblers, linker,
 headers and libraries to produce both MCS-51 and MCS-251 Intel HEX images
 before the ZIP is published. Artifacts are retained for 30 days.
 
+## Build the Windows package locally
+
+The Windows package is built with the 64-bit UCRT toolchain supplied by
+[MSYS2](https://www.msys2.org/). Install MSYS2, open an **MSYS2 UCRT64**
+terminal, and install the same dependencies used by CI:
+
+```sh
+pacman -Syu
+pacman -S --needed \
+    bison flex git make python texinfo \
+    mingw-w64-ucrt-x86_64-boost \
+    mingw-w64-ucrt-x86_64-toolchain \
+    mingw-w64-ucrt-x86_64-zlib
+```
+
+If `pacman -Syu` asks to close the terminal, close it, open a new UCRT64
+terminal, run `pacman -Syu` again, and then install the dependencies. The
+following commands must also run in the UCRT64 terminal, not in the plain
+MSYS terminal or PowerShell:
+
+```sh
+git config --global core.autocrlf input
+git clone https://github.com/zevorn/sdcc-c251.git
+cd sdcc-c251
+mkdir windows-build
+cd windows-build
+
+CFLAGS=-std=gnu17 LDFLAGS=-static ../configure \
+    --enable-mcs251-port \
+    --prefix=/sdcc \
+    --datarootdir=/sdcc \
+    'docdir=${datarootdir}/doc' \
+    include_dir_suffix=include \
+    non_free_include_dir_suffix=non-free/include \
+    lib_dir_suffix=lib \
+    non_free_lib_dir_suffix=non-free/lib \
+    'sdccconf_h_dir_separator=\\' \
+    --disable-z80-port \
+    --disable-z180-port \
+    --disable-r2k-port \
+    --disable-r2ka-port \
+    --disable-r3ka-port \
+    --disable-r4k-port \
+    --disable-r5k-port \
+    --disable-r6k-port \
+    --disable-sm83-port \
+    --disable-tlcs90-port \
+    --disable-ez80-port \
+    --disable-z80n-port \
+    --disable-r800-port \
+    --disable-ds390-port \
+    --disable-ds400-port \
+    --disable-pic14-port \
+    --disable-pic16-port \
+    --disable-hc08-port \
+    --disable-s08-port \
+    --disable-stm8-port \
+    --disable-pdk13-port \
+    --disable-pdk14-port \
+    --disable-pdk15-port \
+    --disable-mos6502-port \
+    --disable-mos65c02-port \
+    --disable-f8-port \
+    --disable-f8l-port \
+    --disable-ucsim \
+    --disable-sdcdb \
+    --disable-non-free
+
+cd ..
+```
+
+This configuration builds only the MCS-51 and MCS-251 compiler ports. It
+uses static host linking so that the installed executables do not require an
+MSYS2 runtime on the destination machine.
+
+Build the compiler and native tools first. Before the device libraries are
+built, stage both parts of the native preprocessor in the compiler's build
+search directory:
+
+```sh
+make -C windows-build -j2 sdcc-base
+install -m 755 windows-build/support/cpp/gcc/cpp.exe \
+    windows-build/bin/sdcpp.exe
+install -m 755 windows-build/support/cpp/gcc/cc1.exe \
+    windows-build/bin/cc1.exe
+make -C windows-build -j2
+```
+
+Install into a staging directory and assemble the relocatable package tree:
+
+```sh
+make -C windows-build \
+    DESTDIR="$PWD/windows-build/windows-stage" install
+mkdir -p windows-package/sdcc-mcs251
+cp -a windows-build/windows-stage/sdcc/. \
+    windows-package/sdcc-mcs251/
+cp README.md COPYING sdas/COPYING3 windows-package/sdcc-mcs251/
+```
+
+Keep the complete `sdcc-mcs251` directory: `sdcc.exe` locates the
+preprocessor backend, headers and target libraries relative to its own
+location. Copying only `bin/sdcc.exe` does not produce a working toolchain.
+
+Open PowerShell in the repository root to verify the package outside MSYS2:
+
+```powershell
+$sdcc = Resolve-Path ".\windows-package\sdcc-mcs251\bin\sdcc.exe"
+& $sdcc --version
+& $sdcc --print-search-dirs
+
+"void main(void) { for (;;) {} }" |
+    Set-Content -Encoding ascii -Path .\windows-smoke.c
+& $sdcc -mmcs51 --model-small `
+    -o .\windows-smoke-mcs51.ihx .\windows-smoke.c
+& $sdcc -mmcs251 --model-small `
+    -o .\windows-smoke-mcs251.ihx .\windows-smoke.c
+```
+
+Finally, create a distributable ZIP from PowerShell:
+
+```powershell
+Compress-Archive -Path .\windows-package\sdcc-mcs251 `
+    -DestinationPath .\sdcc-mcs251-windows-x64.zip
+```
+
+The CI definition in
+[`windows-package.yml`](.github/workflows/windows-package.yml) is the
+executable reference for this procedure. In addition to the two smoke
+commands above, CI verifies all four MCS-251 memory/stack configurations
+before publishing the ZIP.
+
 ## Build the documentation
 
 The upstream English manual keeps its original LyX layout under `doc/`. Enable
