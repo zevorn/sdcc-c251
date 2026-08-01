@@ -53,6 +53,7 @@ check: all
 		$(srcdir)/tests/aggregate-initializer.c \
 		$(srcdir)/tests/memory-model.c \
 		$(top_srcdir)/device/lib/bsearch.c \
+		$(top_srcdir)/device/lib/_mullonglong.c \
 		$(top_srcdir)/device/include
 
 QEMU_MCS251 ?= $(HOME)/oss/qemu/builds/build-mcs251/qemu-system-mcs251

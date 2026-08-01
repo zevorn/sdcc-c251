@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-if test "$#" -ne 8; then
-    echo "usage: $0 SDCC OPTIMIZATION_SOURCE CALL_SOURCE INTERRUPT_SOURCE INITIALIZER_SOURCE MEMORY_MODEL_SOURCE BSEARCH_SOURCE DEVICE_INCLUDE" >&2
+if test "$#" -ne 9; then
+    echo "usage: $0 SDCC OPTIMIZATION_SOURCE CALL_SOURCE INTERRUPT_SOURCE INITIALIZER_SOURCE MEMORY_MODEL_SOURCE BSEARCH_SOURCE MULLONGLONG_SOURCE DEVICE_INCLUDE" >&2
     exit 2
 fi
 
@@ -13,7 +13,8 @@ interrupt_source=$4
 initializer_source=$5
 memory_model_source=$6
 bsearch_source=$7
-device_include=$8
+mullonglong_source=$8
+device_include=$9
 test_dir=${TMPDIR:-/tmp}/sdcc-mcs251-codegen.$$
 trap 'rm -rf "$test_dir"' 0 HUP INT TERM
 mkdir -p "$test_dir"
@@ -38,6 +39,20 @@ mkdir -p "$test_dir"
     -o "$test_dir/memory-model-small.asm" "$memory_model_source"
 "$sdcc" -mmcs251 --model-large -S \
     -o "$test_dir/memory-model-large.asm" "$memory_model_source"
+"$sdcc" -mmcs251 --stack-auto -I"$device_include" \
+    -I"$device_include/mcs51" -S -o "$test_dir/mullonglong.asm" \
+    "$mullonglong_source"
+
+# Indexed MCS251 stack operands are loaded through A.  An in-place increment
+# must store the incremented byte back before the following comparison.
+awk '
+    previous ~ /^[[:space:]]*inc[[:space:]]+a[[:space:]]*$/ &&
+        $0 ~ /^[[:space:]]*mov[[:space:]]+@spx[-+][^,]*,[[:space:]]*a[[:space:]]*$/ {
+        found = 1
+    }
+    { previous = $0 }
+    END { exit !found }
+' "$test_dir/mullonglong.asm"
 
 grep -Eq '^[[:space:]]*inc[[:space:]]+a,#[^;]*(2|0x02)$' \
     "$test_dir/native-optimization.asm"
