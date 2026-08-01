@@ -29,6 +29,11 @@ struct gnu_second_record
   int value;
 };
 
+struct gnu_array_record
+{
+  int values[4];
+};
+
 enum gnu_first_enum
 {
   GNU_FIRST_VALUE
@@ -145,10 +150,25 @@ _Static_assert (
 
 static int gnu_types_compatible_array[4];
 
+#define GNU_ZERO_OR_COMPILE_ERROR(condition) \
+  ((int) sizeof (char[1 - (2 * !(condition))]) - 1)
+#define GNU_IS_ARRAY(array) \
+  GNU_ZERO_OR_COMPILE_ERROR ( \
+    !__builtin_types_compatible_p (__typeof__ (array), \
+                                   __typeof__ (&(array)[0])))
+#define GNU_ARRAY_SIZE(array) \
+  (GNU_IS_ARRAY (array) + (sizeof (array) / sizeof ((array)[0])))
+
 int
 gnu_types_compatible_probe (void)
 {
   return !__builtin_types_compatible_p (
     __typeof__ (gnu_types_compatible_array),
     __typeof__ (&gnu_types_compatible_array[0]));
+}
+
+int
+gnu_member_array_probe (struct gnu_array_record *record)
+{
+  return GNU_ARRAY_SIZE (record->values);
 }
