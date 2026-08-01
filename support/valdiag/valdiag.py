@@ -110,6 +110,59 @@ testmodes = {
             "__has_reentrant":"1"
         }
     },
+    "mcs251":{
+        "compiler":sdcc,
+        "port":"mcs251",
+        "extra-defines": {
+            "__has_bit":"1",
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
+    },
+    "mcs251-large":{
+        "compiler":sdcc,
+        "port":"mcs251",
+        "flags":"--model-large",
+        "defined": {
+            "SDCC_MODEL_LARGE":"1"
+        },
+        "extra-defines": {
+            "__has_bit":"1",
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
+    },
+    "mcs251-stack-auto":{
+        "compiler":sdcc,
+        "port":"mcs251",
+        "flags":"--stack-auto",
+        "defined": {
+            "SDCC_STACK_AUTO":"1"
+        },
+        "extra-defines": {
+            "__has_bit":"1",
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
+    },
+    "mcs251-large-stack-auto":{
+        "compiler":sdcc,
+        "port":"mcs251",
+        "flags":"--model-large --stack-auto",
+        "defined": {
+            "SDCC_MODEL_LARGE":"1",
+            "SDCC_STACK_AUTO":"1"
+        },
+        "extra-defines": {
+            "__has_bit":"1",
+            "__has_data":"1",
+            "__has_xdata":"1",
+            "__has_reentrant":"1"
+        }
+    },
     "ds390":{
         "compiler":sdcc,
         "port":"ds390",
