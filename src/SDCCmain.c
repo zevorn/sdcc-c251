@@ -2450,6 +2450,8 @@ preProcess (char **envp)
          predefined macros. */
       addSet (&preArgvSet, Safe_strdup ("-undef"));
       addSet (&preArgvSet,
+              Safe_strdup ("-Wno-builtin-macro-redefined"));
+      addSet (&preArgvSet,
               Safe_strdup ("-U__GCC_HAVE_DWARF2_CFI_ASM"));
 
       /* Report only builtins accepted by the selected frontend mode. */
