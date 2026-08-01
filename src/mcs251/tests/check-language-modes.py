@@ -6,7 +6,15 @@ import re
 import subprocess
 
 
-def check_mode(sdcc, source, port, mode, stdc_version, gnu_extensions):
+def check_mode(
+    sdcc,
+    source,
+    port,
+    mode,
+    stdc_version,
+    gnu_extensions,
+    strict_ansi,
+):
     command = [
         str(sdcc),
         f"-m{port}",
@@ -14,6 +22,7 @@ def check_mode(sdcc, source, port, mode, stdc_version, gnu_extensions):
         "--syntax-only",
         f"-DEXPECTED_STDC_VERSION={stdc_version}L",
         f"-DEXPECT_GNU_EXTENSIONS={int(gnu_extensions)}",
+        f"-DEXPECT_STRICT_ANSI={int(strict_ansi)}",
         str(source),
     ]
     result = subprocess.run(
@@ -44,17 +53,23 @@ def main():
             parser.error(f"required path does not exist: {path}")
 
     modes = (
-        ("c11", 201112, False),
-        ("c17", 201710, False),
-        ("sdcc11", 201112, False),
-        ("sdcc17", 201710, False),
-        ("gnu11", 201112, True),
-        ("gnu17", 201710, True),
+        ("c11", 201112, False, True),
+        ("c17", 201710, False, True),
+        ("sdcc11", 201112, False, False),
+        ("sdcc17", 201710, False, False),
+        ("gnu11", 201112, True, False),
+        ("gnu17", 201710, True, False),
     )
     for port in ("mcs51", "mcs251"):
-        for mode, stdc_version, gnu_extensions in modes:
+        for mode, stdc_version, gnu_extensions, strict_ansi in modes:
             check_mode(
-                sdcc, source, port, mode, stdc_version, gnu_extensions
+                sdcc,
+                source,
+                port,
+                mode,
+                stdc_version,
+                gnu_extensions,
+                strict_ansi,
             )
 
 

@@ -2379,6 +2379,13 @@ preProcess (char **envp)
       if (options.std_gnu)
         addSet (&preArgvSet, Safe_strdup ("-D__SDCC_GNU_EXTENSIONS=1"));
 
+      /* Do not rely on the host preprocessor to identify SDCC's language
+         mode consistently. */
+      if (options.std_sdcc)
+        addSet (&preArgvSet, Safe_strdup ("-U__STRICT_ANSI__"));
+      else if (!options.std_gnu)
+        addSet (&preArgvSet, Safe_strdup ("-D__STRICT_ANSI__=1"));
+
       /* set the macro for large model  */
       switch (options.model)
         {
