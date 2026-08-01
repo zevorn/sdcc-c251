@@ -926,17 +926,24 @@ struct_or_union_specifier
             {
               sdef = findSymWithBlock (StructTab, $3->tagsym, currBlockno, NestLevel);
               bool compatible = options.std_c23 && sdef->tagsym && $3->tagsym && !strcmp (sdef->tagsym->name, $3->tagsym->name);
-              for (symbol *fieldsym1 = sdef->fields, *fieldsym2 = $3->fields; compatible; fieldsym1 = fieldsym1->next, fieldsym2 = fieldsym2->next)
+              symbol *fieldsym1 = sdef->fields;
+              symbol *fieldsym2 = $3->fields;
+              while (compatible)
                 {
-                  if (!fieldsym1 && !fieldsym2)
-                    break;
                   if (!fieldsym1 || !fieldsym2)
-                    compatible = false;
-                  else if (strcmp (fieldsym1->name, fieldsym2->name))
-                    compatible = false;
-                  else if (compareType (fieldsym1->type, fieldsym2->type, true) <= 0)
-                    compatible = false;
-               }
+                    {
+                      compatible = fieldsym1 == fieldsym2;
+                      break;
+                    }
+                  if (strcmp (fieldsym1->name, fieldsym2->name) ||
+                      compareType (fieldsym1->type, fieldsym2->type, true) <= 0)
+                    {
+                      compatible = false;
+                      break;
+                    }
+                  fieldsym1 = fieldsym1->next;
+                  fieldsym2 = fieldsym2->next;
+                }
               if (!compatible)
                 {
                   werror(E_STRUCT_REDEF_INCOMPATIBLE, $3->tag);
