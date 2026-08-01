@@ -3773,6 +3773,75 @@ foldBitBuiltinCall (ast *tree)
   return true;
 }
 
+/*------------------------------------------------------------------*/
+/* byteSwapBuiltinWidth - identify GNU byte-swap builtins           */
+/*------------------------------------------------------------------*/
+static unsigned int
+byteSwapBuiltinWidth (const char *name)
+{
+  static const struct
+  {
+    const char *name;
+    unsigned char width;
+  } builtins[] =
+  {
+    {"__builtin_bswap16", 16},
+    {"__builtin_bswap32", 32},
+    {"__builtin_bswap64", 64},
+  };
+
+  for (unsigned int i = 0;
+       i < sizeof (builtins) / sizeof (builtins[0]); i++)
+    if (!strcmp (name, builtins[i].name))
+      return builtins[i].width;
+
+  return 0;
+}
+
+/*------------------------------------------------------------------*/
+/* foldByteSwapBuiltinCall - fold a GNU byte-swap constant          */
+/*------------------------------------------------------------------*/
+static bool
+foldByteSwapBuiltinCall (ast *tree)
+{
+  if (!options.std_gnu ||
+      !(TARGET_IS_MCS51 || TARGET_IS_MCS251) ||
+      !IS_AST_SYM_VALUE (tree->left) || !tree->right ||
+      !constExprTree (tree->right) || hasSEFcalls (tree->right))
+    return false;
+
+  unsigned int width =
+    byteSwapBuiltinWidth (AST_SYMBOL (tree->left)->name);
+
+  if (!width)
+    return false;
+
+  TYPE_TARGET_ULONGLONG source =
+    ullFromVal (constExprValue (tree->right, true));
+  TYPE_TARGET_ULONGLONG result = 0;
+  sym_link *resultType;
+
+  for (unsigned int byte = 0; byte < width / 8; byte++)
+    {
+      result = (result << 8) | (source & 0xff);
+      source >>= 8;
+    }
+
+  if (width == 16)
+    {
+      resultType = newIntLink ();
+      SPEC_SHORT (getSpec (resultType)) = true;
+    }
+  else if (width == 32)
+    resultType = newLongLink ();
+  else
+    resultType = newLongLongLink ();
+  SPEC_USIGN (getSpec (resultType)) = true;
+  rewriteAstNodeVal (
+    tree, valCastLiteral (resultType, (double) result, result));
+  return true;
+}
+
 typedef enum
 {
   /* These values are part of the __sdcc_overflow runtime protocol. */
@@ -6640,6 +6709,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
 
           if (processParms (tree->left, FUNC_ARGS (functype), &tree->right, &parmNumber, TRUE))
             goto errorTreeReturn;
+
+          if (foldByteSwapBuiltinCall (tree))
+            return decorateType (tree, resultType, reduceTypeAllowed);
 
           if (foldBitBuiltinCall (tree))
             return decorateType (tree, resultType, reduceTypeAllowed);

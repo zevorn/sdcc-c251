@@ -5024,6 +5024,10 @@ typeFromStr (const char *s)
             SPEC_USIGN (r) = 1;
           break;
         case 's':
+          r->xclass = SPECIFIER;
+          SPEC_NOUN (r) = V_INT;
+          SPEC_SHORT (r) = 1;
+          break;
         case 'i':
           r->xclass = SPECIFIER;
           SPEC_NOUN (r) = V_INT;
@@ -5458,6 +5462,16 @@ initBuiltIns ()
         {"__builtin_ffsl", "l"},
         {"__builtin_ffsll", "L"},
       };
+      static const struct
+      {
+        const char *name;
+        const char *type;
+      } byteSwapBuiltins[] =
+      {
+        {"__builtin_bswap16", "Us"},
+        {"__builtin_bswap32", "Ul"},
+        {"__builtin_bswap64", "UL"},
+      };
 
       for (unsigned int i = 0;
            i < sizeof (bitBuiltins) / sizeof (bitBuiltins[0]); i++)
@@ -5465,6 +5479,17 @@ initBuiltIns ()
           const char *argumentTypes[] = {bitBuiltins[i].argumentType};
 
           funcOfTypeVarg (bitBuiltins[i].name, "i", 1,
+                          argumentTypes);
+        }
+
+      for (unsigned int i = 0;
+           i < sizeof (byteSwapBuiltins) /
+               sizeof (byteSwapBuiltins[0]); i++)
+        {
+          const char *argumentTypes[] = {byteSwapBuiltins[i].type};
+
+          funcOfTypeVarg (byteSwapBuiltins[i].name,
+                          byteSwapBuiltins[i].type, 1,
                           argumentTypes);
         }
 

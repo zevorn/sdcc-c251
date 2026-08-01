@@ -57,6 +57,10 @@ check: all
 			$(srcdir)/tests/gnu-bit-builtins.c \
 		--invalid-bit-builtins-source \
 			$(srcdir)/tests/gnu-bit-builtins-invalid.c \
+		--byte-swap-builtins-source \
+			$(srcdir)/tests/gnu-byte-swap-builtins.c \
+		--invalid-byte-swap-builtins-source \
+			$(srcdir)/tests/gnu-byte-swap-builtins-invalid.c \
 		--overflow-builtins-source \
 			$(srcdir)/tests/gnu-overflow-builtins.c \
 		--invalid-overflow-builtins-source \
@@ -152,6 +156,8 @@ check-qemu: all check-official-qemu check-gdbstub
 			$(srcdir)/tests/statement-expression-runtime.c \
 		--bit-builtins-source \
 			$(srcdir)/tests/gnu-bit-builtins-runtime.c \
+		--byte-swap-builtins-source \
+			$(srcdir)/tests/gnu-byte-swap-builtins-runtime.c \
 		--overflow-builtins-source \
 			$(srcdir)/tests/gnu-overflow-builtins-runtime.c \
 		--typed-overflow-builtins-source \
@@ -209,6 +215,8 @@ check-mcs51-qemu: all
 			$(srcdir)/tests/statement-expression-runtime.c \
 		--bit-builtins-source \
 			$(srcdir)/tests/gnu-bit-builtins-runtime.c \
+		--byte-swap-builtins-source \
+			$(srcdir)/tests/gnu-byte-swap-builtins-runtime.c \
 		--overflow-builtins-source \
 			$(srcdir)/tests/gnu-overflow-builtins-runtime.c \
 		--typed-overflow-builtins-source \

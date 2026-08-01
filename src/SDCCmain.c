@@ -2496,6 +2496,12 @@ preProcess (char **envp)
               addPreprocessorDefine (
                 "__SDCC_HAS_BUILTIN___builtin_ffsll", "1");
               addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_bswap16", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_bswap32", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_bswap64", "1");
+              addPreprocessorDefine (
                 "__SDCC_HAS_BUILTIN___builtin_add_overflow", "1");
               addPreprocessorDefine (
                 "__SDCC_HAS_BUILTIN___builtin_sub_overflow", "1");

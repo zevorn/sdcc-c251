@@ -102,3 +102,27 @@ DEFINE_POPCOUNT (__builtin_popcountll, unsigned long long)
 DEFINE_FFS (__builtin_ffs, int, unsigned int)
 DEFINE_FFS (__builtin_ffsl, long, unsigned long)
 DEFINE_FFS (__builtin_ffsll, long long, unsigned long long)
+
+unsigned short
+__builtin_bswap16 (unsigned short value)
+{
+  return (value << 8) | (value >> 8);
+}
+
+unsigned long
+__builtin_bswap32 (unsigned long value)
+{
+  value = ((value & 0x00ff00fful) << 8) |
+          ((value >> 8) & 0x00ff00fful);
+  return (value << 16) | (value >> 16);
+}
+
+unsigned long long
+__builtin_bswap64 (unsigned long long value)
+{
+  value = ((value & 0x00ff00ff00ff00ffull) << 8) |
+          ((value >> 8) & 0x00ff00ff00ff00ffull);
+  value = ((value & 0x0000ffff0000ffffull) << 16) |
+          ((value >> 16) & 0x0000ffff0000ffffull);
+  return (value << 32) | (value >> 32);
+}

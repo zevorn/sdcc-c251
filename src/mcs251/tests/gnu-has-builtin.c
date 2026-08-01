@@ -41,6 +41,11 @@
     !__has_builtin (__builtin_ffsll)
 #error "find-first-set builtins must be reported in GNU modes"
 #endif
+#if !__has_builtin (__builtin_bswap16) || \
+    !__has_builtin (__builtin_bswap32) || \
+    !__has_builtin (__builtin_bswap64)
+#error "byte-swap builtins must be reported in GNU modes"
+#endif
 #if !__has_builtin (__builtin_add_overflow) || \
     !__has_builtin (__builtin_sub_overflow) || \
     !__has_builtin (__builtin_mul_overflow)
@@ -83,6 +88,11 @@
 #if __has_builtin (__builtin_clz) || __has_builtin (__builtin_ctz) || \
     __has_builtin (__builtin_popcount) || __has_builtin (__builtin_ffs)
 #error "bit-count builtins must not be reported in strict modes"
+#endif
+#if __has_builtin (__builtin_bswap16) || \
+    __has_builtin (__builtin_bswap32) || \
+    __has_builtin (__builtin_bswap64)
+#error "byte-swap builtins must not be reported in strict modes"
 #endif
 #if __has_builtin (__builtin_add_overflow) || \
     __has_builtin (__builtin_sub_overflow) || \

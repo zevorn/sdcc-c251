@@ -180,6 +180,10 @@ def main():
     parser.add_argument("--has-builtin-source", required=True)
     parser.add_argument("--bit-builtins-source", required=True)
     parser.add_argument("--invalid-bit-builtins-source", required=True)
+    parser.add_argument("--byte-swap-builtins-source", required=True)
+    parser.add_argument(
+        "--invalid-byte-swap-builtins-source", required=True
+    )
     parser.add_argument("--overflow-builtins-source", required=True)
     parser.add_argument("--invalid-overflow-builtins-source", required=True)
     parser.add_argument("--typed-overflow-builtins-source", required=True)
@@ -218,6 +222,12 @@ def main():
     bit_builtins_source = Path(args.bit_builtins_source).resolve()
     invalid_bit_builtins_source = Path(
         args.invalid_bit_builtins_source
+    ).resolve()
+    byte_swap_builtins_source = Path(
+        args.byte_swap_builtins_source
+    ).resolve()
+    invalid_byte_swap_builtins_source = Path(
+        args.invalid_byte_swap_builtins_source
     ).resolve()
     overflow_builtins_source = Path(
         args.overflow_builtins_source
@@ -259,6 +269,8 @@ def main():
         has_builtin_source,
         bit_builtins_source,
         invalid_bit_builtins_source,
+        byte_swap_builtins_source,
+        invalid_byte_swap_builtins_source,
         overflow_builtins_source,
         invalid_overflow_builtins_source,
         typed_overflow_builtins_source,
@@ -509,6 +521,46 @@ def main():
                 compile_source(
                     sdcc,
                     bit_builtins_source,
+                    port,
+                    mode,
+                    False,
+                    workspace,
+                )
+            for mode in ("gnu11", "gnu17"):
+                compile_source(
+                    sdcc,
+                    byte_swap_builtins_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                )
+                compile_source(
+                    sdcc,
+                    byte_swap_builtins_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                    ("--stack-auto",),
+                )
+                for invalid_case in range(1, 4):
+                    compile_source(
+                        sdcc,
+                        invalid_byte_swap_builtins_source,
+                        port,
+                        mode,
+                        False,
+                        workspace,
+                        (
+                            "-DGNU_BYTE_SWAP_INVALID_CASE="
+                            f"{invalid_case}",
+                        ),
+                    )
+            for mode in ("c11", "c17", None):
+                compile_source(
+                    sdcc,
+                    byte_swap_builtins_source,
                     port,
                     mode,
                     False,
