@@ -4,7 +4,10 @@ __sfr __at (0x99) SBUF;
 jmp_buf jump_buffer;
 static jmp_buf recursive_jump_buffer;
 static jmp_buf zero_jump_buffer;
+static jmp_buf live_register_jump_buffer;
 static volatile unsigned char recursive_call_count;
+static volatile unsigned int live_register_seed = 0x1234u;
+static volatile unsigned int live_register_other = 0xabcdu;
 
 unsigned char
 __sdcc_external_startup (void)
@@ -46,6 +49,18 @@ recursive_setjmp_is_big_endian (void)
     recursive_call_count = 0;
     return resumed == 1 && recursive_setjmp (6) == 0x1234 &&
            recursive_call_count == 7;
+}
+
+static unsigned char
+live_registers_survive_longjmp (void)
+{
+    unsigned int first = live_register_seed;
+    unsigned int second = live_register_other;
+    int resumed = setjmp (live_register_jump_buffer);
+
+    if (!resumed)
+        longjmp (live_register_jump_buffer, 0);
+    return resumed == 1 && first == 0x1234u && second == 0xabcdu;
 }
 
 /* Exercise the library with a saved SPX above 0x00ff without using an
@@ -106,6 +121,9 @@ mcs251_setjmp_resumed$:
         mov     a,sph
         cjne    a,#0x01,mcs251_setjmp_failed$
         ecall   _recursive_setjmp_is_big_endian
+        mov     a,dpl
+        jz      mcs251_setjmp_failed$
+        ecall   _live_registers_survive_longjmp
         mov     a,dpl
         jz      mcs251_setjmp_failed$
 

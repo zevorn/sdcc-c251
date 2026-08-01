@@ -41,6 +41,7 @@
  *   0..1  SPX, high byte first
  *   2..4  ECALL return address, high byte first
  *   5..6  normalized longjmp return value, high byte first
+ *   7..14 r0-r7, in register order
  */
 int
 __setjmp (jmp_buf buf) __naked
@@ -54,6 +55,25 @@ __setjmp (jmp_buf buf) __naked
 mcs251_setjmp_irq_off$:
         mov     dpxl,b
         mov     dr20,dpx
+        mov     dr24,dpx
+        inc     dr24,#4
+        inc     dr24,#2
+        inc     dr24,#1
+        mov     @dr24,r0
+        inc     dr24
+        mov     @dr24,r1
+        inc     dr24
+        mov     @dr24,r2
+        inc     dr24
+        mov     @dr24,r3
+        inc     dr24
+        mov     @dr24,r4
+        inc     dr24
+        mov     @dr24,r5
+        inc     dr24
+        mov     @dr24,r6
+        inc     dr24
+        mov     @dr24,r7
         mov     r0,sp
         mov     r1,sph
         mov     dr24,spx
@@ -73,6 +93,24 @@ mcs251_setjmp_irq_off$:
         inc     dr20
         mov     @dr20,r2
 
+        dec     dr24,#4
+        dec     dr24,#2
+        dec     dr24,#1
+        mov     r0,@dr24
+        inc     dr24
+        mov     r1,@dr24
+        inc     dr24
+        mov     r2,@dr24
+        inc     dr24
+        mov     r3,@dr24
+        inc     dr24
+        mov     r4,@dr24
+        inc     dr24
+        mov     r5,@dr24
+        inc     dr24
+        mov     r6,@dr24
+        inc     dr24
+        mov     r7,@dr24
         mov     ea,c
         mov     dptr,#0
         eret
@@ -91,6 +129,20 @@ __mcs251_longjmp_restore (jmp_buf buf) __naked
 mcs251_longjmp_irq_off$:
         mov     dpxl,b
         mov     dr20,dpx
+        mov     r8,@dr20
+        inc     dr20
+        mov     r9,@dr20
+        inc     dr20
+        mov     r10,@dr20
+        inc     dr20
+        mov     r11,@dr20
+        inc     dr20
+        mov     r12,@dr20
+        inc     dr20
+        mov     r13,@dr20
+        inc     dr20
+        mov     r14,@dr20
+        inc     dr20
         mov     r0,@dr20
         inc     dr20
         mov     r1,@dr20
@@ -104,21 +156,23 @@ mcs251_longjmp_irq_off$:
         mov     r5,@dr20
         inc     dr20
         mov     r6,@dr20
+        inc     dr20
+        mov     r7,@dr20
 
         ; Re-create the saved ECALL frame without signed indexed addressing.
         mov     dpx,#0
-        mov     dpl,r1
-        mov     dph,r0
-        mov     @dpx,r4
+        mov     dpl,r9
+        mov     dph,r8
+        mov     @dpx,r12
         dec     dpx
-        mov     @dpx,r3
+        mov     @dpx,r11
         dec     dpx
-        mov     @dpx,r2
+        mov     @dpx,r10
         inc     dpx,#2
         mov     spx,dpx
 
-        mov     dpl,r6
-        mov     dph,r5
+        mov     dpl,r14
+        mov     dph,r13
         mov     ea,c
         eret
     __endasm;

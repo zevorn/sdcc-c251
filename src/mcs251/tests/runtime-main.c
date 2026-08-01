@@ -14,7 +14,7 @@ static __xdata struct mcs251_index_pair indexed_pairs[40];
 static volatile signed char relative_index = -3;
 
 #ifndef MCS251_SKIP_SETJMP
-static jmp_buf jump_buffer;
+static __xdata jmp_buf jump_buffer;
 static volatile unsigned char deep_call_count;
 
 /* Reach setjmp with SPX above 0x00ff, then verify that longjmp restores both
