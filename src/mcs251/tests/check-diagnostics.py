@@ -44,6 +44,7 @@ def main():
     parser.add_argument(
         "--incompatible-shadowed-struct-source", required=True
     )
+    parser.add_argument("--invalid-wide-bitfield-source", required=True)
     args = parser.parse_args()
 
     sdcc = Path(args.sdcc).resolve()
@@ -53,12 +54,15 @@ def main():
         Path(args.compatible_block_extern_source).resolve()
     incompatible_shadowed_source = \
         Path(args.incompatible_shadowed_struct_source).resolve()
+    invalid_wide_bitfield_source = \
+        Path(args.invalid_wide_bitfield_source).resolve()
     for path in (
         sdcc,
         incompatible_source,
         compatible_source,
         compatible_block_source,
         incompatible_shadowed_source,
+        invalid_wide_bitfield_source,
     ):
         if not path.exists():
             parser.error(f"required path does not exist: {path}")
@@ -77,6 +81,9 @@ def main():
             )
             compile_source(
                 sdcc, incompatible_shadowed_source, port, False, workspace
+            )
+            compile_source(
+                sdcc, invalid_wide_bitfield_source, port, False, workspace
             )
 
 

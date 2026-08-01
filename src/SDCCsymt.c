@@ -1894,8 +1894,19 @@ compStructSize (int su, structdef * sdef)
               break;
             case V_INT:
               SPEC_NOUN (loop->etype) = V_BITFIELD;
-              if (loop->bitVar > port->s.int_size * 8)
-                werror (E_BITFLD_SIZE , port->s.int_size * 8);
+              {
+                /* Allow a bit-field as wide as its declared base type
+                   (16 bits for int, 32 for long, 64 for long long). */
+                unsigned bitfield_max;
+                if (SPEC_LONGLONG (loop->etype))
+                  bitfield_max = port->s.longlong_size * 8;
+                else if (SPEC_LONG (loop->etype))
+                  bitfield_max = port->s.long_size * 8;
+                else
+                  bitfield_max = port->s.int_size * 8;
+                if (loop->bitVar > bitfield_max)
+                  werror (E_BITFLD_SIZE, bitfield_max);
+              }
               break;
             case V_BITINT:
               SPEC_NOUN (loop->etype) = V_BITINTBITFIELD;

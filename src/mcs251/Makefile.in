@@ -44,7 +44,9 @@ check: all
 		--compatible-block-extern-source \
 			$(srcdir)/tests/compatible-block-extern-struct.c \
 		--incompatible-shadowed-struct-source \
-			$(srcdir)/tests/incompatible-shadowed-struct.c
+			$(srcdir)/tests/incompatible-shadowed-struct.c \
+		--invalid-wide-bitfield-source \
+			$(srcdir)/tests/invalid-wide-bitfields.c
 	$(PYTHON) $(srcdir)/tests/check-c23-struct-redefinitions.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--compatible-c23-struct-source \
