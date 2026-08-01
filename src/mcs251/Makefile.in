@@ -68,6 +68,9 @@ check: all
 		$(top_srcdir)/device/lib/_mullonglong.c \
 		$(top_srcdir)/device/lib/_divuint.c \
 		$(top_srcdir)/device/include
+	$(PYTHON) $(srcdir)/tests/check-native-isa-selection.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--source $(srcdir)/tests/native-extension.c
 
 QEMU_MCS251 ?= $(HOME)/oss/qemu/builds/build-mcs251/qemu-system-mcs251
 QEMU_MCS51 ?= $(HOME)/oss/qemu/builds/build-mcs51/qemu-system-mcs51

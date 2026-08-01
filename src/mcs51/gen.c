@@ -13603,6 +13603,33 @@ mcs251CopyPlainBytes (operand *result, operand *right, int size)
     opPut (result, opGet (right, offset, FALSE, FALSE), offset);
 }
 
+/* Return the native word register for a two-byte SDCC register tuple.
+
+   SDCC stores the least-significant byte first.  A native MCS251 WRn names
+   its most-significant even register first, so the matching tuple is
+   [Rn+1, Rn]. */
+static const char *
+mcs251WordForLittleEndianPair (const asmop *aop, int offset)
+{
+  reg_info *low;
+  reg_info *high;
+  static const char *const wordRegisters[] = {
+    "wr0", "wr2", "wr4", "wr6"
+  };
+
+  if (!TARGET_IS_MCS251 || aop->type != AOP_REG ||
+      offset < 0 || offset + 1 >= aop->size)
+    return NULL;
+
+  low = aop->aopu.aop_reg[offset];
+  high = aop->aopu.aop_reg[offset + 1];
+  if (low->offset < 1 || low->offset > 7 || !(low->offset & 1) ||
+      high->offset != low->offset - 1)
+    return NULL;
+
+  return wordRegisters[high->offset / 2];
+}
+
 /*-----------------------------------------------------------------*/
 /* genCast - gen code for casting                                  */
 /*-----------------------------------------------------------------*/
@@ -13803,6 +13830,28 @@ genCast (iCode * ic)
     {
       opPut(result, opGet (right, offset, FALSE, FALSE), offset);
       offset++;
+    }
+
+  if (TARGET_IS_MCS251 && AOP_SIZE (right) == 1 &&
+      AOP_SIZE (result) >= 2 && IS_SPEC (rtype))
+    {
+      const char *word =
+        mcs251WordForLittleEndianPair (AOP (result), 0);
+
+      if (word)
+        {
+          const bool isUnsigned = SPEC_USIGN (rtype) ||
+            AOP_TYPE (right) == AOP_CRY;
+          const char *low = opGet (result, 0, FALSE, FALSE);
+
+          emitcode (isUnsigned ? "movz" : "movs", "%s,%s", word, low);
+          offset = 2;
+          size = AOP_SIZE (result) - offset;
+          while (size--)
+            opPut (result, isUnsigned ? zero :
+                   opGet (result, 1, FALSE, FALSE), offset++);
+          goto release;
+        }
     }
 
   /* now depending on the sign of the source && destination */
