@@ -133,6 +133,11 @@ The current GNU C compatibility boundary is:
   result is the value of `expression`. A constant expectation supplies a
   90/10 branch probability to the common optimizer; it does not change
   program semantics.
+- `__builtin_constant_p(expression)` is accepted in GNU11 and GNU17 and
+  folds to an integer constant expression. It conservatively reports whether
+  the common frontend can prove the operand constant. The operand is analyzed
+  but never evaluated; volatile accesses, assignments, increments and
+  function calls produce zero.
 - Statement expressions `({ ... })` are accepted in GNU11 and GNU17. The
   final expression statement supplies the value and type; an empty block or
   a block ending in another statement has type `void`. Declarations and side
@@ -176,7 +181,8 @@ but its common headers and build pipeline also require GNU-compatible
 attributes, builtins, statement expressions, `__typeof__`, section placement,
 weak symbols and compiler barriers. The implemented GNU language modes remove
 part of this frontend gap, including type-compatibility queries and statement
-expressions; they are not by themselves Zephyr support.
+expressions, branch-expectation hints and constant-expression queries; they
+are not by themselves Zephyr support.
 
 There are two additional compatibility boundaries outside the C parser:
 

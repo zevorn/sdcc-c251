@@ -9,7 +9,7 @@
 
 SDCC 已能为 MCS-51 和 MCS-251 接受严格的 ISO C17 源码。当前下游还支持
 `--std=gnu11` 和 `--std=gnu17`，提供常用 GNU keyword alias 与 attribute syntax，
-实现了 statement expression 和可用于常量表达式的类型兼容性查询，并能保留 GNU
+实现了 statement expression、类型兼容性查询和常量表达式查询，并能保留 GNU
 分支预期提示；但 common frontend 现有的 GNU 子集仍不足以编译 Zephyr。
 
 支持这两个 language mode 并不等于支持 Zephyr。stock Zephyr 与现行 MCS-251 ABI
@@ -41,6 +41,7 @@ common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17`、
 | `__typeof(...)`、`__typeof__(...)` | 接受，但 expression 仍有限制 |
 | `__builtin_types_compatible_p(type1, type2)` | GNU11/GNU17 接受；结果为整数常量表达式 |
 | `__builtin_expect(expression, expected)` | GNU11/GNU17 接受；返回 expression 转换为 `long` 后的值；expected 为常量时提供 90/10 分支提示 |
+| `__builtin_constant_p(expression)` | GNU11/GNU17 接受；保守地折叠为零或一，不会求值 operand |
 | target data-model macro | 预定义 MCS-51/MCS-251 的大小、类型、范围、常量和 byte order，并抑制 host ABI macro |
 | 基本形式 `__asm__("instruction")` | 接受 |
 | 带 operand、constraint 和 clobber 的 extended asm | 拒绝 |
@@ -77,9 +78,9 @@ compiler-specific 的等价实现：
 
 - 已在 GNU11/GNU17 实现的 `__typeof__`、`_Generic` 和 statement expression，
   以及仍待实现的 `__auto_type` 与 variadic macro comma elision；
-- 已在 GNU11/GNU17 实现的 `__builtin_types_compatible_p` 与
-  `__builtin_expect`，以及仍待实现的 `__builtin_unreachable`、bit-counting
-  builtin 和 overflow builtin；
+- 已在 GNU11/GNU17 实现的 `__builtin_types_compatible_p`、
+  `__builtin_expect` 与 `__builtin_constant_p`，以及仍待实现的
+  `__builtin_unreachable`、bit-counting builtin 和 overflow builtin；
 - `section`、`used`、`weak`、`packed`、`aligned`、`always_inline`、`noinline`、
   `noreturn`、`alias` 等 attribute semantics；
 - context switch 和 interrupt code 使用的 compiler barrier 与 target operation；

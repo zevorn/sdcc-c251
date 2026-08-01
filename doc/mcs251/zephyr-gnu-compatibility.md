@@ -11,9 +11,9 @@ is Zephyr 4.4 with its default C17 configuration.
 SDCC accepts strict ISO C17 for MCS-51 and MCS-251. This downstream also
 accepts `--std=gnu11` and `--std=gnu17`, provides common GNU keyword aliases
 and attribute syntax, implements statement expressions and constant
-type-compatibility queries, and preserves GNU branch-expectation hints. The
-GNU subset implemented by the common frontend is still not sufficient for
-Zephyr.
+type-compatibility and constant-expression queries, and preserves GNU
+branch-expectation hints. The GNU subset implemented by the common frontend
+is still not sufficient for Zephyr.
 
 The two language modes alone do not provide Zephyr support. Stock Zephyr is
 also incompatible with the normal MCS-251 ABI and with the ASxxxx
@@ -46,6 +46,7 @@ Direct probes against the current MCS-251 compiler give this baseline:
 | `__typeof(...)`, `__typeof__(...)` | accepted, with expression limits |
 | `__builtin_types_compatible_p(type1, type2)` | accepted in GNU11/GNU17; integer constant expression |
 | `__builtin_expect(expression, expected)` | accepted in GNU11/GNU17; returns `long` expression and supplies a 90/10 branch hint when expected is constant |
+| `__builtin_constant_p(expression)` | accepted in GNU11/GNU17; conservatively folds to zero or one without evaluating the operand |
 | target data-model macros | MCS-51/MCS-251 sizes, types, limits, constants and byte order are predefined; host ABI macros are suppressed |
 | basic `__asm__("instruction")` | accepted |
 | extended asm operands, constraints and clobbers | rejected |
@@ -85,9 +86,9 @@ need compiler-specific equivalents for these facilities:
 
 - `__typeof__`, `_Generic` and statement expressions (implemented in
   GNU11/GNU17), plus `__auto_type` and variadic macro comma elision;
-- `__builtin_types_compatible_p` and `__builtin_expect` (implemented in
-  GNU11/GNU17), plus the remaining `__builtin_unreachable`, bit-counting and
-  overflow builtins;
+- `__builtin_types_compatible_p`, `__builtin_expect` and
+  `__builtin_constant_p` (implemented in GNU11/GNU17), plus the remaining
+  `__builtin_unreachable`, bit-counting and overflow builtins;
 - `section`, `used`, `weak`, `packed`, `aligned`, `always_inline`, `noinline`,
   `noreturn`, `alias` and related attribute semantics;
 - compiler barriers and target operations used by context switching and
