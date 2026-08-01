@@ -3775,7 +3775,6 @@ foldBitBuiltinCall (ast *tree)
 
 typedef enum
 {
-  OVERFLOW_BUILTIN_NONE,
   OVERFLOW_BUILTIN_ADD,
   OVERFLOW_BUILTIN_SUB,
   OVERFLOW_BUILTIN_MUL,
@@ -3788,29 +3787,50 @@ typedef enum
   OVERFLOW_REWRITE_ERROR,
 } overflowRewriteResult;
 
+typedef struct
+{
+  const char *name;
+  overflowBuiltinOperation operation;
+  bool typedArguments;
+} overflowBuiltinDescription;
+
 /*------------------------------------------------------------------*/
-/* overflowBuiltinInfo - identify a generic overflow builtin       */
+/* overflowBuiltinInfo - identify a GNU overflow builtin           */
 /*------------------------------------------------------------------*/
-static overflowBuiltinOperation
+static const overflowBuiltinDescription *
 overflowBuiltinInfo (const char *name)
 {
-  static const struct
+  static const overflowBuiltinDescription builtins[] =
   {
-    const char *builtinName;
-    overflowBuiltinOperation operation;
-  } builtins[] =
-  {
-    {"__builtin_add_overflow", OVERFLOW_BUILTIN_ADD},
-    {"__builtin_sub_overflow", OVERFLOW_BUILTIN_SUB},
-    {"__builtin_mul_overflow", OVERFLOW_BUILTIN_MUL},
+    {"__builtin_add_overflow", OVERFLOW_BUILTIN_ADD, false},
+    {"__builtin_sub_overflow", OVERFLOW_BUILTIN_SUB, false},
+    {"__builtin_mul_overflow", OVERFLOW_BUILTIN_MUL, false},
+    {"__builtin_sadd_overflow", OVERFLOW_BUILTIN_ADD, true},
+    {"__builtin_saddl_overflow", OVERFLOW_BUILTIN_ADD, true},
+    {"__builtin_saddll_overflow", OVERFLOW_BUILTIN_ADD, true},
+    {"__builtin_uadd_overflow", OVERFLOW_BUILTIN_ADD, true},
+    {"__builtin_uaddl_overflow", OVERFLOW_BUILTIN_ADD, true},
+    {"__builtin_uaddll_overflow", OVERFLOW_BUILTIN_ADD, true},
+    {"__builtin_ssub_overflow", OVERFLOW_BUILTIN_SUB, true},
+    {"__builtin_ssubl_overflow", OVERFLOW_BUILTIN_SUB, true},
+    {"__builtin_ssubll_overflow", OVERFLOW_BUILTIN_SUB, true},
+    {"__builtin_usub_overflow", OVERFLOW_BUILTIN_SUB, true},
+    {"__builtin_usubl_overflow", OVERFLOW_BUILTIN_SUB, true},
+    {"__builtin_usubll_overflow", OVERFLOW_BUILTIN_SUB, true},
+    {"__builtin_smul_overflow", OVERFLOW_BUILTIN_MUL, true},
+    {"__builtin_smull_overflow", OVERFLOW_BUILTIN_MUL, true},
+    {"__builtin_smulll_overflow", OVERFLOW_BUILTIN_MUL, true},
+    {"__builtin_umul_overflow", OVERFLOW_BUILTIN_MUL, true},
+    {"__builtin_umull_overflow", OVERFLOW_BUILTIN_MUL, true},
+    {"__builtin_umulll_overflow", OVERFLOW_BUILTIN_MUL, true},
   };
 
   for (unsigned int i = 0;
        i < sizeof (builtins) / sizeof (builtins[0]); i++)
-    if (!strcmp (name, builtins[i].builtinName))
-      return builtins[i].operation;
+    if (!strcmp (name, builtins[i].name))
+      return &builtins[i];
 
-  return OVERFLOW_BUILTIN_NONE;
+  return NULL;
 }
 
 /*------------------------------------------------------------------*/
@@ -3847,10 +3867,47 @@ overflowParameterList (ast **arguments, unsigned int count, ast *location)
 }
 
 /*------------------------------------------------------------------*/
-/* rewriteOverflowBuiltinCall - lower a generic overflow builtin   */
+/* overflowTypedResultMatches - check a typed builtin result object */
+/*------------------------------------------------------------------*/
+static bool
+overflowTypedResultMatches (sym_link *expected, sym_link *actual)
+{
+  return IS_INTEGRAL (actual) &&
+         !IS_BOOLEAN (actual) && !SPEC_ENUM (actual) &&
+         !IS_BITINT (actual) && !isConst (actual) &&
+         !isAtomic (actual) &&
+         SPEC_NOUN (expected) == SPEC_NOUN (actual) &&
+         SPEC_USIGN (expected) == SPEC_USIGN (actual) &&
+         SPEC_SHORT (expected) == SPEC_SHORT (actual) &&
+         SPEC_LONG (expected) == SPEC_LONG (actual) &&
+         SPEC_LONGLONG (expected) == SPEC_LONGLONG (actual);
+}
+
+/*------------------------------------------------------------------*/
+/* overflowUnsignedArgument - convert a helper operand without a    */
+/*                            user-facing overflow warning          */
+/*------------------------------------------------------------------*/
+static ast *
+overflowUnsignedArgument (ast *operand)
+{
+  sym_link *type = newLongLongLink ();
+  ast *typeNode;
+  ast *cast;
+
+  SPEC_USIGN (getSpec (type)) = true;
+  typeNode = newAst_LINK (type);
+  cast = newNode (CAST, typeNode, operand);
+  copyAstLoc (typeNode, operand);
+  copyAstLoc (cast, operand);
+  return cast;
+}
+
+/*------------------------------------------------------------------*/
+/* rewriteOverflowBuiltinCall - lower a GNU overflow builtin       */
 /*------------------------------------------------------------------*/
 static overflowRewriteResult
-rewriteOverflowBuiltinCall (ast *tree)
+rewriteOverflowBuiltinCall (ast *tree, sym_link *functype,
+                            int *parmNumber)
 {
   if (!options.std_gnu ||
       !(TARGET_IS_MCS51 || TARGET_IS_MCS251) ||
@@ -3858,10 +3915,10 @@ rewriteOverflowBuiltinCall (ast *tree)
     return OVERFLOW_REWRITE_NONE;
 
   const char *builtinName = AST_SYMBOL (tree->left)->name;
-  overflowBuiltinOperation operation =
+  const overflowBuiltinDescription *builtin =
     overflowBuiltinInfo (builtinName);
 
-  if (operation == OVERFLOW_BUILTIN_NONE)
+  if (!builtin)
     return OVERFLOW_REWRITE_NONE;
 
   unsigned int argumentCount = overflowArgumentCount (tree->right);
@@ -3871,6 +3928,28 @@ rewriteOverflowBuiltinCall (ast *tree)
       werrorfl (tree->filename, tree->lineno,
                 argumentCount > 3 ? E_TOO_MANY_PARMS : E_TOO_FEW_PARMS);
       return OVERFLOW_REWRITE_ERROR;
+    }
+
+  if (builtin->typedArguments)
+    {
+      ast *resultPointer = decorateType (
+        tree->right->right->right, RESULT_TYPE_OTHER, false);
+      value *expectedResult = FUNC_ARGS (functype)->next->next;
+
+      if (resultPointer->isError ||
+          !IS_PTR (resultPointer->ftype) ||
+          DCL_TYPE (resultPointer->ftype) == CPOINTER ||
+          !overflowTypedResultMatches (expectedResult->type->next,
+                                       resultPointer->ftype->next))
+        {
+          werrorfl (tree->filename, tree->lineno,
+                    E_BUILTIN_OVERFLOW_TYPES, builtinName);
+          return OVERFLOW_REWRITE_ERROR;
+        }
+
+      if (processParms (tree->left, FUNC_ARGS (functype),
+                        &tree->right, parmNumber, true))
+        return OVERFLOW_REWRITE_ERROR;
     }
 
   ast *leftOperand = decorateType (
@@ -3915,11 +3994,11 @@ rewriteOverflowBuiltinCall (ast *tree)
   unsigned int resultSigned = !IS_UNSIGNED (resultType);
   ast *arguments[] =
   {
-    newAst_VALUE (valueFromLit (operation)),
-    leftOperand,
+    newAst_VALUE (valueFromLit (builtin->operation)),
+    overflowUnsignedArgument (leftOperand),
     newAst_VALUE (valueFromLit (leftWidth)),
     newAst_VALUE (valueFromLit (leftSigned)),
-    rightOperand,
+    overflowUnsignedArgument (rightOperand),
     newAst_VALUE (valueFromLit (rightWidth)),
     newAst_VALUE (valueFromLit (rightSigned)),
     resultPointer,
@@ -6551,7 +6630,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
             reverseParms (tree->right, 0);
 
           overflowRewriteResult overflowRewrite =
-            rewriteOverflowBuiltinCall (tree);
+            rewriteOverflowBuiltinCall (tree, functype, &parmNumber);
 
           if (overflowRewrite == OVERFLOW_REWRITE_DONE)
             return decorateType (tree, resultType, reduceTypeAllowed);

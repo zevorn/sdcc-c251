@@ -114,6 +114,7 @@ def main():
     parser.add_argument("--statement-expression-source", required=True)
     parser.add_argument("--bit-builtins-source", required=True)
     parser.add_argument("--overflow-builtins-source", required=True)
+    parser.add_argument("--typed-overflow-builtins-source", required=True)
     parser.add_argument("--optimization-runtime-source", required=True)
     parser.add_argument("--abi-regression-source", required=True)
     parser.add_argument("--longlong-source", required=True)
@@ -144,6 +145,9 @@ def main():
         Path(args.statement_expression_source).resolve()
     bit_builtins_source = Path(args.bit_builtins_source).resolve()
     overflow_builtins_source = Path(args.overflow_builtins_source).resolve()
+    typed_overflow_builtins_source = Path(
+        args.typed_overflow_builtins_source
+    ).resolve()
     optimization_runtime_source = \
         Path(args.optimization_runtime_source).resolve()
     abi_regression_source = Path(args.abi_regression_source).resolve()
@@ -168,6 +172,7 @@ def main():
                  statement_expression_source,
                  bit_builtins_source,
                  overflow_builtins_source,
+                 typed_overflow_builtins_source,
                  abi_regression_source,
                  longlong_source,
                  startup_memory_source, setjmp_spx_source,
@@ -373,6 +378,20 @@ def main():
             sys.stdout.buffer.write(run_qemu(
                 qemu, machine, overflow_image,
                 trace_for(overflow_image),
+            ))
+
+            typed_overflow_image = \
+                tmpdir / f"typed-overflow-builtins-{overflow_name}.hex"
+            run([
+                str(sdcc), "-mmcs251", "--std=gnu17", *model_flags,
+                "--no-xinit-opt", *board_link_flags,
+                f"-L{overflow_library_dir}",
+                "-o", str(typed_overflow_image),
+                str(typed_overflow_builtins_source),
+            ], env=env)
+            sys.stdout.buffer.write(run_qemu(
+                qemu, machine, typed_overflow_image,
+                trace_for(typed_overflow_image),
             ))
 
         optimization_modes = (

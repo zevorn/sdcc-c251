@@ -5417,6 +5417,32 @@ initBuiltIns ()
       {
         const char *name;
         const char *argumentType;
+        const char *resultType;
+      } typedOverflowBuiltins[] =
+      {
+        {"__builtin_sadd_overflow", "i", "ig*"},
+        {"__builtin_saddl_overflow", "l", "lg*"},
+        {"__builtin_saddll_overflow", "L", "Lg*"},
+        {"__builtin_uadd_overflow", "Ui", "Uig*"},
+        {"__builtin_uaddl_overflow", "Ul", "Ulg*"},
+        {"__builtin_uaddll_overflow", "UL", "ULg*"},
+        {"__builtin_ssub_overflow", "i", "ig*"},
+        {"__builtin_ssubl_overflow", "l", "lg*"},
+        {"__builtin_ssubll_overflow", "L", "Lg*"},
+        {"__builtin_usub_overflow", "Ui", "Uig*"},
+        {"__builtin_usubl_overflow", "Ul", "Ulg*"},
+        {"__builtin_usubll_overflow", "UL", "ULg*"},
+        {"__builtin_smul_overflow", "i", "ig*"},
+        {"__builtin_smull_overflow", "l", "lg*"},
+        {"__builtin_smulll_overflow", "L", "Lg*"},
+        {"__builtin_umul_overflow", "Ui", "Uig*"},
+        {"__builtin_umull_overflow", "Ul", "Ulg*"},
+        {"__builtin_umulll_overflow", "UL", "ULg*"},
+      };
+      static const struct
+      {
+        const char *name;
+        const char *argumentType;
       } bitBuiltins[] =
       {
         {"__builtin_clz", "Ui"},
@@ -5453,6 +5479,21 @@ initBuiltIns ()
 
           funcOfTypeVarg (overflowBuiltins[i], "b", 3,
                           builtinArgumentTypes);
+        }
+
+      for (unsigned int i = 0;
+           i < sizeof (typedOverflowBuiltins) /
+               sizeof (typedOverflowBuiltins[0]); i++)
+        {
+          const char *argumentTypes[] =
+          {
+            typedOverflowBuiltins[i].argumentType,
+            typedOverflowBuiltins[i].argumentType,
+            typedOverflowBuiltins[i].resultType,
+          };
+
+          funcOfTypeVarg (typedOverflowBuiltins[i].name, "b", 3,
+                          argumentTypes);
         }
 
       funcOfTypeVargReentrant ("__sdcc_overflow", "b", 10,

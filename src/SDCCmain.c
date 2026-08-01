@@ -2501,6 +2501,42 @@ preProcess (char **envp)
                 "__SDCC_HAS_BUILTIN___builtin_sub_overflow", "1");
               addPreprocessorDefine (
                 "__SDCC_HAS_BUILTIN___builtin_mul_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_sadd_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_saddl_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_saddll_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_uadd_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_uaddl_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_uaddll_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_ssub_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_ssubl_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_ssubll_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_usub_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_usubl_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_usubll_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_smul_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_smull_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_smulll_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_umul_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_umull_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_umulll_overflow", "1");
             }
         }
 

@@ -46,6 +46,30 @@
     !__has_builtin (__builtin_mul_overflow)
 #error "overflow builtins must be reported in GNU modes"
 #endif
+#if !__has_builtin (__builtin_sadd_overflow) || \
+    !__has_builtin (__builtin_saddl_overflow) || \
+    !__has_builtin (__builtin_saddll_overflow) || \
+    !__has_builtin (__builtin_uadd_overflow) || \
+    !__has_builtin (__builtin_uaddl_overflow) || \
+    !__has_builtin (__builtin_uaddll_overflow)
+#error "typed add overflow builtins must be reported in GNU modes"
+#endif
+#if !__has_builtin (__builtin_ssub_overflow) || \
+    !__has_builtin (__builtin_ssubl_overflow) || \
+    !__has_builtin (__builtin_ssubll_overflow) || \
+    !__has_builtin (__builtin_usub_overflow) || \
+    !__has_builtin (__builtin_usubl_overflow) || \
+    !__has_builtin (__builtin_usubll_overflow)
+#error "typed subtract overflow builtins must be reported in GNU modes"
+#endif
+#if !__has_builtin (__builtin_smul_overflow) || \
+    !__has_builtin (__builtin_smull_overflow) || \
+    !__has_builtin (__builtin_smulll_overflow) || \
+    !__has_builtin (__builtin_umul_overflow) || \
+    !__has_builtin (__builtin_umull_overflow) || \
+    !__has_builtin (__builtin_umulll_overflow)
+#error "typed multiply overflow builtins must be reported in GNU modes"
+#endif
 #else
 #if __has_builtin (__builtin_constant_p)
 #error "__builtin_constant_p must not be reported in strict modes"
@@ -64,6 +88,30 @@
     __has_builtin (__builtin_sub_overflow) || \
     __has_builtin (__builtin_mul_overflow)
 #error "overflow builtins must not be reported in strict modes"
+#endif
+#if __has_builtin (__builtin_sadd_overflow) || \
+    __has_builtin (__builtin_saddl_overflow) || \
+    __has_builtin (__builtin_saddll_overflow) || \
+    __has_builtin (__builtin_uadd_overflow) || \
+    __has_builtin (__builtin_uaddl_overflow) || \
+    __has_builtin (__builtin_uaddll_overflow)
+#error "typed add overflow builtins must not be reported in strict modes"
+#endif
+#if __has_builtin (__builtin_ssub_overflow) || \
+    __has_builtin (__builtin_ssubl_overflow) || \
+    __has_builtin (__builtin_ssubll_overflow) || \
+    __has_builtin (__builtin_usub_overflow) || \
+    __has_builtin (__builtin_usubl_overflow) || \
+    __has_builtin (__builtin_usubll_overflow)
+#error "typed subtract overflow builtins must not be reported in strict modes"
+#endif
+#if __has_builtin (__builtin_smul_overflow) || \
+    __has_builtin (__builtin_smull_overflow) || \
+    __has_builtin (__builtin_smulll_overflow) || \
+    __has_builtin (__builtin_umul_overflow) || \
+    __has_builtin (__builtin_umull_overflow) || \
+    __has_builtin (__builtin_umulll_overflow)
+#error "typed multiply overflow builtins must not be reported in strict modes"
 #endif
 #endif
 

@@ -157,6 +157,7 @@ def main():
     parser.add_argument("--statement-expression-source", required=True)
     parser.add_argument("--bit-builtins-source", required=True)
     parser.add_argument("--overflow-builtins-source", required=True)
+    parser.add_argument("--typed-overflow-builtins-source", required=True)
     parser.add_argument("--longlong-source", required=True)
     parser.add_argument("--device-include", required=True)
     parser.add_argument("--library-dir", required=True)
@@ -174,6 +175,9 @@ def main():
         Path(args.statement_expression_source).resolve()
     bit_builtins_source = Path(args.bit_builtins_source).resolve()
     overflow_builtins_source = Path(args.overflow_builtins_source).resolve()
+    typed_overflow_builtins_source = Path(
+        args.typed_overflow_builtins_source
+    ).resolve()
     longlong_source = Path(args.longlong_source).resolve()
     device_include = Path(args.device_include).resolve()
     library_dir = Path(args.library_dir).resolve()
@@ -183,6 +187,7 @@ def main():
         sdcc, qemu, source, statement_expression_source,
         bit_builtins_source, longlong_source, device_include, library_dir,
         overflow_builtins_source, stack_auto_library_dir,
+        typed_overflow_builtins_source,
     )
     for path in required:
         if not path.exists():
@@ -305,6 +310,16 @@ def main():
             )
             run_qemu(
                 qemu, machine, overflow_image, trace_for(overflow_image)
+            )
+
+            _, typed_overflow_image = build(
+                sdcc, typed_overflow_builtins_source, device_include,
+                overflow_library, output_dir, f"typed-{overflow_name}",
+                overflow_flags,
+            )
+            run_qemu(
+                qemu, machine, typed_overflow_image,
+                trace_for(typed_overflow_image),
             )
 
         longlong_image = build_longlong(
