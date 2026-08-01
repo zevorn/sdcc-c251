@@ -1,0 +1,376 @@
+#!/usr/bin/env python3
+
+import argparse
+from contextlib import nullcontext
+import os
+from pathlib import Path
+import selectors
+import subprocess
+import sys
+import tempfile
+import time
+
+
+MACHINE_CANDIDATES = ("stc32g144k246", "stc32g144k246-evb")
+
+
+def run(command, *, env=None):
+    subprocess.run(command, check=True, env=env)
+
+
+def resolve_machine(qemu, requested):
+    if requested:
+        return requested
+    result = subprocess.run(
+        [str(qemu), "-machine", "help"],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, check=False,
+    )
+    available = {
+        line.split()[0] for line in result.stdout.splitlines() if line.strip()
+    }
+    for candidate in MACHINE_CANDIDATES:
+        if candidate in available:
+            return candidate
+    raise RuntimeError(
+        f"{qemu} provides neither supported MCS251 machine: "
+        f"{', '.join(MACHINE_CANDIDATES)}"
+    )
+
+
+def run_qemu(qemu, machine, image, trace_log=None):
+    command = [
+        str(qemu), "-M", machine, "-bios", str(image),
+        "-display", "none", "-monitor", "none", "-serial", "stdio",
+    ]
+    if trace_log is not None:
+        command.extend([
+            "-d", "in_asm,cpu,nochain", "-D", str(trace_log),
+        ])
+
+    process = subprocess.Popen(
+        command,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    output = bytearray()
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ)
+    deadline = time.monotonic() + 3
+
+    try:
+        while time.monotonic() < deadline:
+            events = selector.select(deadline - time.monotonic())
+            if not events:
+                break
+            chunk = os.read(process.stdout.fileno(), 4096)
+            if not chunk:
+                break
+            output.extend(chunk)
+            normalized = bytes(output).replace(b"\r\n", b"\n")
+            if b"PASS\n" in normalized or b"FAIL\n" in normalized:
+                break
+    finally:
+        selector.close()
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+
+    normalized_output = bytes(output).replace(b"\r\n", b"\n")
+    if b"PASS\n" not in normalized_output:
+        sys.stderr.buffer.write(bytes(output))
+        raise SystemExit(f"QEMU did not emit PASS for {image.name}")
+    if b"FAIL" in normalized_output:
+        sys.stderr.buffer.write(bytes(output))
+        raise SystemExit(f"QEMU emitted FAIL for {image.name}")
+    return bytes(output)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sdcc", required=True)
+    parser.add_argument("--sdas251", required=True)
+    parser.add_argument("--qemu", required=True)
+    parser.add_argument("--machine")
+    parser.add_argument("--main-source", required=True)
+    parser.add_argument("--far-source", required=True)
+    parser.add_argument("--crt0", required=True)
+    parser.add_argument("--runtime-source", required=True)
+    parser.add_argument("--optimization-runtime-source", required=True)
+    parser.add_argument("--abi-regression-source", required=True)
+    parser.add_argument("--startup-memory-source", required=True)
+    parser.add_argument("--setjmp-spx-source", required=True)
+    parser.add_argument("--aggregate-source", required=True)
+    parser.add_argument("--memory-model-main-source", required=True)
+    parser.add_argument("--memory-model-source", required=True)
+    parser.add_argument("--runtime-cflag", action="append", default=[])
+    parser.add_argument("--device-include", required=True)
+    parser.add_argument("--library-dir", required=True)
+    parser.add_argument("--stack-auto-library-dir", required=True)
+    parser.add_argument("--large-library-dir", required=True)
+    parser.add_argument("--large-stack-auto-library-dir", required=True)
+    parser.add_argument("--work-dir")
+    parser.add_argument("--trace-dir")
+    args = parser.parse_args()
+
+    sdcc = Path(args.sdcc).resolve()
+    sdas251 = Path(args.sdas251).resolve()
+    qemu = Path(args.qemu).resolve()
+    main_source = Path(args.main_source).resolve()
+    far_source = Path(args.far_source).resolve()
+    crt0 = Path(args.crt0).resolve()
+    runtime_source = Path(args.runtime_source).resolve()
+    optimization_runtime_source = \
+        Path(args.optimization_runtime_source).resolve()
+    abi_regression_source = Path(args.abi_regression_source).resolve()
+    startup_memory_source = Path(args.startup_memory_source).resolve()
+    setjmp_spx_source = Path(args.setjmp_spx_source).resolve()
+    aggregate_source = Path(args.aggregate_source).resolve()
+    memory_model_main_source = Path(args.memory_model_main_source).resolve()
+    memory_model_source = Path(args.memory_model_source).resolve()
+    device_include = Path(args.device_include).resolve()
+    library_dir = Path(args.library_dir).resolve()
+    stack_auto_library_dir = Path(args.stack_auto_library_dir).resolve()
+    large_library_dir = Path(args.large_library_dir).resolve()
+    large_stack_auto_library_dir = \
+        Path(args.large_stack_auto_library_dir).resolve()
+    trace_dir = Path(args.trace_dir).resolve() if args.trace_dir else None
+
+    for path in (sdcc, sdas251, qemu, main_source, far_source, crt0,
+                 runtime_source, optimization_runtime_source,
+                 abi_regression_source,
+                 startup_memory_source, setjmp_spx_source,
+                 aggregate_source,
+                 memory_model_main_source,
+                 memory_model_source, device_include, library_dir,
+                 stack_auto_library_dir, large_library_dir,
+                 large_stack_auto_library_dir):
+        if not path.exists():
+            parser.error(f"required path does not exist: {path}")
+    try:
+        machine = resolve_machine(qemu, args.machine)
+    except RuntimeError as error:
+        parser.error(str(error))
+
+    env = os.environ.copy()
+    env["PATH"] = f"{sdcc.parent}{os.pathsep}{env.get('PATH', '')}"
+    board_link_flags = [
+        "--code-loc", "0xff0000", "-Wl-b GSINIT0=0xfc2800",
+    ]
+
+    if args.work_dir:
+        work_dir = Path(args.work_dir).resolve()
+        work_dir.mkdir(parents=True, exist_ok=True)
+        workspace = nullcontext(work_dir)
+    else:
+        workspace = tempfile.TemporaryDirectory(prefix="sdcc-mcs251-qemu.")
+
+    with workspace as tmp:
+        tmpdir = Path(tmp)
+
+        if trace_dir is not None:
+            trace_dir.mkdir(parents=True, exist_ok=True)
+
+        def trace_for(image_path):
+            if trace_dir is None:
+                return None
+            return trace_dir / f"{image_path.stem}.trace"
+
+        main_rel = tmpdir / "far-main.rel"
+        far_rel = tmpdir / "far-callee.rel"
+        crt_rel = tmpdir / "crt0.rel"
+        image = tmpdir / "far-call.hex"
+        map_file = image.with_suffix(".map")
+
+        run([
+            str(sdcc), "-mmcs251", "--no-xinit-opt", "-c", "-o", str(main_rel),
+            str(main_source),
+        ], env=env)
+        run([
+            str(sdcc), "-mmcs251", "--no-xinit-opt", "--codeseg", "FARCODE",
+            "-c", "-o", str(far_rel), str(far_source),
+        ], env=env)
+        run([
+            str(sdas251), "-plosgffw", "-o", str(crt_rel), str(crt0),
+        ], env=env)
+        run([
+            str(sdcc), "-mmcs251", "--nostdlib", "--no-xinit-opt",
+            *board_link_flags, "-Wl-b FARCODE=0xfe0000",
+            f"-L{library_dir}", "mcs251.lib",
+            "-o", str(image), str(main_rel), str(far_rel), str(crt_rel),
+        ], env=env)
+
+        map_text = map_file.read_text()
+        if "00FE0000  _mcs251_far_add_one" not in map_text:
+            raise SystemExit("far callee was not linked at 0xfe0000")
+        if "00FC2800  __sdcc_gsinit_startup" not in map_text:
+            raise SystemExit("startup code was not linked at flash base")
+        if "__sdcc_mcs251_reset_trampoline" not in map_text:
+            raise SystemExit("reset trampoline is missing from HOME")
+
+        sys.stdout.buffer.write(run_qemu(
+            qemu, machine, image, trace_for(image),
+        ))
+
+        startup_memory_image = tmpdir / "startup-memory.hex"
+        run([
+            str(sdcc), "-mmcs251", *board_link_flags,
+            f"-I{device_include}", f"-I{device_include / 'mcs51'}",
+            f"-L{library_dir}", "-o", str(startup_memory_image),
+            str(startup_memory_source),
+        ], env=env)
+        startup_map = startup_memory_image.with_suffix(".map").read_text()
+        for symbol in ("__mcs51_genXINIT", "__mcs51_genXRAMCLEAR"):
+            if symbol not in startup_map:
+                raise SystemExit(
+                    f"startup-memory image did not link {symbol}"
+                )
+        sys.stdout.buffer.write(run_qemu(
+            qemu, machine, startup_memory_image,
+            trace_for(startup_memory_image),
+        ))
+
+        setjmp_spx_configurations = (
+            ("small", (), library_dir),
+            ("large", ("--model-large",), large_library_dir),
+        )
+        for setjmp_name, model_flags, setjmp_library_dir in \
+                setjmp_spx_configurations:
+            setjmp_spx_image = tmpdir / f"setjmp-spx-{setjmp_name}.hex"
+            run([
+                str(sdcc), "-mmcs251", *model_flags, "--no-xinit-opt",
+                *board_link_flags, f"-I{device_include}",
+                f"-I{device_include / 'mcs51'}", f"-L{setjmp_library_dir}",
+                "-o", str(setjmp_spx_image), str(setjmp_spx_source),
+            ], env=env)
+            setjmp_spx_map = \
+                setjmp_spx_image.with_suffix(".map").read_text()
+            for symbol in ("___setjmp", "_longjmp"):
+                if symbol not in setjmp_spx_map:
+                    raise SystemExit(
+                        f"{setjmp_name} SPX setjmp image did not link {symbol}"
+                    )
+            sys.stdout.buffer.write(run_qemu(
+                qemu, machine, setjmp_spx_image, trace_for(setjmp_spx_image),
+            ))
+
+        runtime_configurations = (
+            ("small", (), library_dir),
+            ("small-stack-auto", ("--stack-auto",),
+             stack_auto_library_dir),
+            ("large", ("--model-large",), large_library_dir),
+            ("large-stack-auto", ("--model-large", "--stack-auto"),
+             large_stack_auto_library_dir),
+        )
+        for runtime_name, model_flags, runtime_library_dir in \
+                runtime_configurations:
+            runtime_image = tmpdir / f"runtime-{runtime_name}.hex"
+            run([
+                str(sdcc), "-mmcs251", *model_flags, "--no-xinit-opt",
+                *board_link_flags, f"-I{device_include}",
+                f"-I{device_include / 'mcs51'}", f"-L{runtime_library_dir}",
+                *args.runtime_cflag, "-o", str(runtime_image),
+                str(runtime_source),
+            ], env=env)
+
+            runtime_map = runtime_image.with_suffix(".map").read_text()
+            skipped = set(args.runtime_cflag)
+            required_symbols = []
+            if "-DMCS251_SKIP_DIVISION" not in skipped:
+                required_symbols.append("__divulong")
+            if "-DMCS251_SKIP_FLOAT" not in skipped:
+                required_symbols.append("_atof")
+            if "-DMCS251_SKIP_SETJMP" not in skipped:
+                required_symbols.extend(("___setjmp", "_longjmp"))
+            if "-DMCS251_SKIP_BSEARCH" not in skipped:
+                required_symbols.append("_bsearch")
+            if not args.runtime_cflag:
+                required_symbols.append("__gptrget")
+            for symbol in required_symbols:
+                if symbol not in runtime_map:
+                    raise SystemExit(
+                        f"{runtime_name} runtime image did not link {symbol}"
+                    )
+
+            sys.stdout.buffer.write(run_qemu(
+                qemu, machine, runtime_image, trace_for(runtime_image),
+            ))
+
+        optimization_modes = (
+            ("default", ()),
+            ("size", ("--opt-code-size",)),
+            ("speed", ("--opt-code-speed",)),
+        )
+        for optimization_name, model_flags, optimization_library_dir in \
+                runtime_configurations:
+            for optimization_mode, optimization_flags in optimization_modes:
+                optimization_image = tmpdir / (
+                    f"optimization-{optimization_name}-{optimization_mode}.hex"
+                )
+                run([
+                    str(sdcc), "-mmcs251", *model_flags,
+                    *optimization_flags, "--no-xinit-opt",
+                    *board_link_flags, f"-I{device_include}",
+                    f"-I{device_include / 'mcs51'}",
+                    f"-L{optimization_library_dir}",
+                    "-o", str(optimization_image),
+                    str(optimization_runtime_source),
+                ], env=env)
+                sys.stdout.buffer.write(run_qemu(
+                    qemu, machine, optimization_image,
+                    trace_for(optimization_image),
+                ))
+
+        for abi_name, model_flags, abi_library_dir in runtime_configurations:
+            abi_image = tmpdir / f"abi-regression-{abi_name}.hex"
+            run([
+                str(sdcc), "-mmcs251", *model_flags, "--no-xinit-opt",
+                *board_link_flags, f"-I{device_include}",
+                f"-I{device_include / 'mcs51'}", f"-L{abi_library_dir}",
+                "-o", str(abi_image), str(abi_regression_source),
+            ], env=env)
+            sys.stdout.buffer.write(run_qemu(
+                qemu, machine, abi_image, trace_for(abi_image),
+            ))
+
+        aggregate_image = tmpdir / "aggregate-return.hex"
+        run([
+            str(sdcc), "-mmcs251", "--no-xinit-opt", *board_link_flags,
+            f"-I{device_include}", f"-I{device_include / 'mcs51'}",
+            f"-L{library_dir}", "-o", str(aggregate_image),
+            str(aggregate_source),
+        ], env=env)
+        sys.stdout.buffer.write(run_qemu(
+            qemu, machine, aggregate_image, trace_for(aggregate_image),
+        ))
+
+        memory_model_image = tmpdir / "memory-model-large.hex"
+        memory_model_main_rel = tmpdir / "memory-model-runtime.rel"
+        memory_model_rel = tmpdir / "memory-model.rel"
+        run([
+            str(sdcc), "-mmcs251", "--model-large", "--no-xinit-opt",
+            f"-I{device_include}", f"-I{device_include / 'mcs51'}", "-c",
+            "-o", str(memory_model_main_rel), str(memory_model_main_source),
+        ], env=env)
+        run([
+            str(sdcc), "-mmcs251", "--model-large", "--no-xinit-opt", "-c",
+            "-o", str(memory_model_rel), str(memory_model_source),
+        ], env=env)
+        run([
+            str(sdcc), "-mmcs251", "--model-large", "--no-xinit-opt",
+            *board_link_flags, f"-L{large_library_dir}",
+            "-o", str(memory_model_image), str(memory_model_main_rel),
+            str(memory_model_rel),
+        ], env=env)
+        sys.stdout.buffer.write(run_qemu(
+            qemu, machine, memory_model_image, trace_for(memory_model_image),
+        ))
+
+
+if __name__ == "__main__":
+    main()
