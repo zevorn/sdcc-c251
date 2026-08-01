@@ -12,6 +12,10 @@ The upstream documentation index remains in
 manual is under [`doc/zh-CN/`](doc/zh-CN/README.md). All documentation stays in
 the original `doc/` tree.
 
+The exact MCS-251 instruction coverage, positive and negative tests, and
+current compiler-selection limits are recorded in the
+[`MCS-251 instruction-set support`](doc/mcs251/instruction-set.md) document.
+
 ## Build from source
 
 Out-of-tree builds keep generated files out of the source checkout. MCS-51 is

@@ -14,11 +14,13 @@ manual hierarchy:
 - [MCS-51 中文章节](../zh-CN/chapters/06-mcs51.md)
 - [MCS-251 中文章节](../zh-CN/chapters/07-mcs251.md)
 - [MCS-251 ABI 中文规范](../zh-CN/chapters/11-mcs251-abi.md)
+- [MCS-251 指令集支持情况](../zh-CN/chapters/12-mcs251-instruction-set.md)
 - [调试、QEMU 与 GDB stub](../zh-CN/chapters/08-debugging.md)
 
 ## MCS-251 reference documents
 
 - [ABI revision 1](abi.md)
+- [Instruction-set support and coverage](instruction-set.md)
 - [QEMU and GDB debugging](debugging.md)
 - [Keil memory-model research](keil-memory-model.md)
 - [Official-example clean-room plan](official-example-plan.md)

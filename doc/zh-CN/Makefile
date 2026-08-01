@@ -13,7 +13,8 @@ CHAPTERS = \
 	chapters/08-debugging.md \
 	chapters/09-tips-support.md \
 	chapters/10-technical-internals.md \
-	chapters/11-mcs251-abi.md
+	chapters/11-mcs251-abi.md \
+	chapters/12-mcs251-instruction-set.md
 
 .PHONY: all pdf html check clean
 

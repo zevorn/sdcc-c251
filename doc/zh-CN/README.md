@@ -2,7 +2,8 @@
 
 本目录是 `doc/sdccman.lyx` 英文手册的平行中文版本。英文目录和源文件保持不变，
 以便下游分支 rebase 到 SDCC 主线时尽量减少冲突。中文手册按原手册的主题和叙述
-顺序重组，并增加本分支的 MCS-251 目标、ABI、QEMU 和 GDB stub 内容。
+顺序重组，并增加本分支的 MCS-251 目标、ABI、完整指令矩阵、QEMU 和 GDB stub
+内容。
 
 翻译以源码树中的英文 LyX 文档和官方发布的
 [SDCC Compiler User Guide](https://sdcc.sourceforge.net/doc/sdccman.pdf) 为依据。
@@ -48,6 +49,6 @@ PDF/HTML artifact；tag 构建还会把 PDF 附加到对应 GitHub Release。
 英文手册仍是上游规范来源。中文内容与当前程序的 `sdcc --help`、源码或测试结果
 不一致时，以当前代码和测试为准，并修正本目录。
 
-MCS-251 的英文 ABI、QEMU/GDB、memory model 和测试资料统一保存在
-[`doc/mcs251/`](../mcs251/README.md)。仓库不再使用平行的 `docs/` 目录；英文手册、
-中文手册和目标资料都从上游原有的 `doc/` 目录维护。
+MCS-251 的英文 ABI、instruction-set coverage、QEMU/GDB、memory model 和测试资料
+统一保存在 [`doc/mcs251/`](../mcs251/README.md)。仓库不再使用平行的 `docs/`
+目录；英文手册、中文手册和目标资料都从上游原有的 `doc/` 目录维护。
