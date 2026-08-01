@@ -1,0 +1,40 @@
+body {
+    color: #202124;
+    font-family: "Noto Serif CJK SC", serif;
+    line-height: 1.75;
+    margin: 0 auto;
+    max-width: 68rem;
+    padding: 2rem 3rem 5rem;
+}
+
+code, pre {
+    font-family: "Noto Sans Mono CJK SC", monospace;
+}
+
+pre {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 0.35rem;
+    overflow-x: auto;
+    padding: 1rem;
+}
+
+table {
+    border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
+    width: max-content;
+    max-width: 100%;
+}
+
+th, td {
+    border: 1px solid #d0d7de;
+    padding: 0.4rem 0.7rem;
+}
+
+blockquote {
+    border-left: 0.25rem solid #d0d7de;
+    color: #57606a;
+    margin-left: 0;
+    padding-left: 1rem;
+}

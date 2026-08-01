@@ -1,0 +1,36 @@
+---
+title: SDCC 编译器用户指南
+subtitle: 简体中文版本（含 MCS-51 与 MCS-251）
+author: SDCC 开发团队
+lang: zh-Hans
+documentclass: ctexbook
+classoption:
+  - oneside
+papersize: a4
+geometry:
+  - top=25mm
+  - bottom=20mm
+  - left=20mm
+  - right=20mm
+fontsize: 10.5pt
+mainfont: TeX Gyre Pagella
+sansfont: TeX Gyre Heros
+monofont: DejaVu Sans Mono
+CJKmainfont: Noto Serif CJK SC
+CJKsansfont: Noto Sans CJK SC
+CJKmonofont: Noto Sans Mono CJK SC
+colorlinks: true
+linkcolor: red
+urlcolor: blue
+toc: true
+toc-depth: 3
+numbersections: true
+secnumdepth: 3
+header-includes:
+  - \usepackage{longtable,booktabs,array}
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+  - \ctexset{chapter={format=\centering\LARGE\bfseries,aftername=\quad,afterindent=true}}
+  - \setlength{\emergencystretch}{3em}
+  - \sloppy
+---
