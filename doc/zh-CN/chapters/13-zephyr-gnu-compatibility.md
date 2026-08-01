@@ -11,9 +11,9 @@ SDCC 已能为 MCS-51 和 MCS-251 接受严格的 ISO C17 源码。当前下游�
 `--std=gnu11` 和 `--std=gnu17`，提供常用 GNU keyword alias 与 attribute syntax，
 实现了 statement expression、类型兼容性查询和常量表达式查询，并能保留 GNU
 分支预期提示；MCS-51 与 MCS-251 还提供了 GNU bit-counting builtin family，以及
-type-generic 的加法、减法和乘法 overflow builtin，并完整支持 signed/unsigned
-`int`、`long` 与 `long long` 对应的 18 个 typed variant。common frontend 现有的
-GNU 子集仍不足以编译 Zephyr。
+16、32 和 64 bit byte-swap builtin、type-generic 的加法、减法和乘法 overflow
+builtin，并完整支持 signed/unsigned `int`、`long` 与 `long long` 对应的 18 个
+typed variant。common frontend 现有的 GNU 子集仍不足以编译 Zephyr。
 
 支持这两个 language mode 并不等于支持 Zephyr。stock Zephyr 与现行 MCS-251 ABI
 以及 ASxxxx `.rel`/`.ihx` 构建流程同样不兼容。完整的前置条件包括：
@@ -46,6 +46,7 @@ common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17`、
 | `__builtin_expect(expression, expected)` | GNU11/GNU17 接受；返回 expression 转换为 `long` 后的值；expected 为常量时提供 90/10 分支提示 |
 | `__builtin_constant_p(expression)` | GNU11/GNU17 接受；保守地折叠为零或一，不会求值 operand |
 | `__builtin_clz*`、`__builtin_ctz*`、`__builtin_popcount*`、`__builtin_ffs*` | MCS-51/MCS-251 的 GNU11/GNU17 接受；常量参数由 frontend 折叠，动态参数调用与 ABI 匹配的 runtime helper |
+| `__builtin_bswap16`、`__builtin_bswap32`、`__builtin_bswap64` | MCS-51/MCS-251 的 GNU11/GNU17 接受；采用准确的 `uint16_t`/`uint32_t`/`uint64_t` signature，并支持常量折叠和动态 helper |
 | `__builtin_add_overflow`、`__builtin_sub_overflow`、`__builtin_mul_overflow` | MCS-51/MCS-251 的 GNU11/GNU17 接受；执行 type-generic 的精确运算，写回截断结果并报告 overflow |
 | typed `sadd`/`uadd`/`ssub`/`usub`/`smul`/`umul` overflow family | MCS-51/MCS-251 的 GNU11/GNU17 完整支持 `int`、`long` 与 `long long` 共 18 个 variant |
 | `__has_builtin(name)` | 所有模式均报告 common builtin，GNU11/GNU17 另报告 GNU-only builtin；未知名称为零 |
@@ -72,6 +73,13 @@ bit-counting family 覆盖 `int`、`long` 与 `long long` 三组 spelling。动�
 只求值一次；`__builtin_ffs*` 的 operand 为零时返回零，GNU C 则没有定义
 `__builtin_clz*` 和 `__builtin_ctz*` 对零的结果。测试覆盖 constant expression、
 错误参数个数，以及 MCS-51/MCS-251 QEMU 上的动态执行；其中包含 stack-auto 和
+MCS-251 的四种 memory-model 组合。
+
+byte-swap builtin 遵循 GNU 的 `uint16_t`、`uint32_t` 和 `uint64_t` signature，
+分别反转 operand 中 2、4 或 8 个 8-bit byte 的顺序。常量 operand 经 frontend
+折叠后仍是 integer constant expression；动态 operand 只求值一次，并调用与位宽
+匹配的 runtime helper。测试覆盖准确的 result type、非法参数个数和 operand type、
+strict mode 隔离、二次交换还原、单次求值、MCS-51 static/stack-auto 运行，以及
 MCS-251 的四种 memory-model 组合。
 
 type-generic overflow builtin 接受两个不超过 64 bit 的整数 operand，以及一个指向
@@ -116,9 +124,9 @@ compiler-specific 的等价实现：
 - 已在 GNU11/GNU17 实现的 `__builtin_types_compatible_p`、
   `__builtin_expect` 与 `__builtin_constant_p`，以及所有模式均已实现的
   `__builtin_unreachable`；MCS target 的 `clz`/`ctz`/`popcount`/`ffs` family
-  以及 type-generic add/subtract/multiply overflow builtin 和全部 18 个 typed
-  variant，也已在 GNU11/GNU17 实现；Zephyr 若用到 predicate overflow builtin，
-  仍需继续补齐；
+  与 16/32/64-bit byte-swap builtin，以及 type-generic add/subtract/multiply
+  overflow builtin 和全部 18 个 typed variant，也已在 GNU11/GNU17 实现；
+  Zephyr 若用到 predicate overflow builtin，仍需继续补齐；
 - `section`、`used`、`weak`、`packed`、`aligned`、`always_inline`、`noinline`、
   `noreturn`、`alias` 等 attribute semantics；
 - context switch 和 interrupt code 使用的 compiler barrier 与 target operation；

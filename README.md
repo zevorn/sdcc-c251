@@ -144,6 +144,10 @@ The current GNU C compatibility boundary is:
   are evaluated once and use ABI-matched runtime helpers for `int`, `long` and
   `long long`. As in GNU C, `clz` and `ctz` have undefined results for zero,
   while `ffs` returns zero for zero.
+- The same targets provide `__builtin_bswap16`, `__builtin_bswap32` and
+  `__builtin_bswap64` with the GNU `uint16_t`, `uint32_t` and `uint64_t`
+  signatures. Constant arguments fold in the frontend; dynamic arguments are
+  evaluated once and use width-matched runtime helpers.
 - The MCS-51 and MCS-251 targets provide the type-generic
   `__builtin_add_overflow`, `__builtin_sub_overflow` and
   `__builtin_mul_overflow` operations in GNU11 and GNU17. They perform the
@@ -210,8 +214,8 @@ attributes, builtins, statement expressions, `__typeof__`, section placement,
 weak symbols and compiler barriers. The implemented GNU language modes remove
 part of this frontend gap, including type-compatibility queries and statement
 expressions, inferred object types, branch-expectation hints and
-constant-expression, bit-counting, generic overflow and typed overflow
-queries; they are not by themselves Zephyr support.
+constant-expression, bit-counting, byte-swapping, generic overflow and typed
+overflow queries; they are not by themselves Zephyr support.
 
 There are two additional compatibility boundaries outside the C parser:
 

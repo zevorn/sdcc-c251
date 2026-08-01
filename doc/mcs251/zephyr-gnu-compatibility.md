@@ -13,10 +13,11 @@ accepts `--std=gnu11` and `--std=gnu17`, provides common GNU keyword aliases
 and attribute syntax, implements statement expressions and constant
 type-compatibility and constant-expression queries, and preserves GNU
 branch-expectation hints. MCS-51 and MCS-251 also provide the GNU bit-counting
-builtin families and the type-generic add, subtract and multiply overflow
-builtins, together with all 18 typed variants for signed and unsigned `int`,
-`long` and `long long`. The GNU subset implemented by the common frontend is
-still not sufficient for Zephyr.
+builtin families, the 16-, 32- and 64-bit byte-swap builtins and the
+type-generic add, subtract and multiply overflow builtins, together with all
+18 typed variants for signed and unsigned `int`, `long` and `long long`. The
+GNU subset implemented by the common frontend is still not sufficient for
+Zephyr.
 
 The two language modes alone do not provide Zephyr support. Stock Zephyr is
 also incompatible with the normal MCS-251 ABI and with the ASxxxx
@@ -51,6 +52,7 @@ Direct probes against the current MCS-251 compiler give this baseline:
 | `__builtin_expect(expression, expected)` | accepted in GNU11/GNU17; returns `long` expression and supplies a 90/10 branch hint when expected is constant |
 | `__builtin_constant_p(expression)` | accepted in GNU11/GNU17; conservatively folds to zero or one without evaluating the operand |
 | `__builtin_clz*`, `__builtin_ctz*`, `__builtin_popcount*`, `__builtin_ffs*` | MCS-51/MCS-251 GNU11/GNU17; constant arguments fold and dynamic arguments use ABI-matched runtime helpers |
+| `__builtin_bswap16`, `__builtin_bswap32`, `__builtin_bswap64` | MCS-51/MCS-251 GNU11/GNU17; exact `uint16_t`/`uint32_t`/`uint64_t` signatures, constant folding and dynamic helpers |
 | `__builtin_add_overflow`, `__builtin_sub_overflow`, `__builtin_mul_overflow` | MCS-51/MCS-251 GNU11/GNU17; type-generic exact arithmetic with a wrapped result and overflow status |
 | typed `sadd`/`uadd`/`ssub`/`usub`/`smul`/`umul` overflow families | all 18 `int`, `long` and `long long` variants on MCS-51/MCS-251 GNU11/GNU17 |
 | `__has_builtin(name)` | reports common builtins in every mode, GNU-only builtins in GNU11/GNU17, and zero for unknown names |
@@ -80,6 +82,14 @@ operand; GNU C leaves `__builtin_clz*` and `__builtin_ctz*` undefined for zero.
 The tests exercise constant expressions, invalid arity and dynamic execution
 on both MCS-51 and MCS-251 QEMU targets, including stack-auto and all four
 MCS-251 memory-model combinations.
+
+The byte-swap builtins follow the GNU `uint16_t`, `uint32_t` and `uint64_t`
+signatures. Each reverses the order of its operand's 8-bit bytes. Constant
+operands are integer constant expressions after frontend folding; dynamic
+operands are evaluated once and dispatched to width-matched runtime helpers.
+Tests cover exact result types, invalid arity and operand types, strict-mode
+exclusion, involution, single evaluation, MCS-51 static/stack-auto execution
+and all four MCS-251 memory-model combinations.
 
 The type-generic overflow builtins accept two integral operands through 64
 bits and a pointer to a writable standard integer object. They calculate the
@@ -128,9 +138,10 @@ need compiler-specific equivalents for these facilities:
 - `__builtin_types_compatible_p`, `__builtin_expect` and
   `__builtin_constant_p` (implemented in GNU11/GNU17), and
   `__builtin_unreachable` (implemented in every mode), plus the MCS
-  `clz`/`ctz`/`popcount`/`ffs` families and type-generic add/subtract/multiply
-  overflow builtins and all 18 typed variants (implemented in GNU11/GNU17),
-  plus any remaining predicate overflow builtins required by Zephyr;
+  `clz`/`ctz`/`popcount`/`ffs` families, 16-/32-/64-bit byte-swap builtins,
+  type-generic add/subtract/multiply overflow builtins and all 18 typed
+  variants (implemented in GNU11/GNU17), plus any remaining predicate
+  overflow builtins required by Zephyr;
 - `section`, `used`, `weak`, `packed`, `aligned`, `always_inline`, `noinline`,
   `noreturn`, `alias` and related attribute semantics;
 - compiler barriers and target operations used by context switching and
