@@ -568,8 +568,15 @@ relr3(void)
 				 */
                         relv = adb_2b(reli, rtp);
 
-                        if ((relv & ~((a_uint) 0x000007FF)) !=
-                            ((pc + rtp - rtofst) & ~((a_uint) 0x000007FF))) {
+                        if (mode & R_MCS251_CONTROL) {
+                                if ((relv & a_mask & ~((a_uint) 0x000007FF)) !=
+                                    ((pc + rtp - rtofst + 2) & a_mask &
+                                     ~((a_uint) 0x000007FF))) {
+					error = 6;
+                                }
+                        } else if ((relv & ~((a_uint) 0x000007FF)) !=
+                                   ((pc + rtp - rtofst) &
+                                    ~((a_uint) 0x000007FF))) {
 					error = 6;
                         }
 
@@ -624,6 +631,20 @@ relr3(void)
 				 * 24 bit destination
 				 */
 				relv = adb_3b(reli, rtp);
+			}
+                else if (IS_R_J16(mode))
+                {
+                        /*
+                         * MCS-251 LCALL/LJMP retain the current PC region and
+                         * replace only PC[15:0].  The target therefore has to
+                         * share the 64 KiB region of the following instruction.
+                         */
+                        relv = adb_2b(reli, rtp);
+                        if ((relv & (a_uint) 0x00FF0000) !=
+                            ((pc + rtp - rtofst + 2) &
+                             (a_uint) 0x00FF0000)) {
+                                error = 15;
+                        }
 			}
                 else
                 {
@@ -711,7 +732,8 @@ char *errmsg3[] = {
 /* 11 */        "Invalid address for instruction",
 /* 12 */        "mismatched pdk targets; expected pdk15",
 /* 13 */        "mismatched pdk targets; expected pdk14",
-/* 14 */        "mismatched pdk targets; expected pdk13"
+/* 14 */        "mismatched pdk targets; expected pdk13",
+/* 15 */        "64K Region relocation error"
 /* end sdld specific */
 };
 

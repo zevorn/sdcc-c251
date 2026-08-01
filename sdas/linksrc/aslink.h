@@ -363,11 +363,14 @@ extern	int	ASxxxx_VERSION;
 #define R3_J11     (R3_WORD|R3_BYTX)        /* JLH: 11 bit JMP and CALL (8051) */
 #define R3_J19     (R3_WORD|R3_BYTX|R3_MSB) /* BM:  19 bit JMP and CALL (DS80C390) */
 #define R_C24      (R3_WORD|R3_BYT1|R3_MSB) /* 24 bit address (DS80C390) */
+#define R_MCS251_CONTROL 0x0800                /* MCS-251 paged control-transfer semantics */
+#define R_J16      R_MCS251_CONTROL            /* 16 bit jump/call in same 64K region */
 #define R_J19_MASK (R3_BYTE|R3_BYTX|R3_MSB)
 
 #define IS_R_J19(x) (((x) & R_J19_MASK) == R3_J19)
 #define IS_R_J11(x) (((x) & R_J19_MASK) == R3_J11)
 #define IS_C24(x) (((x) & R_J19_MASK) == R_C24)
+#define IS_R_J16(x) (((x) & R_J16) != 0)
 
 /* sdld specific */
 #define R_BYT3  0x100           /* if R3_BYTE is set, this is a
@@ -1404,4 +1407,3 @@ void gg(int in);
 /* strcmpi.h */
 extern int as_strcmpi(const char *s1, const char *s2);
 extern int as_strncmpi(const char *s1, const char *s2, size_t n);
-

@@ -387,11 +387,14 @@ struct	area
 #define R_J11           (R_WORD|R_BYTX)          /* JLH: 11 bit JMP and CALL (8051) */
 #define R_J19           (R_WORD|R_BYTX|R_MSB)   /* 19 bit JMP/CALL (DS80C390)      */
 #define R_C24           (R_WORD|R_BYT1|R_MSB)   /* 24 bit address (DS80C390)       */
+#define R_MCS251_CONTROL  0x0800                  /* MCS-251 paged control-transfer semantics */
+#define R_J16           R_MCS251_CONTROL          /* 16 bit jump/call in same 64K region */
 #define R_J19_MASK      (R_BYTE|R_BYTX|R_MSB)
 
 #define IS_R_J19(x)     (((x) & R_J19_MASK) == R_J19)
 #define IS_R_J11(x)     (((x) & R_J19_MASK) == R_J11)
 #define IS_C24(x)       (((x) & R_J19_MASK) == R_C24)
+#define IS_R_J16(x)     (((x) & R_J16) != 0)
 
 /*
  * Basic Relocation Modes
@@ -1498,4 +1501,3 @@ extern	int		dgt(int rdx, char *str, int n);
 extern  int as_strcmpi(const char *s1, const char *s2);
 extern  int as_strncmpi(const char *s1, const char *s2, size_t n);
 /* end sdas specific */
-

@@ -504,8 +504,9 @@ outrxb(int i, struct expr *esp, int r)
 				outatxb(i,esp->e_addr);
 			}
 		} else {
-                        if ((i == 1) && (!is_sdas() 
-				|| !(is_sdas_target_8051_like() || is_sdas_target_stm8() || is_sdas_target_rab()))) {
+                        if ((i == 1) && (!is_sdas()
+				|| !(is_sdas_target_8051_like() || is_sdas_target_mcs251() ||
+				     is_sdas_target_stm8() || is_sdas_target_rab()))) {
                                 r |= R_BYTE | R_BYTX | esp->e_rlcf;
                                 if (r & R_MSB) {
                                         out_lb(hibyte(esp->e_addr),r|R_RELOC|R_HIGH);
@@ -642,7 +643,8 @@ outrw(struct expr *esp, int r)
 			}
 			if (oflag) {
                                 if (!is_sdas() 
-					|| !(is_sdas_target_8051_like() || is_sdas_target_stm8() || is_sdas_target_rab())) {
+					|| !(is_sdas_target_8051_like() || is_sdas_target_mcs251() ||
+					     is_sdas_target_stm8() || is_sdas_target_rab())) {
                                         outchk(2, 4);
                                         out_txb(2, esp->e_addr);
                                         if (esp->e_flag) {
@@ -1791,7 +1793,7 @@ outrwm(struct expr *esp, int r, a_uint v)
         int n;
 
 	if (pass == 2) {
-                if (!is_sdas() || !is_sdas_target_8051_like()) {
+		if (!is_sdas() || !is_sdas_target_8051_like()) {
                         if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {
                                 /*
                                  * Absolute Destination
@@ -1824,8 +1826,12 @@ outrwm(struct expr *esp, int r, a_uint v)
 				} else {
 					n = esp->e_base.e_ap->a_ref;
 				}
-				*relp++ = r;
-                                *relp++ = txtp - txt - 3;
+				if (is_sdas() && is_sdas_target_mcs251())
+					write_rmode(r, txtp - txt - 3);
+				else {
+					*relp++ = r;
+					*relp++ = txtp - txt - 3;
+				}
 				out_rw(n);
 			}
 		} else {

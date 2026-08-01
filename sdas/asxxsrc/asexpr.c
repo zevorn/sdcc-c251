@@ -220,15 +220,23 @@ expr(struct expr *esp, int n)
                                 /* SD change here */
                                 /* if the left is a relative address &
                                    the right side is 8/16/24 then */
-                                if (esp->e_base.e_ap && ar == 8) {
+                                if ((esp->e_base.e_ap ||
+                                     (is_sdas() && is_sdas_target_mcs251() &&
+                                      esp->e_flag)) && ar == 8) {
                                         esp->e_rlcf |= R_MSB;
                                         break;
 				}
-                                else if (esp->e_base.e_ap && ar == 16) {
+                                else if ((esp->e_base.e_ap ||
+                                          (is_sdas() &&
+                                           is_sdas_target_mcs251() &&
+                                           esp->e_flag)) && ar == 16) {
                                         esp->e_rlcf |= R_HIB;
                                         break;
 				}
-                                else if (esp->e_base.e_ap && ar == 24) {
+                                else if ((esp->e_base.e_ap ||
+                                          (is_sdas() &&
+                                           is_sdas_target_mcs251() &&
+                                           esp->e_flag)) && ar == 24) {
                                         esp->e_rlcf |= R_MSB | R_HIB;
                                         break;
 				}
@@ -238,7 +246,9 @@ expr(struct expr *esp, int n)
                                 break;
 
                         case '[':
-                                if (is_sdas() && is_sdas_target_8051_like()) {
+                                if (is_sdas() &&
+                                    (is_sdas_target_8051_like() ||
+                                     is_sdas_target_mcs251())) {
                                         /* MB added [ for bit access in bdata */
                                         if (getnb() != ']')
                                                 qerr();
@@ -785,7 +795,9 @@ oprio(int c)
 		return (3);
 	if (c == '|')
 		return (1);
-        if (is_sdas() && is_sdas_target_8051_like() && c == '[')
+        if (is_sdas() &&
+            (is_sdas_target_8051_like() || is_sdas_target_mcs251()) &&
+            c == '[')
                 return (12);
 	return (0);
 }
@@ -937,5 +949,3 @@ exprmasks(int n)
 	}
 #endif
 }
-
-

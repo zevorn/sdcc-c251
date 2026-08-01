@@ -69,6 +69,7 @@ sdas_init (char *path)
     { "rab", TARGET_ID_RAB },
     { "8051", TARGET_ID_8051 },
     { "390", TARGET_ID_DS390 },
+    { "251", TARGET_ID_MCS251 },
     { "6808", TARGET_ID_6808 },
     { "stm8", TARGET_ID_STM8 },
     { "pdk13", TARGET_ID_PDK13 },
@@ -143,6 +144,13 @@ is_sdas_target_8051_like(void)
 {
   check_init();
   return target == TARGET_ID_8051 || target == TARGET_ID_DS390;
+}
+
+int
+is_sdas_target_mcs251(void)
+{
+  check_init();
+  return target == TARGET_ID_MCS251;
 }
 
 int
