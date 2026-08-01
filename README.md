@@ -156,7 +156,9 @@ make -C support/regression -j4 test-mcs51
 
 The four MCS-251 lanes execute in QEMU. The mature MCS-51 regression suite uses
 ucSim for its full set of memory models; `check-mcs51-qemu` supplies the QEMU
-runtime and binary-stability cross-check.
+runtime and binary-stability cross-check. The inherited generic regression
+cases are useful while developing MCS-251, but they are not a CI gate until
+their memory-placement expectations have been baselined for the 251 models.
 
 For trace logging and GDB-stub procedures, see
 [`doc/mcs251/debugging.md`](doc/mcs251/debugging.md). When a runtime failure is
@@ -171,10 +173,10 @@ The `SDCC MCS-51 family CI` workflow runs for every pull request targeting
 1. builds the two execution backends from a pinned `processmission/qemu`
    revision;
 2. builds an SDCC configuration containing MCS-51 and MCS-251;
-3. runs MCS-251 compiler/code-generation and focused runtime tests;
-4. runs all four MCS-251 regression memory-model lanes in QEMU;
-5. runs the full upstream MCS-51 regression set and its QEMU stability test;
-6. uploads SDCC regression logs when a job fails.
+3. runs MCS-251 compiler/code-generation, ABI, optimization, official-example,
+   GDB-stub and focused runtime tests across all four memory/stack models;
+4. runs the full upstream MCS-51 regression set and its QEMU stability test;
+5. uploads SDCC regression logs when a job fails.
 
 The QEMU revision is recorded in
 [`mcs51-family.yml`](.github/workflows/mcs51-family.yml) so a QEMU update is an

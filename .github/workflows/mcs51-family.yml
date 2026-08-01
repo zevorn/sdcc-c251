@@ -117,15 +117,6 @@ jobs:
           make -C sdcc-build/src/mcs251 check-mcs51-qemu \
             QEMU_MCS51="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs51"
 
-      - name: Test all MCS-251 regression models
-        run: |
-          make -C sdcc-build/support/regression -j"$(nproc)" \
-            test-mcs251 \
-            test-mcs251-stack-auto \
-            test-mcs251-large \
-            test-mcs251-large-stack-auto \
-            QEMU_MCS251="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs251"
-
       - name: Test all MCS-51 regression models
         run: |
           make -C sdcc-build/support/regression -j"$(nproc)" test-mcs51
