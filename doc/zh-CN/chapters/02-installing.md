@@ -77,6 +77,16 @@ Windows 用户可使用官方安装包或 ZIP 快照，也可在 MSYS2/Cygwin/Mi
 不同 shell 对路径、引号和重定向的解释不同；复制 Unix 命令时要特别检查盘符、
 反斜杠、空格和 `-Wl` 参数。
 
+本分支的 `SDCC Windows package` workflow 会为每次 pull request 和 `main` push 构建
+64 位 Windows ZIP。进入仓库的 Actions 页面，打开成功的 Windows package run，下载
+`sdcc-mcs251-windows-x64-<commit>.zip` artifact 并解压即可。包内包含 `sdcc.exe`、
+MCS-51/MCS-251 assembler、linker、header 和四种 MCS-251 配置对应的运行库。
+
+这些 `.exe` 在 CI 中使用 UCRT64/MinGW 构建并静态链接宿主依赖。发布 ZIP 之前，CI
+会离开 MSYS2 build shell，从普通 PowerShell 分别编译并链接 MCS-51 和 MCS-251
+Intel HEX。因此，使用下载包不需要安装 MSYS2；只需把解压目录下的 `bin` 加入
+`PATH`，或直接执行 `bin\sdcc.exe`。
+
 安装包升级前应记录旧版本路径，并防止系统 PATH 同时命中多个 `sdcc.exe`。使用
 `where sdcc` 和 `sdcc --version` 验证实际运行的程序。
 

@@ -191,6 +191,26 @@ The QEMU revision is recorded in
 [`mcs51-family.yml`](.github/workflows/mcs51-family.yml) so a QEMU update is an
 explicit, reviewable CI change.
 
+## Download the Windows package
+
+The independent `SDCC Windows package` workflow builds a relocatable 64-bit
+Windows ZIP for every pull request and every push to `main`. The package
+contains native Windows executables such as `sdcc.exe`, `sdcpp.exe`,
+`sdas8051.exe`, `sdas251.exe` and `sdld.exe`, together with the MCS-51 and
+MCS-251 headers and runtime libraries.
+
+Open the
+[`SDCC Windows package` workflow](https://github.com/zevorn/sdcc-c251/actions/workflows/windows-package.yml),
+select a successful run, and download the
+`sdcc-mcs251-windows-x64-<commit>.zip` artifact. Extract it to any directory
+and either add its `bin` directory to `PATH` or invoke `bin\sdcc.exe` directly.
+No MSYS2 installation is required to use the downloaded compiler.
+
+CI verifies the package from ordinary PowerShell, outside the MSYS2 build
+shell. It uses the packaged compiler, preprocessor, assemblers, linker,
+headers and libraries to produce both MCS-51 and MCS-251 Intel HEX images
+before the ZIP is published. Artifacts are retained for 30 days.
+
 ## Build the documentation
 
 The upstream English manual keeps its original LyX layout under `doc/`. Enable
