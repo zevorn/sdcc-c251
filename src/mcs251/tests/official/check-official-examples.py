@@ -337,6 +337,7 @@ def main():
     parser.add_argument("--library-dir", required=True)
     parser.add_argument("--work-dir")
     parser.add_argument("--trace-dir")
+    parser.add_argument("--uart-only", action="store_true")
     args = parser.parse_args()
 
     sdcc = Path(args.sdcc).resolve()
@@ -390,6 +391,8 @@ def main():
         "dsp32": (b"CASE:official-dsp32:PASS\n", ()),
         "tfpu": (b"CASE:official-tfpu:PASS\n", ()),
     }
+    if args.uart_only:
+        cases = {"uart1-echo": cases["uart1-echo"]}
     lanes = (("default", ()), ("size", ("--opt-code-size",)))
 
     socket_parent = Path("/tmp") if Path("/tmp").is_dir() else None
@@ -410,6 +413,14 @@ def main():
                 )
                 if handlers:
                     check_interrupt_vectors(image.with_suffix(".asm"), handlers)
+
+            if args.uart_only:
+                run_uart(
+                    qemu, machine,
+                    output_dir / f"{lane}-uart1-echo.hex", socket_dir,
+                    f"{lane}-uart1-echo",
+                )
+                continue
 
             run_simple(
                 qemu, machine, output_dir / f"{lane}-memory.hex", socket_dir,
@@ -453,7 +464,13 @@ def main():
                 f"{lane}-tfpu", cases["tfpu"][0],
             )
 
-    print("MCS251 official-example semantics: 10 cases x 2 optimization lanes passed")
+    if args.uart_only:
+        print("MCS251 UART smoke: 2 optimization lanes passed")
+    else:
+        print(
+            "MCS251 official-example semantics: "
+            "10 cases x 2 optimization lanes passed"
+        )
 
 
 if __name__ == "__main__":

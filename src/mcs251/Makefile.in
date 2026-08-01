@@ -49,7 +49,7 @@ MCS251_STACK_AUTO_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-small-s
 MCS251_LARGE_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-large
 MCS251_LARGE_STACK_AUTO_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-large-stack-auto
 
-.PHONY: check-qemu check-official-qemu check-gdbstub
+.PHONY: check-qemu check-official-qemu check-uart-qemu check-gdbstub
 check-qemu: all check-official-qemu check-gdbstub
 	$(PYTHON) $(srcdir)/tests/check-qemu.py \
 		--sdcc $(top_builddir)/bin/sdcc \
@@ -80,6 +80,15 @@ check-official-qemu: all
 		--source-dir $(srcdir)/tests/official \
 		--device-include $(top_srcdir)/device/include \
 		--library-dir $(MCS251_LIBRARY_DIR)
+
+check-uart-qemu: all
+	$(PYTHON) $(srcdir)/tests/official/check-official-examples.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--qemu $(QEMU_MCS251) \
+		--source-dir $(srcdir)/tests/official \
+		--device-include $(top_srcdir)/device/include \
+		--library-dir $(MCS251_LIBRARY_DIR) \
+		--uart-only
 
 check-gdbstub: all
 	$(PYTHON) $(srcdir)/tests/check-gdbstub.py \
