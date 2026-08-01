@@ -26,6 +26,9 @@ check: all
 	$(PYTHON) $(srcdir)/tests/check-static-inline.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/static-inline-emission.c
+	$(PYTHON) $(srcdir)/tests/check-compound-literal-codegen.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--source $(srcdir)/tests/compound-literal-argument.c
 	$(PYTHON) $(srcdir)/tests/check-gnu-extensions.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--empty-aggregate-source \

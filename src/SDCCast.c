@@ -2961,12 +2961,26 @@ getLeftResultType (ast * tree, RESULT_TYPE resultType)
     }
 }
 
+static void gatherImplicitVariables (ast *tree, ast *block);
+
+static void
+gatherImplicitVariablesInInitializers (initList *ilist, ast *block)
+{
+  for (; ilist; ilist = ilist->next)
+    {
+      if (ilist->type == INIT_NODE)
+        gatherImplicitVariables (ilist->init.node, block);
+      else if (ilist->type == INIT_DEEP)
+        gatherImplicitVariablesInInitializers (ilist->init.deep, block);
+    }
+}
+
 /*------------------------------------------------------------------*/
 /* gatherImplicitVariables:  adds the symbols created by            */
 /*            replaceAstWithTemporary to the declarations list of   */
 /*            the innermost block that contains them                */
 /*------------------------------------------------------------------*/
-void
+static void
 gatherImplicitVariables (ast *tree, ast *block)
 {
   if (!tree)
@@ -2974,8 +2988,13 @@ gatherImplicitVariables (ast *tree, ast *block)
 
   if (tree->type == EX_OP && tree->opval.op == BLOCK)
     {
+      symbol *decl;
+
       /* keep track of containing scope */
       block = tree;
+      for (decl = block->values.sym; decl; decl = decl->next)
+        if (decl->ival)
+          gatherImplicitVariablesInInitializers (decl->ival, block);
     }
   if (tree->type == EX_OP && tree->opval.op == '=' && tree->left->type == EX_VALUE && tree->left->opval.val->sym)
     {
