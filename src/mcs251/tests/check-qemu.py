@@ -41,11 +41,12 @@ def resolve_machine(qemu, requested):
 def run_qemu(qemu, machine, image, trace_log=None):
     command = [
         str(qemu), "-M", machine, "-bios", str(image),
+        "-accel", "tcg", "-icount", "shift=0,align=off,sleep=off",
         "-display", "none", "-monitor", "none", "-serial", "stdio",
     ]
     if trace_log is not None:
         command.extend([
-            "-d", "in_asm,cpu,nochain", "-D", str(trace_log),
+            "-d", "in_asm,exec,nochain", "-D", str(trace_log),
         ])
 
     process = subprocess.Popen(

@@ -68,13 +68,14 @@ def main():
     trace_log = None
     command = [
         str(qemu), "-M", machine, "-bios", str(image),
+        "-accel", "tcg", "-icount", "shift=0,align=off,sleep=off",
         "-display", "none", "-monitor", "none", "-serial", "stdio",
     ]
     if args.trace_log:
         trace_log = Path(args.trace_log).resolve()
         trace_log.parent.mkdir(parents=True, exist_ok=True)
         command.extend([
-            "-d", "in_asm,cpu,nochain", "-D", str(trace_log),
+            "-d", "in_asm,exec,nochain", "-D", str(trace_log),
         ])
 
     process = subprocess.Popen(

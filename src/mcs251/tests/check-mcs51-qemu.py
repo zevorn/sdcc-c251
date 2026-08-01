@@ -84,6 +84,7 @@ def run_qemu(qemu, machine, image):
     process = subprocess.Popen(
         [
             str(qemu), "-M", machine, "-bios", str(image),
+            "-accel", "tcg", "-icount", "shift=0,align=off,sleep=off",
             "-display", "none", "-monitor", "none", "-serial", "stdio",
         ],
         stdout=subprocess.PIPE,
