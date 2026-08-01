@@ -20,7 +20,7 @@ re-expresses it using the SDCC MCS251 ABI and syntax.
 
 The exact external package hashes, licensing boundary, deferred peripherals,
 and clean-room derivation rules are recorded in
-`docs/mcs251-official-example-plan.md`.  Expected values come from the hardware
+`doc/mcs251/official-example-plan.md`.  Expected values come from the hardware
 manuals; QEMU is the execution environment, not the oracle.
 
 Additional existing MCS251 conformance tests carry the non-peripheral semantics

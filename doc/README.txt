@@ -17,6 +17,11 @@ the binary kits.
 
 See the share/sdcc/doc directory for more documentation.
 
+The MCS-251 downstream target documentation is collected in the mcs251/
+subdirectory.  The parallel Simplified Chinese manual for SDCC, MCS-51 and
+MCS-251 is maintained in zh-CN/.  Both live in this original doc/ tree so
+that the repository has one documentation root.
+
 See https://sdcc.sourceforge.net/ for the latest information on sdcc.
 
 

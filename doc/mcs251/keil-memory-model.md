@@ -257,7 +257,7 @@ STC §2.15.3，印刷 79 / PDF 113，建议超过 64 KiB 程序选 Keil Code ROM
 
 ## 与当前 SDCC MCS251 ABI revision 1 的逐项对照
 
-本节对照仓库中的 [SDCC MCS251 ABI revision 1](mcs251-abi.md)。它只审查书面约定与官方事实是否相容，不代表这里重新验证了编译器实现。Keil 一栏是差异参照，不是兼容目标。
+本节对照仓库中的 [SDCC MCS251 ABI revision 1](abi.md)。它只审查书面约定与官方事实是否相容，不代表这里重新验证了编译器实现。Keil 一栏是差异参照，不是兼容目标。
 
 | 项目 | 当前 SDCC rev1 | Intel / Keil / STC 参照 | 结论与约束 |
 |---|---|---|---|

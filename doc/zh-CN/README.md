@@ -47,3 +47,7 @@ PDF/HTML artifact；tag 构建还会把 PDF 附加到对应 GitHub Release。
 
 英文手册仍是上游规范来源。中文内容与当前程序的 `sdcc --help`、源码或测试结果
 不一致时，以当前代码和测试为准，并修正本目录。
+
+MCS-251 的英文 ABI、QEMU/GDB、memory model 和测试资料统一保存在
+[`doc/mcs251/`](../mcs251/README.md)。仓库不再使用平行的 `docs/` 目录；英文手册、
+中文手册和目标资料都从上游原有的 `doc/` 目录维护。

@@ -1,4 +1,124 @@
-Please see doc/README.txt.
+SDCC - free open source, retargettable, optimizing ISO C compiler
+------------------------------------------------------------------
 
-The parallel Simplified Chinese manual for SDCC, MCS-51 and MCS-251 is
-available in doc/zh-CN/README.md.
+Please see doc/README.txt for the upstream documentation index.  MCS-251
+target notes are in doc/mcs251/README.md.  The parallel Simplified Chinese
+manual for SDCC, MCS-51 and MCS-251 is in doc/zh-CN/README.md.  All project
+documentation is kept below doc/; there is no separate docs/ tree.
+
+
+Building from source
+~~~~~~~~~~~~~~~~~~~~
+
+The normal build keeps generated files outside the source tree.  The
+MCS-51 port is enabled by default.  The MCS-251 port is experimental and
+must be selected explicitly with --enable-mcs251-port.
+
+On Debian or Ubuntu, install the host build dependencies with:
+
+    sudo apt-get update
+    sudo apt-get install build-essential bison flex gputils libboost-dev \
+        libreadline-dev texinfo zlib1g-dev
+
+On macOS, install the Xcode command-line tools, then install the parser
+generators and Boost.  Make sure the Homebrew bison and flex executables
+come before the system versions in PATH:
+
+    xcode-select --install
+    brew install bison boost flex gputils gnu-sed readline texinfo
+    export PATH="$(brew --prefix bison)/bin:$(brew --prefix flex)/bin:$PATH"
+
+Clone and configure both MCS-51 and MCS-251 support:
+
+    git clone https://github.com/zevorn/sdcc-c251.git
+    cd sdcc-c251
+    mkdir build
+    cd build
+    CFLAGS=-std=gnu17 ../configure \
+        --enable-mcs251-port --prefix="$PWD/install"
+
+On macOS, Homebrew installs Boost outside the compiler's default header
+search path.  Use this configure form instead:
+
+    CFLAGS=-std=gnu17 \
+    CPPFLAGS="-I$(brew --prefix boost)/include" \
+    ../configure \
+        --enable-mcs251-port --prefix="$PWD/install"
+
+The default configuration also builds the other maintained SDCC ports,
+assemblers, linkers, device headers, run-time libraries, packihx, sdcdb and
+ucSim.  Inspect all available switches with ../configure --help.  To leave
+out an unneeded target, pass its --disable-<target>-port option.
+
+Build and install into build/install:
+
+    make -j4
+    make install
+
+The explicit CFLAGS setting is required because parts of the inherited
+ASxxxx sources still use K&R function definitions that C23 rejects.  It
+changes only the host compiler mode; it does not change the C dialect
+accepted by SDCC.
+
+
+Verifying the build
+~~~~~~~~~~~~~~~~~~~
+
+Check the installed compiler and the two target names:
+
+    install/bin/sdcc --version
+    grep -E '^(mcs51|mcs251)$' ports.build
+
+Run the compiler and code-generation checks for MCS-251, then make sure the
+shared MCS-51 path still compiles its regression program:
+
+    make -C src/mcs251 check
+    bin/sdcc -mmcs51 -I../device/include -S \
+        -o /tmp/mcs51-smoke.asm \
+        ../src/mcs251/tests/mcs51-regression.c
+
+The complete MCS-251 library build produces these four ABI-matched library
+directories below device/lib/build/:
+
+    mcs251-small
+    mcs251-small-stack-auto
+    mcs251-large
+    mcs251-large-stack-auto
+
+
+Running with QEMU
+~~~~~~~~~~~~~~~~~
+
+The QEMU checks require the MCS-251 and MCS-51 system emulators from the
+companion QEMU tree.  From the SDCC build directory, run:
+
+    make -C src/mcs251 check-qemu \
+        QEMU_MCS251=/path/to/qemu-system-mcs251
+
+    make -C src/mcs251 check-mcs51-qemu \
+        QEMU_MCS51=/path/to/qemu-system-mcs51
+
+The first target covers MCS-251 runtime, memory-model, optimization, official
+example-derived and GDB-stub checks.  The second target verifies that the
+MCS-51 object and runtime baseline remains unchanged.  A full MCS-251
+regression run is available through:
+
+    make -C support/regression test-mcs251 \
+        QEMU_MCS251=/path/to/qemu-system-mcs251
+
+Use the QEMU trace and GDB-stub procedures in doc/mcs251/debugging.md when a
+runtime check fails.  If generated code and ABI evidence are correct, first
+exclude a QEMU defect before changing the mature MCS-51-compatible paths.
+
+
+Building the documentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The upstream English manual keeps its original LyX layout under doc/.  Build
+it by configuring SDCC with --enable-doc and running the normal make target.
+The Simplified Chinese PDF and HTML are independent outputs in the same doc/
+tree:
+
+    make -C doc/zh-CN check all
+
+See doc/zh-CN/README.md for the Pandoc, XeLaTeX and CJK font dependencies.

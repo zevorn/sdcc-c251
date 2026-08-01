@@ -211,13 +211,13 @@ Timer、UART、GPIO、DSP32 和 TFPU 的公开实现摘要见 [QEMU 已建模外
 “SDCC 风格改写”意味着重新表达可观察行为，而不是批量替换关键字：
 
 - Keil 的项目文件、startup、segment/class、绝对地址、`interrupt N`、内存限定词和内联汇编必须按当前 SDCC MCS251 前端、汇编器与 linker script/flags 重新设计；不能把能打开 `.uvproj` 当成目标。
-- [`docs/mcs251-abi.md`](mcs251-abi.md)明确说明当前是 **SDCC MCS251 ABI revision 1**，不是 Arm/Keil ABI，也不宣称 OMF-251 对象或库兼容；其直接 C 调用/返回约定是 `ECALL`/`ERET`。所以 AN116 的 `LCALL` 优化只能转成独立汇编/链接优化课题，不能作为“兼容 Keil”的验收。
+- [`doc/mcs251/abi.md`](abi.md)明确说明当前是 **SDCC MCS251 ABI revision 1**，不是 Arm/Keil ABI，也不宣称 OMF-251 对象或库兼容；其直接 C 调用/返回约定是 `ECALL`/`ERET`。所以 AN116 的 `LCALL` 优化只能转成独立汇编/链接优化课题，不能作为“兼容 Keil”的验收。
 - 不链接供应商 `.LIB`，不运行供应商预编译 HEX/BIN，也不复制原控制流、变量名、注释或输出字符串。测试源码只保留 `Source:` 链接、语义摘要和独立推导的 expected values。
 - 目标是“同一公开硬件行为在 SDCC 产物中成立”，不是源码兼容、ABI 兼容或二进制兼容。若将来要增加兼容层，应另立规格和许可审计。
 
 ## 10. 构建、运行与判定协议
 
-现有 [`src/mcs251/Makefile.in`](../src/mcs251/Makefile.in) 已提供 `check` / `check-qemu`，默认寻找 `~/oss/qemu/builds/build-mcs251/qemu-system-mcs251`；[`src/mcs251/tests/check-qemu.py`](../src/mcs251/tests/check-qemu.py) 已能用 `sdcc -mmcs251`、`--code-loc 0xff0000` 生成 HEX，在 `stc32g144k246-evb` 上运行，并以 UART `PASS`/`FAIL` 判定。新增例程测试应沿用这一入口但收紧协议：
+现有 [`src/mcs251/Makefile.in`](../../src/mcs251/Makefile.in) 已提供 `check` / `check-qemu`，默认寻找 `~/oss/qemu/builds/build-mcs251/qemu-system-mcs251`；[`src/mcs251/tests/check-qemu.py`](../../src/mcs251/tests/check-qemu.py) 已能用 `sdcc -mmcs251`、`--code-loc 0xff0000` 生成 HEX，在 `stc32g144k246-evb` 上运行，并以 UART `PASS`/`FAIL` 判定。新增例程测试应沿用这一入口但收紧协议：
 
 1. 每个固件输出唯一一行 `CASE:<stable-name>:PASS\n`；任何 `FAIL`、异常退出或固定 timeout 都失败。避免只搜索无上下文的 `PASS` 子串。
 2. 每个纯 C 语义案例至少跑当前默认优化和 `--opt-code-size` 两条 lane；结果必须一致。另设代码生成测试检查常量折叠、无效代码消除、冗余扩展/装载消除和已承诺的 native 指令，不把某一种合法指令序列过度固化。
