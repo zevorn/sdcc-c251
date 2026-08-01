@@ -144,10 +144,17 @@ The current GNU C compatibility boundary is:
   are evaluated once and use ABI-matched runtime helpers for `int`, `long` and
   `long long`. As in GNU C, `clz` and `ctz` have undefined results for zero,
   while `ffs` returns zero for zero.
+- The MCS-51 and MCS-251 targets provide the type-generic
+  `__builtin_add_overflow`, `__builtin_sub_overflow` and
+  `__builtin_mul_overflow` operations in GNU11 and GNU17. They perform the
+  calculation with infinite precision, store the wrapped result in a writable
+  standard integer object, and return `_Bool` to report whether the exact
+  result fits. Each argument is evaluated once, and the runtime helper writes
+  the result in the selected target's byte order.
 - `__has_builtin(name)` reports the builtins accepted by the selected
   frontend mode. Unknown names produce zero. `__builtin_offsetof` and
   `__builtin_unreachable` are available in every mode; the GNU-only queries
-  and MCS bit-counting builtins above are reported only in GNU11 and GNU17.
+  and MCS builtins above are reported only in GNU11 and GNU17.
 - Statement expressions `({ ... })` are accepted in GNU11 and GNU17. The
   final expression statement supplies the value and type; an empty block or
   a block ending in another statement has type `void`. Declarations and side
@@ -196,8 +203,8 @@ attributes, builtins, statement expressions, `__typeof__`, section placement,
 weak symbols and compiler barriers. The implemented GNU language modes remove
 part of this frontend gap, including type-compatibility queries and statement
 expressions, inferred object types, branch-expectation hints and
-constant-expression and bit-counting queries; they are not by themselves
-Zephyr support.
+constant-expression, bit-counting and generic overflow queries; they are not
+by themselves Zephyr support.
 
 There are two additional compatibility boundaries outside the C parser:
 
