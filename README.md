@@ -133,6 +133,11 @@ The current GNU C compatibility boundary is:
   result is the value of `expression`. A constant expectation supplies a
   90/10 branch probability to the common optimizer; it does not change
   program semantics.
+- The driver defines target data-model macros such as `__SIZEOF_INT__`,
+  `__SIZEOF_POINTER__`, `__INT32_TYPE__`, `__INTPTR_TYPE__` and the integer
+  constant macros. Host preprocessor ABI and architecture macros are removed.
+  MCS-51 reports little-endian layout; native MCS-251 reports big-endian
+  layout. Both keep a 16-bit `int` and a three-byte generic pointer.
 - `__asm__("instruction")` accepts a basic literal using `sdas251`/ASxxxx
   instruction syntax. GCC extended-asm operands and constraints are not
   accepted.

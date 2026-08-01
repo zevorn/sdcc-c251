@@ -45,6 +45,7 @@ Direct probes against the current MCS-251 compiler give this baseline:
 | `__typeof(...)`, `__typeof__(...)` | accepted, with expression limits |
 | `__builtin_types_compatible_p(type1, type2)` | accepted in GNU11/GNU17; integer constant expression |
 | `__builtin_expect(expression, expected)` | accepted in GNU11/GNU17; returns `long` expression and supplies a 90/10 branch hint when expected is constant |
+| target data-model macros | MCS-51/MCS-251 sizes, types, limits, constants and byte order are predefined; host ABI macros are suppressed |
 | basic `__asm__("instruction")` | accepted |
 | extended asm operands, constraints and clobbers | rejected |
 | statement expression `({ ... })` | rejected |
@@ -61,6 +62,15 @@ to only `nodiscard`, `maybe_unused`, `deprecated` and `fallthrough`.
 
 MCS-251 output uses `sdas251` and `sdld`, not GAS and GNU ld. Inline assembly
 therefore uses ASxxxx syntax even after the parser accepts the GCC spelling.
+
+The preprocessor data model follows the selected SDCC target rather than the
+machine on which SDCC runs. MCS-51 advertises its existing little-endian ABI;
+MCS-251 advertises its native big-endian ABI. Both report a 16-bit `int`, a
+32-bit `long`, a 64-bit `long long` and a three-byte generic pointer. The
+driver also supplies the GCC-style exact, least, fast, pointer and maximum
+integer type and constant macros used by portable compiler abstraction
+headers. Tests dump the real preprocessor macro set and compile expressions
+that consume those definitions for both targets.
 
 ## What Zephyr requires from the C frontend
 

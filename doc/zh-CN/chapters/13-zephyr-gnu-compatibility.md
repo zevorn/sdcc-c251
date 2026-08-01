@@ -41,6 +41,7 @@ common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17`、
 | `__typeof(...)`、`__typeof__(...)` | 接受，但 expression 仍有限制 |
 | `__builtin_types_compatible_p(type1, type2)` | GNU11/GNU17 接受；结果为整数常量表达式 |
 | `__builtin_expect(expression, expected)` | GNU11/GNU17 接受；返回 expression 转换为 `long` 后的值；expected 为常量时提供 90/10 分支提示 |
+| target data-model macro | 预定义 MCS-51/MCS-251 的大小、类型、范围、常量和 byte order，并抑制 host ABI macro |
 | 基本形式 `__asm__("instruction")` | 接受 |
 | 带 operand、constraint 和 clobber 的 extended asm | 拒绝 |
 | statement expression `({ ... })` | 拒绝 |
@@ -56,6 +57,13 @@ attribute 的 placement、linkage、layout 或 calling semantics。目前 fronte
 
 MCS-251 输出由 `sdas251` 和 `sdld` 处理，而不是 GAS 和 GNU ld。即使 parser 接受
 GCC 的 inline assembly 写法，其中的汇编文本仍必须使用 ASxxxx syntax。
+
+预处理器的数据模型取决于所选择的 SDCC target，而不是运行 SDCC 的 host machine。
+MCS-51 声明现有的 little-endian ABI，MCS-251 则声明原生 big-endian ABI。两者均为
+16-bit `int`、32-bit `long`、64-bit `long long` 和 3-byte generic pointer。driver
+还提供 portable compiler abstraction header 所需的 GCC 风格 exact、least、fast、
+pointer、maximum integer type macro 与 constant macro。测试会分别为两个 target
+读取真实预处理器宏集，并编译实际使用这些定义的 C expression。
 
 ## Zephyr 对 C frontend 的要求
 
