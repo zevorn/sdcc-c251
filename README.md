@@ -76,11 +76,13 @@ install/bin/sdcc --version
 grep -E '^(mcs51|mcs251)$' ports.build
 ```
 
-Run MCS-251 compiler and code-generation checks, then compile the MCS-51
-regression source through the shared code paths:
+Run the MCS-251 instruction, compiler, code-generation and diagnostic checks,
+then compile the MCS-51 regression source through the shared code paths:
 
 ```sh
+make -C sdas/as251 check
 make -C src/mcs251 check
+make -C support/valdiag test-mcs251
 bin/sdcc -mmcs51 -I../device/include -S \
     -o /tmp/mcs51-smoke.asm \
     ../src/mcs251/tests/mcs51-regression.c
@@ -123,23 +125,24 @@ cd qemu
 ninja -C build qemu-system-mcs51 qemu-system-mcs251
 ```
 
-Return to the SDCC build directory and run the focused runtime checks:
+Return to the SDCC build directory and run the minimal runtime checks:
 
 ```sh
 cd ../sdcc-c251/build
 QEMU_BUILD=../../qemu/build
 
-make -C src/mcs251 check-qemu \
+make -C src/mcs251 check-uart-qemu \
     QEMU_MCS251="$QEMU_BUILD/qemu-system-mcs251"
 make -C src/mcs251 check-mcs51-qemu \
     QEMU_MCS51="$QEMU_BUILD/qemu-system-mcs51"
 ```
 
-`check-qemu` covers the MCS-251 ABI, all four memory-model/stack combinations,
-native instruction optimization, startup, aggregate returns, `setjmp`, the
-SDCC-style rewrites of official examples, peripheral behavior and the QEMU GDB
-stub. `check-mcs51-qemu` runs an MCS-51 firmware image and verifies that shared
-compiler paths still match the upstream SDCC 4.6.0 assembly and image digests.
+`check-uart-qemu` builds default and size-optimized MCS-251 firmware and checks
+its UART echo protocol. `check-mcs51-qemu` runs an MCS-51 firmware image and
+verifies that shared compiler paths still match the upstream SDCC 4.6.0
+assembly and image digests. The broader `check-qemu` target remains available
+for manual ABI, memory-model, official-example, peripheral and GDB-stub tests;
+those hardware-oriented checks are not the primary compiler CI gate.
 
 Run the general compiler regression suites as a broader check:
 
@@ -170,13 +173,15 @@ shared MCS-51 implementation.
 The `SDCC MCS-51 family CI` workflow runs for every pull request targeting
 `main` and every push to `main`. It:
 
-1. builds the two execution backends from a pinned `processmission/qemu`
-   revision;
-2. builds an SDCC configuration containing MCS-51 and MCS-251;
-3. runs MCS-251 compiler/code-generation, ABI, optimization, official-example,
-   GDB-stub and focused runtime tests across all four memory/stack models;
-4. runs the full upstream MCS-51 regression set and its QEMU stability test;
-5. uploads SDCC regression logs when a job fails.
+1. builds an SDCC configuration containing MCS-51 and MCS-251;
+2. checks every recorded MCS-251 instruction form, opcode map, relocation and
+   invalid operand case;
+3. runs MCS-251 compiler, code-generation and language diagnostics across all
+   four memory/stack models;
+4. runs the full upstream MCS-51 regression set;
+5. builds pinned QEMU execution backends and runs only the MCS-251 UART smoke
+   and MCS-51 binary-stability checks;
+6. uploads SDCC regression and diagnostic logs when a job fails.
 
 The QEMU revision is recorded in
 [`mcs51-family.yml`](.github/workflows/mcs51-family.yml) so a QEMU update is an

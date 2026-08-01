@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   compiler-and-runtime:
-    name: SDCC compiler and runtime
+    name: SDCC compiler, assembler and UART smoke
     runs-on: ubuntu-24.04
     timeout-minutes: 120
 
@@ -50,20 +50,6 @@ jobs:
             python3-venv \
             texinfo \
             zlib1g-dev
-
-      - name: Configure QEMU
-        working-directory: qemu
-        run: |
-          ./configure \
-            --target-list=mcs51-softmmu,mcs251-softmmu \
-            --disable-docs \
-            --disable-werror
-
-      - name: Build QEMU
-        run: |
-          ninja -C qemu/build \
-            qemu-system-mcs51 \
-            qemu-system-mcs251
 
       - name: Configure SDCC
         run: |
@@ -104,22 +90,42 @@ jobs:
       - name: Build SDCC
         run: make -C sdcc-build -j"$(nproc)"
 
-      - name: Test MCS-251 compiler
+      - name: Test MCS-251 instruction encodings and diagnostics
+        run: make -C sdcc-build/sdas/as251 check
+
+      - name: Test MCS-251 compiler and code generation
         run: make -C sdcc-build/src/mcs251 check
 
-      - name: Test focused MCS-251 runtime
+      - name: Test MCS-251 language diagnostics
+        run: make -C sdcc-build/support/valdiag test-mcs251
+
+      - name: Test all MCS-51 regression models
         run: |
-          make -C sdcc-build/src/mcs251 check-qemu \
+          make -C sdcc-build/support/regression -j"$(nproc)" test-mcs51
+
+      - name: Configure QEMU execution backend
+        working-directory: qemu
+        run: |
+          ./configure \
+            --target-list=mcs51-softmmu,mcs251-softmmu \
+            --disable-docs \
+            --disable-werror
+
+      - name: Build QEMU execution backend
+        run: |
+          ninja -C qemu/build \
+            qemu-system-mcs51 \
+            qemu-system-mcs251
+
+      - name: Test MCS-251 UART firmware smoke
+        run: |
+          make -C sdcc-build/src/mcs251 check-uart-qemu \
             QEMU_MCS251="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs251"
 
       - name: Test MCS-51 runtime and stability
         run: |
           make -C sdcc-build/src/mcs251 check-mcs51-qemu \
             QEMU_MCS51="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs51"
-
-      - name: Test all MCS-51 regression models
-        run: |
-          make -C sdcc-build/support/regression -j"$(nproc)" test-mcs51
 
       - name: Upload failure logs
         if: failure()
@@ -128,5 +134,6 @@ jobs:
           name: mcs51-family-failure-logs
           path: |
             sdcc-build/support/regression/results/
+            sdcc-build/support/valdiag/results/
           if-no-files-found: ignore
           retention-days: 14
