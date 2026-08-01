@@ -1602,6 +1602,21 @@ addSymChain (symbol **symHead)
       /* if already exists in the symbol table on the same level, ignoring sublevels */
       if ((csym = findSymWithLevel (SymbolTab, sym)) && csym->level / LEVEL_UNIT == sym->level / LEVEL_UNIT)
         {
+          /* A repeated block-scope `extern` of the same identifier is a
+             legal re-declaration of the same file-scope object.  Verify
+             the types are compatible and keep the original symbol: a
+             later re-declaration must not delete a symbol that earlier
+             expressions in the block still reference. */
+          if (sym->level > 0 && IS_EXTERN (sym->etype) && IS_EXTERN (csym->etype))
+            {
+              if (compareTypeExact (csym->type, sym->type, sym->level, true) != 1)
+                {
+                  werror (E_EXTERN_MISMATCH, sym->name);
+                  werrorfl (csym->fileDef, csym->lineDef, E_PREVIOUS_DEF);
+                }
+              continue;
+            }
+
           /* if not formal parameter and not in file scope
              then show symbol redefined error
              else check if symbols have compatible types */

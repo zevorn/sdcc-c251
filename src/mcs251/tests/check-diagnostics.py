@@ -40,12 +40,26 @@ def main():
     parser.add_argument("--sdcc", required=True)
     parser.add_argument("--incompatible-extern-source", required=True)
     parser.add_argument("--compatible-extern-array-source", required=True)
+    parser.add_argument("--compatible-block-extern-source", required=True)
+    parser.add_argument(
+        "--incompatible-shadowed-struct-source", required=True
+    )
     args = parser.parse_args()
 
     sdcc = Path(args.sdcc).resolve()
     incompatible_source = Path(args.incompatible_extern_source).resolve()
     compatible_source = Path(args.compatible_extern_array_source).resolve()
-    for path in (sdcc, incompatible_source, compatible_source):
+    compatible_block_source = \
+        Path(args.compatible_block_extern_source).resolve()
+    incompatible_shadowed_source = \
+        Path(args.incompatible_shadowed_struct_source).resolve()
+    for path in (
+        sdcc,
+        incompatible_source,
+        compatible_source,
+        compatible_block_source,
+        incompatible_shadowed_source,
+    ):
         if not path.exists():
             parser.error(f"required path does not exist: {path}")
 
@@ -57,6 +71,12 @@ def main():
             )
             compile_source(
                 sdcc, compatible_source, port, True, workspace
+            )
+            compile_source(
+                sdcc, compatible_block_source, port, True, workspace
+            )
+            compile_source(
+                sdcc, incompatible_shadowed_source, port, False, workspace
             )
 
 

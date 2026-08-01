@@ -40,7 +40,11 @@ check: all
 		--incompatible-extern-source \
 			$(srcdir)/tests/incompatible-extern.c \
 		--compatible-extern-array-source \
-			$(srcdir)/tests/compatible-extern-array.c
+			$(srcdir)/tests/compatible-extern-array.c \
+		--compatible-block-extern-source \
+			$(srcdir)/tests/compatible-block-extern-struct.c \
+		--incompatible-shadowed-struct-source \
+			$(srcdir)/tests/incompatible-shadowed-struct.c
 	$(PYTHON) $(srcdir)/tests/check-c23-struct-redefinitions.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--compatible-c23-struct-source \
