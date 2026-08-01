@@ -791,6 +791,9 @@ struct
      "arguments to __builtin_expect must have integer type", 0},
   {E_AUTO_TYPE_DECLARATION, ERROR_LEVEL_ERROR,
      "__auto_type requires one identifier declarator with an initializer", 0},
+  {E_BUILTIN_OVERFLOW_TYPES, ERROR_LEVEL_ERROR,
+     "%s requires two integer operands and a pointer to a writable "
+     "standard integer object", 0},
 };
 
 /* -------------------------------------------------------------------------------

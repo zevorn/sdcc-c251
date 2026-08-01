@@ -156,6 +156,7 @@ def main():
     parser.add_argument("--source", required=True)
     parser.add_argument("--statement-expression-source", required=True)
     parser.add_argument("--bit-builtins-source", required=True)
+    parser.add_argument("--overflow-builtins-source", required=True)
     parser.add_argument("--longlong-source", required=True)
     parser.add_argument("--device-include", required=True)
     parser.add_argument("--library-dir", required=True)
@@ -172,6 +173,7 @@ def main():
     statement_expression_source = \
         Path(args.statement_expression_source).resolve()
     bit_builtins_source = Path(args.bit_builtins_source).resolve()
+    overflow_builtins_source = Path(args.overflow_builtins_source).resolve()
     longlong_source = Path(args.longlong_source).resolve()
     device_include = Path(args.device_include).resolve()
     library_dir = Path(args.library_dir).resolve()
@@ -180,7 +182,7 @@ def main():
     required = (
         sdcc, qemu, source, statement_expression_source,
         bit_builtins_source, longlong_source, device_include, library_dir,
-        stack_auto_library_dir,
+        overflow_builtins_source, stack_auto_library_dir,
     )
     for path in required:
         if not path.exists():
@@ -287,6 +289,23 @@ def main():
                 bit_library, output_dir, bit_name, bit_flags,
             )
             run_qemu(qemu, machine, bit_image, trace_for(bit_image))
+
+        overflow_configurations = (
+            ("overflow-builtins", ("--std=gnu17",), library_dir),
+            ("overflow-builtins-stack-auto",
+             ("--std=gnu17", "--stack-auto"),
+             stack_auto_library_dir),
+        )
+        for overflow_name, overflow_flags, overflow_library in \
+                overflow_configurations:
+            _, overflow_image = build(
+                sdcc, overflow_builtins_source, device_include,
+                overflow_library, output_dir, overflow_name,
+                overflow_flags,
+            )
+            run_qemu(
+                qemu, machine, overflow_image, trace_for(overflow_image)
+            )
 
         longlong_image = build_longlong(
             sdcc, longlong_source, device_include,

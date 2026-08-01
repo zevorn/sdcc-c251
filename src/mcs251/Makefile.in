@@ -57,6 +57,10 @@ check: all
 			$(srcdir)/tests/gnu-bit-builtins.c \
 		--invalid-bit-builtins-source \
 			$(srcdir)/tests/gnu-bit-builtins-invalid.c \
+		--overflow-builtins-source \
+			$(srcdir)/tests/gnu-overflow-builtins.c \
+		--invalid-overflow-builtins-source \
+			$(srcdir)/tests/gnu-overflow-builtins-invalid.c \
 		--auto-type-source \
 			$(srcdir)/tests/gnu-auto-type.c \
 		--invalid-auto-type-source \
@@ -144,6 +148,8 @@ check-qemu: all check-official-qemu check-gdbstub
 			$(srcdir)/tests/statement-expression-runtime.c \
 		--bit-builtins-source \
 			$(srcdir)/tests/gnu-bit-builtins-runtime.c \
+		--overflow-builtins-source \
+			$(srcdir)/tests/gnu-overflow-builtins-runtime.c \
 		--optimization-runtime-source \
 			$(srcdir)/tests/optimization-runtime.c \
 		--abi-regression-source $(srcdir)/tests/abi-regression-runtime.c \
@@ -197,6 +203,8 @@ check-mcs51-qemu: all
 			$(srcdir)/tests/statement-expression-runtime.c \
 		--bit-builtins-source \
 			$(srcdir)/tests/gnu-bit-builtins-runtime.c \
+		--overflow-builtins-source \
+			$(srcdir)/tests/gnu-overflow-builtins-runtime.c \
 		--longlong-source $(srcdir)/tests/longlong-runtime.c \
 		--device-include $(top_srcdir)/device/include \
 		--library-dir $(top_builddir)/device/lib/build/small \

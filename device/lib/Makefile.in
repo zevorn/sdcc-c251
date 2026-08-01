@@ -146,6 +146,7 @@ SOURCES_SDCC = $(COMMON_SDCC) \
   _memmove.c \
   _strcpy.c \
   _heap.c \
+  _overflowbuiltins.c \
   div.c \
   ldiv.c \
   lldiv.c \

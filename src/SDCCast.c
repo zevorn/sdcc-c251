@@ -861,10 +861,11 @@ funcOfType2 (const char *name, sym_link *rtype, sym_link *largType, sym_link *ra
 }
 
 /*-----------------------------------------------------------------*/
-/* funcOfTypeVarg :- function of type with name and argtype        */
+/* funcOfTypeVargInternal :- function with individual arg types    */
 /*-----------------------------------------------------------------*/
-symbol *
-funcOfTypeVarg (const char *name, const char *rtype, int nArgs, const char **atypes)
+static symbol *
+funcOfTypeVargInternal (const char *name, const char *rtype, int nArgs,
+                        const char **atypes, int reentrant)
 {
   symbol *sym;
   int i;
@@ -876,6 +877,7 @@ funcOfTypeVarg (const char *name, const char *rtype, int nArgs, const char **aty
   DCL_TYPE (sym->type) = FUNCTION;
   sym->type->next = typeFromStr (rtype);
   sym->etype = getSpec (sym->type);
+  FUNC_ISREENT (sym->type) = reentrant;
 
   /* if arguments required */
   if (nArgs)
@@ -898,6 +900,26 @@ funcOfTypeVarg (const char *name, const char *rtype, int nArgs, const char **aty
   sym->cdef = 1;
   allocVariables (sym);
   return sym;
+}
+
+/*-----------------------------------------------------------------*/
+/* funcOfTypeVarg :- function of type with name and argtype        */
+/*-----------------------------------------------------------------*/
+symbol *
+funcOfTypeVarg (const char *name, const char *rtype, int nArgs,
+                const char **atypes)
+{
+  return funcOfTypeVargInternal (name, rtype, nArgs, atypes, 0);
+}
+
+/*-----------------------------------------------------------------*/
+/* funcOfTypeVargReentrant :- reentrant function with arg types    */
+/*-----------------------------------------------------------------*/
+symbol *
+funcOfTypeVargReentrant (const char *name, const char *rtype,
+                         int nArgs, const char **atypes)
+{
+  return funcOfTypeVargInternal (name, rtype, nArgs, atypes, 1);
 }
 
 /*-----------------------------------------------------------------*/
@@ -3751,6 +3773,176 @@ foldBitBuiltinCall (ast *tree)
   return true;
 }
 
+typedef enum
+{
+  OVERFLOW_BUILTIN_NONE,
+  OVERFLOW_BUILTIN_ADD,
+  OVERFLOW_BUILTIN_SUB,
+  OVERFLOW_BUILTIN_MUL,
+} overflowBuiltinOperation;
+
+typedef enum
+{
+  OVERFLOW_REWRITE_NONE,
+  OVERFLOW_REWRITE_DONE,
+  OVERFLOW_REWRITE_ERROR,
+} overflowRewriteResult;
+
+/*------------------------------------------------------------------*/
+/* overflowBuiltinInfo - identify a generic overflow builtin       */
+/*------------------------------------------------------------------*/
+static overflowBuiltinOperation
+overflowBuiltinInfo (const char *name)
+{
+  static const struct
+  {
+    const char *builtinName;
+    overflowBuiltinOperation operation;
+  } builtins[] =
+  {
+    {"__builtin_add_overflow", OVERFLOW_BUILTIN_ADD},
+    {"__builtin_sub_overflow", OVERFLOW_BUILTIN_SUB},
+    {"__builtin_mul_overflow", OVERFLOW_BUILTIN_MUL},
+  };
+
+  for (unsigned int i = 0;
+       i < sizeof (builtins) / sizeof (builtins[0]); i++)
+    if (!strcmp (name, builtins[i].builtinName))
+      return builtins[i].operation;
+
+  return OVERFLOW_BUILTIN_NONE;
+}
+
+/*------------------------------------------------------------------*/
+/* overflowArgumentCount - count call arguments                    */
+/*------------------------------------------------------------------*/
+static unsigned int
+overflowArgumentCount (const ast *parameters)
+{
+  unsigned int count = 0;
+
+  while (IS_AST_PARAM (parameters))
+    {
+      count++;
+      parameters = parameters->right;
+    }
+  return count + !!parameters;
+}
+
+/*------------------------------------------------------------------*/
+/* overflowParameterList - build a right-heavy call parameter list */
+/*------------------------------------------------------------------*/
+static ast *
+overflowParameterList (ast **arguments, unsigned int count, ast *location)
+{
+  ast *parameters = arguments[count - 1];
+
+  while (--count)
+    {
+      parameters = newNode (PARAM, arguments[count - 1], parameters);
+      copyAstLoc (parameters, location);
+    }
+
+  return parameters;
+}
+
+/*------------------------------------------------------------------*/
+/* rewriteOverflowBuiltinCall - lower a generic overflow builtin   */
+/*------------------------------------------------------------------*/
+static overflowRewriteResult
+rewriteOverflowBuiltinCall (ast *tree)
+{
+  if (!options.std_gnu ||
+      !(TARGET_IS_MCS51 || TARGET_IS_MCS251) ||
+      !IS_AST_SYM_VALUE (tree->left))
+    return OVERFLOW_REWRITE_NONE;
+
+  const char *builtinName = AST_SYMBOL (tree->left)->name;
+  overflowBuiltinOperation operation =
+    overflowBuiltinInfo (builtinName);
+
+  if (operation == OVERFLOW_BUILTIN_NONE)
+    return OVERFLOW_REWRITE_NONE;
+
+  unsigned int argumentCount = overflowArgumentCount (tree->right);
+
+  if (argumentCount != 3)
+    {
+      werrorfl (tree->filename, tree->lineno,
+                argumentCount > 3 ? E_TOO_MANY_PARMS : E_TOO_FEW_PARMS);
+      return OVERFLOW_REWRITE_ERROR;
+    }
+
+  ast *leftOperand = decorateType (
+    tree->right->left, RESULT_TYPE_OTHER, false);
+  ast *rightOperand = decorateType (
+    tree->right->right->left, RESULT_TYPE_OTHER, false);
+  ast *resultPointer = decorateType (
+    tree->right->right->right, RESULT_TYPE_OTHER, false);
+
+  if (leftOperand->isError || rightOperand->isError ||
+      resultPointer->isError)
+    return OVERFLOW_REWRITE_ERROR;
+
+  sym_link *leftType = leftOperand->ftype;
+  sym_link *rightType = rightOperand->ftype;
+  sym_link *resultType = IS_PTR (resultPointer->ftype) ?
+    resultPointer->ftype->next : NULL;
+  unsigned int leftWidth = bitsForType (leftType);
+  unsigned int rightWidth = bitsForType (rightType);
+  unsigned int resultWidth = bitsForType (resultType);
+
+  if (!IS_INTEGRAL (leftType) || !IS_INTEGRAL (rightType) ||
+      !resultType || !IS_INTEGRAL (resultType) ||
+      IS_BOOLEAN (resultType) || SPEC_ENUM (resultType) ||
+      IS_BITINT (resultType) || isConst (resultType) ||
+      isAtomic (resultType) ||
+      DCL_TYPE (resultPointer->ftype) == CPOINTER ||
+      !leftWidth || leftWidth > LONGLONGSIZE * 8 ||
+      !rightWidth || rightWidth > LONGLONGSIZE * 8 ||
+      resultWidth < 8 || resultWidth > LONGLONGSIZE * 8 ||
+      resultWidth % 8)
+    {
+      werrorfl (tree->filename, tree->lineno,
+                E_BUILTIN_OVERFLOW_TYPES, builtinName);
+      return OVERFLOW_REWRITE_ERROR;
+    }
+
+  unsigned int leftSigned =
+    !IS_UNSIGNED (leftType) && !IS_BOOLEAN (leftType);
+  unsigned int rightSigned =
+    !IS_UNSIGNED (rightType) && !IS_BOOLEAN (rightType);
+  unsigned int resultSigned = !IS_UNSIGNED (resultType);
+  ast *arguments[] =
+  {
+    newAst_VALUE (valueFromLit (operation)),
+    leftOperand,
+    newAst_VALUE (valueFromLit (leftWidth)),
+    newAst_VALUE (valueFromLit (leftSigned)),
+    rightOperand,
+    newAst_VALUE (valueFromLit (rightWidth)),
+    newAst_VALUE (valueFromLit (rightSigned)),
+    resultPointer,
+    newAst_VALUE (valueFromLit (resultWidth)),
+    newAst_VALUE (valueFromLit (resultSigned)),
+  };
+  symbol *helper = findSym (SymbolTab, NULL, "__sdcc_overflow");
+
+  wassert (helper);
+  for (unsigned int i = 0; i < sizeof (arguments) / sizeof (arguments[0]);
+       i++)
+    if (i != 1 && i != 4 && i != 7)
+      copyAstLoc (arguments[i], tree);
+
+  tree->left = newAst_VALUE (symbolVal (helper));
+  tree->left->funcName = 1;
+  copyAstLoc (tree->left, tree);
+  tree->right = overflowParameterList (
+    arguments, sizeof (arguments) / sizeof (arguments[0]), tree);
+  tree->decorated = 0;
+  return OVERFLOW_REWRITE_DONE;
+}
+
 /*-----------------------------------------------------------*/
 /* rewrite struct assignment "a = b" to something similar to */
 /* "__builtin_memcpy (&a, &b, sizeof (a)), a"   or, if a has */
@@ -6357,6 +6549,14 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
 
           if (tree->right && tree->right->reversed)
             reverseParms (tree->right, 0);
+
+          overflowRewriteResult overflowRewrite =
+            rewriteOverflowBuiltinCall (tree);
+
+          if (overflowRewrite == OVERFLOW_REWRITE_DONE)
+            return decorateType (tree, resultType, reduceTypeAllowed);
+          if (overflowRewrite == OVERFLOW_REWRITE_ERROR)
+            goto errorTreeReturn;
 
           if (processParms (tree->left, FUNC_ARGS (functype), &tree->right, &parmNumber, TRUE))
             goto errorTreeReturn;

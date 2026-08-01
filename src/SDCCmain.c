@@ -2495,6 +2495,12 @@ preProcess (char **envp)
                 "__SDCC_HAS_BUILTIN___builtin_ffsl", "1");
               addPreprocessorDefine (
                 "__SDCC_HAS_BUILTIN___builtin_ffsll", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_add_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_sub_overflow", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_mul_overflow", "1");
             }
         }
 

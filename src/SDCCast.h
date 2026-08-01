@@ -236,6 +236,8 @@ int setAstFileLine (ast *tree, const char *filename, int lineno);
 symbol *funcOfType (const char *name, sym_link *rtype, sym_link *argtype, int nArgs, int rent);
 symbol *funcOfType2 (const char *name, sym_link *rtype, sym_link *largtype, sym_link *rargtype, int rent);
 symbol *funcOfTypeVarg (const char *name, const char *, int, const char **);
+symbol *funcOfTypeVargReentrant (const char *name, const char *, int,
+                                 const char **);
 ast *initAggregates (symbol *, initList *, ast *);
 bool astHasVolatile (ast *tree);
 bool hasSEFcalls (ast *);

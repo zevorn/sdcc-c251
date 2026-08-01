@@ -5402,6 +5402,17 @@ initBuiltIns ()
 
   if (options.std_gnu && (TARGET_IS_MCS51 || TARGET_IS_MCS251))
     {
+      static const char *overflowHelperArgumentTypes[] =
+      {
+        "Uc", "UL", "Uc", "Uc", "UL", "Uc", "Uc", "Vvg*", "Uc",
+        "Uc"
+      };
+      static const char *overflowBuiltins[] =
+      {
+        "__builtin_add_overflow",
+        "__builtin_sub_overflow",
+        "__builtin_mul_overflow",
+      };
       static const struct
       {
         const char *name;
@@ -5430,6 +5441,22 @@ initBuiltIns ()
           funcOfTypeVarg (bitBuiltins[i].name, "i", 1,
                           argumentTypes);
         }
+
+      for (unsigned int i = 0;
+           i < sizeof (overflowBuiltins) / sizeof (overflowBuiltins[0]);
+           i++)
+        {
+          static const char *builtinArgumentTypes[] =
+          {
+            "i", "i", "vg*"
+          };
+
+          funcOfTypeVarg (overflowBuiltins[i], "b", 3,
+                          builtinArgumentTypes);
+        }
+
+      funcOfTypeVargReentrant ("__sdcc_overflow", "b", 10,
+                               overflowHelperArgumentTypes);
     }
 }
 

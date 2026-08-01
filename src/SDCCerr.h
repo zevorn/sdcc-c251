@@ -391,6 +391,7 @@ enum {
   W_QUALIFIED_RETURN            = 361, // qualifier on return type has no effect
   E_BUILTIN_EXPECT_INTEGRAL     = 362, // __builtin_expect arguments must be integral
   E_AUTO_TYPE_DECLARATION       = 363, // invalid __auto_type declaration
+  E_BUILTIN_OVERFLOW_TYPES      = 364, // invalid generic overflow builtin arguments
 
   // If you get a merge conflict here, some #pragma disable_warning in support/valdiag and support/regression will likely need to be adapted to the resolution. Check there!
 

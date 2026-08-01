@@ -41,6 +41,11 @@
     !__has_builtin (__builtin_ffsll)
 #error "find-first-set builtins must be reported in GNU modes"
 #endif
+#if !__has_builtin (__builtin_add_overflow) || \
+    !__has_builtin (__builtin_sub_overflow) || \
+    !__has_builtin (__builtin_mul_overflow)
+#error "overflow builtins must be reported in GNU modes"
+#endif
 #else
 #if __has_builtin (__builtin_constant_p)
 #error "__builtin_constant_p must not be reported in strict modes"
@@ -54,6 +59,11 @@
 #if __has_builtin (__builtin_clz) || __has_builtin (__builtin_ctz) || \
     __has_builtin (__builtin_popcount) || __has_builtin (__builtin_ffs)
 #error "bit-count builtins must not be reported in strict modes"
+#endif
+#if __has_builtin (__builtin_add_overflow) || \
+    __has_builtin (__builtin_sub_overflow) || \
+    __has_builtin (__builtin_mul_overflow)
+#error "overflow builtins must not be reported in strict modes"
 #endif
 #endif
 
