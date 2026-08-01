@@ -3038,6 +3038,7 @@ main (int argc, char **argv, char **envp)
       if (fatalError)
         exit (EXIT_FAILURE);
 
+      set *deferredInlineFunctions = NULL;
       for (int i = 0; i < HASHTAB_SIZE; i++)
         {
           for (bucket *chain = SymbolTab[i]; chain; chain = chain->next)
@@ -3061,8 +3062,24 @@ main (int argc, char **argv, char **envp)
                   else
                     fprintf (stderr, "Internal issue for function %s: todo: implement emission of definition for inline function after extern declaration.\n", sym->name);
                 }
+              // Emit a static inline definition only if it was not expanded
+              // at every use in the translation unit.
+              if (IS_FUNC (sym->type) && IS_STATIC (sym->etype) &&
+                  FUNC_ISINLINE (sym->type) && sym->isref &&
+                  !sym->generated && sym->funcTree)
+                addSet (&deferredInlineFunctions, sym);
             }
         }
+      for (symbol *sym = setFirstItem (deferredInlineFunctions); sym;
+           sym = setNextItem (deferredInlineFunctions))
+        {
+          ast *body = copyAst (sym->funcTree);
+          for (value *arg = FUNC_ARGS (sym->type); arg; arg = arg->next)
+            if (arg->sym)
+              addSymChain (&arg->sym);
+          createFunction (sym, body);
+        }
+      deleteSet (&deferredInlineFunctions);
 
       if (port->general.do_glue != NULL)
         (*port->general.do_glue) ();

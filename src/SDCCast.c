@@ -7864,16 +7864,12 @@ createFunction (symbol * name, ast * body)
   if (fatalError)
     goto skipall;
 
-  /* Do not generate code for inline functions unless extern also. */
-#if 0
-  if (FUNC_ISINLINE (name->type) && !IS_EXTERN (fetype))
+  /* Defer an unreferenced static inline definition until the end of the
+     translation unit. Calls parsed later can use funcTree immediately;
+     address-taking and non-inlined calls mark the symbol for emission. */
+  if (FUNC_ISINLINE (name->type) && !IS_EXTERN (fetype) &&
+      (!IS_STATIC (fetype) || !name->isref))
     goto skipall;
-#else
-  /* Temporary hack: always generate code for static inline functions. */
-  /* Ideally static inline functions should only be generated if needed. */
-  if (FUNC_ISINLINE (name->type) && !IS_EXTERN (fetype) && !IS_STATIC (fetype))
-    goto skipall;
-#endif
 
   /* create the node & generate intermediate code */
   GcurMemmap = code;

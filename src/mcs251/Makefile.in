@@ -21,6 +21,9 @@ check: all
 	$(PYTHON) $(srcdir)/tests/check-language-modes.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/language-mode.c
+	$(PYTHON) $(srcdir)/tests/check-static-inline.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--source $(srcdir)/tests/static-inline-emission.c
 	$(PYTHON) $(srcdir)/tests/check-gnu-extensions.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--empty-aggregate-source \
