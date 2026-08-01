@@ -2297,6 +2297,140 @@ assemble (char **envp)
 }
 
 /*-----------------------------------------------------------------*/
+/* addPreprocessorUIntDefine - add an unsigned target definition   */
+/*-----------------------------------------------------------------*/
+static void
+addPreprocessorUIntDefine (const char *name, unsigned value)
+{
+  struct dbuf_s dbuf;
+
+  dbuf_init (&dbuf, 64);
+  dbuf_printf (&dbuf, "-D%s=%u", name, value);
+  addSet (&preArgvSet, dbuf_detach_c_str (&dbuf));
+}
+
+typedef struct
+{
+  const char *name;
+  const char *value;
+} preprocessor_define;
+
+static const preprocessor_define mcsPreprocessorDefines[] =
+{
+  { "__SCHAR_MAX__", "127" },
+  { "__SHRT_MAX__", "32767" },
+  { "__INT_MAX__", "32767" },
+  { "__LONG_MAX__", "2147483647L" },
+  { "__LONG_LONG_MAX__", "9223372036854775807LL" },
+  { "__INT8_TYPE__", "signed char" },
+  { "__UINT8_TYPE__", "unsigned char" },
+  { "__INT16_TYPE__", "short int" },
+  { "__UINT16_TYPE__", "unsigned short int" },
+  { "__INT32_TYPE__", "long int" },
+  { "__UINT32_TYPE__", "unsigned long int" },
+  { "__INT64_TYPE__", "long long int" },
+  { "__UINT64_TYPE__", "unsigned long long int" },
+  { "__INT8_C(c)", "c" },
+  { "__INT16_C(c)", "c" },
+  { "__INT32_C(c)", "c##L" },
+  { "__INT64_C(c)", "c##LL" },
+  { "__UINT8_C(c)", "c##U" },
+  { "__UINT16_C(c)", "c##U" },
+  { "__UINT32_C(c)", "c##UL" },
+  { "__UINT64_C(c)", "c##ULL" },
+  { "__INTMAX_C(c)", "c##LL" },
+  { "__UINTMAX_C(c)", "c##ULL" },
+  { "__INT8_MAX__", "__SCHAR_MAX__" },
+  { "__UINT8_MAX__", "255" },
+  { "__INT16_MAX__", "__SHRT_MAX__" },
+  { "__UINT16_MAX__", "65535U" },
+  { "__INT32_MAX__", "__LONG_MAX__" },
+  { "__UINT32_MAX__", "4294967295UL" },
+  { "__INT64_MAX__", "__LONG_LONG_MAX__" },
+  { "__UINT64_MAX__", "18446744073709551615ULL" },
+  { "__INT_FAST8_TYPE__", "__INT8_TYPE__" },
+  { "__UINT_FAST8_TYPE__", "__UINT8_TYPE__" },
+  { "__INT_FAST16_TYPE__", "int" },
+  { "__UINT_FAST16_TYPE__", "unsigned int" },
+  { "__INT_FAST32_TYPE__", "__INT32_TYPE__" },
+  { "__UINT_FAST32_TYPE__", "__UINT32_TYPE__" },
+  { "__INT_FAST64_TYPE__", "__INT64_TYPE__" },
+  { "__UINT_FAST64_TYPE__", "__UINT64_TYPE__" },
+  { "__INT_FAST8_MAX__", "__INT8_MAX__" },
+  { "__UINT_FAST8_MAX__", "__UINT8_MAX__" },
+  { "__INT_FAST16_MAX__", "__INT_MAX__" },
+  { "__UINT_FAST16_MAX__", "65535U" },
+  { "__INT_FAST32_MAX__", "__INT32_MAX__" },
+  { "__UINT_FAST32_MAX__", "__UINT32_MAX__" },
+  { "__INT_FAST64_MAX__", "__INT64_MAX__" },
+  { "__UINT_FAST64_MAX__", "__UINT64_MAX__" },
+  { "__INT_FAST8_WIDTH__", "__SCHAR_WIDTH__" },
+  { "__INT_FAST16_WIDTH__", "__INT_WIDTH__" },
+  { "__INT_FAST32_WIDTH__", "__LONG_WIDTH__" },
+  { "__INT_FAST64_WIDTH__", "__LLONG_WIDTH__" },
+  { "__INT_LEAST8_TYPE__", "__INT8_TYPE__" },
+  { "__UINT_LEAST8_TYPE__", "__UINT8_TYPE__" },
+  { "__INT_LEAST16_TYPE__", "__INT16_TYPE__" },
+  { "__UINT_LEAST16_TYPE__", "__UINT16_TYPE__" },
+  { "__INT_LEAST32_TYPE__", "__INT32_TYPE__" },
+  { "__UINT_LEAST32_TYPE__", "__UINT32_TYPE__" },
+  { "__INT_LEAST64_TYPE__", "__INT64_TYPE__" },
+  { "__UINT_LEAST64_TYPE__", "__UINT64_TYPE__" },
+  { "__INT_LEAST8_MAX__", "__INT8_MAX__" },
+  { "__UINT_LEAST8_MAX__", "__UINT8_MAX__" },
+  { "__INT_LEAST16_MAX__", "__INT16_MAX__" },
+  { "__UINT_LEAST16_MAX__", "__UINT16_MAX__" },
+  { "__INT_LEAST32_MAX__", "__INT32_MAX__" },
+  { "__UINT_LEAST32_MAX__", "__UINT32_MAX__" },
+  { "__INT_LEAST64_MAX__", "__INT64_MAX__" },
+  { "__UINT_LEAST64_MAX__", "__UINT64_MAX__" },
+  { "__INT_LEAST8_WIDTH__", "__SCHAR_WIDTH__" },
+  { "__INT_LEAST16_WIDTH__", "__SHRT_WIDTH__" },
+  { "__INT_LEAST32_WIDTH__", "__LONG_WIDTH__" },
+  { "__INT_LEAST64_WIDTH__", "__LLONG_WIDTH__" },
+  { "__INTMAX_TYPE__", "__INT64_TYPE__" },
+  { "__UINTMAX_TYPE__", "__UINT64_TYPE__" },
+  { "__INTMAX_MAX__", "__INT64_MAX__" },
+  { "__UINTMAX_MAX__", "__UINT64_MAX__" },
+  { "__INTMAX_WIDTH__", "__LLONG_WIDTH__" },
+  { "__UINTMAX_WIDTH__", "__LLONG_WIDTH__" },
+  { "__INTPTR_TYPE__", "__INT32_TYPE__" },
+  { "__UINTPTR_TYPE__", "__UINT32_TYPE__" },
+  { "__INTPTR_MAX__", "__INT32_MAX__" },
+  { "__UINTPTR_MAX__", "__UINT32_MAX__" },
+  { "__INTPTR_WIDTH__", "__LONG_WIDTH__" },
+  { "__PTRDIFF_TYPE__", "__INT32_TYPE__" },
+  { "__PTRDIFF_MAX__", "__INT32_MAX__" },
+  { "__PTRDIFF_WIDTH__", "__LONG_WIDTH__" },
+  { "__SIZE_TYPE__", "unsigned int" },
+  { "__SIZE_MAX__", "65535U" },
+  { "__SIZE_WIDTH__", "__INT_WIDTH__" },
+  { "__WCHAR_TYPE__", "__UINT32_TYPE__" },
+  { "__WCHAR_MAX__", "__UINT32_MAX__" },
+  { "__WCHAR_WIDTH__", "__LONG_WIDTH__" },
+  { "__WINT_TYPE__", "__UINT32_TYPE__" },
+  { "__WINT_MAX__", "__UINT32_MAX__" },
+  { "__WINT_WIDTH__", "__LONG_WIDTH__" },
+  { NULL, NULL }
+};
+
+/*-----------------------------------------------------------------*/
+/* addPreprocessorDefine - add a possibly multi-token definition   */
+/*-----------------------------------------------------------------*/
+static void
+addPreprocessorDefine (const char *name, const char *value)
+{
+  struct dbuf_s dbuf;
+  char *definition;
+
+  dbuf_init (&dbuf, 96);
+  dbuf_printf (&dbuf, "-D%s=%s", name, value);
+  definition = shell_escape (dbuf_c_str (&dbuf));
+  dbuf_destroy (&dbuf);
+  addSet (&preArgvSet, definition);
+}
+
+/*-----------------------------------------------------------------*/
 /* preProcess - spawns the preprocessor with arguments             */
 /*-----------------------------------------------------------------*/
 static int
@@ -2311,6 +2445,12 @@ preProcess (char **envp)
       const char *s;
       set *inclList = NULL;
       char *buf;
+
+      /* sdcpp is a host program. Do not expose its host ABI as target
+         predefined macros. */
+      addSet (&preArgvSet, Safe_strdup ("-undef"));
+      addSet (&preArgvSet,
+              Safe_strdup ("-U__GCC_HAVE_DWARF2_CFI_ASM"));
 
       if (NULL != port->linker.rel_ext)
         {
@@ -2368,9 +2508,15 @@ preProcess (char **envp)
 
       /* set the macro for unsigned char  */
       if (options.signed_char)
-        addSet (&preArgvSet, Safe_strdup ("-D__SDCC_CHAR_SIGNED"));
+        {
+          addSet (&preArgvSet, Safe_strdup ("-D__SDCC_CHAR_SIGNED"));
+          addSet (&preArgvSet, Safe_strdup ("-U__CHAR_UNSIGNED__"));
+        }
       else
-        addSet (&preArgvSet, Safe_strdup ("-D__SDCC_CHAR_UNSIGNED"));
+        {
+          addSet (&preArgvSet, Safe_strdup ("-D__SDCC_CHAR_UNSIGNED"));
+          addSet (&preArgvSet, Safe_strdup ("-D__CHAR_UNSIGNED__=1"));
+        }
 
       /* set the macro for non-free  */
       if (options.use_non_free)
@@ -2516,9 +2662,58 @@ preProcess (char **envp)
       /* Character encoding  - these need to be set in device/lib/Makefile.in for $CPP, too */
       addSet (&preArgvSet, Safe_strdup ("-D__STDC_ISO_10646__=201409L")); // wchar_t is UTF-32
 
-      /* set __SIZEOF_x__ macros for internal use by the library */
-      addSet (&preArgvSet, Safe_strdup ("-D__SIZEOF_FLOAT__=4"));
-      addSet (&preArgvSet, Safe_strdup ("-D__SIZEOF_DOUBLE__=4"));
+      /* Target data model. Never inherit these values from the host cpp. */
+      addSet (&preArgvSet, Safe_strdup ("-D__STDC_HOSTED__=0"));
+      addPreprocessorUIntDefine ("__CHAR_BIT__", port->s.char_size * 8);
+      addPreprocessorUIntDefine ("__SIZEOF_CHAR__", port->s.char_size);
+      addPreprocessorUIntDefine ("__SIZEOF_SHORT__", port->s.short_size);
+      addPreprocessorUIntDefine ("__SIZEOF_INT__", port->s.int_size);
+      addPreprocessorUIntDefine ("__SIZEOF_LONG__", port->s.long_size);
+      addPreprocessorUIntDefine ("__SIZEOF_LONG_LONG__",
+                                 port->s.longlong_size);
+      addPreprocessorUIntDefine ("__SIZEOF_FLOAT__", port->s.float_size);
+      addPreprocessorUIntDefine ("__SIZEOF_DOUBLE__", port->s.float_size);
+      addPreprocessorUIntDefine ("__SIZEOF_LONG_DOUBLE__",
+                                 port->s.float_size);
+      addPreprocessorUIntDefine ("__SIZEOF_POINTER__", port->s.ptr_size);
+      addPreprocessorUIntDefine ("__SCHAR_WIDTH__",
+                                 port->s.char_size * 8);
+      addPreprocessorUIntDefine ("__SHRT_WIDTH__",
+                                 port->s.short_size * 8);
+      addPreprocessorUIntDefine ("__INT_WIDTH__", port->s.int_size * 8);
+      addPreprocessorUIntDefine ("__LONG_WIDTH__", port->s.long_size * 8);
+      addPreprocessorUIntDefine ("__LLONG_WIDTH__",
+                                 port->s.longlong_size * 8);
+      addPreprocessorUIntDefine ("__POINTER_WIDTH__",
+                                 port->s.ptr_size * 8);
+      if (TARGET_IS_MCS51 || TARGET_IS_MCS251)
+        {
+          const preprocessor_define *define;
+
+          addPreprocessorUIntDefine ("__SIZEOF_INTMAX__",
+                                     port->s.longlong_size);
+          addPreprocessorUIntDefine ("__SIZEOF_UINTMAX__",
+                                     port->s.longlong_size);
+          addPreprocessorUIntDefine ("__SIZEOF_PTRDIFF_T__",
+                                     port->s.long_size);
+          addPreprocessorUIntDefine ("__SIZEOF_SIZE_T__",
+                                     port->s.int_size);
+          addPreprocessorUIntDefine ("__SIZEOF_WCHAR_T__",
+                                     port->s.long_size);
+          addPreprocessorUIntDefine ("__SIZEOF_WINT_T__",
+                                     port->s.long_size);
+          for (define = mcsPreprocessorDefines; define->name; ++define)
+            addPreprocessorDefine (define->name, define->value);
+        }
+      addSet (&preArgvSet,
+              Safe_strdup ("-D__ORDER_LITTLE_ENDIAN__=1234"));
+      addSet (&preArgvSet,
+              Safe_strdup ("-D__ORDER_BIG_ENDIAN__=4321"));
+      addSet (&preArgvSet, Safe_strdup ("-D__ORDER_PDP_ENDIAN__=3412"));
+      addSet (&preArgvSet,
+              Safe_strdup (port->little_endian ?
+                           "-D__BYTE_ORDER__=__ORDER_LITTLE_ENDIAN__" :
+                           "-D__BYTE_ORDER__=__ORDER_BIG_ENDIAN__"));
 
       /* set macro for BITINT_MAXWIDTH  - an implementation detail, users should only use BITINT_MAXWIDTH from limits.h */
       {
