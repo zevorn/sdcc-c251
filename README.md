@@ -133,6 +133,10 @@ The current GNU C compatibility boundary is:
   result is the value of `expression`. A constant expectation supplies a
   90/10 branch probability to the common optimizer; it does not change
   program semantics.
+- Statement expressions `({ ... })` are accepted in GNU11 and GNU17. The
+  final expression statement supplies the value and type; an empty block or
+  a block ending in another statement has type `void`. Declarations and side
+  effects retain their normal block scope and source order.
 - The driver defines target data-model macros such as `__SIZEOF_INT__`,
   `__SIZEOF_POINTER__`, `__INT32_TYPE__`, `__INTPTR_TYPE__` and the integer
   constant macros. Host preprocessor ABI and architecture macros are removed.
@@ -147,8 +151,7 @@ The current GNU C compatibility boundary is:
   member. Prefer a standard flexible array in portable code.
 - Common `__attribute__((...))` placements are parsed directly, but most
   attribute names are currently syntax-only.
-- Statement expressions `({ ... })`, nested functions, labels as values and
-  computed `goto` are not supported.
+- Nested functions, labels as values and computed `goto` are not supported.
 - Keyword aliases including `__inline__`, `__signed__`, `__const__`,
   `__restrict__` and `__volatile__` are accepted. `__extension__` and
   `__auto_type` remain unsupported.
@@ -172,8 +175,8 @@ The current compiler cannot build stock Zephyr. Zephyr 4.4 defaults to C17,
 but its common headers and build pipeline also require GNU-compatible
 attributes, builtins, statement expressions, `__typeof__`, section placement,
 weak symbols and compiler barriers. The implemented GNU language modes remove
-part of this frontend gap, including type-compatibility queries; they are not
-by themselves Zephyr support.
+part of this frontend gap, including type-compatibility queries and statement
+expressions; they are not by themselves Zephyr support.
 
 There are two additional compatibility boundaries outside the C parser:
 

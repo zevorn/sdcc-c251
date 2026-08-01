@@ -9,8 +9,8 @@
 
 SDCC 已能为 MCS-51 和 MCS-251 接受严格的 ISO C17 源码。当前下游还支持
 `--std=gnu11` 和 `--std=gnu17`，提供常用 GNU keyword alias 与 attribute syntax，
-实现了可用于常量表达式的类型兼容性查询，并能保留 GNU 分支预期提示；
-但 common frontend 现有的 GNU 子集仍不足以编译 Zephyr。
+实现了 statement expression 和可用于常量表达式的类型兼容性查询，并能保留 GNU
+分支预期提示；但 common frontend 现有的 GNU 子集仍不足以编译 Zephyr。
 
 支持这两个 language mode 并不等于支持 Zephyr。stock Zephyr 与现行 MCS-251 ABI
 以及 ASxxxx `.rel`/`.ihx` 构建流程同样不兼容。完整的前置条件包括：
@@ -44,7 +44,7 @@ common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17`、
 | target data-model macro | 预定义 MCS-51/MCS-251 的大小、类型、范围、常量和 byte order，并抑制 host ABI macro |
 | 基本形式 `__asm__("instruction")` | 接受 |
 | 带 operand、constraint 和 clobber 的 extended asm | 拒绝 |
-| statement expression `({ ... })` | 拒绝 |
+| statement expression `({ ... })` | GNU11/GNU17 接受；最后一个 expression statement 决定结果的值和类型 |
 | `__auto_type` 和 `__extension__` | 拒绝 |
 | nested function 和 computed `goto` | 拒绝 |
 | `case low ... high` | 仅在 C2y extension mode 下接受 |
@@ -75,8 +75,8 @@ Zephyr 4.4 默认选择 C17。Kconfig 也允许启用 GNU extension，compiler a
 即使应用代码只使用 standard C，Zephyr common header 仍需要下列能力，或者需要
 compiler-specific 的等价实现：
 
-- `__typeof__`、`__auto_type`、`_Generic`、statement expression，以及 variadic
-  macro 的 comma elision；
+- 已在 GNU11/GNU17 实现的 `__typeof__`、`_Generic` 和 statement expression，
+  以及仍待实现的 `__auto_type` 与 variadic macro comma elision；
 - 已在 GNU11/GNU17 实现的 `__builtin_types_compatible_p` 与
   `__builtin_expect`，以及仍待实现的 `__builtin_unreachable`、bit-counting
   builtin 和 overflow builtin；
