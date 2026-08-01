@@ -240,7 +240,66 @@ MCS-251 架构有 24 位 PC 和 16 MiB 线性地址 `00:0000..FF:FFFF`。STC32G 
 
 指令流内 `data16`、`dir16`、16 位位移和 `addr16/addr24` 都按高字节到低字节编码。汇编器/链接器必须分别实现 rel8、addr11 page、addr16 region、addr24 的范围校验和重定位，不能把 24 位目标截成 16 位。
 
-### 3.4 中断和调用的硬件事实
+### 3.4 最小原生算术批次：16×16→32 位乘法和 32 位加减
+
+本小节只给出能直接转换成代码生成和测试契约的结论。证据来自 Intel 原始手册和 STC 当前芯片手册，不使用 Keil 生成的汇编代码反推指令语义。
+
+#### 3.4.1 合法指令形式和编码
+
+| 语义 | 真实助记符/操作数 | Source 模式编码 | Binary 模式编码 |
+|---|---|---|---|
+| 无符号 16×16→32 位 | `MUL WRjd,WRjs` | `AD ((jd/2)<<4 \| js/2)` | 在 Source 编码前加 `A5` |
+| 32 位寄存器加法 | `ADD DRkd,DRks` | `2F ((kd/4)<<4 \| ks/4)` | 在 Source 编码前加 `A5` |
+| 32 位寄存器减法 | `SUB DRkd,DRks` | `9F ((kd/4)<<4 \| ks/4)` | 在 Source 编码前加 `A5` |
+
+Intel 的操作数符号表把 `WRjd/WRjs` 限定为 `WR0, WR2, ..., WR30`，把 `DRkd/DRks` 限定为 `DR0, DR4, ..., DR28, DR56, DR60`。编码字段分别是字寄存器编号除以 2，或双字寄存器编号除以 4。证据见 Intel *8XC251SA/SB/SP/SQ User's Manual, Appendix A: Instruction Set Reference* Table A-1（印刷页 A-2 / PDF 物理页 4）、Tables A-7–A-9（A-5–A-6 / PDF 7–8），以及 [STC 官方站点转载的 Intel 原始资料](https://www.stcaimcu.com/data/download/Datasheet/8xc251_instr.pdf)。
+
+`MUL` 只有 `Rmd,Rms`、`WRjd,WRjs` 两种新寄存器形式；手册没有 `MUL DRkd,DRks` 指令。因此这一批的原生宽乘法就是 `MUL WRjd,WRjs`，不得臆造 `MUL DR`。它明确把两个操作数视为**无符号** 16 位整数；有符号 16 位乘法若要复用该指令，必须另行做符号修正，不能把它当成带符号乘法。证据见同一 Intel 附录 Table A-9（A-6 / PDF 8）和 `MUL` 指令说明（A-101–A-102 / PDF 103–104）。
+
+#### 3.4.2 结果位置、字节序和寄存器重叠
+
+`MUL WRjd,WRjs` 用 `WRjd` 选定包含结果的双字寄存器：
+
+- 当 `jd = 0,4,8,...,28` 时，积的高 16 位写入 `WRjd`，低 16 位写入 `WRjd+2`；
+- 当 `jd = 2,6,10,...,30` 时，积的高 16 位写入 `WRjd-2`，低 16 位写入 `WRjd`。
+
+换言之，32 位积总是落在 `DR(jd & ~3)` 中，而指令中的目标字可能是结果的高半或低半。这不是普通的“16 位结果覆盖目标字”指令，代码生成器必须将整个相交 DR 视为定义。精确伪操作见 Intel 附录 A-102 / PDF 104；STC32G 手册在印刷页 1654–1655 / PDF 1694–1695 给出了相同布局（[STC32G.pdf](https://www.stcaimcu.com/data/download/Datasheet/STC32G.pdf)）。
+
+`ADD DRkd,DRks` 和 `SUB DRkd,DRks` 均将 32 位结果写回 `DRkd`，`DRks` 只是源操作数。Intel 附录的精确伪操作分别见 A-29 / PDF 31 和 A-124 / PDF 126；STC 逐形式表为印刷页 1601 / PDF 1641 和印刷页 1670 / PDF 1710。
+
+三种指令都遵守 MCS-251 寄存器文件的大端布局：最低编号的寄存器文件位置保存 MSB，随后位置依次保存到 LSB。例如结果落在 `DR4` 时，位置 4、5、6、7 依次为结果的 bits 31:24、23:16、15:8、7:0。证据见 Intel 完整 *8XC251SA/SB/SP/SQ User's Manual* §3.3.1（印刷页 3-13 / PDF 55）、§5.2.1.1 及 Table 5-2（5-2–5-3 / PDF 84–85，[8xc251sx_um.pdf](https://www.stcaimcu.com/data/download/Datasheet/8xc251sx_um.pdf)）。
+
+`DR56` 和 `DR60` 在指令操作数记号中是合法 DR，但它们分别是 `DPX` 和 `SPX`。汇编器不应拒绝手册规定的显式用法，而通用 C 寄存器分配器必须保留它们，尤其不得把 `DR60/SPX` 当作算术临时量。Intel 依据是 §3.3.2（3-13–3-14 / PDF 55–56）和 Appendix A Table A-1（A-2 / PDF 4）。
+
+#### 3.4.3 标志位契约
+
+| 指令 | `CY` | `AC` | `OV` | `N` | `Z` |
+|---|---|---|---|---|---|
+| `MUL WRjd,WRjs` | 始终清零 | 不变 | 32 位积大于 `0xffff` 时置位 | 结果 bit 31 为 1 时置位 | 32 位结果为 0 时置位 |
+| `ADD DRkd,DRks` | 从 32 位 MSB 产生进位时置位 | 不变 | 带符号加法溢出时置位 | STC32G 明确为结果 bit 31；Intel 文本有歧义 | 32 位结果为 0 时置位 |
+| `SUB DRkd,DRks` | 32 位减法需要借位时置位 | 不变 | 带符号减法溢出时置位 | STC32G 明确为结果 bit 31；Intel 文本有歧义 | 32 位结果为 0 时置位 |
+
+Intel Appendix A 的 `ADD` 指令家族总表把 `AC` 列统一标成“可变”，但 Intel 主手册 Table 5-10 的注 2 和 PSW 定义明确说 `AC` **只受 8 位操作数影响**（印刷页 5-17–5-18 / PDF 99–100）。STC 又在 `ADD/SUB DRkd,DRks` 的逐形式表中把 `AC` 标为“-”（印刷页 1601、1670 / PDF 1641、1710）。因此 32 位 ADD/SUB 的实现和测试应按“`AC` 不变”处理，不能从附录的家族级标记推导相反结论。`MUL` 的其余旗标语义见 Intel Appendix A A-101 / PDF 103，STC 交叉证据为印刷页 1654–1655 / PDF 1694–1695。
+
+Intel PSW1 的通用 `N` 定义写的是“bit 15”（印刷页 5-19 / PDF 101），这与 dword 运算不协调；Intel 的 `ADD/SUB` 条目只标明 `N` 会被更新，没有另行说明 dword 时选哪一位。STC32G 的 PSW1 定义则明确说“运算结果的最高位”决定 `N`（§11.2.4，印刷页 555 / PDF 595），所以面向 STC32G 的 32 位 ADD/SUB 应按 bit 31 实现和测试；若将来声称兼容其他 Intel MCS-251 硬件，该点仍需 errata 或硬件实测确认。
+
+#### 3.4.4 STC 扩展边界
+
+`MUL WRjd,WRjs`、`ADD DRkd,DRks` 和 `SUB DRkd,DRks` 已经出现在 Intel 1996 年的 MCS-251 指令附录中，所以它们是**基线 MCS-251 CPU 指令**，不是 STC 扩展，也不需要 Keil 兼容模式才能使用。
+
+STC32G 的 `MDU32` 是另一个设备级硬件单元：手册第 34 章规定由软件向 `DMAIR` 寄存器写入 DMA 命令启动，操作数和结果使用 `R0..R7`；32 位乘法的 DMA 命令码为 `0x02`。它不是直接由 MCS-251 指令流解码的 `MUL` 新操作数形式。证据见 STC32G 手册印刷页 1267、1269 / PDF 1307、1309。如果后端以后利用它，应当作显式 STC 目标扩展和寄存器固定的内建操作，不得改变通用 `-mmcs251` 的基线语义。
+
+同手册第 36 章的 `DPU32` 也是通过 `DPUOP` SFR 写入命令码触发的协处理器，而且当前产品线表只标出 `Ai8052U` 支持（印刷页 1285 / PDF 1325）。因此 DPU32/MDU32 都排除在本次三条 CPU 指令的最小实现批次之外；项目可将其建模为 MCS-251 的 STC 目标扩展，但必须保留“SFR/协处理器命令，非 Intel CPU opcode”的实际硬件边界。
+
+#### 3.4.5 手册歧义和本批次排除项
+
+- Intel Tables A-8/A-9（A-6 / PDF 8）的通用编码表看似允许 `ADD/SUB DRk,dir8`，但 Table A-19 和逐指令说明都没有这种形式。在获得 Intel errata 或另一份官方裁决前，汇编器和代码生成器不应因为通用表而新增该形式。
+- Intel Table A-19 把 ADD/SUB 的 dword 立即数共享行写成 `#0data16`，而 SUB 的逐项标题写成 `#data16`（A-125 / PDF 127）。共享表的“16-bit unsigned immediate”描述支持高半字补零，但符号不一致；本次只实现无歧义的 `DR,DR` 形式，不把立即数形式混入同一补丁。
+- `MUL WRjd,WRjs` 的编码表没有禁止源字与输出 dword 部分或完全重叠，但指令文字也没有定义这些 alias 边界的读写时序。编译器首批指令选择应避免依赖这种重叠，并把它保留为独立硬件验证项。
+
+本次重新从 STC 官方站点取得并核验的三份资料为 `8xc251_instr.pdf`（SHA-256 `3e9e898af1495ab73f44a77e524803ddaf5892dc7d8349b28f41b1f6f6a9d424`）、`8xc251sx_um.pdf`（`bffda43f128d415a07c596e4720e8731d57ab9ffa6284ebecea1f0a90c8f35fd`）和 2026-07-08 版 `STC32G.pdf`（`1ef45fb0f67aa88b9c7ce746e7e9d828cd3d1159d1868eb3ac9f0d6e8a0069f0`）。这些 PDF 仍按项目现有策略不提交进仓库，上述官方 URL、页码和 SHA 共同构成可重复核验的证据键。
+
+### 3.5 中断和调用的硬件事实
 
 - `ACALL/AJMP` 的 11 位目标受 2 KiB 块限制；`LCALL/LJMP` 的 16 位目标受当前 64 KiB region 限制；`ECALL/EJMP` 改写完整 24 位 PC。
 - `RET` 弹 2 字节返回地址，`ERET` 弹 3 字节。
