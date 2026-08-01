@@ -42,6 +42,8 @@ common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17`、
 | `__builtin_types_compatible_p(type1, type2)` | GNU11/GNU17 接受；结果为整数常量表达式 |
 | `__builtin_expect(expression, expected)` | GNU11/GNU17 接受；返回 expression 转换为 `long` 后的值；expected 为常量时提供 90/10 分支提示 |
 | `__builtin_constant_p(expression)` | GNU11/GNU17 接受；保守地折叠为零或一，不会求值 operand |
+| `__has_builtin(name)` | 所有模式均报告 common builtin，GNU11/GNU17 另报告 GNU-only builtin；未知名称为零 |
+| `__builtin_unreachable()` | 所有模式均接受；不生成外部调用 |
 | target data-model macro | 预定义 MCS-51/MCS-251 的大小、类型、范围、常量和 byte order，并抑制 host ABI macro |
 | 基本形式 `__asm__("instruction")` | 接受 |
 | 带 operand、constraint 和 clobber 的 extended asm | 拒绝 |
@@ -79,8 +81,9 @@ compiler-specific 的等价实现：
 - 已在 GNU11/GNU17 实现的 `__typeof__`、`_Generic` 和 statement expression，
   以及仍待实现的 `__auto_type` 与 variadic macro comma elision；
 - 已在 GNU11/GNU17 实现的 `__builtin_types_compatible_p`、
-  `__builtin_expect` 与 `__builtin_constant_p`，以及仍待实现的
-  `__builtin_unreachable`、bit-counting builtin 和 overflow builtin；
+  `__builtin_expect` 与 `__builtin_constant_p`，以及所有模式均已实现的
+  `__builtin_unreachable`；仍待实现 bit-counting builtin 和 overflow
+  builtin；
 - `section`、`used`、`weak`、`packed`、`aligned`、`always_inline`、`noinline`、
   `noreturn`、`alias` 等 attribute semantics；
 - context switch 和 interrupt code 使用的 compiler barrier 与 target operation；

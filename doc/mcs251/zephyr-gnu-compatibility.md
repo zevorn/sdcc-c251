@@ -47,6 +47,8 @@ Direct probes against the current MCS-251 compiler give this baseline:
 | `__builtin_types_compatible_p(type1, type2)` | accepted in GNU11/GNU17; integer constant expression |
 | `__builtin_expect(expression, expected)` | accepted in GNU11/GNU17; returns `long` expression and supplies a 90/10 branch hint when expected is constant |
 | `__builtin_constant_p(expression)` | accepted in GNU11/GNU17; conservatively folds to zero or one without evaluating the operand |
+| `__has_builtin(name)` | reports common builtins in every mode, GNU-only builtins in GNU11/GNU17, and zero for unknown names |
+| `__builtin_unreachable()` | accepted in every mode; no external call is emitted |
 | target data-model macros | MCS-51/MCS-251 sizes, types, limits, constants and byte order are predefined; host ABI macros are suppressed |
 | basic `__asm__("instruction")` | accepted |
 | extended asm operands, constraints and clobbers | rejected |
@@ -87,8 +89,9 @@ need compiler-specific equivalents for these facilities:
 - `__typeof__`, `_Generic` and statement expressions (implemented in
   GNU11/GNU17), plus `__auto_type` and variadic macro comma elision;
 - `__builtin_types_compatible_p`, `__builtin_expect` and
-  `__builtin_constant_p` (implemented in GNU11/GNU17), plus the remaining
-  `__builtin_unreachable`, bit-counting and overflow builtins;
+  `__builtin_constant_p` (implemented in GNU11/GNU17), and
+  `__builtin_unreachable` (implemented in every mode), plus the remaining
+  bit-counting and overflow builtins;
 - `section`, `used`, `weak`, `packed`, `aligned`, `always_inline`, `noinline`,
   `noreturn`, `alias` and related attribute semantics;
 - compiler barriers and target operations used by context switching and

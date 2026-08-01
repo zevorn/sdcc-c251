@@ -138,6 +138,10 @@ The current GNU C compatibility boundary is:
   the common frontend can prove the operand constant. The operand is analyzed
   but never evaluated; volatile accesses, assignments, increments and
   function calls produce zero.
+- `__has_builtin(name)` reports the builtins accepted by the selected
+  frontend mode. Unknown names produce zero. `__builtin_offsetof` and
+  `__builtin_unreachable` are available in every mode; the GNU-only queries
+  above are reported only in GNU11 and GNU17.
 - Statement expressions `({ ... })` are accepted in GNU11 and GNU17. The
   final expression statement supplies the value and type; an empty block or
   a block ending in another statement has type `void`. Declarations and side
