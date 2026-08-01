@@ -99,6 +99,8 @@ jobs:
           make -C windows-build -j2 sdcc-base
           install -m 755 windows-build/support/cpp/gcc/cpp.exe \
             windows-build/bin/sdcpp.exe
+          install -m 755 windows-build/support/cpp/gcc/cc1.exe \
+            windows-build/bin/cc1.exe
           make -C windows-build -j2
           make -C windows-build \
             DESTDIR="$PWD/windows-build/windows-stage" install
