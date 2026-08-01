@@ -136,6 +136,9 @@ extern struct dbuf_s *codeOutBuf;
 
 #define CLRC     emitcode ("clr","c")
 #define SETC     emitcode ("setb","c")
+#define RUNTIME_CALL (TARGET_IS_MCS251 ? "ecall" : "lcall")
+#define LONG_JUMP (TARGET_IS_MCS251 ? "ejmp" : "ljmp")
+#define LOOP_ENTRY_JUMP (TARGET_IS_MCS251 ? "ejmp" : "sjmp")
 
 static unsigned char SLMask[] = { 0xFF, 0xFE, 0xFC, 0xF8, 0xF0,
                                   0xE0, 0xC0, 0x80, 0x00
@@ -249,6 +252,122 @@ movb (const char *x)
   emitcode ("mov", "b,%s", x);
 }
 
+/* MCS251 uses the full 24-bit DPX register for flat data and code pointers.
+   Keeping these operations here prevents individual lowering paths from
+   accidentally falling back to a 16-bit DPTR update at a region boundary. */
+static const char *
+farPointerRegister (void)
+{
+  return TARGET_IS_MCS251 ? "dpx" : "dptr";
+}
+
+static void
+incrementFarPointer (void)
+{
+  emitcode ("inc", farPointerRegister ());
+}
+
+static void
+decrementFarPointer (void)
+{
+  if (TARGET_IS_MCS251)
+    emitcode ("dec", "dpx");
+  else
+    emitcode (RUNTIME_CALL, "__decdptr");
+}
+
+static void
+loadFarPointerByte (bool code)
+{
+  if (TARGET_IS_MCS251)
+    emitcode ("mov", "a,@dpx");
+  else if (code)
+    {
+      emitcode ("clr", "a");
+      emitcode ("movc", "a,@a+dptr");
+    }
+  else
+    emitcode ("movx", "a,@dptr");
+}
+
+static void
+storeFarPointerByte (void)
+{
+  if (TARGET_IS_MCS251)
+    emitcode ("mov", "@dpx,a");
+  else
+    emitcode ("movx", "@dptr,a");
+}
+
+/* A MCS251 far symbol has a relocatable 24-bit address.  Materialize it at
+   the point of use.  More than one far asmop can be live in a single iCode;
+   treating DPX as implicit per-operand state makes the last aopOp() silently
+   alias all earlier operands. */
+static void
+mcs251LoadFarSymbol (asmop *aop, int offset)
+{
+  const char *name = aop->aopu.aop_sym->rname;
+
+  wassert (TARGET_IS_MCS251 && aop->type == AOP_DPTR && aop->aopu.aop_sym);
+  if (offset)
+    {
+      emitcode ("mov", "dptr,#(%s + %d)", name, offset);
+      emitcode ("mov", "dpxl,#((%s + %d) >> 16)", name, offset);
+    }
+  else
+    {
+      emitcode ("mov", "dptr,#%s", name);
+      emitcode ("mov", "dpxl,#(%s >> 16)", name);
+    }
+  aop->coff = offset;
+}
+
+/* DJNZ has an 8-bit displacement even in Source mode.  A MCS251 loop body
+   can easily exceed that after 24-bit far-address materialization, so use
+   a nearby DJNZ trampoline and an unrestricted EJMP.  Preserve the exact
+   original instruction for MCS-51. */
+static void
+emitLoopDjnz (const char *counter, symbol *target)
+{
+  if (TARGET_IS_MCS251)
+    {
+      symbol *repeat = newiTempLabel (NULL);
+      symbol *done = newiTempLabel (NULL);
+
+      emitcode ("djnz", "%s,!tlabel", counter, labelKey2num (repeat->key));
+      emitcode ("sjmp", "!tlabel", labelKey2num (done->key));
+      emitLabel (repeat);
+      emitcode ("ejmp", "!tlabel", labelKey2num (target->key));
+      emitLabel (done);
+    }
+  else
+    emitcode ("djnz", "%s,!tlabel", counter, labelKey2num (target->key));
+}
+
+/* The MCS251 hardware stack is the full DR60/SPX register.  Native INC/DEC
+   forms change it without borrowing A, a general register, or carry; use the
+   largest short increment first to keep large frames compact. */
+static void
+mcs251AdjustStackPointer (int amount)
+{
+  const char *instruction = amount < 0 ? "dec" : "inc";
+  unsigned int remaining = amount < 0 ? -amount : amount;
+
+  wassert (TARGET_IS_MCS251);
+  while (remaining >= 4)
+    {
+      emitcode (instruction, "spx,#4");
+      remaining -= 4;
+    }
+  if (remaining >= 2)
+    {
+      emitcode (instruction, "spx,#2");
+      remaining -= 2;
+    }
+  if (remaining)
+    emitcode (instruction, "spx");
+}
+
 /*-----------------------------------------------------------------*/
 /* emitpush - push something on internal stack                     */
 /*-----------------------------------------------------------------*/
@@ -260,7 +379,10 @@ emitpush (const char *arg)
   _G.stack.pushed++;
   if (!arg)
     {
-      emitcode ("inc", "sp");
+      if (TARGET_IS_MCS251)
+        mcs251AdjustStackPointer (1);
+      else
+        emitcode ("inc", "sp");
       return;
     }
   else if (EQ (arg, "a"))
@@ -288,7 +410,12 @@ static void
 emitpop (const char *arg)
 {
   if (!arg)
-    emitcode ("dec", "sp");
+    {
+      if (TARGET_IS_MCS251)
+        mcs251AdjustStackPointer (-1);
+      else
+        emitcode ("dec", "sp");
+    }
   else
     emitcode ("pop", arg);
   _G.stack.pushed--;
@@ -717,6 +844,51 @@ stackoffset (symbol * sym)
   return offset;
 }
 
+/* Format a MCS251 indexed hardware-stack operand.  The STC32G implementation
+   provides 16 KiB of region-00 EDATA, which is fully covered by the signed
+   displacement of @DRk+dis16. */
+static void
+mcs251FormatStackOperand (char *buffer, size_t size, int displacement)
+{
+  wassert (TARGET_IS_MCS251);
+  wassert (displacement >= -32768 && displacement <= 32767);
+
+  if (displacement > 0)
+    SNPRINTF (buffer, size, "@spx+0x%04x", displacement);
+  else if (displacement < 0)
+    SNPRINTF (buffer, size, "@spx-0x%04x", -displacement);
+  else
+    SNPRINTF (buffer, size, "@spx");
+}
+
+/* Materialize a stack object's flat address before changing SPX, then place
+   its little-endian bytes on the hardware stack.  Callers can pop the bytes
+   into an arbitrary result without DPX aliasing that result's storage. */
+static void
+mcs251PushStackAddress (symbol *sym, int extraOffset, int size)
+{
+  int displacement = stackoffset (sym) + extraOffset;
+
+  wassert (TARGET_IS_MCS251 && sym->onStack);
+  emitcode ("mov", "dpx,spx");
+  if (displacement > 0)
+    emitcode ("add", "dpx,#%d", displacement);
+  else if (displacement < 0)
+    emitcode ("sub", "dpx,#%d", -displacement);
+
+  for (int offset = 0; offset < size; ++offset)
+    {
+      if (offset == 0)
+        emitpush ("dpl");
+      else if (offset == 1)
+        emitpush ("dph");
+      else if (offset == 2)
+        emitpush ("dpxl");
+      else
+        emitpush (zero);
+    }
+}
+
 /*-----------------------------------------------------------------*/
 /* aopPtrForSym - pointer for symbol                               */
 /*-----------------------------------------------------------------*/
@@ -798,6 +970,17 @@ aopForSym (iCode * ic, symbol * sym, bool result)
     }
 
   /* assign depending on the storage class */
+  /* MCS251 automatic objects live on the complete SPX hardware stack.  Do not
+     truncate their address through the inherited R0/R1 byte pointers. */
+  if (TARGET_IS_MCS251 && sym->onStack && !space->paged)
+    {
+      sym->aop = aop = newAsmop (AOP_MCS251_STK);
+      aop->aopu.aop_sym = sym;
+      aop->size = getSize (sym->type);
+      aop->aop_is_volatile = IS_VOLATILE (sym->type);
+      return aop;
+    }
+
   /* if it is on the stack or indirectly addressable */
   /* space we need to assign either r0 or r1 to it   */
   if (sym->onStack || sym->iaccess)
@@ -856,8 +1039,13 @@ aopForSym (iCode * ic, symbol * sym, bool result)
   /* only remaining is far space */
   /* in which case DPTR gets the address */
   sym->aop = aop = newAsmop (AOP_DPTR);
+  aop->aopu.aop_sym = sym;
 
-  rtrackLoadDptrWithSym (sym->rname);
+  /* MCS251 AOP_DPTR reads and writes materialize the complete far address at
+     their point of use.  Loading it here can clobber a value still held in
+     DPTR, such as a 16-bit function return that is about to be spilled. */
+  if (!TARGET_IS_MCS251)
+    rtrackLoadDptrWithSym (sym->rname);
 
   aop->aop_is_volatile = IS_VOLATILE (sym->type);
   aop->size = getSize (sym->type);
@@ -919,8 +1107,11 @@ aopForRemat (symbol *sym)
     }
 
   aop->aopu.aop_immd.aop_immd1 = dbuf_detach_c_str (&dbuf);
+  aop->aopu.aop_immd.mcs251_pdata_page =
+    TARGET_IS_MCS251 && from_type && IS_PTR (from_type) &&
+    DCL_TYPE (from_type) == PPOINTER;
   /* set immd2 field if required */
-  if (aop->aopu.aop_immd.from_cast_remat)
+  if (GPTRSIZE > FARPTRSIZE && aop->aopu.aop_immd.from_cast_remat)
     {
       ptr_type = pointerTypeToGPByte (DCL_TYPE (from_type), from_name, sym->name);
       dbuf_init (&dbuf, 128);
@@ -1549,6 +1740,8 @@ aopGetUsesAcc (const asmop* aop, int offset)
       return FALSE;
     case AOP_DPTR:
       return TRUE;
+    case AOP_MCS251_STK:
+      return TRUE;
     case AOP_IMMD:
       return FALSE;
     case AOP_DIR:
@@ -1635,7 +1828,12 @@ aopGet (asmop *aop, int offset, bool bit16, bool dname)
           break;
 
         case AOP_DPTR:
-          if (aop->code && aop->coff == 0 && offset >= 1)
+          if (TARGET_IS_MCS251 && aop->aopu.aop_sym)
+            {
+              mcs251LoadFarSymbol (aop, offset);
+              loadFarPointerByte (aop->code);
+            }
+          else if (!TARGET_IS_MCS251 && aop->code && aop->coff == 0 && offset >= 1)
             {
               emitcode ("mov", "a,#0x%02x", offset);
               emitcode ("movc", "a,@a+dptr");
@@ -1644,32 +1842,43 @@ aopGet (asmop *aop, int offset, bool bit16, bool dname)
             {
               while (offset > aop->coff)
                 {
-                  emitcode ("inc", "dptr");
+                  incrementFarPointer ();
                   aop->coff++;
                 }
 
               while (offset < aop->coff)
                 {
-                  emitcode ("lcall", "__decdptr");
+                  decrementFarPointer ();
                   aop->coff--;
                 }
 
               aop->coff = offset;
-              if (aop->code)
-                {
-                  emitcode ("clr", "a");
-                  emitcode ("movc", "a,@a+dptr");
-                }
-              else
-                {
-                  emitcode ("movx", "a,@dptr");
-                }
+              loadFarPointerByte (aop->code);
             }
           dbuf_append_str (&dbuf, dname ? "acc" : "a");
           break;
 
+        case AOP_MCS251_STK:
+          {
+            char stackOperand[32];
+
+            mcs251FormatStackOperand (stackOperand, sizeof (stackOperand),
+                                    stackoffset (aop->aopu.aop_sym) + offset);
+            emitcode ("mov", "a,%s", stackOperand);
+            dbuf_append_str (&dbuf, dname ? "acc" : "a");
+          }
+          break;
+
         case AOP_IMMD:
-          if (aop->aopu.aop_immd.from_cast_remat && aop->aop_litimmd_is_gptr && offset == GPTRSIZE - 1)
+          if (aop->aopu.aop_immd.mcs251_pdata_page && offset == 1)
+            {
+              dbuf_append_str (&dbuf, "P2");
+            }
+          else if (aop->aopu.aop_immd.mcs251_pdata_page && offset == 2)
+            {
+              dbuf_append_str (&dbuf, "0xeb"); /* STC MXAX */
+            }
+          else if (GPTRSIZE > FARPTRSIZE && aop->aopu.aop_immd.from_cast_remat && aop->aop_litimmd_is_gptr && offset == GPTRSIZE - 1)
             {
               dbuf_printf (&dbuf, "%s", aop->aopu.aop_immd.aop_immd2);
             }
@@ -1717,7 +1926,7 @@ aopGet (asmop *aop, int offset, bool bit16, bool dname)
           break;
 
         case AOP_LIT:
-          if (aop->aop_litimmd_is_gptr && aop->aop_lit_is_funcptr && offset == GPTRSIZE - 1)
+          if (GPTRSIZE > FARPTRSIZE && aop->aop_litimmd_is_gptr && aop->aop_lit_is_funcptr && offset == GPTRSIZE - 1)
             {
               dbuf_append_str (&dbuf, aopLiteralGptr (NULL, aop->aopu.aop_lit));
             }
@@ -1772,6 +1981,8 @@ aopPutUsesAcc (const asmop* aop, const char *s, int offset)
       wassert (!EQ (aop->aopu.aop_reg[offset]->name, "a"));
       return FALSE;
     case AOP_DPTR:
+      return TRUE;
+    case AOP_MCS251_STK:
       return TRUE;
     case AOP_R0:
     case AOP_R1:
@@ -1885,21 +2096,40 @@ aopPut (asmop *aop, const char *s, int offset)
       /* if not in accumulator */
       MOVA (s);
 
+      if (TARGET_IS_MCS251 && aop->aopu.aop_sym)
+        {
+          mcs251LoadFarSymbol (aop, offset);
+          storeFarPointerByte ();
+          break;
+        }
+
       while (offset > aop->coff)
         {
           aop->coff++;
-          emitcode ("inc", "dptr");
+          incrementFarPointer ();
         }
 
       while (offset < aop->coff)
         {
           aop->coff--;
-          emitcode ("lcall", "__decdptr");
+          decrementFarPointer ();
         }
 
       aop->coff = offset;
 
-      emitcode ("movx", "@dptr,a");
+      storeFarPointerByte ();
+      break;
+
+    case AOP_MCS251_STK:
+      {
+        char stackOperand[32];
+
+        MOVA (s);
+        mcs251FormatStackOperand (stackOperand, sizeof (stackOperand),
+                                stackoffset (aop->aopu.aop_sym) + offset);
+        emitcode ("mov", "%s,a", stackOperand);
+        accuse = TRUE;
+      }
       break;
 
     case AOP_R0:
@@ -2002,6 +2232,50 @@ opPut (operand *result, const char *s, int offset)
 static void
 loadDptrFromOperand (operand *op, bool loadBToo)
 {
+  if (TARGET_IS_MCS251 && AOP_SIZE (op) >= 3)
+    {
+      switch (AOP_TYPE (op))
+        {
+        case AOP_STR:
+          /* DPL/DPH are already in place for register arguments. */
+          emitcode ("mov", "dpxl,%s", opGet (op, 2, FALSE, FALSE));
+          return;
+
+        case AOP_IMMD:
+        case AOP_LIT:
+          if (AOP_TYPE (op) == AOP_IMMD &&
+              AOP (op)->aopu.aop_immd.mcs251_pdata_page)
+            {
+              emitcode ("mov", "dpl,%s", opGet (op, 0, FALSE, FALSE));
+              emitcode ("mov", "dph,%s", opGet (op, 1, FALSE, FALSE));
+              emitcode ("mov", "dpxl,%s", opGet (op, 2, FALSE, FALSE));
+            }
+          else
+            {
+              emitcode ("mov", "dptr,%s", opGet (op, 0, TRUE, FALSE));
+              emitcode ("mov", "dpxl,%s", opGet (op, 2, FALSE, FALSE));
+            }
+          return;
+
+        case AOP_DPTR:
+          /* The address of the pointer object itself occupies DPX.  Read
+             all bytes before replacing that register with the pointee. */
+          emitpush (opGet (op, 0, FALSE, FALSE));
+          emitpush (opGet (op, 1, FALSE, FALSE));
+          emitpush (opGet (op, 2, FALSE, FALSE));
+          emitpop ("dpxl");
+          emitpop ("dph");
+          emitpop ("dpl");
+          return;
+
+        default:
+          emitcode ("mov", "dpl,%s", opGet (op, 0, FALSE, FALSE));
+          emitcode ("mov", "dph,%s", opGet (op, 1, FALSE, FALSE));
+          emitcode ("mov", "dpxl,%s", opGet (op, 2, FALSE, FALSE));
+          return;
+        }
+    }
+
   if (AOP_TYPE (op) != AOP_STR)
     {
       /* if this is rematerializable */
@@ -2076,9 +2350,7 @@ reAdjustPreg (asmop * aop)
       break;
     case AOP_DPTR:
       while (aop->coff--)
-        {
-          emitcode ("lcall", "__decdptr");
-        }
+        decrementFarPointer ();
       break;
     }
   aop->coff = 0;
@@ -2095,7 +2367,7 @@ getDataSize (operand * op)
   if (size == GPTRSIZE)
     {
       sym_link *type = operandType (op);
-      if (IS_GENPTR (type))
+      if (IS_GENPTR (type) && GPTRSIZE > FARPTRSIZE)
         {
           /* generic pointer; arithmetic operations
            * should ignore the high byte (pointer type).
@@ -2557,12 +2829,62 @@ skip_byte:
 /*-----------------------------------------------------------------*/
 /* genMove_o - Copy part of one asmop to another                   */
 /*-----------------------------------------------------------------*/
+static bool
+mcs251AopUsesDpxValue (const asmop *aop, int offset, int size)
+{
+  int i;
+
+  if (!TARGET_IS_MCS251)
+    return FALSE;
+
+  for (i = offset; i < offset + size; ++i)
+    {
+      if ((aop->type == AOP_REG || aop->type == AOP_ACC) &&
+          (aopInReg (aop, i, DPL_IDX) || aopInReg (aop, i, DPH_IDX)))
+        return TRUE;
+      if (aop->type == AOP_STR &&
+          (EQ (aop->aopu.aop_str[i], "dpl") ||
+           EQ (aop->aopu.aop_str[i], "dph") ||
+           EQ (aop->aopu.aop_str[i], "dpxl")))
+        return TRUE;
+    }
+
+  return FALSE;
+}
+
+static void
+mcs251MoveDpxValueToFar (asmop *result, int roffset, asmop *source,
+                       int soffset, int size)
+{
+  int i;
+
+  wassert (TARGET_IS_MCS251 && result->type == AOP_DPTR);
+
+  /* Materializing the far destination replaces DPX, including DPL and
+     DPH.  Snapshot the complete value before storing its first byte.  Push
+     high-to-low so volatile destinations still observe low-to-high stores. */
+  for (i = size; i-- > 0;)
+    emitpush (aopGet (source, soffset + i, FALSE, FALSE));
+  for (i = 0; i < size; ++i)
+    {
+      emitpop ("acc");
+      aopPut (result, "a", roffset + i);
+    }
+}
+
 static void
 genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, bool a_dead_global)
 {
   wassertl_bt (result->type != AOP_LIT, "Trying to write to literal.");
   wassertl_bt (result->type != AOP_IMMD, "Trying to write to immediate.");
   wassertl_bt (roffset + size <= result->size, "Trying to write beyond end of operand");
+
+  if (TARGET_IS_MCS251 && result->type == AOP_DPTR &&
+      mcs251AopUsesDpxValue (source, soffset, size))
+    {
+      mcs251MoveDpxValueToFar (result, roffset, source, soffset, size);
+      return;
+    }
 
   if ((result->type == AOP_REG || result->type == AOP_ACC) && (source->type == AOP_REG || source->type == AOP_ACC))
     {
@@ -2974,9 +3296,9 @@ saveRegisters (iCode * lic)
               emitcode ("mov", "a,#0x%02x", count);
               emitcode ("mov", "b,#0x%02x", mask & 0xffu);
               if (mask & 0x100)
-                emitcode ("lcall", "___sdcc_xpush_regs_r0\t;(%s)", szRegs);
+                emitcode (RUNTIME_CALL, "___sdcc_xpush_regs_r0\t;(%s)", szRegs);
               else
-                emitcode ("lcall", "___sdcc_xpush_regs\t;(%s)", szRegs);
+                emitcode (RUNTIME_CALL, "___sdcc_xpush_regs\t;(%s)", szRegs);
               genLine.lineCurr->isInline = 1;
               if (BINUSE)
                 emitpop ("b");
@@ -3106,9 +3428,9 @@ unsaveRegisters (iCode * ic)
               int mask = xstackRegisters (rsave, FALSE, count, szRegs);
               emitcode ("mov", "b,#0x%02x", mask & 0xffu);
               if (mask & 0x100)
-                emitcode ("lcall", "___sdcc_xpop_regs_r0\t;(%s)", szRegs);
+                emitcode (RUNTIME_CALL, "___sdcc_xpop_regs_r0\t;(%s)", szRegs);
               else
-                emitcode ("lcall", "___sdcc_xpop_regs\t;(%s)", szRegs);
+                emitcode (RUNTIME_CALL, "___sdcc_xpop_regs\t;(%s)", szRegs);
               genLine.lineCurr->isInline = 1;
               _G.stack.xpushed -= count;
             }
@@ -3209,6 +3531,38 @@ pushSide (operand * oper, int size, iCode * ic)
   freeAsmop (oper, NULL, ic, TRUE);
 }
 
+/* Load a little-endian, three-byte C function pointer into the low 24 bits
+   of MCS251 DR28. DR28 is outside the register set allocated by the shared
+   MCS-51 backend, which leaves all ABI argument registers intact. */
+static void
+mcs251LoadCallTarget (operand *oper, iCode *ic)
+{
+  wassert (TARGET_IS_MCS251 && FUNCPTRSIZE == 3);
+
+  /* r0-r2 can already hold the first argument when SENDs are lowered.
+     Preserve them while reversing the three pointer bytes for POP DR28. */
+  emitpush ("ar0");
+  emitpush ("ar1");
+  emitpush ("ar2");
+
+  /* pushSide reads AOP_DPTR operands in the required low-to-high order. */
+  pushSide (oper, FUNCPTRSIZE, ic);
+  emitpop ("r0");              /* high byte */
+  emitpop ("r1");              /* middle byte */
+  emitpop ("r2");              /* low byte */
+
+  /* Native POP DR28 consumes four bytes, least-significant first. */
+  emitcode ("push", "#0x00");
+  emitcode ("push", "r0");
+  emitcode ("push", "r1");
+  emitcode ("push", "r2");
+  emitcode ("pop", "dr28");
+
+  emitpop ("ar2");
+  emitpop ("ar1");
+  emitpop ("ar0");
+}
+
 /*-----------------------------------------------------------------*/
 /* assignResultValue                                               */
 /*-----------------------------------------------------------------*/
@@ -3220,7 +3574,19 @@ assignResultValue (operand *oper, operand *func)
   sym_link *dtype = operandType (func);
   sym_link *ftype = IS_FUNCPTR (dtype) ? dtype->next : dtype;
 
-  if (func && IS_BIT (getSpec (operandType (func))))
+  /* The MCS-51 assembly float comparators leave their boolean result in C,
+     which lets an immediately consumed comparison avoid materialising a
+     byte.  MCS251 uses the portable C implementations instead; their
+     compiler-internal V_BOOL return type is returned in DPL.  Convert that
+     byte to C when the result was allocated as a bit temporary. */
+  if (TARGET_IS_MCS251 && IS_BOOL (ftype->next) &&
+      AOP_TYPE (oper) == AOP_CRY)
+    {
+      MOVA ("dpl");
+      emitcode ("add", "a,#!constbyte", 0xffu);
+      outBitC (oper);
+    }
+  else if (func && IS_BIT (getSpec (operandType (func))))
     outBitC (oper);
   else
     genMove (oper->aop, aopRet (ftype), true);
@@ -3408,15 +3774,16 @@ genPointerPush (iCode *ic)
           emitcode ("mov", "a,@%s", preg->name);
           break;
         case PPOINTER:
-        case FPOINTER:
           emitcode ("movx", "a,@dptr");
           break;
+        case FPOINTER:
+          loadFarPointerByte (FALSE);
+          break;
         case CPOINTER:
-          emitcode ("clr", "a");
-          emitcode ("movc", "a,@a+dptr");
+          loadFarPointerByte (TRUE);
           break;
         case GPOINTER:
-          emitcode ("lcall", "__gptrget");
+          emitcode (RUNTIME_CALL, "__gptrget");
           break;
         default:
           wassert (0);
@@ -3428,6 +3795,9 @@ genPointerPush (iCode *ic)
       if (i + 1 < size)
         if (p_type == POINTER || p_type == IPOINTER)
           emitcode ("inc", "%s", preg->name);
+        else if (p_type == FPOINTER || p_type == CPOINTER ||
+                 p_type == GPOINTER)
+          incrementFarPointer ();
         else
           emitcode ("inc", "dptr");
     }
@@ -3768,13 +4138,20 @@ pushbigreturn (operand *result)
   symbol *sym = OP_SYMBOL (result);
   wassert (sym);
 
-  if (!sym->onStack)
+  if (TARGET_IS_MCS251 && sym->onStack && !options.useXstack)
+    {
+      mcs251PushStackAddress (sym, 0, GPTRSIZE);
+    }
+  else if (!sym->onStack)
     {
       emitcode ("mov", "a, #%s", sym->rname);
       emitpush ("acc");
       emitcode ("mov", "a, #(%s >> 8)", sym->rname);
       emitpush ("acc");
-      emitcode ("mov", "a, #0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (result))), 0, 0));
+      if (GPTRSIZE <= FARPTRSIZE)
+        emitcode ("mov", "a, #(%s >> 16)", sym->rname);
+      else
+        emitcode ("mov", "a, #0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (result))), 0, 0));
       emitpush ("acc");
     }
   else if (!options.useXstack)
@@ -3785,7 +4162,10 @@ pushbigreturn (operand *result)
       emitpush ("acc");
       emitcode ("clr", "a");
       emitpush ("acc");
-      emitcode ("mov", "a, #0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (result))), 0, 0));
+      if (GPTRSIZE <= FARPTRSIZE)
+        emitcode ("clr", "a");
+      else
+        emitcode ("mov", "a, #0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (result))), 0, 0));
       emitpush ("acc");
     }
   else
@@ -3803,7 +4183,10 @@ pushbigreturn (operand *result)
       emitcode ("clr", "a");
       emitcode ("movx", "@r0,a");
       emitcode ("inc", "r0");
-      emitcode ("mov", "a, #0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (result))), 0, 0));
+      if (GPTRSIZE <= FARPTRSIZE)
+        emitcode ("clr", "a");
+      else
+        emitcode ("mov", "a, #0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (result))), 0, 0));
       emitcode ("movx", "@r0,a");
     }
 }
@@ -3828,7 +4211,8 @@ genCall (iCode * ic)
   etype = getSpec (dtype);
   const bool bigreturn = IS_STRUCT (dtype->next);
   const bool noreturn = SPEC_NORETURN (etype);
-  const char *call = noreturn ? "ljmp" : "lcall";
+  const char *call = TARGET_IS_MCS251 ? (noreturn ? "ejmp" : "ecall") :
+                                     (noreturn ? "ljmp" : "lcall");
 
   /* if send set is not empty then assign */
   if (_G.sendSet)
@@ -3871,7 +4255,7 @@ genCall (iCode * ic)
     }
 
   /* make the call */
-  if (IFFUNC_ISBANKEDCALL (dtype))
+  if (IFFUNC_ISBANKEDCALL (dtype) && !TARGET_IS_MCS251)
     {
       if (IFFUNC_CALLEESAVES (dtype))
         {
@@ -3900,7 +4284,8 @@ genCall (iCode * ic)
     {
       if (IS_LITERAL (etype))
         {
-          emitcode (call, "0x%04X", ulFromVal (OP_VALUE (IC_LEFT (ic))));
+          emitcode (call, TARGET_IS_MCS251 ? "0x%06X" : "0x%04X",
+                    ulFromVal (OP_VALUE (IC_LEFT (ic))));
         }
       else
         {
@@ -3958,7 +4343,12 @@ genCall (iCode * ic)
   if (ic->parmBytes)
     {
       int i;
-      if (ic->parmBytes > 3)
+      if (TARGET_IS_MCS251 && !options.useXstack)
+        {
+          mcs251AdjustStackPointer (-ic->parmBytes);
+          _G.stack.pushed -= ic->parmBytes;
+        }
+      else if (ic->parmBytes > 3)
         {
           if (accuse)
             {
@@ -4044,7 +4434,8 @@ genPcall (iCode * ic)
   etype = getSpec (dtype);
   const bool bigreturn = IS_STRUCT (dtype->next);
   const bool noreturn = SPEC_NORETURN (etype);
-  const char *call = noreturn ? "ljmp" : "lcall";
+  const char *call = TARGET_IS_MCS251 ? (noreturn ? "ejmp" : "ecall") :
+                                     (noreturn ? "ljmp" : "lcall");
 
   /* if caller saves & we have not saved then */
   if (!ic->regsSaved && !noreturn)
@@ -4081,7 +4472,7 @@ genPcall (iCode * ic)
           emitcode ("mov", "psw,#0x%02x", ((FUNC_REGBANK (dtype)) << 3) & 0xff);
         }
 
-      if (IFFUNC_ISBANKEDCALL (dtype))
+      if (IFFUNC_ISBANKEDCALL (dtype) && !TARGET_IS_MCS251)
         {
           if (IFFUNC_CALLEESAVES (dtype))
             {
@@ -4097,12 +4488,13 @@ genPcall (iCode * ic)
         }
       else
         {
-          emitcode (call, "0x%04X", ulFromVal (OP_VALUE (IC_LEFT (ic))));
+          emitcode (call, TARGET_IS_MCS251 ? "0x%06X" : "0x%04X",
+                    ulFromVal (OP_VALUE (IC_LEFT (ic))));
         }
     }
   else
     {
-      if (IFFUNC_ISBANKEDCALL (dtype))
+      if (IFFUNC_ISBANKEDCALL (dtype) && !TARGET_IS_MCS251)
         {
           // Pass pointer for storing return value
           if (bigreturn)
@@ -4157,32 +4549,45 @@ genPcall (iCode * ic)
       else if (_G.sendSet)      /* the send set is not empty */
         {
           wassertl (!bigreturn, "Unimplemented struct / union return in call via function pointer");
-          symbol *callLabel = newiTempLabel (NULL);
-          symbol *returnLabel = newiTempLabel (NULL);
-
-          /* create the return address on the stack */
-          emitcode ("lcall", "!tlabel", labelKey2num (callLabel->key));
-          emitcode ("ljmp", "!tlabel", labelKey2num (returnLabel->key));
-          emitLabel (callLabel);
-          _G.stack.pushed += 2;
-
-          emitDummyCall();
-          /* now push the function address */
-          pushSide (IC_LEFT (ic), FARPTRSIZE, ic);
-
-          /* send set is not empty: assign */
-          genSend (reverseSet (_G.sendSet));
-          _G.sendSet = NULL;
-
-          if (swapBanks)
+          if (TARGET_IS_MCS251)
             {
-              emitcode ("mov", "psw,#0x%02x", ((FUNC_REGBANK (dtype)) << 3) & 0xff);
-            }
+              /* Load the target before SEND overwrites parameter registers. */
+              mcs251LoadCallTarget (IC_LEFT (ic), ic);
+              genSend (reverseSet (_G.sendSet));
+              _G.sendSet = NULL;
 
-          /* make the call */
-          emitcode ("ret", "");
-          _G.stack.pushed -= 4;
-          emitLabel (returnLabel);
+              if (swapBanks)
+                emitcode ("mov", "psw,#0x%02x", ((FUNC_REGBANK (dtype)) << 3) & 0xff);
+
+              emitcode (call, "@dr28");
+            }
+          else
+            {
+              symbol *callLabel = newiTempLabel (NULL);
+              symbol *returnLabel = newiTempLabel (NULL);
+
+              /* create the return address on the stack */
+              emitcode ("lcall", "!tlabel", labelKey2num (callLabel->key));
+              emitcode (LONG_JUMP, "!tlabel", labelKey2num (returnLabel->key));
+              emitLabel (callLabel);
+              _G.stack.pushed += 2;
+
+              emitDummyCall();
+              /* now push the function address */
+              pushSide (IC_LEFT (ic), FUNCPTRSIZE, ic);
+
+              /* send set is not empty: assign */
+              genSend (reverseSet (_G.sendSet));
+              _G.sendSet = NULL;
+
+              if (swapBanks)
+                emitcode ("mov", "psw,#0x%02x", ((FUNC_REGBANK (dtype)) << 3) & 0xff);
+
+              /* make the call */
+              emitcode ("ret", "");
+              _G.stack.pushed -= 2 + FUNCPTRSIZE;
+              emitLabel (returnLabel);
+            }
         }
       else                      /* the send set is empty */
         {
@@ -4193,22 +4598,27 @@ genPcall (iCode * ic)
               assignResultGenerated = true;
             }
 
-          /* now get the called address into dptr */
-          aopOp (IC_LEFT (ic), ic, FALSE);
-
-          if (AOP_TYPE (IC_LEFT (ic)) == AOP_DPTR)
+          /* now get the called address into dptr / DR28 */
+          if (TARGET_IS_MCS251)
             {
-              emitcode ("mov", "r0,%s", opGet (IC_LEFT (ic), 0, FALSE, FALSE));
-              emitcode ("mov", "dph,%s", opGet (IC_LEFT (ic), 1, FALSE, FALSE));
-              emitcode ("mov", "dpl,r0");
+              mcs251LoadCallTarget (IC_LEFT (ic), ic);
             }
           else
             {
-              emitcode ("mov", "dpl,%s", opGet (IC_LEFT (ic), 0, FALSE, FALSE));
-              emitcode ("mov", "dph,%s", opGet (IC_LEFT (ic), 1, FALSE, FALSE));
+              aopOp (IC_LEFT (ic), ic, FALSE);
+              if (AOP_TYPE (IC_LEFT (ic)) == AOP_DPTR)
+                {
+                  emitcode ("mov", "r0,%s", opGet (IC_LEFT (ic), 0, FALSE, FALSE));
+                  emitcode ("mov", "dph,%s", opGet (IC_LEFT (ic), 1, FALSE, FALSE));
+                  emitcode ("mov", "dpl,r0");
+                }
+              else
+                {
+                  emitcode ("mov", "dpl,%s", opGet (IC_LEFT (ic), 0, FALSE, FALSE));
+                  emitcode ("mov", "dph,%s", opGet (IC_LEFT (ic), 1, FALSE, FALSE));
+                }
+              freeAsmop (IC_LEFT (ic), NULL, ic, TRUE);
             }
-
-          freeAsmop (IC_LEFT (ic), NULL, ic, TRUE);
 
           if (swapBanks)
             {
@@ -4216,7 +4626,7 @@ genPcall (iCode * ic)
             }
 
           /* make the call */
-          emitcode (call, "__sdcc_call_dptr");
+          emitcode (call, TARGET_IS_MCS251 ? "@dr28" : "__sdcc_call_dptr");
         }
     }
 
@@ -4254,7 +4664,12 @@ genPcall (iCode * ic)
   if (ic->parmBytes)
     {
       int i;
-      if (ic->parmBytes > 3)
+      if (TARGET_IS_MCS251 && !options.useXstack)
+        {
+          mcs251AdjustStackPointer (-ic->parmBytes);
+          _G.stack.pushed -= ic->parmBytes;
+        }
+      else if (ic->parmBytes > 3)
         {
           if (IS_BIT (OP_SYM_ETYPE (IC_LEFT (ic))) && IS_BIT (OP_SYM_ETYPE (IC_RESULT (ic))))
             {
@@ -4685,10 +5100,21 @@ genFunction (iCode * ic)
   if (stackAdjust)
     {
       unsigned int i = stackAdjust & 0xffu;
-      if (stackAdjust > 248)
-        werror (W_STACK_OVERFLOW, sym->name);
 
-      if (i > 3 && accIsFree)
+      if (TARGET_IS_MCS251 && !options.useXstack)
+        {
+          mcs251AdjustStackPointer (stackAdjust);
+        }
+      else if (stackAdjust > 248)
+        {
+          werror (W_STACK_OVERFLOW, sym->name);
+        }
+
+      if (TARGET_IS_MCS251 && !options.useXstack)
+        {
+          /* Complete SPX adjustment emitted above. */
+        }
+      else if (i > 3 && accIsFree)
         {
           emitcode ("mov", "a,sp");
           emitcode ("add", "a,#!constbyte", i);
@@ -4799,7 +5225,11 @@ genEndFunction (iCode * ic)
           bool cy_in_r0 = FALSE;
           bool acc_in_r0 = FALSE;
 
-          if (sym->stack > 3)
+          if (TARGET_IS_MCS251 && !options.useXstack)
+            {
+              mcs251AdjustStackPointer (-sym->stack);
+            }
+          else if (sym->stack > 3)
             {
               if (IS_BIT (OP_SYM_ETYPE (IC_LEFT (ic))))
                 {
@@ -4992,8 +5422,11 @@ genEndFunction (iCode * ic)
         }
 
       wassert (currFunc);
-      if (currFunc->funcRestartAtomicSupport)
-        emitcode (options.acall_ajmp ? "ajmp" : "ljmp", "sdcc_atomic_maybe_rollback");
+      /* MCS251 atomics mask interrupts around their flat-memory update and do
+         not use the MCS-51 restartable sequence support block. */
+      if (!TARGET_IS_MCS251 && currFunc->funcRestartAtomicSupport)
+        emitcode (TARGET_IS_MCS251 ? "ejmp" : (options.acall_ajmp ? "ajmp" : "ljmp"),
+                  "sdcc_atomic_maybe_rollback");
       else
         emitcode ("reti", "");
     }
@@ -5042,13 +5475,13 @@ genEndFunction (iCode * ic)
           debugFile->writeEndFunction (currFunc, ic, 1);
         }
 
-      if (IFFUNC_ISBANKEDCALL (ftype))
+      if (IFFUNC_ISBANKEDCALL (ftype) && !TARGET_IS_MCS251)
         {
-          emitcode ("ljmp", "__sdcc_banked_ret");
+          emitcode (LONG_JUMP, "__sdcc_banked_ret");
         }
       else
         {
-          emitcode ("ret", "");
+          emitcode (TARGET_IS_MCS251 ? "eret" : "ret", "");
         }
     }
 
@@ -5172,22 +5605,65 @@ genRet (iCode *ic)
 
   if (bigreturn)
     {
+      if (TARGET_IS_MCS251 && !options.useXstack)
+        {
+          const bool sourceUsesDpx = AOP_TYPE (IC_LEFT (ic)) == AOP_DPTR;
+          int savedRegisters = _G.stack.param_offset - GPTRSIZE;
+          int hiddenPointerOffset;
+          char stackOperand[32];
+
+          if (savedRegisters < 0)
+            savedRegisters = 0;
+          hiddenPointerOffset = -(GPTRSIZE - 1) - 3 -
+                                currFunc->stack - savedRegisters -
+                                _G.stack.pushed;
+
+          /* DPX can be the source aggregate's address.  Preserve it while
+             loading the caller-provided destination pointer from SPX. */
+          if (sourceUsesDpx)
+            emitcode ("mov", "dr24,dpx");
+          emitcode ("mov", "dpx,#0");
+          for (int byte = 0; byte < GPTRSIZE; ++byte)
+            {
+              mcs251FormatStackOperand (stackOperand, sizeof (stackOperand),
+                                      hiddenPointerOffset + byte);
+              emitcode ("mov", "a,%s", stackOperand);
+              emitcode ("mov", "%s,a",
+                        byte == 0 ? "dpl" : byte == 1 ? "dph" : "dpxl");
+            }
+          emitcode ("mov", "dr28,dpx");
+          if (sourceUsesDpx)
+            emitcode ("mov", "dpx,dr24");
+
+          for (int byte = 0; byte < size; ++byte)
+            {
+              MOVA (opGet (IC_LEFT (ic), byte, false, false));
+              emitcode ("mov", "@dr28,a");
+              if (byte + 1 < size)
+                emitcode ("inc", "dr28");
+            }
+
+          freeAsmop (IC_LEFT (ic), NULL, ic, TRUE);
+          goto jumpret;
+        }
+
       bool framepointer = (IFFUNC_ISREENT (currFunc->type) || options.stackAuto) && !options.omitFramePtr && (currFunc->stack || FUNC_HASSTACKPARM (currFunc->type)); // This needs to match the logic in genFunction - could be factored out, but there is a major rewrite ofm cs51 codegen planned anyaway, at which time we might consider porting the frame pointer omission mechanism from the z80 port instead.
       asmop *aop = newAsmop (0);
       reg_info *preg = getFreePtr (ic, aop, false);
       const char *bp = options.useXstack ? (framepointer ? "_bpx" : "_spx") : (framepointer ? "_bp" : "sp");
       int offset = -(GPTRSIZE - 1);
       if (!options.useXstack)
-        offset -= 2 + IFFUNC_ISBANKEDCALL (currFunc->type);
+        offset -= (TARGET_IS_MCS251 ? 3 : 2) + IFFUNC_ISBANKEDCALL (currFunc->type);
       offset -= framepointer;
       if (!framepointer)
         offset -= currFunc->stack;
 
       if (AOP_TYPE (IC_LEFT (ic)) == AOP_DPTR)
         {
-          reg_info *tempRegs[2];
+          reg_info *tempRegs[3];
+          int tempRegCount = TARGET_IS_MCS251 ? 3 : 2;
 
-          if (getTempRegs (tempRegs, 2, ic))
+          if (getTempRegs (tempRegs, tempRegCount, ic))
             {emitcode(";", "A");
               emitcode ("mov", "a,%s", bp);
               emitcode ("add", "a,#0x%02x", offset & 0xffu);
@@ -5196,7 +5672,10 @@ genRet (iCode *ic)
               emitcode ("inc", "%s", preg->name);
               emitcode ("mov", "%s,@%s", tempRegs[1]->dname, preg->name);
               emitcode ("inc", "%s", preg->name);
-              emitcode ("mov", "b,@%s", preg->name);
+              if (TARGET_IS_MCS251)
+                emitcode ("mov", "%s,@%s", tempRegs[2]->dname, preg->name);
+              else
+                emitcode ("mov", "b,@%s", preg->name);
               for (int i = 0; i < size; i++)
                 {
                   MOVA (opGet (IC_LEFT (ic), i, false, false));
@@ -5206,16 +5685,28 @@ genRet (iCode *ic)
                   emitcode ("xch", "a,%s", tempRegs[1]->name);
                   emitcode ("xch", "a,dph");
                   emitcode ("xch", "a,%s", tempRegs[1]->name);
-                  emitcode ("lcall", "__gptrput");
+                  if (TARGET_IS_MCS251)
+                    {
+                      emitcode ("xch", "a,%s", tempRegs[2]->name);
+                      emitcode ("xch", "a,dpxl");
+                      emitcode ("xch", "a,%s", tempRegs[2]->name);
+                    }
+                  emitcode (RUNTIME_CALL, "__gptrput");
                   if (i + 1 < size)
                     {
-                      emitcode ("inc", "dptr");
+                      incrementFarPointer ();
                       emitcode ("xch", "a,%s", tempRegs[0]->name);
                       emitcode ("xch", "a,dpl");
                       emitcode ("xch", "a,%s", tempRegs[0]->name);
                       emitcode ("xch", "a,%s", tempRegs[1]->name);
                       emitcode ("xch", "a,dph");
                       emitcode ("xch", "a,%s", tempRegs[1]->name);
+                      if (TARGET_IS_MCS251)
+                        {
+                          emitcode ("xch", "a,%s", tempRegs[2]->name);
+                          emitcode ("xch", "a,dpxl");
+                          emitcode ("xch", "a,%s", tempRegs[2]->name);
+                        }
                     }
                 }
             }
@@ -5226,6 +5717,8 @@ genRet (iCode *ic)
                   MOVA (opGet (IC_LEFT (ic), i, false, false));
                   emitpush ("dpl");
                   emitpush ("dph");
+                  if (TARGET_IS_MCS251)
+                    emitpush ("dpxl");
                   emitpush ("acc");
                   emitcode ("mov", "a,%s", bp);
                   emitcode ("add", "a,#0x%02x", offset & 0xffu);
@@ -5237,8 +5730,10 @@ genRet (iCode *ic)
                       emitcode ("mov", "dph,@%s", preg->name);
                       emitcode ("inc", "%s", preg->name);
                       emitcode ("mov", "b,@%s", preg->name);
+                      if (TARGET_IS_MCS251)
+                        emitcode ("mov", "dpxl,b");
                       for (int j = 0; j < i; j++)
-                        emitcode ("inc", "dptr");
+                        incrementFarPointer ();
                     }
                   else
                     {
@@ -5251,9 +5746,17 @@ genRet (iCode *ic)
                       emitcode ("mov", "dph,a");
                       emitcode ("inc", "%s", preg->name);
                       emitcode ("mov", "b,@%s", preg->name);
+                      if (TARGET_IS_MCS251)
+                        {
+                          emitcode ("mov", "a,b");
+                          emitcode ("addc", "a,#0x00");
+                          emitcode ("mov", "dpxl,a");
+                        }
                     }
                   emitpop ("acc");
-                  emitcode ("lcall", "__gptrput");
+                  emitcode (RUNTIME_CALL, "__gptrput");
+                  if (TARGET_IS_MCS251)
+                    emitpop ("dpxl");
                   emitpop ("dph");
                   emitpop ("dpl");
                 }
@@ -5287,12 +5790,14 @@ genRet (iCode *ic)
             }
           else
             emitcode ("mov", "b,@%s", preg->name);
+          if (TARGET_IS_MCS251)
+            emitcode ("mov", "dpxl,b");
           for (int i = 0; i < size; i++)
             {
               MOVA (opGet (IC_LEFT (ic), i, false, false));
-              emitcode ("lcall", "__gptrput");
+              emitcode (RUNTIME_CALL, "__gptrput");
               if (i + 1 < size)
-                emitcode ("inc", "dptr");
+                incrementFarPointer ();
             }
         }
       freeAsmop (0, aop, ic, true);
@@ -5330,7 +5835,7 @@ jumpret:
      if the next is not the return statement */
   if (!(ic->next && ic->next->op == LABEL && IC_LABEL (ic->next) == returnLabel))
     {
-      emitcode ("ljmp", "!tlabel", labelKey2num (returnLabel->key));
+      emitcode (LONG_JUMP, "!tlabel", labelKey2num (returnLabel->key));
     }
 }
 
@@ -5353,7 +5858,7 @@ genLabel (iCode * ic)
 static void
 genGoto (iCode * ic)
 {
-  emitcode ("ljmp", "!tlabel", labelKey2num (IC_LABEL (ic)->key));
+  emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_LABEL (ic)->key));
 }
 
 /*-----------------------------------------------------------------*/
@@ -5460,9 +5965,17 @@ genPlusIncr (iCode * ic)
      same */
   if (sameRegs (AOP (IC_LEFT (ic)), AOP (IC_RESULT (ic))))
     {
-      if (icount > 3)
+      const char *l = opGet (IC_LEFT (ic), 0, FALSE, FALSE);
+      bool mcs251_step_operand = TARGET_IS_MCS251 &&
+        (EQ (l, "a") || (l[0] == 'r' && l[1] >= '0' && l[1] <= '7' && l[2] == '\0'));
+
+      if (mcs251_step_operand && (icount == 2 || icount == 4))
         {
-          MOVA (opGet (IC_LEFT (ic), 0, FALSE, FALSE));
+          emitcode ("inc", "%s,#%u", l, icount);
+        }
+      else if (icount > 3)
+        {
+          MOVA (l);
           emitcode ("add", "a,#!constbyte", ((char) icount) & 0xffu);
           opPut (IC_RESULT (ic), "a", 0);
         }
@@ -5470,17 +5983,20 @@ genPlusIncr (iCode * ic)
         {
           while (icount--)
             {
-              emitcode ("inc", "%s", opGet (IC_LEFT (ic), 0, FALSE, FALSE));
+              emitcode ("inc", "%s", l);
             }
         }
 
       return TRUE;
     }
 
-  if (icount == 1)
+  if (icount == 1 || (TARGET_IS_MCS251 && (icount == 2 || icount == 4)))
     {
       MOVA (opGet (IC_LEFT (ic), 0, FALSE, FALSE));
-      emitcode ("inc", "a");
+      if (icount == 1)
+        emitcode ("inc", "a");
+      else
+        emitcode ("inc", "a,#%u", icount);
       opPut (IC_RESULT (ic), "a", 0);
       return TRUE;
     }
@@ -5539,7 +6055,13 @@ genPlusBits (iCode * ic)
 static void
 adjustArithmeticResult (iCode * ic)
 {
-  if (opIsGptr (IC_RESULT (ic)))
+  /* Tagged generic pointers keep their address-space discriminator in the
+     last byte.  MCS251 generic pointers are flat 24-bit addresses, so that
+     byte participates in carries just like the lower address bytes. */
+  if (GPTRSIZE <= FARPTRSIZE)
+    return;
+
+  if (GPTRSIZE > FARPTRSIZE && opIsGptr (IC_RESULT (ic)))
     {
       struct dbuf_s dbuf;
 
@@ -5701,12 +6223,33 @@ genPlus (iCode * ic)
           if (aopGetUsesAcc (leftOp->aop, offset) && aopGetUsesAcc (rightOp->aop, offset))
             {
               bool pushedB;
+              bool preserveB = FALSE;
+              int i;
+
+              /* A MCS251 call result can occupy A:B.  Using B as the
+                 accumulator-access scratch register for the low byte must
+                 not destroy a high byte that a later iteration still
+                 needs. */
+              if (TARGET_IS_MCS251)
+                for (i = offset + 1; i <= offset + size; i++)
+                  preserveB |= aopInReg (leftOp->aop, i, B_IDX) ||
+                    aopInReg (rightOp->aop, i, B_IDX);
+
               MOVA (opGet (leftOp, offset, FALSE, FALSE));
-              pushedB = pushB ();
+              if (preserveB)
+                {
+                  emitpush ("b");
+                  pushedB = FALSE;
+                }
+              else
+                pushedB = pushB ();
               emitcode ("xch", "a,b");
               MOVA (opGet (rightOp, offset, FALSE, FALSE));
               emitcode (add, "a,b");
-              popB (pushedB);
+              if (preserveB)
+                emitpop ("b");
+              else
+                popB (pushedB);
             }
           else if (aopGetUsesAcc (leftOp->aop, offset))
             {
@@ -5835,10 +6378,14 @@ genMinusDec (iCode * ic)
           l = opGet (IC_RESULT (ic), 0, FALSE, FALSE);
         }
 
-      while (icount--)
-        {
+      bool mcs251_step_operand = TARGET_IS_MCS251 &&
+        (EQ (l, "a") || (l[0] == 'r' && l[1] >= '0' && l[1] <= '7' && l[2] == '\0'));
+
+      if (mcs251_step_operand && (icount == 2 || icount == 4))
+        emitcode ("dec", "%s,#%u", l, icount);
+      else
+        while (icount--)
           emitcode ("dec", "%s", l);
-        }
 
       if (AOP_NEEDSACC (IC_RESULT (ic)))
         opPut (IC_RESULT (ic), "a", 0);
@@ -5846,10 +6393,13 @@ genMinusDec (iCode * ic)
       return TRUE;
     }
 
-  if (icount == 1)
+  if (icount == 1 || (TARGET_IS_MCS251 && (icount == 2 || icount == 4)))
     {
       MOVA (opGet (IC_LEFT (ic), 0, FALSE, FALSE));
-      emitcode ("dec", "a");
+      if (icount == 1)
+        emitcode ("dec", "a");
+      else
+        emitcode ("dec", "a,#%u", icount);
       opPut (IC_RESULT (ic), "a", 0);
       return TRUE;
     }
@@ -6080,7 +6630,7 @@ genMultOneByte (operand * left, operand * right, operand * result)
 
   D (emitcode (";", "genMultOneByte"));
 
-  if (size < 1 || size > 2)
+  if (size < 1 || (!TARGET_IS_MCS251 && size > 2))
     {
       /* this should never happen */
       fprintf (stderr, "size!=1||2 (%d) in %s at line:%d \n", AOP_SIZE (result), __FILE__, lineno);
@@ -6134,8 +6684,10 @@ genMultOneByte (operand * left, operand * right, operand * result)
 
       emitcode ("mul", "ab");
       opPut (result, "a", 0);
-      if (size == 2)
+      if (size >= 2)
         opPut (result, "b", 1);
+      if (size > 2)
+        addSign (result, 2, FALSE);
 
       popB (pushedB);
       return;
@@ -6248,7 +6800,7 @@ genMultOneByte (operand * left, operand * right, operand * result)
       if (runtimeSign)
         emitcode ("jnb", "F0,!tlabel", labelKey2num (lbl->key));
       emitcode ("cpl", "a");    /* lsb 2's complement */
-      if (size != 2)
+      if (size == 1)
         emitcode ("inc", "a");  /* inc doesn't set carry flag */
       else
         {
@@ -6261,8 +6813,13 @@ genMultOneByte (operand * left, operand * right, operand * result)
       emitLabel (lbl);
     }
   opPut (result, "a", 0);
-  if (size == 2)
+  if (size >= 2)
     opPut (result, "b", 1);
+  if (size > 2)
+    {
+      MOVA ("b");
+      addSign (result, 2, TRUE);
+    }
 
   popB (pushedB);
 }
@@ -6887,7 +7444,7 @@ genIfxJump (iCode * ic, const char *jval, operand * left, operand * right, opera
   else
     emitcode (inst, "!tlabel", labelKey2num (tlbl->key));
   freeForBranchAsmops (result, right, left, ic);
-  emitcode ("ljmp", "!tlabel", labelKey2num (jlbl->key));
+  emitcode (LONG_JUMP, "!tlabel", labelKey2num (jlbl->key));
   emitLabel (tlbl);
 
   /* mark the icode as generated */
@@ -6913,7 +7470,7 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
       emitcode ("anl", "c,%s", AOP (left)->aopu.aop_dir);
     }
   /* generic pointers require special handling since all NULL pointers must compare equal */
-  else if (opIsGptr (left) || opIsGptr (right))
+  else if (!TARGET_IS_MCS251 && (opIsGptr (left) || opIsGptr (right)))
     {
       /* push right */
       while (offset < GPTRSIZE)
@@ -6921,7 +7478,7 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
           emitpush (opGet (right, offset++, FALSE, TRUE));
         }
       loadDptrFromOperand (left, TRUE);
-      emitcode ("lcall", "___gptr_cmp");
+      emitcode (RUNTIME_CALL, "___gptr_cmp");
       for (offset = 0; offset < GPTRSIZE; offset++)
         emitpop (NULL);
     }
@@ -7149,7 +7706,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
     }
 
   /* generic pointers require special handling since all NULL pointers must compare equal */
-  if (opIsGptr (left) || opIsGptr (right))
+  if (!TARGET_IS_MCS251 && (opIsGptr (left) || opIsGptr (right)))
     {
       /* push right */
       while (offset < size)
@@ -7157,7 +7714,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
           emitpush (opGet (right, offset++, FALSE, TRUE));
         }
       loadDptrFromOperand (left, TRUE);
-      emitcode ("lcall", "___gptr_cmp");
+      emitcode (RUNTIME_CALL, "___gptr_cmp");
       for (offset = 0; offset < GPTRSIZE; offset++)
         emitpop (NULL);
       emitcode ("jnz", "!tlabel", labelKey2num (lbl->key));
@@ -7325,10 +7882,27 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
       while (size--)
         {
           //if B in use: push B; mov B,left; mov A,right; clrc; subb A,B; pop B; jnz
-          wassertl (!BINUSE, "B was in use");
-          MOVB (opGet (left, offset, FALSE, FALSE));
-          MOVA (opGet (right, offset, FALSE, FALSE));
-          emitcode ("cjne", "a,b,!tlabel", labelKey2num (lbl->key));
+          if (TARGET_IS_MCS251 && BINUSE)
+            {
+              symbol *equal = newiTempLabel (NULL);
+
+              emitpush ("b");
+              MOVB (opGet (left, offset, FALSE, FALSE));
+              MOVA (opGet (right, offset, FALSE, FALSE));
+              CLRC;
+              emitcode ("subb", "a,b");
+              emitpop ("b");
+              emitcode ("jz", "!tlabel", labelKey2num (equal->key));
+              emitcode ("ejmp", "!tlabel", labelKey2num (lbl->key));
+              emitLabel (equal);
+            }
+          else
+            {
+              wassertl (!BINUSE, "B was in use");
+              MOVB (opGet (left, offset, FALSE, FALSE));
+              MOVA (opGet (right, offset, FALSE, FALSE));
+              emitcode ("cjne", "a,b,!tlabel", labelKey2num (lbl->key));
+            }
           offset++;
         }
     }
@@ -7424,14 +7998,14 @@ genCmpEq (iCode * ic, iCode * ifx)
               emitcode ("jnc", "!tlabel", labelKey2num (tlbl->key));
               freeForBranchAsmops (result, right, left, ic);
               popForBranch (popIc, FALSE);
-              emitcode ("ljmp", "!tlabel", labelKey2num (IC_TRUE (ifx)->key));
+              emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_TRUE (ifx)->key));
             }
           else
             {
               emitcode ("jc", "!tlabel", labelKey2num (tlbl->key));
               freeForBranchAsmops (result, right, left, ic);
               popForBranch (popIc, FALSE);
-              emitcode ("ljmp", "!tlabel", labelKey2num (IC_FALSE (ifx)->key));
+              emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_FALSE (ifx)->key));
             }
           emitLabel (tlbl);
         }
@@ -7443,7 +8017,7 @@ genCmpEq (iCode * ic, iCode * ifx)
             {
               freeForBranchAsmops (result, right, left, ic);
               popForBranch (popIc, FALSE);
-              emitcode ("ljmp", "!tlabel", labelKey2num (IC_TRUE (ifx)->key));
+              emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_TRUE (ifx)->key));
               emitLabel (tlbl);
             }
           else
@@ -7453,7 +8027,7 @@ genCmpEq (iCode * ic, iCode * ifx)
               emitLabel (tlbl);
               freeForBranchAsmops (result, right, left, ic);
               popForBranch (popIc, FALSE);
-              emitcode ("ljmp", "!tlabel", labelKey2num (IC_FALSE (ifx)->key));
+              emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_FALSE (ifx)->key));
               emitLabel (lbl);
             }
         }
@@ -7684,7 +8258,7 @@ continueIfTrue (iCode * ic, iCode * popIc)
   if (IC_TRUE (ic))
     {
       popForBranch (popIc, TRUE);
-      emitcode ("ljmp", "!tlabel", labelKey2num (IC_TRUE (ic)->key));
+      emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_TRUE (ic)->key));
     }
   ic->generated = 1;
 }
@@ -7698,7 +8272,7 @@ jumpIfTrue (iCode * ic, iCode * popIc)
   if (!IC_TRUE (ic))
     {
       popForBranch (popIc, TRUE);
-      emitcode ("ljmp", "!tlabel", labelKey2num (IC_FALSE (ic)->key));
+      emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_FALSE (ic)->key));
     }
   ic->generated = 1;
 }
@@ -7717,17 +8291,147 @@ jmpTrueOrFalse (iCode * ic, symbol * tlbl, operand * left, operand * right, oper
       emitLabel (tlbl);
       popForBranch (popIc, FALSE);
       freeForBranchAsmops (result, right, left, ic);
-      emitcode ("ljmp", "!tlabel", labelKey2num (IC_TRUE (ic)->key));
+      emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_TRUE (ic)->key));
       emitLabel (nlbl);
     }
   else
     {
       popForBranch (popIc, FALSE);
       freeForBranchAsmops (result, right, left, ic);
-      emitcode ("ljmp", "!tlabel", labelKey2num (IC_FALSE (ic)->key));
+      emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_FALSE (ic)->key));
       emitLabel (tlbl);
     }
   ic->generated = 1;
+}
+
+/* MCS251 has enough byte registers for the allocator to form partially
+   overlapping tuples.  For example, a four-byte result can occupy
+   [r2,r1,r3,r4] while an input still occupies [r1,r2,r3,r4].  Emitting the
+   low byte first would then overwrite the second input byte before it is
+   read.  Keep the normal low-to-high read order, but defer every hazardous
+   register write until all source bytes that share it have been consumed. */
+static bool
+mcs251CrossByteRegOverlap (const asmop *result, const asmop *source, int size)
+{
+  int destination;
+  int sourceOffset;
+
+  if (!TARGET_IS_MCS251 || result->type != AOP_REG ||
+      source->type != AOP_REG || result->size < size ||
+      source->size < size)
+    return FALSE;
+
+  for (destination = 0; destination < size; ++destination)
+    for (sourceOffset = 0; sourceOffset < size; ++sourceOffset)
+      if (destination != sourceOffset &&
+          result->aopu.aop_reg[destination] ==
+          source->aopu.aop_reg[sourceOffset])
+        return TRUE;
+
+  return FALSE;
+}
+
+static bool
+mcs251GenBitwiseRegOverlap (operand *left, operand *right, operand *result,
+                          const char *instruction)
+{
+  int deferred[8];
+  int deferredCount = 0;
+  int offset;
+  int size = AOP_SIZE (result);
+
+  if (!TARGET_IS_MCS251 || size <= 1 || size > 8 ||
+      AOP_TYPE (result) != AOP_REG || AOP_TYPE (right) != AOP_REG ||
+      AOP_SIZE (left) < size || AOP_SIZE (right) < size ||
+      (!mcs251CrossByteRegOverlap (AOP (result), AOP (left), size) &&
+       !mcs251CrossByteRegOverlap (AOP (result), AOP (right), size)))
+    return FALSE;
+
+  /* Restrict this path to directly addressable byte registers.  In
+     particular, writing DPX while a later source still needs an indirect
+     address has additional dependencies that are handled elsewhere. */
+  for (offset = 0; offset < size; ++offset)
+    if (!aopInRn (AOP (result), offset) ||
+        !aopInRn (AOP (right), offset))
+      return FALSE;
+
+  D (emitcode (";", "MCS251 deferred overlapping bitwise result"));
+  for (offset = 0; offset < size; ++offset)
+    {
+      bool defer = FALSE;
+      int future;
+
+      for (future = offset + 1; future < size; ++future)
+        defer |= sameByte (AOP (result), offset, AOP (left), future) ||
+          sameByte (AOP (result), offset, AOP (right), future);
+
+      MOVA (opGet (left, offset, FALSE, FALSE));
+      emitcode (instruction, "a,%s", opGet (right, offset, FALSE, FALSE));
+      if (defer)
+        {
+          emitpush ("acc");
+          deferred[deferredCount++] = offset;
+        }
+      else
+        opPut (result, "a", offset);
+    }
+
+  while (deferredCount)
+    {
+      offset = deferred[--deferredCount];
+      emitpop ("acc");
+      opPut (result, "a", offset);
+    }
+
+  return TRUE;
+}
+
+/* If one operand already occupies A while fetching the other operand also
+   requires A (for example a far-memory byte), fetching the latter first
+   destroys the former.  This can arise after the commutative-operand swaps
+   used by the shared AND/OR/XOR generators.  Preserve the accumulator byte
+   in B before performing the memory read. */
+static bool
+mcs251GenBitwiseAccOverlap (operand *left, operand *right, operand *result,
+                          const char *instruction)
+{
+  operand *accOperand;
+  operand *other;
+  int offset;
+  int size = AOP_SIZE (result);
+
+  if (!TARGET_IS_MCS251 || !size || AOP_TYPE (result) == AOP_CRY ||
+      (AOP_TYPE (left) == AOP_ACC) == (AOP_TYPE (right) == AOP_ACC))
+    return FALSE;
+
+  accOperand = AOP_TYPE (left) == AOP_ACC ? left : right;
+  other = accOperand == left ? right : left;
+  if (size > AOP_SIZE (accOperand) ||
+      !aopGetUsesAcc (AOP (other), 0))
+    return FALSE;
+
+  D (emitcode (";", "MCS251 preserve accumulator across bitwise operand read"));
+  for (offset = 0; offset < size; ++offset)
+    {
+      if (!offset)
+        {
+          bool pushedB = pushB ();
+
+          MOVB ("a");
+          MOVA (opGet (other, offset, FALSE, FALSE));
+          emitcode (instruction, "a,b");
+          opPut (result, "a", offset);
+          popB (pushedB);
+        }
+      else
+        {
+          MOVA (opGet (other, offset, FALSE, FALSE));
+          emitcode (instruction, "a,b");
+          opPut (result, "a", offset);
+        }
+    }
+
+  return TRUE;
 }
 
 /*-----------------------------------------------------------------*/
@@ -7780,6 +8484,20 @@ genAnd (iCode * ic, iCode * ifx)
     }
 
   size = AOP_SIZE (result);
+
+  if (TARGET_IS_MCS251 && AOP_TYPE (right) != AOP_REG &&
+      AOP_TYPE (left) == AOP_REG &&
+      mcs251CrossByteRegOverlap (AOP (result), AOP (left), size))
+    {
+      operand *tmp = right;
+      right = left;
+      left = tmp;
+    }
+
+  if (mcs251GenBitwiseRegOverlap (left, right, result, "anl"))
+    goto release;
+  if (mcs251GenBitwiseAccOverlap (left, right, result, "anl"))
+    goto release;
 
   // if(bit & yy)
   // result = bit & yy;
@@ -7962,7 +8680,7 @@ genAnd (iCode * ic, iCode * ifx)
             }
           else if (AOP_TYPE (right) == AOP_LIT)
             {
-              if (IS_AOP_PREG (result))
+              if (IS_AOP_PREG (result) || AOP_TYPE (result) == AOP_MCS251_STK)
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
                   emitcode ("anl", "a,%s", opGet (right, offset, FALSE, FALSE));
@@ -8221,6 +8939,20 @@ genOr (iCode * ic, iCode * ifx)
 
   size = AOP_SIZE (result);
 
+  if (TARGET_IS_MCS251 && AOP_TYPE (right) != AOP_REG &&
+      AOP_TYPE (left) == AOP_REG &&
+      mcs251CrossByteRegOverlap (AOP (result), AOP (left), size))
+    {
+      operand *tmp = right;
+      right = left;
+      left = tmp;
+    }
+
+  if (mcs251GenBitwiseRegOverlap (left, right, result, "orl"))
+    goto release;
+  if (mcs251GenBitwiseAccOverlap (left, right, result, "orl"))
+    goto release;
+
   // if(bit | yy)
   // xx = bit | yy;
   if (AOP_TYPE (left) == AOP_CRY)
@@ -8356,7 +9088,7 @@ genOr (iCode * ic, iCode * ifx)
             }
           else if (AOP_TYPE (right) == AOP_LIT)
             {
-              if (IS_AOP_PREG (left))
+              if (IS_AOP_PREG (left) || AOP_TYPE (left) == AOP_MCS251_STK)
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
                   emitcode ("orl", "a,%s", opGet (right, offset, FALSE, FALSE));
@@ -8617,6 +9349,20 @@ genXor (iCode * ic, iCode * ifx)
 
   size = AOP_SIZE (result);
 
+  if (TARGET_IS_MCS251 && AOP_TYPE (right) != AOP_REG &&
+      AOP_TYPE (left) == AOP_REG &&
+      mcs251CrossByteRegOverlap (AOP (result), AOP (left), size))
+    {
+      operand *tmp = right;
+      right = left;
+      left = tmp;
+    }
+
+  if (mcs251GenBitwiseRegOverlap (left, right, result, "xrl"))
+    goto release;
+  if (mcs251GenBitwiseAccOverlap (left, right, result, "xrl"))
+    goto release;
+
   // if(bit ^ yy)
   // xx = bit ^ yy;
   if (AOP_TYPE (left) == AOP_CRY)
@@ -8716,7 +9462,7 @@ genXor (iCode * ic, iCode * ifx)
             }
           else if (AOP_TYPE (right) == AOP_LIT)
             {
-              if (IS_AOP_PREG (left))
+              if (IS_AOP_PREG (left) || AOP_TYPE (left) == AOP_MCS251_STK)
                 {
                   MOVA (opGet (left, offset, FALSE, TRUE));
                   emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
@@ -9829,6 +10575,130 @@ shiftLLong (operand * left, operand * result, int offr)
     }
 }
 
+/* Load one byte from a source value that was pushed high-to-low.  MCS251 PUSH
+   pre-increments SPX, so source byte zero is at @SPX and byte N is at
+   @SPX-N after the complete snapshot has been made. */
+static void
+mcs251LoadShiftSnapshotByte (int offset)
+{
+  char stackOperand[32];
+
+  wassert (TARGET_IS_MCS251 && offset >= 0);
+  mcs251FormatStackOperand (stackOperand, sizeof (stackOperand), -offset);
+  MOVA (stackOperand);
+}
+
+/* The MCS251 allocator can assign a result and its input to different
+   permutations of the same byte registers.  The shared fixed-shift helpers
+   assume that overlapping register values are either identical or disjoint;
+   a partial permutation can therefore overwrite a source byte before a
+   later output byte consumes it.  Snapshot the source on the 16-bit hardware
+   stack and calculate every byte from that stable copy. */
+static bool
+mcs251GenFixedShiftRegOverlap (operand *result, operand *left,
+                             unsigned int shCount, bool right, bool sign)
+{
+  int size = AOP_SIZE (result);
+  int fullBytes = shCount / 8;
+  int bits = shCount % 8;
+  int offset;
+  bool identical = TRUE;
+  bool overlap = FALSE;
+  bool pushedB;
+
+  if (!TARGET_IS_MCS251 || size <= 1 || size > 8 ||
+      AOP_TYPE (result) != AOP_REG || AOP_TYPE (left) != AOP_REG ||
+      AOP_SIZE (left) < size)
+    return FALSE;
+
+  for (offset = 0; offset < size; ++offset)
+    {
+      int source;
+
+      if (!aopInRn (AOP (result), offset) ||
+          !aopInRn (AOP (left), offset))
+        return FALSE;
+      identical &= AOP (result)->aopu.aop_reg[offset] ==
+        AOP (left)->aopu.aop_reg[offset];
+      for (source = 0; source < size; ++source)
+        overlap |= AOP (result)->aopu.aop_reg[offset] ==
+          AOP (left)->aopu.aop_reg[source];
+    }
+
+  if (!overlap || identical)
+    return FALSE;
+
+  D (emitcode (";", "MCS251 stable source for overlapping fixed shift"));
+  pushedB = pushB ();
+  for (offset = size; offset-- > 0;)
+    emitpush (opGet (left, offset, FALSE, FALSE));
+
+  for (offset = 0; offset < size; ++offset)
+    {
+      int source = right ? offset + fullBytes : offset - fullBytes;
+
+      if (!right && (source < 0 || source >= size))
+        {
+          opPut (result, zero, offset);
+          continue;
+        }
+
+      if (right && source >= size)
+        {
+          if (sign)
+            {
+              mcs251LoadShiftSnapshotByte (size - 1);
+              AccSRsh (7);
+              opPut (result, "a", offset);
+            }
+          else
+            opPut (result, zero, offset);
+          continue;
+        }
+
+      mcs251LoadShiftSnapshotByte (source);
+      if (!bits)
+        {
+          opPut (result, "a", offset);
+          continue;
+        }
+
+      if (!right)
+        {
+          AccLsh (bits);
+          if (source > 0)
+            {
+              MOVB ("a");
+              mcs251LoadShiftSnapshotByte (source - 1);
+              AccRsh (8 - bits);
+              emitcode ("orl", "a,b");
+            }
+        }
+      else if (source == size - 1)
+        {
+          if (sign)
+            AccSRsh (bits);
+          else
+            AccRsh (bits);
+        }
+      else
+        {
+          AccRsh (bits);
+          MOVB ("a");
+          mcs251LoadShiftSnapshotByte (source + 1);
+          AccLsh (8 - bits);
+          emitcode ("orl", "a,b");
+        }
+      opPut (result, "a", offset);
+    }
+
+  mcs251AdjustStackPointer (-size);
+  _G.stack.pushed -= size;
+  wassertl (_G.stack.pushed >= 0, "stack underflow");
+  popB (pushedB);
+  return TRUE;
+}
+
 /*-----------------------------------------------------------------*/
 /* genlshFixed - shift four byte by a known amount != 0            */
 /*-----------------------------------------------------------------*/
@@ -9983,19 +10853,20 @@ genLeftShiftLiteral (operand * left, operand * right, operand * result, iCode * 
   emitcode ("; shift left ", "result %d, left %d", size, AOP_SIZE (left));
 #endif
 
-  switch (size)
-    {
-    case 1:
-    case 2:
-    case 4:
-    case 8:
-      genlshFixed (result, left, shCount);
-      break;
+  if (!mcs251GenFixedShiftRegOverlap (result, left, shCount, FALSE, FALSE))
+    switch (size)
+      {
+      case 1:
+      case 2:
+      case 4:
+      case 8:
+        genlshFixed (result, left, shCount);
+        break;
 
-    default:
-      genlshAny (result, left, shCount);
-      break;
-    }
+      default:
+        genlshAny (result, left, shCount);
+        break;
+      }
   if (maskedtopbyte)
     {
       MOVA (opGet (result, AOP_SIZE (result) - 1, FALSE, FALSE));
@@ -10091,11 +10962,11 @@ genLeftShift (iCode * ic)
   if (size == 1)
     {
       MOVA (opGet (left, 0, FALSE, FALSE));
-      emitcode ("sjmp", "!tlabel", labelKey2num (tlbl1->key));
+      emitcode (LOOP_ENTRY_JUMP, "!tlabel", labelKey2num (tlbl1->key));
       emitLabel (tlbl);
       emitcode ("add", "a,acc");
       emitLabel (tlbl1);
-      emitcode ("djnz", "b,!tlabel", labelKey2num (tlbl->key));
+      emitLoopDjnz ("b", tlbl);
       popB (pushedB);
       opPut (result, "a", 0);
       goto release;
@@ -10103,7 +10974,7 @@ genLeftShift (iCode * ic)
 
   reAdjustPreg (AOP (result));
 
-  emitcode ("sjmp", "!tlabel", labelKey2num (tlbl1->key));
+  emitcode (LOOP_ENTRY_JUMP, "!tlabel", labelKey2num (tlbl1->key));
   emitLabel (tlbl);
   MOVA (opGet (result, offset, FALSE, FALSE));
   emitcode ("add", "a,acc");
@@ -10117,7 +10988,7 @@ genLeftShift (iCode * ic)
   reAdjustPreg (AOP (result));
 
   emitLabel (tlbl1);
-  emitcode ("djnz", "b,!tlabel", labelKey2num (tlbl->key));
+  emitLoopDjnz ("b", tlbl);
   popB (pushedB);
 
 release:
@@ -10405,40 +11276,43 @@ genRightShiftLiteral (operand * left, operand * right, operand * result, iCode *
   /* I suppose that the left size >= result size */
   wassert ((int)getSize (operandType (left)) >= size);
 
-  if (shCount == 0)
+  if (!mcs251GenFixedShiftRegOverlap (result, left, shCount, TRUE, sign))
     {
-      size = getDataSize (result);
-      while (size--)
-        movLeft2Result (left, size, result, size, 0);
-    }
-  else if (shCount >= (size * 8))
-    {
-      if (sign)
+      if (shCount == 0)
         {
-          /* get sign in acc.7 */
-          MOVA (opGet (left, size - 1, FALSE, FALSE));
+          size = getDataSize (result);
+          while (size--)
+            movLeft2Result (left, size, result, size, 0);
         }
-      addSign (result, LSB, sign);
-    }
-  else
-    {
-      switch (size)
+      else if (shCount >= (size * 8))
         {
-        case 1:
-          genrshOne (result, left, shCount, sign);
-          break;
+          if (sign)
+            {
+              /* get sign in acc.7 */
+              MOVA (opGet (left, size - 1, FALSE, FALSE));
+            }
+          addSign (result, LSB, sign);
+        }
+      else
+        {
+          switch (size)
+            {
+            case 1:
+              genrshOne (result, left, shCount, sign);
+              break;
 
-        case 2:
-          genrshTwo (result, left, shCount, sign);
-          break;
+            case 2:
+              genrshTwo (result, left, shCount, sign);
+              break;
 
-        case 4:
-          genrshFour (result, left, shCount, sign);
-          break;
+            case 4:
+              genrshFour (result, left, shCount, sign);
+              break;
 
-        default:
-          genrshAny (result, left, shCount, sign);
-          break;
+            default:
+              genrshAny (result, left, shCount, sign);
+              break;
+            }
         }
     }
   freeAsmop (result, NULL, ic, TRUE);
@@ -10531,19 +11405,19 @@ genSignedRightShift (iCode * ic)
   if (size == 1)
     {
       MOVA (opGet (left, 0, FALSE, FALSE));
-      emitcode ("sjmp", "!tlabel", labelKey2num (tlbl1->key));
+      emitcode (LOOP_ENTRY_JUMP, "!tlabel", labelKey2num (tlbl1->key));
       emitLabel (tlbl);
       emitcode ("mov", "c,ov");
       emitcode ("rrc", "a");
       emitLabel (tlbl1);
-      emitcode ("djnz", "b,!tlabel", labelKey2num (tlbl->key));
+      emitLoopDjnz ("b", tlbl);
       popB (pushedB);
       opPut(result, "a", 0);
       goto release;
     }
 
   reAdjustPreg (AOP (result));
-  emitcode ("sjmp", "!tlabel", labelKey2num (tlbl1->key));
+  emitcode (LOOP_ENTRY_JUMP, "!tlabel", labelKey2num (tlbl1->key));
   emitLabel (tlbl);
   emitcode ("mov", "c,ov");
   while (size--)
@@ -10554,7 +11428,7 @@ genSignedRightShift (iCode * ic)
     }
   reAdjustPreg (AOP (result));
   emitLabel (tlbl1);
-  emitcode ("djnz", "b,!tlabel", labelKey2num (tlbl->key));
+  emitLoopDjnz ("b", tlbl);
   popB (pushedB);
 
 release:
@@ -10661,19 +11535,19 @@ genRightShift (iCode * ic)
   if (size == 1)
     {
       MOVA (opGet (left, 0, FALSE, FALSE));
-      emitcode ("sjmp", "!tlabel", labelKey2num (tlbl1->key));
+      emitcode (LOOP_ENTRY_JUMP, "!tlabel", labelKey2num (tlbl1->key));
       emitLabel (tlbl);
       CLRC;
       emitcode ("rrc", "a");
       emitLabel (tlbl1);
-      emitcode ("djnz", "b,!tlabel", labelKey2num (tlbl->key));
+      emitLoopDjnz ("b", tlbl);
       popB (pushedB);
       opPut(result, "a", 0);
       goto release;
     }
 
   reAdjustPreg (AOP (result));
-  emitcode ("sjmp", "!tlabel", labelKey2num (tlbl1->key));
+  emitcode (LOOP_ENTRY_JUMP, "!tlabel", labelKey2num (tlbl1->key));
   emitLabel (tlbl);
   CLRC;
   while (size--)
@@ -10685,7 +11559,7 @@ genRightShift (iCode * ic)
   reAdjustPreg (AOP (result));
 
   emitLabel (tlbl1);
-  emitcode ("djnz", "b,!tlabel", labelKey2num (tlbl->key));
+  emitLoopDjnz ("b", tlbl);
   popB (pushedB);
 
 release:
@@ -10719,14 +11593,13 @@ emitPtrByteGet (const char *rname, int p_type, bool preserveAinB)
     case FPOINTER:
       if (preserveAinB)
         emitcode ("mov", "b,a");
-      emitcode ("movx", "a,@dptr");
+      loadFarPointerByte (FALSE);
       break;
 
     case CPOINTER:
       if (preserveAinB)
         emitcode ("mov", "b,a");
-      emitcode ("clr", "a");
-      emitcode ("movc", "a,@a+dptr");
+      loadFarPointerByte (TRUE);
       break;
 
     case GPOINTER:
@@ -10735,7 +11608,7 @@ emitPtrByteGet (const char *rname, int p_type, bool preserveAinB)
           emitpush ("b");
           emitpush ("acc");
         }
-      emitcode ("lcall", "__gptrget");
+      emitcode (RUNTIME_CALL, "__gptrget");
       if (preserveAinB)
         emitpop ("b");
       break;
@@ -10769,12 +11642,12 @@ emitPtrByteSet (const char *rname, int p_type, const char *src)
 
     case FPOINTER:
       MOVA (src);
-      emitcode ("movx", "@dptr,a");
+      storeFarPointerByte ();
       break;
 
     case GPOINTER:
       MOVA (src);
-      emitcode ("lcall", "__gptrput");
+      emitcode (RUNTIME_CALL, "__gptrput");
       break;
     }
 }
@@ -11169,9 +12042,30 @@ genPagedPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iC
 /* genFarPointerGet - get value from far space                     */
 /*-----------------------------------------------------------------*/
 static void
+mcs251WriteBackPostincrementedPointer (operand *pointer)
+{
+  int offset;
+
+  wassert (TARGET_IS_MCS251 && AOP_TYPE (pointer) == AOP_DPTR);
+
+  /* AOP_DPTR materializes the address of the pointer object in DPX.
+     Preserve every byte of the post-incremented pointer before the first
+     store replaces DPX with that destination address. */
+  emitpush ("dpxl");
+  emitpush ("dph");
+  emitpush ("dpl");
+  for (offset = 0; offset < 3; ++offset)
+    {
+      emitpop ("acc");
+      opPut (pointer, "a", offset);
+    }
+}
+
+static void
 genFarPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCode * ifx)
 {
   int size, offset;
+  bool mcs251FarResult;
   char *ifxCond = "a";
   sym_link *retype = getSpec (operandType (result));
 
@@ -11180,12 +12074,24 @@ genFarPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCod
   aopOp (left, ic, FALSE);
   loadDptrFromOperand (left, FALSE);
 
+  /* Preserve the source pointer before selecting an XDATA spill
+     destination: MCS251 has only one DPX. */
+  if (TARGET_IS_MCS251)
+    emitcode ("mov", "dr28,dpx");
+
   /* so dptr now contains the address */
   aopOp (result, ic, FALSE);
+  mcs251FarResult = TARGET_IS_MCS251 && AOP_TYPE (result) == AOP_DPTR;
+  if (mcs251FarResult)
+    {
+      mcs251LoadFarSymbol (AOP (result), 0);
+      emitcode ("mov", "dr24,dpx");
+      emitcode ("mov", "dpx,dr28");
+    }
 
   /* if bit then unpack */
   if (IS_BITFIELD (retype))
-    ifxCond = genUnpackBits (result, "dptr", FPOINTER, ifx);
+    ifxCond = genUnpackBits (result, farPointerRegister (), FPOINTER, ifx);
   else
     {
       size = AOP_SIZE (result);
@@ -11193,18 +12099,35 @@ genFarPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCod
 
       while (size--)
         {
-          emitcode ("movx", "a,@dptr");
+          loadFarPointerByte (FALSE);
           if (!ifx)
-            opPut(result, "a", offset++);
+            {
+              if (mcs251FarResult)
+                emitcode ("mov", "@dr24,a");
+              else
+                opPut(result, "a", offset);
+              offset++;
+            }
           if (size || pi)
-            emitcode ("inc", "dptr");
+            {
+              incrementFarPointer ();
+              if (mcs251FarResult && size)
+                emitcode ("inc", "dr24");
+            }
         }
     }
 
   if (pi && AOP_TYPE (left) != AOP_IMMD && AOP_TYPE (left) != AOP_STR)
     {
-      opPut(left, "dpl", 0);
-      opPut(left, "dph", 1);
+      if (TARGET_IS_MCS251 && AOP_TYPE (left) == AOP_DPTR)
+        mcs251WriteBackPostincrementedPointer (left);
+      else
+        {
+          opPut(left, "dpl", 0);
+          opPut(left, "dph", 1);
+          if (TARGET_IS_MCS251)
+            opPut(left, "dpxl", 2);
+        }
       pi->generated = 1;
     }
 
@@ -11224,6 +12147,7 @@ static void
 genCodePointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCode * ifx)
 {
   int size, offset;
+  bool mcs251FarResult;
   char *ifxCond = "a";
   sym_link *retype = getSpec (operandType (result));
 
@@ -11232,12 +12156,22 @@ genCodePointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCo
   aopOp (left, ic, FALSE);
   loadDptrFromOperand (left, FALSE);
 
+  if (TARGET_IS_MCS251)
+    emitcode ("mov", "dr28,dpx");
+
   /* so dptr now contains the address */
   aopOp (result, ic, FALSE);
+  mcs251FarResult = TARGET_IS_MCS251 && AOP_TYPE (result) == AOP_DPTR;
+  if (mcs251FarResult)
+    {
+      mcs251LoadFarSymbol (AOP (result), 0);
+      emitcode ("mov", "dr24,dpx");
+      emitcode ("mov", "dpx,dr28");
+    }
 
   /* if bit then unpack */
   if (IS_BITFIELD (retype))
-    ifxCond = genUnpackBits (result, "dptr", CPOINTER, ifx);
+    ifxCond = genUnpackBits (result, farPointerRegister (), CPOINTER, ifx);
   else
     {
       size = AOP_SIZE (result);
@@ -11245,19 +12179,35 @@ genCodePointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCo
 
       while (size--)
         {
-          emitcode ("clr", "a");
-          emitcode ("movc", "a,@a+dptr");
+          loadFarPointerByte (TRUE);
           if (!ifx)
-            opPut(result, "a", offset++);
+            {
+              if (mcs251FarResult)
+                emitcode ("mov", "@dr24,a");
+              else
+                opPut(result, "a", offset);
+              offset++;
+            }
           if (size || pi)
-            emitcode ("inc", "dptr");
+            {
+              incrementFarPointer ();
+              if (mcs251FarResult && size)
+                emitcode ("inc", "dr24");
+            }
         }
     }
 
   if (pi && AOP_TYPE (left) != AOP_IMMD && AOP_TYPE (left) != AOP_STR)
     {
-      opPut(left, "dpl", 0);
-      opPut(left, "dph", 1);
+      if (TARGET_IS_MCS251 && AOP_TYPE (left) == AOP_DPTR)
+        mcs251WriteBackPostincrementedPointer (left);
+      else
+        {
+          opPut(left, "dpl", 0);
+          opPut(left, "dph", 1);
+          if (TARGET_IS_MCS251)
+            opPut(left, "dpxl", 2);
+        }
       pi->generated = 1;
     }
 
@@ -11277,6 +12227,7 @@ static void
 genGenPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCode * ifx)
 {
   int size, offset;
+  bool mcs251FarResult;
   char *ifxCond = "a";
   sym_link *retype = getSpec (operandType (result));
 
@@ -11285,13 +12236,23 @@ genGenPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCod
   aopOp (left, ic, FALSE);
   loadDptrFromOperand (left, TRUE);
 
+  if (TARGET_IS_MCS251)
+    emitcode ("mov", "dr28,dpx");
+
   /* so dptr-b now contains the address */
   aopOp (result, ic, FALSE);
+  mcs251FarResult = TARGET_IS_MCS251 && AOP_TYPE (result) == AOP_DPTR;
+  if (mcs251FarResult)
+    {
+      mcs251LoadFarSymbol (AOP (result), 0);
+      emitcode ("mov", "dr24,dpx");
+      emitcode ("mov", "dpx,dr28");
+    }
 
   /* if bit then unpack */
   if (IS_BITFIELD (retype))
     {
-      ifxCond = genUnpackBits (result, "dptr", GPOINTER, ifx);
+      ifxCond = genUnpackBits (result, farPointerRegister (), GPOINTER, ifx);
     }
   else
     {
@@ -11300,18 +12261,35 @@ genGenPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCod
 
       while (size--)
         {
-          emitcode ("lcall", "__gptrget");
+          emitcode (RUNTIME_CALL, "__gptrget");
           if (!ifx)
-            opPut(result, "a", offset++);
+            {
+              if (mcs251FarResult)
+                emitcode ("mov", "@dr24,a");
+              else
+                opPut(result, "a", offset);
+              offset++;
+            }
           if (size || pi)
-            emitcode ("inc", "dptr");
+            {
+              incrementFarPointer ();
+              if (mcs251FarResult && size)
+                emitcode ("inc", "dr24");
+            }
         }
     }
 
   if (pi && AOP_TYPE (left) != AOP_IMMD && AOP_TYPE (left) != AOP_STR)
     {
-      opPut(left, "dpl", 0);
-      opPut(left, "dph", 1);
+      if (TARGET_IS_MCS251 && AOP_TYPE (left) == AOP_DPTR)
+        mcs251WriteBackPostincrementedPointer (left);
+      else
+        {
+          opPut(left, "dpl", 0);
+          opPut(left, "dph", 1);
+          if (TARGET_IS_MCS251)
+            opPut(left, "dpxl", 2);
+        }
       pi->generated = 1;
     }
 
@@ -11912,18 +12890,30 @@ static void
 genFarPointerSet (operand * right, operand * result, iCode * ic, iCode * pi)
 {
   int size, offset;
+  bool mcs251FarSource;
 
   D (emitcode (";", "genFarPointerSet"));
 
   aopOp (result, ic, FALSE);
   loadDptrFromOperand (result, FALSE);
 
+  if (TARGET_IS_MCS251)
+    emitcode ("mov", "dr28,dpx");
+
   /* so dptr now contains the address */
   aopOp (right, ic, FALSE);
+  mcs251FarSource = TARGET_IS_MCS251 && AOP_TYPE (right) == AOP_DPTR;
+  if (mcs251FarSource)
+    {
+      mcs251LoadFarSymbol (AOP (right), 0);
+      emitcode ("mov", "dr24,dpx");
+      emitcode ("mov", "dpx,dr28");
+    }
 
   /* if bit-field then pack */
   if (IS_BITVAR (operandType (result)->next))
-    genPackBits (operandType (result)->next, right, "dptr", FPOINTER);
+    genPackBits (operandType (result)->next, right,
+                 farPointerRegister (), FPOINTER);
   else
     {
       size = AOP_SIZE (right);
@@ -11931,18 +12921,30 @@ genFarPointerSet (operand * right, operand * result, iCode * ic, iCode * pi)
 
       while (size--)
         {
-          MOVA (opGet (right, offset, FALSE, FALSE));
+          if (mcs251FarSource)
+            emitcode ("mov", "a,@dr24");
+          else
+            MOVA (opGet (right, offset, FALSE, FALSE));
           if (offset++ > 0)
-            emitcode ("inc", "dptr");
-          emitcode ("movx", "@dptr,a");
+            incrementFarPointer ();
+          storeFarPointerByte ();
+          if (mcs251FarSource && size)
+            emitcode ("inc", "dr24");
         }
       if (pi)
-        emitcode ("inc", "dptr");
+        incrementFarPointer ();
     }
   if (pi && AOP_TYPE (result) != AOP_STR && AOP_TYPE (result) != AOP_IMMD)
     {
-      opPut(result, "dpl", 0);
-      opPut(result, "dph", 1);
+      if (TARGET_IS_MCS251 && AOP_TYPE (result) == AOP_DPTR)
+        mcs251WriteBackPostincrementedPointer (result);
+      else
+        {
+          opPut(result, "dpl", 0);
+          opPut(result, "dph", 1);
+          if (TARGET_IS_MCS251)
+            opPut(result, "dpxl", 2);
+        }
       pi->generated = 1;
     }
   freeAsmop (result, NULL, ic, TRUE);
@@ -11956,18 +12958,30 @@ static void
 genGenPointerSet (operand * right, operand * result, iCode * ic, iCode * pi)
 {
   int size, offset;
+  bool mcs251FarSource;
   D (emitcode (";", "genGenPointerSet"));
 
   aopOp (result, ic, FALSE);
   loadDptrFromOperand (result, TRUE);
 
+  if (TARGET_IS_MCS251)
+    emitcode ("mov", "dr28,dpx");
+
   /* so dptr-b now contains the address */
   aopOp (right, ic, FALSE);
+  mcs251FarSource = TARGET_IS_MCS251 && AOP_TYPE (right) == AOP_DPTR;
+  if (mcs251FarSource)
+    {
+      mcs251LoadFarSymbol (AOP (right), 0);
+      emitcode ("mov", "dr24,dpx");
+      emitcode ("mov", "dpx,dr28");
+    }
 
   /* if bit-field then unpack */
   if (IS_BITVAR (operandType (result)->next))
     {
-      genPackBits (operandType (result)->next, right, "dptr", GPOINTER);
+      genPackBits (operandType (result)->next, right,
+                   farPointerRegister (), GPOINTER);
     }
   else
     {
@@ -11976,17 +12990,32 @@ genGenPointerSet (operand * right, operand * result, iCode * ic, iCode * pi)
 
       while (size--)
         {
-          MOVA (opGet (right, offset++, FALSE, FALSE));
-          emitcode ("lcall", "__gptrput");
+          if (mcs251FarSource)
+            emitcode ("mov", "a,@dr24");
+          else
+            MOVA (opGet (right, offset, FALSE, FALSE));
+          offset++;
+          emitcode (RUNTIME_CALL, "__gptrput");
           if (size || pi)
-            emitcode ("inc", "dptr");
+            {
+              incrementFarPointer ();
+              if (mcs251FarSource && size)
+                emitcode ("inc", "dr24");
+            }
         }
     }
 
   if (pi && AOP_TYPE (result) != AOP_STR && AOP_TYPE (result) != AOP_IMMD)
     {
-      opPut(result, "dpl", 0);
-      opPut(result, "dph", 1);
+      if (TARGET_IS_MCS251 && AOP_TYPE (result) == AOP_DPTR)
+        mcs251WriteBackPostincrementedPointer (result);
+      else
+        {
+          opPut(result, "dpl", 0);
+          opPut(result, "dph", 1);
+          if (TARGET_IS_MCS251)
+            opPut(result, "dpxl", 2);
+        }
       pi->generated = 1;
     }
   freeAsmop (result, NULL, ic, TRUE);
@@ -12128,6 +13157,19 @@ genAddrOf (iCode * ic)
      variable */
   if (sym->onStack)
     {
+      if (TARGET_IS_MCS251 && !SPEC_OCLS (sym->etype)->paged)
+        {
+          size = AOP_SIZE (IC_RESULT (ic));
+          mcs251PushStackAddress (sym, 0, size);
+          offset = size;
+          while (offset--)
+            {
+              emitpop ("acc");
+              opPut (IC_RESULT (ic), "a", offset);
+            }
+          goto release;
+        }
+
       int stack_offset = stackoffset (sym);
 
       /* if it has an offset then we need to compute it */
@@ -12184,7 +13226,10 @@ genAddrOf (iCode * ic)
       opPut(IC_RESULT (ic), dbuf_c_str (&dbuf), offset++);
       dbuf_destroy (&dbuf);
     }
-  if (opIsGptr (IC_RESULT (ic)))
+  /* A MCS251 generic pointer is the complete flat 24-bit symbol address.
+     The MCS-51-only final-byte rewrite below would replace its most
+     significant address byte with the legacy address-space tag. */
+  if (!TARGET_IS_MCS251 && opIsGptr (IC_RESULT (ic)))
     {
       struct dbuf_s dbuf;
 
@@ -12287,6 +13332,11 @@ genAssign (iCode * ic)
       emitcode ("xch", "a, %s", opGet (result, 1, false, false));
       emitcode ("xch", "a, %s", opGet (result, 0, false, false));
     }
+  else if (TARGET_IS_MCS251 && AOP_TYPE (result) == AOP_DPTR &&
+           mcs251AopUsesDpxValue (AOP (right), 0, size))
+    {
+      mcs251MoveDpxValueToFar (AOP (result), 0, AOP (right), 0, size);
+    }
   else
     {
       offset = 0;
@@ -12316,7 +13366,7 @@ static void
 genJumpTab (iCode * ic)
 {
   operand *cond = IC_JTCOND (ic);
-  symbol *jtab, *jtablo, *jtabhi;
+  symbol *jtab, *jtablo, *jtabhi, *jtabext;
   unsigned int count;
   const char *l;
   bool useB = FALSE;
@@ -12331,7 +13381,8 @@ genJumpTab (iCode * ic)
     {
       /* This algorithm needs 9 cycles and 7 + 3*n bytes
          if the switch argument is in a register.
-         (6 + 2*n bytes when options.acall_ajmp is set) */
+         MCS251 uses four-byte EJMP table entries; MCS-51 uses three-byte
+         LJMP entries (or two-byte AJMP entries when requested). */
       /* Peephole may not convert ljmp to sjmp or ret
          labelIsReturnOnly & labelInRange must check
          currPl->ic->op != JUMPTABLE */
@@ -12339,16 +13390,23 @@ genJumpTab (iCode * ic)
       /* get the condition into accumulator */
       l = opGet (cond, 0, FALSE, FALSE);
       MOVA (l);
-      /* multiply by three */
+      /* Scale the selector by the jump-table entry size. */
       if ((AOP_TYPE (cond) == AOP_REG) || (IS_AOP_PREG (cond) && !AOP (cond)->paged && !IS_VOLATILE (operandType (cond))))
         {
           emitcode ("add", "a,%s", l);
-          if (!options.acall_ajmp)
+          if (TARGET_IS_MCS251)
+            emitcode ("add", "a,acc");
+          else if (!options.acall_ajmp)
             emitcode ("add", "a,%s", l);
         }
       else
         {
-          if (!options.acall_ajmp)
+          if (TARGET_IS_MCS251)
+            {
+              MOVB ("#0x04");
+              emitcode ("mul", "ab");
+            }
+          else if (!options.acall_ajmp)
             {
               MOVB ("#0x03");
               emitcode ("mul", "ab");
@@ -12362,11 +13420,15 @@ genJumpTab (iCode * ic)
 
       jtab = newiTempLabel (NULL);
       emitcode ("mov", "dptr,#!tlabel", labelKey2num (jtab->key));
+      if (TARGET_IS_MCS251)
+        emitcode ("mov", "dpxl,#(!tlabel >> 16)", labelKey2num (jtab->key));
       emitcode ("jmp", "@a+dptr");
       emitLabel (jtab);
       /* now generate the jump labels */
       for (jtab = setFirstItem (IC_JTLABELS (ic)); jtab; jtab = setNextItem (IC_JTLABELS (ic)))
-        if (options.acall_ajmp)
+        if (TARGET_IS_MCS251)
+          emitcode ("ejmp", "!tlabel", labelKey2num (jtab->key));
+        else if (options.acall_ajmp)
           emitcode ("ajmp", "!tlabel", labelKey2num (jtab->key));
         else 
           emitcode ("ljmp", "!tlabel", labelKey2num (jtab->key));
@@ -12378,12 +13440,14 @@ genJumpTab (iCode * ic)
          For n>7 this algorithm may be more compact */
       jtablo = newiTempLabel (NULL);
       jtabhi = newiTempLabel (NULL);
+      jtabext = TARGET_IS_MCS251 ? newiTempLabel (NULL) : NULL;
 
       /* get the condition into accumulator.
          Using b as temporary storage, if register push/pop is needed */
       aopOp (cond, ic, FALSE);
       l = opGet (cond, 0, FALSE, FALSE);
-      if ((AOP_TYPE (cond) == AOP_R0 && _G.r0Pushed) ||
+      if (TARGET_IS_MCS251 ||
+          (AOP_TYPE (cond) == AOP_R0 && _G.r0Pushed) ||
           (AOP_TYPE (cond) == AOP_R1 && _G.r1Pushed) ||
           EQ (l, "a") || EQ (l, "acc") ||
           (count > 125 && EQ (l, "dpl")) ||
@@ -12396,6 +13460,49 @@ genJumpTab (iCode * ic)
           useB = TRUE;
         }
       freeAsmop (cond, NULL, ic, TRUE);
+
+      if (TARGET_IS_MCS251)
+        {
+          /* MCS251 destinations are 24 bits.  Keep one byte table for each
+             component, then reconstruct DPX and jump through an otherwise
+             unallocated dword register so ABI argument registers remain
+             untouched. */
+          MOVA (l);
+          emitcode ("mov", "dptr,#!tlabel", labelKey2num (jtablo->key));
+          emitcode ("mov", "dpxl,#(!tlabel >> 16)", labelKey2num (jtablo->key));
+          emitcode ("movc", "a,@a+dptr");
+          emitpush ("acc");
+
+          MOVA (l);
+          emitcode ("mov", "dptr,#!tlabel", labelKey2num (jtabhi->key));
+          emitcode ("mov", "dpxl,#(!tlabel >> 16)", labelKey2num (jtabhi->key));
+          emitcode ("movc", "a,@a+dptr");
+          emitpush ("acc");
+
+          MOVA (l);
+          emitcode ("mov", "dptr,#!tlabel", labelKey2num (jtabext->key));
+          emitcode ("mov", "dpxl,#(!tlabel >> 16)", labelKey2num (jtabext->key));
+          emitcode ("movc", "a,@a+dptr");
+          emitcode ("mov", "dpxl,a");
+          emitpop ("dph");
+          emitpop ("dpl");
+          emitcode ("mov", "dr28,dpx");
+          emitcode ("ejmp", "@dr28");
+
+          emitLabel (jtablo);
+          for (jtab = setFirstItem (IC_JTLABELS (ic)); jtab; jtab = setNextItem (IC_JTLABELS (ic)))
+            emitcode (".db", "!tlabel", labelKey2num (jtab->key));
+
+          emitLabel (jtabhi);
+          for (jtab = setFirstItem (IC_JTLABELS (ic)); jtab; jtab = setNextItem (IC_JTLABELS (ic)))
+            emitcode (".db", "!tlabel>>8", labelKey2num (jtab->key));
+
+          emitLabel (jtabext);
+          for (jtab = setFirstItem (IC_JTLABELS (ic)); jtab; jtab = setNextItem (IC_JTLABELS (ic)))
+            emitcode (".db", "!tlabel>>16", labelKey2num (jtab->key));
+          return;
+        }
+
       MOVA (l);
       if (count <= 125)
         {
@@ -12453,6 +13560,47 @@ genJumpTab (iCode * ic)
     }
 }
 
+/* Copy a MCS251 value whose source and destination register tuples can be
+   different permutations of the same registers.  A low-to-high sequence
+   such as r1 <- r3, r3 <- r1 destroys the original r1 before it is read.
+   The complete SPX stack makes a compact, allocation-independent temporary. */
+static void
+mcs251CopyPlainBytes (operand *result, operand *right, int size)
+{
+  bool destructiveOverlap = FALSE;
+  int offset;
+
+  wassert (TARGET_IS_MCS251);
+  if (AOP_TYPE (result) == AOP_DPTR &&
+      mcs251AopUsesDpxValue (AOP (right), 0, size))
+    {
+      mcs251MoveDpxValueToFar (AOP (result), 0, AOP (right), 0, size);
+      return;
+    }
+
+  if (AOP_TYPE (result) == AOP_REG && AOP_TYPE (right) == AOP_REG)
+    for (int destination = 0; destination < size; ++destination)
+      for (int source = destination + 1; source < size; ++source)
+        if (AOP (result)->aopu.aop_reg[destination] ==
+            AOP (right)->aopu.aop_reg[source])
+          destructiveOverlap = TRUE;
+
+  if (destructiveOverlap)
+    {
+      for (offset = 0; offset < size; ++offset)
+        emitpush (opGet (right, offset, FALSE, FALSE));
+      for (offset = size; offset-- > 0;)
+        {
+          emitpop ("acc");
+          opPut (result, "a", offset);
+        }
+      return;
+    }
+
+  for (offset = 0; offset < size; ++offset)
+    opPut (result, opGet (right, offset, FALSE, FALSE), offset);
+}
+
 /*-----------------------------------------------------------------*/
 /* genCast - gen code for casting                                  */
 /*-----------------------------------------------------------------*/
@@ -12496,6 +13644,12 @@ genCast (iCode * ic)
       if (!masktopbyte && sameRegs (AOP (right), AOP (result)))
         goto release;
 
+      if (TARGET_IS_MCS251 && !masktopbyte)
+        {
+          mcs251CopyPlainBytes (result, right, AOP_SIZE (result));
+          goto release;
+        }
+
       /* if they are in different places then copy */
       size = AOP_SIZE (result);
       offset = 0;
@@ -12528,27 +13682,59 @@ genCast (iCode * ic)
       sym_link *type = operandType (right);
       sym_link *etype = getSpec (type);
 
+      if (IS_PTR (type))
+        p_type = DCL_TYPE (type);
+      else if (SPEC_SCLS (etype) == S_REGISTER)
+        p_type = GPOINTER;
+      else
+        p_type = PTR_TYPE (SPEC_OCLS (etype));
+
+      /* MCS251 __pdata keeps the inherited one-byte offset, but MOVX @Ri
+         supplies the remaining address bytes from P2 and STC MXAX.  A
+         conversion to the flat ABI must capture that live page rather than
+         zero-extending the offset into region 00. */
+      if (TARGET_IS_MCS251 && p_type == PPOINTER)
+        {
+          symbol *nullPointer = newiTempLabel (NULL);
+          symbol *converted = newiTempLabel (NULL);
+
+          /* The sole byte of a __pdata null pointer is zero.  Preserve the
+             C null-pointer guarantee when widening it: capturing the live
+             page for offset zero would otherwise make it non-null. */
+          MOVA (opGet (right, 0, FALSE, FALSE));
+          opPut (result, "a", 0);
+          emitcode ("jz", "!tlabel", labelKey2num (nullPointer->key));
+
+          offset = 1;
+          if (offset < AOP_SIZE (result))
+            opPut (result, "P2", offset++);
+          if (offset < AOP_SIZE (result))
+            opPut (result, "0xeb", offset++); /* STC MXAX */
+          while (offset < AOP_SIZE (result))
+            opPut (result, zero, offset++);
+          emitcode ("sjmp", "!tlabel", labelKey2num (converted->key));
+
+          emitLabel (nullPointer);
+          for (offset = 1; offset < AOP_SIZE (result); ++offset)
+            opPut (result, zero, offset);
+          emitLabel (converted);
+          goto release;
+        }
+
+      if (GPTRSIZE <= FARPTRSIZE)
+        {
+          size = min (AOP_SIZE (result), AOP_SIZE (right));
+          mcs251CopyPlainBytes (result, right, size);
+          offset = size;
+          size = AOP_SIZE (result) - offset;
+          while (size--)
+            opPut(result, zero, offset++);
+          goto release;
+        }
+
       /* pointer to generic pointer or long */
       if (AOP_SIZE (result) >= GPTRSIZE)
         {
-          if (IS_PTR (type))
-            {
-              p_type = DCL_TYPE (type);
-            }
-          else
-            {
-              if (SPEC_SCLS (etype) == S_REGISTER)
-                {
-                  // let's assume it is a generic pointer
-                  p_type = GPOINTER;
-                }
-              else
-                {
-                  /* we have to go by the storage class */
-                  p_type = PTR_TYPE (SPEC_OCLS (etype));
-                }
-            }
-
           /* the first two bytes are known */
           size = GPTRSIZE - 1;
           offset = 0;
@@ -12723,7 +13909,7 @@ genDjnz (iCode * ic, iCode * ifx)
     }
   emitcode ("sjmp", "!tlabel", labelKey2num (lbl1->key));
   emitLabel (lbl);
-  emitcode ("ljmp", "!tlabel", labelKey2num (IC_TRUE (ifx)->key));
+  emitcode (LONG_JUMP, "!tlabel", labelKey2num (IC_TRUE (ifx)->key));
   emitLabel (lbl1);
 
   if (!ifx->generated)
@@ -13323,4 +14509,3 @@ mcs51IsParmInCall (sym_link *ftype, const char *what)
       return true;
   return false;
 }
-

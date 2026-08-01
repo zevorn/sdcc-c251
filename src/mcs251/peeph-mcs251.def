@@ -1,0 +1,420 @@
+// MCS251-only rules are appended to the mature MCS-51 rule set.
+
+// Wide MOV preserves SDCC's byte order: direct byte N maps to Rn and byte
+// N+1 maps to Rn+1.  These rules use native word registers without changing
+// the revision-1 little-endian ABI.
+replace {
+	mov	r0,dpl
+	mov	r1,dph
+} by {
+	mov	wr0,dpl
+}
+
+replace {
+	mov	r2,dpl
+	mov	r3,dph
+} by {
+	mov	wr2,dpl
+}
+
+replace {
+	mov	r4,dpl
+	mov	r5,dph
+} by {
+	mov	wr4,dpl
+}
+
+replace {
+	mov	r6,dpl
+	mov	r7,dph
+} by {
+	mov	wr6,dpl
+}
+
+replace {
+	mov	dpl,r0
+	mov	dph,r1
+} by {
+	mov	dpl,wr0
+}
+
+replace {
+	mov	dpl,r2
+	mov	dph,r3
+} by {
+	mov	dpl,wr2
+}
+
+replace {
+	mov	dpl,r4
+	mov	dph,r5
+} by {
+	mov	dpl,wr4
+}
+
+replace {
+	mov	dpl,r6
+	mov	dph,r7
+} by {
+	mov	dpl,wr6
+}
+
+replace {
+	mov	r0,%1
+	mov	r1,(%1 + 1)
+} by {
+	mov	wr0,%1
+} if notVolatile(%1)
+
+replace {
+	mov	r2,%1
+	mov	r3,(%1 + 1)
+} by {
+	mov	wr2,%1
+} if notVolatile(%1)
+
+replace {
+	mov	r4,%1
+	mov	r5,(%1 + 1)
+} by {
+	mov	wr4,%1
+} if notVolatile(%1)
+
+replace {
+	mov	r6,%1
+	mov	r7,(%1 + 1)
+} by {
+	mov	wr6,%1
+} if notVolatile(%1)
+
+replace {
+	mov	%1,r0
+	mov	(%1 + 1),r1
+} by {
+	mov	%1,wr0
+} if notVolatile(%1)
+
+replace {
+	mov	%1,r2
+	mov	(%1 + 1),r3
+} by {
+	mov	%1,wr2
+} if notVolatile(%1)
+
+replace {
+	mov	%1,r4
+	mov	(%1 + 1),r5
+} by {
+	mov	%1,wr4
+} if notVolatile(%1)
+
+replace {
+	mov	%1,r6
+	mov	(%1 + 1),r7
+} by {
+	mov	%1,wr6
+} if notVolatile(%1)
+
+replace {
+	mov	wr0,%1
+	mov	wr2,(%1 + 2)
+} by {
+	mov	dr0,%1
+} if notVolatile(%1)
+
+replace {
+	mov	wr4,%1
+	mov	wr6,(%1 + 2)
+} by {
+	mov	dr4,%1
+} if notVolatile(%1)
+
+replace {
+	mov	%1,wr0
+	mov	(%1 + 2),wr2
+} by {
+	mov	%1,dr0
+} if notVolatile(%1)
+
+replace {
+	mov	%1,wr4
+	mov	(%1 + 2),wr6
+} by {
+	mov	%1,dr4
+} if notVolatile(%1)
+
+// Logical operations are endian-invariant, so an SDCC byte pair or quartet
+// can use the native WR/DR operation directly.  A is required to be dead
+// because the byte-at-a-time sequence leaves its final source byte there.
+replace {
+	mov	a,%1
+	anl	a,r6
+	mov	dpl,a
+	mov	a,(%1 + 1)
+	anl	a,r7
+	mov	dph,a
+} by {
+	anl	wr6,%1
+	mov	dpl,wr6
+} if notVolatile(%1), notUsed('a' 'r6' 'r7')
+
+replace {
+	mov	a,%1
+	orl	a,r6
+	mov	dpl,a
+	mov	a,(%1 + 1)
+	orl	a,r7
+	mov	dph,a
+} by {
+	orl	wr6,%1
+	mov	dpl,wr6
+} if notVolatile(%1), notUsed('a' 'r6' 'r7')
+
+replace {
+	mov	a,%1
+	xrl	a,r6
+	mov	dpl,a
+	mov	a,(%1 + 1)
+	xrl	a,r7
+	mov	dph,a
+} by {
+	xrl	wr6,%1
+	mov	dpl,wr6
+} if notVolatile(%1), notUsed('a' 'r6' 'r7')
+
+replace {
+	mov	a,%1
+	anl	a,r6
+	mov	dpl,a
+	mov	a,(%1 + 1)
+	anl	a,r7
+	mov	dph,a
+	eret
+} by {
+	anl	wr6,%1
+	mov	dpl,wr6
+	eret
+} if notVolatile(%1)
+
+replace {
+	mov	a,%1
+	orl	a,r6
+	mov	dpl,a
+	mov	a,(%1 + 1)
+	orl	a,r7
+	mov	dph,a
+	eret
+} by {
+	orl	wr6,%1
+	mov	dpl,wr6
+	eret
+} if notVolatile(%1)
+
+replace {
+	mov	a,%1
+	xrl	a,r6
+	mov	dpl,a
+	mov	a,(%1 + 1)
+	xrl	a,r7
+	mov	dph,a
+	eret
+} by {
+	xrl	wr6,%1
+	mov	dpl,wr6
+	eret
+} if notVolatile(%1)
+
+replace {
+	mov	a,%1
+	anl	ar4,a
+	mov	a,(%1 + 1)
+	anl	ar5,a
+	mov	a,(%1 + 2)
+	anl	ar6,a
+	mov	a,(%1 + 3)
+	anl	ar7,a
+} by {
+	anl	wr4,%1
+	anl	wr6,(%1 + 2)
+} if notVolatile(%1), notUsed('a')
+
+replace {
+	mov	a,%1
+	orl	ar4,a
+	mov	a,(%1 + 1)
+	orl	ar5,a
+	mov	a,(%1 + 2)
+	orl	ar6,a
+	mov	a,(%1 + 3)
+	orl	ar7,a
+} by {
+	orl	wr4,%1
+	orl	wr6,(%1 + 2)
+} if notVolatile(%1), notUsed('a')
+
+replace {
+	mov	a,%1
+	xrl	ar4,a
+	mov	a,(%1 + 1)
+	xrl	ar5,a
+	mov	a,(%1 + 2)
+	xrl	ar6,a
+	mov	a,(%1 + 3)
+	xrl	ar7,a
+} by {
+	xrl	wr4,%1
+	xrl	wr6,(%1 + 2)
+} if notVolatile(%1), notUsed('a')
+
+replace {
+	mov	a,%1
+	anl	ar4,a
+	mov	a,(%1 + 1)
+	anl	ar5,a
+	mov	a,(%1 + 2)
+	anl	ar6,a
+	mov	a,(%1 + 3)
+	anl	ar7,a
+	mov	dpl,wr4
+	mov	b,r6
+	mov	a,r7
+	eret
+} by {
+	anl	wr4,%1
+	anl	wr6,(%1 + 2)
+	mov	dpl,wr4
+	mov	b,r6
+	mov	a,r7
+	eret
+} if notVolatile(%1)
+
+replace {
+	mov	a,%1
+	orl	ar4,a
+	mov	a,(%1 + 1)
+	orl	ar5,a
+	mov	a,(%1 + 2)
+	orl	ar6,a
+	mov	a,(%1 + 3)
+	orl	ar7,a
+	mov	dpl,wr4
+	mov	b,r6
+	mov	a,r7
+	eret
+} by {
+	orl	wr4,%1
+	orl	wr6,(%1 + 2)
+	mov	dpl,wr4
+	mov	b,r6
+	mov	a,r7
+	eret
+} if notVolatile(%1)
+
+replace {
+	mov	a,%1
+	xrl	ar4,a
+	mov	a,(%1 + 1)
+	xrl	ar5,a
+	mov	a,(%1 + 2)
+	xrl	ar6,a
+	mov	a,(%1 + 3)
+	xrl	ar7,a
+	mov	dpl,wr4
+	mov	b,r6
+	mov	a,r7
+	eret
+} by {
+	xrl	wr4,%1
+	xrl	wr6,(%1 + 2)
+	mov	dpl,wr4
+	mov	b,r6
+	mov	a,r7
+	eret
+} if notVolatile(%1)
+
+// Fold little-endian byte operations with one 16-bit literal into the MCS251
+// immediate WR forms.  WR6 has its MSB in R6, while SDCC has the scalar LSB
+// there, so the immediate bytes must be reversed.  Logical operations remain
+// valid because they do not propagate state between bytes.
+replace {
+	mov	a,#%1
+	anl	a,r6
+	mov	dpl,a
+	mov	a,#%2
+	anl	a,r7
+	mov	dph,a
+	eret
+} by {
+	anl	wr6,#((%1 << 8) | %2)
+	mov	dpl,wr6
+	eret
+}
+
+replace {
+	mov	a,#%1
+	orl	a,r6
+	mov	dpl,a
+	mov	a,#%2
+	orl	a,r7
+	mov	dph,a
+	eret
+} by {
+	orl	wr6,#((%1 << 8) | %2)
+	mov	dpl,wr6
+	eret
+}
+
+replace {
+	mov	a,#%1
+	xrl	a,r6
+	mov	dpl,a
+	mov	a,#%2
+	xrl	a,r7
+	mov	dph,a
+	eret
+} by {
+	xrl	wr6,#((%1 << 8) | %2)
+	mov	dpl,wr6
+	eret
+}
+
+// Unlike logical operations, comparison is not endian-invariant.  Convert
+// the SDCC little-endian R6/R7 pair into the native WR6 order before CMP.
+replace {
+	clr	c
+	mov	a,r6
+	subb	a,#%1
+	mov	a,r7
+	subb	a,#%2
+	clr	a
+	rlc	a
+	mov	dpl,a
+	eret
+} by {
+	xch	a,r6
+	xch	a,r7
+	xch	a,r6
+	cmp	wr6,#((%2 << 8) | %1)
+	clr	a
+	rlc	a
+	mov	dpl,a
+	eret
+}
+
+replace {
+	ecall	%1
+	eret
+} by {
+	; MCS251 tail call: preserve the 24-bit return frame owned by our caller
+	ejmp	%1
+} if optimizeReturn(), notSame(%1 '_longjmp')
+
+replace {
+	ecall	%1
+%2:
+	eret
+} by {
+	; MCS251 tail call: preserve the 24-bit return frame owned by our caller
+	ejmp	%1
+	;
+} if optimizeReturn(), notSame(%1 '_longjmp'), labelRefCount(%2 0)

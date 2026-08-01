@@ -555,7 +555,15 @@ createStackSpil (symbol * sym)
   sloc->etype = getSpec (sloc->type);
   if (!IS_BIT (sloc->etype))
     {
-      SPEC_SCLS (sloc->etype) = S_DATA;
+      /* The inherited MCS-51 allocator traditionally forces every spill
+         slot into direct DATA, even in the large model.  On MCS251 that
+         contradicts the model: non-register automatics in the large model
+         belong to the flat external-data allocation class.  Apart from
+         exhausting the 128-byte direct window, forcing a far temporary into
+         DATA can also truncate its address.  Keep the MCS-51 policy exactly
+         as-is and let MCS251 large-model spills follow the default XDATA map. */
+      SPEC_SCLS (sloc->etype) =
+        TARGET_IS_MCS251 && port->mem.default_local_map == xdata ? S_XDATA : S_DATA;
     }
   else if (SPEC_SCLS (sloc->etype) == S_SBIT)
     {

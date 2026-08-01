@@ -850,7 +850,7 @@ replace {
 	mov	a,#0x100 - %2
 	add	a,%1
 	jc	%5
-} if operandsNotRelated('0x00' %2), operandsLiteral(%2)
+} if operandsNotRelated('0x00' %2), operandsLiteral(%2), notSimilar(%1 '@spx')
 
 replace {
 	clr	c
@@ -862,7 +862,7 @@ replace {
 	mov	a,#0x100 - %2
 	add	a,%1
 	jnc	%5
-} if operandsNotRelated('0x00' %2), operandsLiteral(%2)
+} if operandsNotRelated('0x00' %2), operandsLiteral(%2), notSimilar(%1 '@spx')
 
 
 replace {
@@ -1442,7 +1442,7 @@ replace {
 	;	peephole 177.g	optimized mov sequence
 	mov	a,%2
 	mov	%1,a
-} if notVolatile %1
+} if notVolatile(%1), notSame(%1 'a'), canAssign('a' %2), canAssign(%1 'a')
 
 replace {
 	mov	%1,%2
@@ -1451,7 +1451,7 @@ replace {
 	;	peephole 177.h	optimized mov sequence
 	mov	a,%2
 	mov	%1,a
-} if notVolatile(%2), notSame(%1 'dptr'), operandsNotRelated(%1 %2)
+} if notVolatile(%2), notSame(%1 'dptr'), operandsNotRelated(%1 %2), canAssign(%1 'a')
 
 // applies to f.e. testfwk.c
 replace {
@@ -1481,7 +1481,7 @@ replace {
 	;	Peephole 178	removed redundant mov
 	mov	b,%1
 	mov	a,%2
-}
+} if canAssign('b' %1)
 
 // rules 179-182 provided by : Frieder <fe@lake.iup.uni-heidelberg.de>
 // saving 2 byte, 1 cycle
@@ -1586,7 +1586,10 @@ replace {
 } by {
 	;	Peephole 183.b	avoided orl during execution
 	orl	%1,#(%2|%3)
-} if notVolatile %1
+// A MCS251 flat function address contributes two independently relocatable
+// high bytes here.  ASxxxx cannot represent their bitwise OR as one
+// relocation expression, so retain the two legal byte relocations.
+} if notVolatile(%1), isPort('mcs51')
 
 replace {
 	mov	%1,a
@@ -2230,7 +2233,7 @@ replace	 {
 	mov	%1,a
 	;	Peephole 214.a	removed redundant mov
 	add	a,%2
-} if notSame(%1 %2)
+} if notSame(%1 %2), notSimilar(%2 '@spx')
 
 replace {
 	mov	%1,a
@@ -2240,7 +2243,7 @@ replace {
 	;	Peephole 214.b	removed redundant mov
 	add	a,%2
 	mov	%1,a
-} if notSame(%1 %2)
+} if notSame(%1 %2), notSimilar(%2 '@spx')
 
 replace {
 	mov	r%1,%2
@@ -2743,7 +2746,7 @@ replace {
 	mov	%7,%15
 	mov	%8,%16
 	;	Peephole 238.a	removed 4 redundant moves
-} if notSame(%1 %2 %3 %4 %5 %6 %7 %8), notVolatile(%1 %2 %3 %4 %9 %10 %11 %12)
+} if isPort('mcs51'), notSame(%1 %2 %3 %4 %5 %6 %7 %8), notVolatile(%1 %2 %3 %4 %9 %10 %11 %12)
 
 // applies to device/lib/log10f.c
 replace {
@@ -2780,7 +2783,9 @@ replace {
 	mov	%3,%7
 	mov	%4,%8
 	;	Peephole 238.c	removed 2 redundant moves
-} if notSame(%1 %2 %3 %4), notVolatile(%1 %2 %5 %6)
+// MCS251 address materialization uses adjacent DPTR/DPXL moves.  Treating such
+// a sequence as a two-register round trip can remove a live @DPX store.
+} if isPort('mcs51'), notSame(%1 %2 %3 %4), notVolatile(%1 %2 %5 %6)
 
 // applies to f.e. support/regression/tests/bug-524209.c
 replace {
@@ -2813,7 +2818,7 @@ replace restart {
 	;	Peephole 240	use clr instead of addc a,#0
 	clr	a
 	addc	a,%1
-}
+} if notSame(%1 '@dpx'), notSimilar(%1 '@spx')
 
 // peepholes 241.a0 to 241.d and 241.e0 to 241.h need to be in order
 replace {
@@ -4018,7 +4023,7 @@ replace {
 	mov	a,%1
 	;	Peephole 254	optimized left shift
 	add	a,%1
-} if notVolatile %1
+} if notVolatile(%1), notSimilar(%1 '@spx')
 
 // applies to f.e. switch.c
 replace {
@@ -5064,7 +5069,7 @@ replace restart {
 } by {
 	mov	%2, a
 	;	Peephole 303 used a directly instead of going through %1
-} if notVolatile(%1), notUsed(%1)
+} if notVolatile(%1), notUsed(%1), canAssign(%2 'a')
 
 // applies to: void test( char c ) { if( c ) func1(); else func2(); }
 replace {

@@ -30,7 +30,7 @@ enum
   AOP_LIT = 1,
   AOP_REG, AOP_DIR, AOP_SFR,
   AOP_DPTR, AOP_R0, AOP_R1,
-  AOP_STK, AOP_IMMD, AOP_STR,
+  AOP_STK, AOP_MCS251_STK, AOP_IMMD, AOP_STR,
   AOP_CRY, AOP_ACC, AOP_DUMMY
 };
 
@@ -49,6 +49,7 @@ typedef struct asmop
      AOP_R0/R1  -  r0/r1 contains address of operand
      AOP_STK    -  should be pushed on stack this
                    can happen only for the result
+     AOP_MCS251_STK - MCS251 automatic object addressed relative to SPX
      AOP_IMMD   -  immediate value for eg. remateriazable 
      AOP_CRY    -  carry contains the value of this
      AOP_STR    -  array of strings
@@ -72,10 +73,11 @@ typedef struct asmop
     struct
     {
       int from_cast_remat;      /* cast remat created this : immd2 field used for highest order */
+      bool mcs251_pdata_page;     /* high bytes come from the live MXAX:P2 page */
       char *aop_immd1;          /* if immediate others are implied */
       char *aop_immd2;          /* cast remat will generate this   */
     } aop_immd;
-    symbol *aop_sym;            /* symbol when AOP_STK */
+    symbol *aop_sym;            /* symbol when AOP_STK or MCS251 AOP_DPTR */
     const char *aop_str[8];     /* just a string array containing the location */
   }
   aopu;
@@ -100,4 +102,3 @@ extern const char *fReturn8051[];
 extern unsigned fReturnSizeMCS51;
 
 #endif
-
