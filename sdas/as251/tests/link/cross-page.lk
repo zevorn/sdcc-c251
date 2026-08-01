@@ -1,0 +1,6 @@
+-mwx
+-i cross-page.ihx
+-b PAGECALLER = 0xff0000
+-b PAGECALLEE = 0xff0800
+page-a.rel
+page-b.rel

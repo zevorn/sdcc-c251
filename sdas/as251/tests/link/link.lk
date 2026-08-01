@@ -1,0 +1,5 @@
+-mwx
+-i linked.ihx
+-b MCS251CODE = 0xff0000
+reloc-a.rel
+reloc-b.rel

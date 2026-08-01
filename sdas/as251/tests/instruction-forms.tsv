@@ -1,0 +1,270 @@
+id	mnemonic	operands	assembly	source_bytes	binary_bytes	flags	reference
+add_a_rn	add	A,Rn	add a,r6	a5 2e	2e	CY,AC,OV,N,Z	Intel A-19/A-28
+add_a_dir8	add	A,dir8	add a,0x30	25 30	25 30	CY,AC,OV,N,Z	Intel A-19/A-28
+add_a_at_ri	add	A,@Ri	add a,@r1	a5 27	27	CY,AC,OV,N,Z	Intel A-19/A-28
+add_a_imm8	add	A,#data	add a,#0x5a	24 5a	24 5a	CY,AC,OV,N,Z	Intel A-19/A-28
+add_rm_rm	add	Rmd,Rms	add r3,r12	2c 3c	a5 2c 3c	CY,AC,OV,N,Z	Intel A-8/A-19
+add_wr_wr	add	WRjd,WRjs	add wr4,wr10	2d 25	a5 2d 25	CY,AC,OV,N,Z	Intel A-8/A-19
+add_dr_dr	add	DRkd,DRks	add dr12,dr28	2f 37	a5 2f 37	CY,AC,OV,N,Z	Intel A-8/A-19
+add_rm_imm8	add	Rm,#data	add r3,#0x5a	2e 30 5a	a5 2e 30 5a	CY,AC,OV,N,Z	Intel A-8/A-19
+add_wr_imm16	add	WRj,#data16	add wr4,#0x1234	2e 24 12 34	a5 2e 24 12 34	CY,AC,OV,N,Z	Intel A-8/A-19
+add_dr_imm16_zero	add	DRk,#0data16	add dr12,#0x1234	2e 38 12 34	a5 2e 38 12 34	CY,AC,OV,N,Z	Intel A-8/A-19
+add_rm_dir8	add	Rm,dir8	add r3,0x30	2e 31 30	a5 2e 31 30	CY,AC,OV,N,Z	Intel A-8/A-19
+add_wr_dir8	add	WRj,dir8	add wr4,0x30	2e 25 30	a5 2e 25 30	CY,AC,OV,N,Z	Intel A-8/A-19
+add_rm_dir16	add	Rm,dir16	add r3,0x1234	2e 33 12 34	a5 2e 33 12 34	CY,AC,OV,N,Z	Intel A-8/A-19
+add_wr_dir16	add	WRj,dir16	add wr4,0x1234	2e 27 12 34	a5 2e 27 12 34	CY,AC,OV,N,Z	Intel A-8/A-19
+add_rm_at_wr	add	Rm,@WRj	add r3,@wr6	2e 39 30	a5 2e 39 30	CY,AC,OV,N,Z	Intel A-8/A-19
+add_rm_at_dr	add	Rm,@DRk	add r3,@dr16	2e 4b 30	a5 2e 4b 30	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_rm_rm	sub	Rmd,Rms	sub r3,r12	9c 3c	a5 9c 3c	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_wr_wr	sub	WRjd,WRjs	sub wr4,wr10	9d 25	a5 9d 25	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_dr_dr	sub	DRkd,DRks	sub dr12,dr28	9f 37	a5 9f 37	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_rm_imm8	sub	Rm,#data	sub r3,#0x5a	9e 30 5a	a5 9e 30 5a	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_wr_imm16	sub	WRj,#data16	sub wr4,#0x1234	9e 24 12 34	a5 9e 24 12 34	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_dr_imm16_zero	sub	DRk,#0data16	sub dr12,#0x1234	9e 38 12 34	a5 9e 38 12 34	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_rm_dir8	sub	Rm,dir8	sub r3,0x30	9e 31 30	a5 9e 31 30	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_wr_dir8	sub	WRj,dir8	sub wr4,0x30	9e 25 30	a5 9e 25 30	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_rm_dir16	sub	Rm,dir16	sub r3,0x1234	9e 33 12 34	a5 9e 33 12 34	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_wr_dir16	sub	WRj,dir16	sub wr4,0x1234	9e 27 12 34	a5 9e 27 12 34	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_rm_at_wr	sub	Rm,@WRj	sub r3,@wr6	9e 39 30	a5 9e 39 30	CY,AC,OV,N,Z	Intel A-8/A-19
+sub_rm_at_dr	sub	Rm,@DRk	sub r3,@dr16	9e 4b 30	a5 9e 4b 30	CY,AC,OV,N,Z	Intel A-8/A-19
+addc_a_rn	addc	A,Rn	addc a,r6	a5 3e	3e	CY,AC,OV,N,Z	Intel A-19
+addc_a_dir8	addc	A,dir8	addc a,0x30	35 30	35 30	CY,AC,OV,N,Z	Intel A-19
+addc_a_at_ri	addc	A,@Ri	addc a,@r1	a5 37	37	CY,AC,OV,N,Z	Intel A-19
+addc_a_imm8	addc	A,#data	addc a,#0x5a	34 5a	34 5a	CY,AC,OV,N,Z	Intel A-19
+subb_a_rn	subb	A,Rn	subb a,r6	a5 9e	9e	CY,AC,OV,N,Z	Intel A-19
+subb_a_dir8	subb	A,dir8	subb a,0x30	95 30	95 30	CY,AC,OV,N,Z	Intel A-19
+subb_a_at_ri	subb	A,@Ri	subb a,@r1	a5 97	97	CY,AC,OV,N,Z	Intel A-19
+subb_a_imm8	subb	A,#data	subb a,#0x5a	94 5a	94 5a	CY,AC,OV,N,Z	Intel A-19
+cmp_rm_rm	cmp	Rmd,Rms	cmp r3,r12	bc 3c	a5 bc 3c	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_wr_wr	cmp	WRjd,WRjs	cmp wr4,wr10	bd 25	a5 bd 25	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_dr_dr	cmp	DRkd,DRks	cmp dr12,dr28	bf 37	a5 bf 37	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_rm_imm8	cmp	Rm,#data	cmp r3,#0x5a	be 30 5a	a5 be 30 5a	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_wr_imm16	cmp	WRj,#data16	cmp wr4,#0x1234	be 24 12 34	a5 be 24 12 34	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_dr_imm16_zero	cmp	DRk,#0data16	cmp dr12,#0x1234	be 38 12 34	a5 be 38 12 34	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_dr_imm16_one	cmp	DRk,#1data16	cmp dr12,#-3	be 3c ff fd	a5 be 3c ff fd	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_rm_dir8	cmp	Rm,dir8	cmp r3,0x30	be 31 30	a5 be 31 30	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_wr_dir8	cmp	WRj,dir8	cmp wr4,0x30	be 25 30	a5 be 25 30	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_rm_dir16	cmp	Rm,dir16	cmp r3,0x1234	be 33 12 34	a5 be 33 12 34	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_wr_dir16	cmp	WRj,dir16	cmp wr4,0x1234	be 27 12 34	a5 be 27 12 34	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_rm_at_wr	cmp	Rm,@WRj	cmp r3,@wr6	be 39 30	a5 be 39 30	CY,AC,OV,N,Z	Intel A-8/A-20
+cmp_rm_at_dr	cmp	Rm,@DRk	cmp r3,@dr16	be 4b 30	a5 be 4b 30	CY,AC,OV,N,Z	Intel A-8/A-20
+inc_a	inc	A	inc a	04	04	N,Z	Intel A-15/A-16/A-21
+inc_rn	inc	Rn	inc r5	0b 50	0d	N,Z	Intel A-15/A-16/A-21
+inc_dir8	inc	dir8	inc 0x30	05 30	05 30	N,Z	Intel A-15/A-16/A-21
+inc_at_ri	inc	@Ri	inc @r1	a5 07	07	N,Z	Intel A-15/A-16/A-21
+inc_rm_short	inc	Rm,#short	inc r10,#2	0b a1	a5 0b a1	N,Z	Intel A-15/A-16/A-21
+inc_wr_short	inc	WRj,#short	inc wr4,#2	0b 25	a5 0b 25	N,Z	Intel A-15/A-16/A-21
+inc_dr_short	inc	DRk,#short	inc dr12,#4	0b 3e	a5 0b 3e	N,Z	Intel A-15/A-16/A-21
+dec_a	dec	A	dec a	14	14	N,Z	Intel A-15/A-16/A-21
+dec_rn	dec	Rn	dec r5	1b 50	1d	N,Z	Intel A-15/A-16/A-21
+dec_dir8	dec	dir8	dec 0x30	15 30	15 30	N,Z	Intel A-15/A-16/A-21
+dec_at_ri	dec	@Ri	dec @r1	a5 17	17	N,Z	Intel A-15/A-16/A-21
+dec_rm_short	dec	Rm,#short	dec r10,#2	1b a1	a5 1b a1	N,Z	Intel A-15/A-16/A-21
+dec_wr_short	dec	WRj,#short	dec wr4,#2	1b 25	a5 1b 25	N,Z	Intel A-15/A-16/A-21
+dec_dr_short	dec	DRk,#short	dec dr12,#4	1b 3e	a5 1b 3e	N,Z	Intel A-15/A-16/A-21
+inc_dptr	inc	DPTR	inc dptr	a3	a3	-	Intel A-21
+mul_ab	mul	AB	mul ab	a4	a4	CY,OV,N,Z	Intel A-22
+mul_rm_rm	mul	Rmd,Rms	mul r3,r12	ac 3c	a5 ac 3c	CY,OV,N,Z	Intel A-8/A-22
+mul_wr_wr	mul	WRjd,WRjs	mul wr4,wr10	ad 25	a5 ad 25	CY,OV,N,Z	Intel A-8/A-22
+div_ab	div	AB	div ab	84	84	CY,OV,N,Z	Intel A-22
+div_rm_rm	div	Rmd,Rms	div r3,r12	8c 3c	a5 8c 3c	CY,OV,N,Z	Intel A-8/A-22
+div_wr_wr	div	WRjd,WRjs	div wr4,wr10	8d 25	a5 8d 25	CY,OV,N,Z	Intel A-8/A-22
+da_a	da	A	da a	d4	d4	CY	Intel A-22
+orl_a_rn	orl	A,Rn	orl a,r6	a5 4e	4e	N,Z	Intel A-8/A-23
+orl_a_dir8	orl	A,dir8	orl a,0x30	45 30	45 30	N,Z	Intel A-8/A-23
+orl_a_at_ri	orl	A,@Ri	orl a,@r1	a5 47	47	N,Z	Intel A-8/A-23
+orl_a_imm8	orl	A,#data	orl a,#0x5a	44 5a	44 5a	N,Z	Intel A-8/A-23
+orl_dir8_a	orl	dir8,A	orl 0x30,a	42 30	42 30	N,Z	Intel A-8/A-23
+orl_dir8_imm8	orl	dir8,#data	orl 0x30,#0x5a	43 30 5a	43 30 5a	N,Z	Intel A-8/A-23
+orl_rm_rm	orl	Rmd,Rms	orl r3,r12	4c 3c	a5 4c 3c	N,Z	Intel A-8/A-23
+orl_wr_wr	orl	WRjd,WRjs	orl wr4,wr10	4d 25	a5 4d 25	N,Z	Intel A-8/A-23
+orl_rm_imm8	orl	Rm,#data	orl r3,#0x5a	4e 30 5a	a5 4e 30 5a	N,Z	Intel A-8/A-23
+orl_wr_imm16	orl	WRj,#data16	orl wr4,#0x1234	4e 24 12 34	a5 4e 24 12 34	N,Z	Intel A-8/A-23
+orl_rm_dir8	orl	Rm,dir8	orl r3,0x30	4e 31 30	a5 4e 31 30	N,Z	Intel A-8/A-23
+orl_wr_dir8	orl	WRj,dir8	orl wr4,0x30	4e 25 30	a5 4e 25 30	N,Z	Intel A-8/A-23
+orl_rm_dir16	orl	Rm,dir16	orl r3,0x1234	4e 33 12 34	a5 4e 33 12 34	N,Z	Intel A-8/A-23
+orl_wr_dir16	orl	WRj,dir16	orl wr4,0x1234	4e 27 12 34	a5 4e 27 12 34	N,Z	Intel A-8/A-23
+orl_rm_at_wr	orl	Rm,@WRj	orl r3,@wr6	4e 39 30	a5 4e 39 30	N,Z	Intel A-8/A-23
+orl_rm_at_dr	orl	Rm,@DRk	orl r3,@dr16	4e 4b 30	a5 4e 4b 30	N,Z	Intel A-8/A-23
+anl_a_rn	anl	A,Rn	anl a,r6	a5 5e	5e	N,Z	Intel A-8/A-23
+anl_a_dir8	anl	A,dir8	anl a,0x30	55 30	55 30	N,Z	Intel A-8/A-23
+anl_a_at_ri	anl	A,@Ri	anl a,@r1	a5 57	57	N,Z	Intel A-8/A-23
+anl_a_imm8	anl	A,#data	anl a,#0x5a	54 5a	54 5a	N,Z	Intel A-8/A-23
+anl_dir8_a	anl	dir8,A	anl 0x30,a	52 30	52 30	N,Z	Intel A-8/A-23
+anl_dir8_imm8	anl	dir8,#data	anl 0x30,#0x5a	53 30 5a	53 30 5a	N,Z	Intel A-8/A-23
+anl_rm_rm	anl	Rmd,Rms	anl r3,r12	5c 3c	a5 5c 3c	N,Z	Intel A-8/A-23
+anl_wr_wr	anl	WRjd,WRjs	anl wr4,wr10	5d 25	a5 5d 25	N,Z	Intel A-8/A-23
+anl_rm_imm8	anl	Rm,#data	anl r3,#0x5a	5e 30 5a	a5 5e 30 5a	N,Z	Intel A-8/A-23
+anl_wr_imm16	anl	WRj,#data16	anl wr4,#0x1234	5e 24 12 34	a5 5e 24 12 34	N,Z	Intel A-8/A-23
+anl_rm_dir8	anl	Rm,dir8	anl r3,0x30	5e 31 30	a5 5e 31 30	N,Z	Intel A-8/A-23
+anl_wr_dir8	anl	WRj,dir8	anl wr4,0x30	5e 25 30	a5 5e 25 30	N,Z	Intel A-8/A-23
+anl_rm_dir16	anl	Rm,dir16	anl r3,0x1234	5e 33 12 34	a5 5e 33 12 34	N,Z	Intel A-8/A-23
+anl_wr_dir16	anl	WRj,dir16	anl wr4,0x1234	5e 27 12 34	a5 5e 27 12 34	N,Z	Intel A-8/A-23
+anl_rm_at_wr	anl	Rm,@WRj	anl r3,@wr6	5e 39 30	a5 5e 39 30	N,Z	Intel A-8/A-23
+anl_rm_at_dr	anl	Rm,@DRk	anl r3,@dr16	5e 4b 30	a5 5e 4b 30	N,Z	Intel A-8/A-23
+xrl_a_rn	xrl	A,Rn	xrl a,r6	a5 6e	6e	N,Z	Intel A-8/A-23
+xrl_a_dir8	xrl	A,dir8	xrl a,0x30	65 30	65 30	N,Z	Intel A-8/A-23
+xrl_a_at_ri	xrl	A,@Ri	xrl a,@r1	a5 67	67	N,Z	Intel A-8/A-23
+xrl_a_imm8	xrl	A,#data	xrl a,#0x5a	64 5a	64 5a	N,Z	Intel A-8/A-23
+xrl_dir8_a	xrl	dir8,A	xrl 0x30,a	62 30	62 30	N,Z	Intel A-8/A-23
+xrl_dir8_imm8	xrl	dir8,#data	xrl 0x30,#0x5a	63 30 5a	63 30 5a	N,Z	Intel A-8/A-23
+xrl_rm_rm	xrl	Rmd,Rms	xrl r3,r12	6c 3c	a5 6c 3c	N,Z	Intel A-8/A-23
+xrl_wr_wr	xrl	WRjd,WRjs	xrl wr4,wr10	6d 25	a5 6d 25	N,Z	Intel A-8/A-23
+xrl_rm_imm8	xrl	Rm,#data	xrl r3,#0x5a	6e 30 5a	a5 6e 30 5a	N,Z	Intel A-8/A-23
+xrl_wr_imm16	xrl	WRj,#data16	xrl wr4,#0x1234	6e 24 12 34	a5 6e 24 12 34	N,Z	Intel A-8/A-23
+xrl_rm_dir8	xrl	Rm,dir8	xrl r3,0x30	6e 31 30	a5 6e 31 30	N,Z	Intel A-8/A-23
+xrl_wr_dir8	xrl	WRj,dir8	xrl wr4,0x30	6e 25 30	a5 6e 25 30	N,Z	Intel A-8/A-23
+xrl_rm_dir16	xrl	Rm,dir16	xrl r3,0x1234	6e 33 12 34	a5 6e 33 12 34	N,Z	Intel A-8/A-23
+xrl_wr_dir16	xrl	WRj,dir16	xrl wr4,0x1234	6e 27 12 34	a5 6e 27 12 34	N,Z	Intel A-8/A-23
+xrl_rm_at_wr	xrl	Rm,@WRj	xrl r3,@wr6	6e 39 30	a5 6e 39 30	N,Z	Intel A-8/A-23
+xrl_rm_at_dr	xrl	Rm,@DRk	xrl r3,@dr16	6e 4b 30	a5 6e 4b 30	N,Z	Intel A-8/A-23
+clr_a	clr	A	clr a	e4	e4	N,Z	Intel A-23
+cpl_a	cpl	A	cpl a	f4	f4	N,Z	Intel A-23
+rl_a	rl	A	rl a	23	23	N,Z	Intel A-23
+rlc_a	rlc	A	rlc a	33	33	CY,N,Z	Intel A-23
+rr_a	rr	A	rr a	03	03	N,Z	Intel A-23
+rrc_a	rrc	A	rrc a	13	13	CY,N,Z	Intel A-23
+sra_rm	sra	Rm	sra r3	0e 30	a5 0e 30	CY,N,Z	Intel A-17/A-23
+sra_wr	sra	WRj	sra wr4	0e 24	a5 0e 24	CY,N,Z	Intel A-17/A-23
+srl_rm	srl	Rm	srl r3	1e 30	a5 1e 30	CY,N,Z	Intel A-17/A-23
+srl_wr	srl	WRj	srl wr4	1e 24	a5 1e 24	CY,N,Z	Intel A-17/A-23
+sll_rm	sll	Rm	sll r3	3e 30	a5 3e 30	CY,N,Z	Intel A-17/A-23
+sll_wr	sll	WRj	sll wr4	3e 24	a5 3e 24	CY,N,Z	Intel A-17/A-23
+swap_a	swap	A	swap a	c4	c4	N,Z	Intel A-23
+mov_a_rn	mov	A,Rn	mov a,r6	a5 ee	ee	-	Intel A-6/A-24
+mov_a_dir8	mov	A,dir8	mov a,0x30	e5 30	e5 30	-	Intel A-6/A-24
+mov_a_at_ri	mov	A,@Ri	mov a,@r1	a5 e7	e7	-	Intel A-6/A-24
+mov_a_imm8	mov	A,#data	mov a,#0x5a	74 5a	74 5a	-	Intel A-6/A-24
+mov_rn_a	mov	Rn,A	mov r5,a	a5 fd	fd	-	Intel A-6/A-24
+mov_rn_dir8	mov	Rn,dir8	mov r5,0x30	7e 51 30	ad 30	-	Intel A-6/A-24
+mov_rn_imm8	mov	Rn,#data	mov r5,#0x5a	7e 50 5a	7d 5a	-	Intel A-6/A-24
+mov_dir8_a	mov	dir8,A	mov 0x30,a	f5 30	f5 30	-	Intel A-6/A-24
+mov_dir8_rn	mov	dir8,Rn	mov 0x30,r5	7a 51 30	8d 30	-	Intel A-6/A-24
+mov_dir8_dir8	mov	dir8,dir8	mov 0x30,0x31	85 31 30	85 31 30	-	Intel A-6/A-24
+mov_dir8_at_ri	mov	dir8,@Ri	mov 0x30,@r1	a5 87 30	87 30	-	Intel A-6/A-24
+mov_dir8_imm8	mov	dir8,#data	mov 0x30,#0x5a	75 30 5a	75 30 5a	-	Intel A-6/A-24
+mov_at_ri_a	mov	@Ri,A	mov @r1,a	a5 f7	f7	-	Intel A-6/A-24
+mov_at_ri_dir8	mov	@Ri,dir8	mov @r1,0x30	a5 a7 30	a7 30	-	Intel A-6/A-24
+mov_at_ri_imm8	mov	@Ri,#data	mov @r1,#0x5a	a5 77 5a	77 5a	-	Intel A-6/A-24
+mov_dptr_imm16	mov	DPTR,#data16	mov dptr,#0x1234	90 12 34	90 12 34	-	Intel A-6/A-24
+mov_rm_rm	mov	Rmd,Rms	mov r3,r12	7c 3c	a5 7c 3c	-	Intel A-8/A-14/A-24
+mov_wr_wr	mov	WRjd,WRjs	mov wr4,wr10	7d 25	a5 7d 25	-	Intel A-8/A-14/A-24
+mov_dr_dr	mov	DRkd,DRks	mov dr12,dr28	7f 37	a5 7f 37	-	Intel A-8/A-14/A-24
+mov_rm_imm8	mov	Rm,#data	mov r10,#0x5a	7e a0 5a	a5 7e a0 5a	-	Intel A-8/A-14/A-24
+mov_wr_imm16	mov	WRj,#data16	mov wr4,#0x1234	7e 24 12 34	a5 7e 24 12 34	-	Intel A-8/A-14/A-24
+mov_dr_imm16_zero	mov	DRk,#0data16	mov dr12,#0x1234	7e 38 12 34	a5 7e 38 12 34	-	Intel A-8/A-14/A-24
+mov_dr_imm16_one	mov	DRk,#1data16	mov dr12,#-3	7e 3c ff fd	a5 7e 3c ff fd	-	Intel A-8/A-14/A-24
+mov_dr_dir8	mov	DRk,dir8	mov dr12,0x30	7e 3d 30	a5 7e 3d 30	-	Intel A-8/A-14/A-24
+mov_dr_dir16	mov	DRk,dir16	mov dr12,0x1234	7e 3f 12 34	a5 7e 3f 12 34	-	Intel A-8/A-14/A-24
+mov_rm_dir8	mov	Rm,dir8	mov r10,0x30	7e a1 30	a5 7e a1 30	-	Intel A-8/A-14/A-24
+mov_wr_dir8	mov	WRj,dir8	mov wr4,0x30	7e 25 30	a5 7e 25 30	-	Intel A-8/A-14/A-24
+mov_rm_dir16	mov	Rm,dir16	mov r3,0x1234	7e 33 12 34	a5 7e 33 12 34	-	Intel A-8/A-14/A-24
+mov_wr_dir16	mov	WRj,dir16	mov wr4,0x1234	7e 27 12 34	a5 7e 27 12 34	-	Intel A-8/A-14/A-24
+mov_rm_at_wr	mov	Rm,@WRj	mov r3,@wr6	7e 39 30	a5 7e 39 30	-	Intel A-8/A-14/A-24
+mov_rm_at_dr	mov	Rm,@DRk	mov r3,@dr16	7e 4b 30	a5 7e 4b 30	-	Intel A-8/A-14/A-24
+mov_wr_at_wr	mov	WRjd,@WRjs	mov wr4,@wr10	0b 58 20	a5 0b 58 20	-	Intel A-8/A-14/A-24
+mov_wr_at_dr	mov	WRj,@DRk	mov wr4,@dr16	0b 4a 20	a5 0b 4a 20	-	Intel A-8/A-14/A-24
+mov_dir8_rm	mov	dir8,Rm	mov 0x30,r10	7a a1 30	a5 7a a1 30	-	Intel A-8/A-14/A-24
+mov_dir8_wr	mov	dir8,WRj	mov 0x30,wr4	7a 25 30	a5 7a 25 30	-	Intel A-8/A-14/A-24
+mov_dir16_rm	mov	dir16,Rm	mov 0x1234,r3	7a 33 12 34	a5 7a 33 12 34	-	Intel A-8/A-14/A-24
+mov_dir16_wr	mov	dir16,WRj	mov 0x1234,wr4	7a 27 12 34	a5 7a 27 12 34	-	Intel A-8/A-14/A-24
+mov_at_wr_rm	mov	@WRj,Rm	mov @wr6,r3	7a 39 30	a5 7a 39 30	-	Intel A-8/A-14/A-24
+mov_at_dr_rm	mov	@DRk,Rm	mov @dr16,r3	7a 4b 30	a5 7a 4b 30	-	Intel A-8/A-14/A-24
+mov_at_wr_wr	mov	@WRjd,WRjs	mov @wr6,wr4	1b 38 20	a5 1b 38 20	-	Intel A-8/A-14/A-24
+mov_at_dr_wr	mov	@DRk,WRj	mov @dr16,wr4	1b 4a 20	a5 1b 4a 20	-	Intel A-8/A-14/A-24
+mov_dir8_dr	mov	dir8,DRk	mov 0x30,dr12	7a 3d 30	a5 7a 3d 30	-	Intel A-8/A-14/A-24
+mov_dir16_dr	mov	dir16,DRk	mov 0x1234,dr12	7a 3f 12 34	a5 7a 3f 12 34	-	Intel A-8/A-14/A-24
+mov_rm_idx_wr	mov	Rm,@WRj+dis16	mov r10,@wr6+0x1234	09 a3 12 34	a5 09 a3 12 34	-	Intel A-8/A-14/A-24
+mov_wr_idx_wr	mov	WRj,@WRj+dis16	mov wr4,@wr6+0x1234	49 23 12 34	a5 49 23 12 34	-	Intel A-8/A-14/A-24
+mov_rm_idx_dr	mov	Rm,@DRk+dis24	mov r10,@dr16+0x1234	29 a4 12 34	a5 29 a4 12 34	-	Intel A-8/A-14/A-24
+mov_wr_idx_dr	mov	WRj,@DRk+dis24	mov wr4,@dr16+0x1234	69 24 12 34	a5 69 24 12 34	-	Intel A-8/A-14/A-24
+mov_idx_wr_rm	mov	@WRj+dis16,Rm	mov @wr6+0x1234,r10	19 a3 12 34	a5 19 a3 12 34	-	Intel A-8/A-14/A-24
+mov_idx_wr_wr	mov	@WRj+dis16,WRj	mov @wr6+0x1234,wr4	59 23 12 34	a5 59 23 12 34	-	Intel A-8/A-14/A-24
+mov_idx_dr_rm	mov	@DRk+dis24,Rm	mov @dr16+0x1234,r10	39 a4 12 34	a5 39 a4 12 34	-	Intel A-8/A-14/A-24
+mov_idx_dr_wr	mov	@DRk+dis24,WRj	mov @dr16+0x1234,wr4	79 24 12 34	a5 79 24 12 34	-	Intel A-8/A-14/A-24
+movh_dr_imm16	movh	DRk(hi),#data16	movh dr12,#0x1234	7a 3c 12 34	a5 7a 3c 12 34	-	Intel A-8/A-24
+movs_wr_rm	movs	WRj,Rm	movs wr4,r3	1a 23	a5 1a 23	N,Z	Intel A-14/A-24
+movz_wr_rm	movz	WRj,Rm	movz wr4,r3	0a 23	a5 0a 23	N,Z	Intel A-14/A-24
+movc_a_at_a_dptr	movc	A,@A+DPTR	movc a,@a+dptr	93	93	-	Intel A-24
+movc_a_at_a_pc	movc	A,@A+PC	movc a,@a+pc	83	83	-	Intel A-24
+movx_a_at_ri	movx	A,@Ri	movx a,@r1	e3	e3	-	Intel A-6/A-24
+movx_a_at_dptr	movx	A,@DPTR	movx a,@dptr	e0	e0	-	Intel A-6/A-24
+movx_at_ri_a	movx	@Ri,A	movx @r1,a	f3	f3	-	Intel A-6/A-24
+movx_at_dptr_a	movx	@DPTR,A	movx @dptr,a	f0	f0	-	Intel A-6/A-24
+xch_a_rn	xch	A,Rn	xch a,r5	a5 cd	cd	-	Intel A-25
+xch_a_dir8	xch	A,dir8	xch a,0x30	c5 30	c5 30	-	Intel A-25
+xch_a_at_ri	xch	A,@Ri	xch a,@r1	a5 c7	c7	-	Intel A-25
+xchd_a_at_ri	xchd	A,@Ri	xchd a,@r1	a5 d7	d7	-	Intel A-25
+push_dir8	push	dir8	push 0x30	c0 30	c0 30	-	Intel A-12/A-25
+push_imm8	push	#data	push #0x5a	ca 02 5a	a5 ca 02 5a	-	Intel A-12/A-25
+push_imm16	push	#data16	push #0x1234	ca 06 12 34	a5 ca 06 12 34	-	Intel A-12/A-25
+push_rm	push	Rm	push r3	ca 38	a5 ca 38	-	Intel A-12/A-25
+push_wr	push	WRj	push wr4	ca 29	a5 ca 29	-	Intel A-12/A-25
+push_dr	push	DRk	push dr12	ca 3b	a5 ca 3b	-	Intel A-12/A-25
+pop_dir8	pop	dir8	pop 0x30	d0 30	d0 30	-	Intel A-12/A-25
+pop_rm	pop	Rm	pop r3	da 38	a5 da 38	-	Intel A-12/A-25
+pop_wr	pop	WRj	pop wr4	da 29	a5 da 29	-	Intel A-12/A-25
+pop_dr	pop	DRk	pop dr12	da 3b	a5 da 3b	-	Intel A-12/A-25
+clr_cy	clr	CY	clr cy	c3	c3	CY	Intel A-10/A-11/A-26
+clr_bit51	clr	bit51	clr 0x0f	c2 0f	c2 0f	-	Intel A-10/A-11/A-26
+clr_bit	clr	bit	clr 0x30.5	a9 c5 30	a5 a9 c5 30	-	Intel A-10/A-11/A-26
+setb_cy	setb	CY	setb cy	d3	d3	CY	Intel A-10/A-11/A-26
+setb_bit51	setb	bit51	setb 0x0f	d2 0f	d2 0f	-	Intel A-10/A-11/A-26
+setb_bit	setb	bit	setb 0x30.5	a9 d5 30	a5 a9 d5 30	-	Intel A-10/A-11/A-26
+cpl_cy	cpl	CY	cpl cy	b3	b3	CY	Intel A-10/A-11/A-26
+cpl_bit51	cpl	bit51	cpl 0x0f	b2 0f	b2 0f	-	Intel A-10/A-11/A-26
+cpl_bit	cpl	bit	cpl 0x30.5	a9 b5 30	a5 a9 b5 30	-	Intel A-10/A-11/A-26
+anl_cy_bit51	anl	CY,bit51	anl cy,0x0f	82 0f	82 0f	CY	Intel A-10/A-11/A-26
+anl_cy_bit	anl	CY,bit	anl cy,0x30.5	a9 85 30	a5 a9 85 30	CY	Intel A-10/A-11/A-26
+anl_cy_not_bit51	anl	CY,/bit51	anl cy,/0x0f	b0 0f	b0 0f	CY	Intel A-10/A-11/A-26
+anl_cy_not_bit	anl	CY,/bit	anl cy,/0x30.5	a9 f5 30	a5 a9 f5 30	CY	Intel A-10/A-11/A-26
+orl_cy_bit51	orl	CY,bit51	orl cy,0x0f	72 0f	72 0f	CY	Intel A-10/A-11/A-26
+orl_cy_bit	orl	CY,bit	orl cy,0x30.5	a9 75 30	a5 a9 75 30	CY	Intel A-10/A-11/A-26
+orl_cy_not_bit51	orl	CY,/bit51	orl cy,/0x0f	a0 0f	a0 0f	CY	Intel A-10/A-11/A-26
+orl_cy_not_bit	orl	CY,/bit	orl cy,/0x30.5	a9 e5 30	a5 a9 e5 30	CY	Intel A-10/A-11/A-26
+mov_cy_bit51	mov	CY,bit51	mov cy,0x0f	a2 0f	a2 0f	CY	Intel A-10/A-11/A-26
+mov_cy_bit	mov	CY,bit	mov cy,0x30.5	a9 a5 30	a5 a9 a5 30	CY	Intel A-10/A-11/A-26
+mov_bit51_cy	mov	bit51,CY	mov 0x0f,cy	92 0f	92 0f	-	Intel A-10/A-11/A-26
+mov_bit_cy	mov	bit,CY	mov 0x30.5,cy	a9 95 30	a5 a9 95 30	-	Intel A-10/A-11/A-26
+acall_addr11	acall	addr11	acall 0x120600	d1 00	d1 00	-	Intel A-13/A-27
+ecall_at_dr	ecall	@DRk	ecall @dr16	99 48	a5 99 48	-	Intel A-13/A-27
+ecall_addr24	ecall	addr24	ecall 0x123456	9a 12 34 56	a5 9a 12 34 56	-	Intel A-13/A-27
+lcall_at_wr	lcall	@WRj	lcall @wr4	99 24	a5 99 24	-	Intel A-13/A-27
+lcall_addr16	lcall	addr16	lcall 0x123456	12 34 56	12 34 56	-	Intel A-13/A-27
+ret	ret	-	ret	22	22	-	Intel A-27
+eret	eret	-	eret	aa	a5 aa	-	Intel A-13/A-27
+reti	reti	-	reti	32	32	-	Intel A-27
+ajmp_addr11	ajmp	addr11	ajmp 0x120600	c1 00	c1 00	-	Intel A-13/A-27
+ejmp_addr24	ejmp	addr24	ejmp 0x123456	8a 12 34 56	a5 8a 12 34 56	-	Intel A-13/A-27
+ejmp_at_dr	ejmp	@DRk	ejmp @dr16	89 48	a5 89 48	-	Intel A-13/A-27
+ljmp_at_wr	ljmp	@WRj	ljmp @wr4	89 24	a5 89 24	-	Intel A-13/A-27
+ljmp_addr16	ljmp	addr16	ljmp 0x123456	02 34 56	02 34 56	-	Intel A-13/A-27
+sjmp_rel	sjmp	rel	sjmp {target}	80 00	80 00	-	Intel A-27
+jmp_at_a_dptr	jmp	@A+DPTR	jmp @a+dptr	73	73	-	Intel A-27
+jc_rel	jc	rel	jc {target}	40 00	40 00	-	Intel A-13/A-27
+jnc_rel	jnc	rel	jnc {target}	50 00	50 00	-	Intel A-13/A-27
+jz_rel	jz	rel	jz {target}	60 00	60 00	-	Intel A-13/A-27
+jnz_rel	jnz	rel	jnz {target}	70 00	70 00	-	Intel A-13/A-27
+je_rel	je	rel	je {target}	68 00	a5 68 00	-	Intel A-13/A-27
+jne_rel	jne	rel	jne {target}	78 00	a5 78 00	-	Intel A-13/A-27
+jg_rel	jg	rel	jg {target}	38 00	a5 38 00	-	Intel A-13/A-27
+jle_rel	jle	rel	jle {target}	28 00	a5 28 00	-	Intel A-13/A-27
+jsl_rel	jsl	rel	jsl {target}	48 00	a5 48 00	-	Intel A-13/A-27
+jsle_rel	jsle	rel	jsle {target}	08 00	a5 08 00	-	Intel A-13/A-27
+jsg_rel	jsg	rel	jsg {target}	18 00	a5 18 00	-	Intel A-13/A-27
+jsge_rel	jsge	rel	jsge {target}	58 00	a5 58 00	-	Intel A-13/A-27
+jbc_bit51_rel	jbc	bit51,rel	jbc 0x0f,{target}	10 0f 00	10 0f 00	-	Intel A-10/A-11/A-27
+jbc_bit_rel	jbc	bit,rel	jbc 0x30.5,{target}	a9 15 30 00	a5 a9 15 30 00	-	Intel A-10/A-11/A-27
+jb_bit51_rel	jb	bit51,rel	jb 0x0f,{target}	20 0f 00	20 0f 00	-	Intel A-10/A-11/A-27
+jb_bit_rel	jb	bit,rel	jb 0x30.5,{target}	a9 25 30 00	a5 a9 25 30 00	-	Intel A-10/A-11/A-27
+jnb_bit51_rel	jnb	bit51,rel	jnb 0x0f,{target}	30 0f 00	30 0f 00	-	Intel A-10/A-11/A-27
+jnb_bit_rel	jnb	bit,rel	jnb 0x30.5,{target}	a9 35 30 00	a5 a9 35 30 00	-	Intel A-10/A-11/A-27
+cjne_a_dir8_rel	cjne	A,dir8,rel	cjne a,0x30,{target}	b5 30 00	b5 30 00	-	Intel A-27
+cjne_a_imm8_rel	cjne	A,#data,rel	cjne a,#0x5a,{target}	b4 5a 00	b4 5a 00	-	Intel A-27
+cjne_rn_imm8_rel	cjne	Rn,#data,rel	cjne r6,#0x5a,{target}	a5 be 5a 00	be 5a 00	-	Intel A-27
+cjne_at_ri_imm8_rel	cjne	@Ri,#data,rel	cjne @r1,#0x5a,{target}	a5 b7 5a 00	b7 5a 00	-	Intel A-27
+djnz_rn_rel	djnz	Rn,rel	djnz r5,{target}	a5 dd 00	dd 00	-	Intel A-27
+djnz_dir8_rel	djnz	dir8,rel	djnz 0x30,{target}	d5 30 00	d5 30 00	-	Intel A-27
+trap	trap	-	trap	b9	a5 b9	-	Intel A-13/A-27
+nop	nop	-	nop	00	00	-	Intel A-27
+esc	esc	-	esc	a5	a5	-	Intel A-6

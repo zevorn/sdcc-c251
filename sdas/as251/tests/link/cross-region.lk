@@ -1,0 +1,6 @@
+-mwx
+-i cross-region.ihx
+-b CALLER = 0xff0000
+-b CALLEE = 0xfe0000
+cross-a.rel
+cross-b.rel
