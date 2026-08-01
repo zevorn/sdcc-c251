@@ -165,6 +165,7 @@ def main():
     parser.add_argument("--invalid-builtin-expect-source", required=True)
     parser.add_argument("--builtin-constant-p-source", required=True)
     parser.add_argument("--invalid-builtin-constant-p-source", required=True)
+    parser.add_argument("--has-builtin-source", required=True)
     parser.add_argument("--empty-declaration-source", required=True)
     parser.add_argument("--compound-literal-source", required=True)
     parser.add_argument("--statement-expression-source", required=True)
@@ -189,6 +190,7 @@ def main():
     invalid_builtin_constant_p_source = Path(
         args.invalid_builtin_constant_p_source
     ).resolve()
+    has_builtin_source = Path(args.has_builtin_source).resolve()
     empty_declaration_source = Path(args.empty_declaration_source).resolve()
     compound_literal_source = Path(args.compound_literal_source).resolve()
     statement_expression_source = Path(
@@ -206,6 +208,7 @@ def main():
         invalid_builtin_expect_source,
         builtin_constant_p_source,
         invalid_builtin_constant_p_source,
+        has_builtin_source,
         empty_declaration_source,
         compound_literal_source,
         statement_expression_source,
@@ -367,6 +370,15 @@ def main():
                     port,
                     mode,
                     False,
+                    workspace,
+                )
+            for mode in ("gnu11", "gnu17", "c11", "c17", None):
+                compile_source(
+                    sdcc,
+                    has_builtin_source,
+                    port,
+                    mode,
+                    True,
                     workspace,
                 )
             # Empty declarations at file scope are a GNU extension before

@@ -2452,6 +2452,23 @@ preProcess (char **envp)
       addSet (&preArgvSet,
               Safe_strdup ("-U__GCC_HAVE_DWARF2_CFI_ASM"));
 
+      /* Report only builtins accepted by the selected frontend mode. */
+      addPreprocessorDefine ("__has_builtin(x)",
+                             "__SDCC_HAS_BUILTIN_ ## x");
+      addPreprocessorDefine (
+        "__SDCC_HAS_BUILTIN___builtin_offsetof", "1");
+      addPreprocessorDefine (
+        "__SDCC_HAS_BUILTIN___builtin_unreachable", "1");
+      if (options.std_gnu)
+        {
+          addPreprocessorDefine (
+            "__SDCC_HAS_BUILTIN___builtin_constant_p", "1");
+          addPreprocessorDefine (
+            "__SDCC_HAS_BUILTIN___builtin_expect", "1");
+          addPreprocessorDefine (
+            "__SDCC_HAS_BUILTIN___builtin_types_compatible_p", "1");
+        }
+
       if (NULL != port->linker.rel_ext)
         {
           struct dbuf_s dbuf;

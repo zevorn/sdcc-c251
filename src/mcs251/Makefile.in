@@ -51,6 +51,8 @@ check: all
 			$(srcdir)/tests/gnu-builtin-constant-p.c \
 		--invalid-builtin-constant-p-source \
 			$(srcdir)/tests/gnu-builtin-constant-p-invalid.c \
+		--has-builtin-source \
+			$(srcdir)/tests/gnu-has-builtin.c \
 		--empty-declaration-source \
 			$(srcdir)/tests/gnu-empty-declaration.c \
 		--compound-literal-source \
