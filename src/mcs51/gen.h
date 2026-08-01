@@ -63,6 +63,7 @@ typedef struct asmop
   bool aop_lit_is_funcptr : 1;
   bool aop_litimmd_is_gptr : 1;
   bool aop_is_volatile : 1;
+  bool aop_is_aggregate : 1;
   unsigned short allocated;     /* number of times allocated */
   union
   {

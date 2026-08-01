@@ -1335,7 +1335,11 @@ PORT MCS51_PORT_OBJECT =
   hasExtBitOp,                  /* hasExtBitOp */
   oclsExpense,                  /* oclsExpense */
   FALSE,                        /* use_dw_for_init */
-  TRUE,                         /* little_endian */
+#ifdef MCS251_PORT
+  FALSE,                        /* Native MCS251 scalars are big-endian. */
+#else
+  TRUE,                         /* MCS51 keeps the SDCC little-endian ABI. */
+#endif
   0,                            /* leave lt */
   0,                            /* leave gt */
   1,                            /* transform <= to ! > */

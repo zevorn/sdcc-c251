@@ -279,13 +279,13 @@ decrementFarPointer (void)
 static void
 loadFarPointerByte (bool code)
 {
-  if (TARGET_IS_MCS251)
-    emitcode ("mov", "a,@dpx");
-  else if (code)
+  if (code)
     {
       emitcode ("clr", "a");
       emitcode ("movc", "a,@a+dptr");
     }
+  else if (TARGET_IS_MCS251)
+    emitcode ("mov", "a,@dpx");
   else
     emitcode ("movx", "a,@dptr");
 }
@@ -745,10 +745,17 @@ newAsmop (short type)
   aop->aop_litimmd_is_gptr = false;
   aop->aop_lit_is_funcptr = false;
   aop->aop_is_volatile = false;
+  aop->aop_is_aggregate = false;
   aop->allocated = 1;
   memset (aop->regs, -1, sizeof(aop->regs));
   aop->valinfo.anything = true;
   return aop;
+}
+
+static void
+aopSetOperandType (asmop *aop, const operand *op)
+{
+  aop->aop_is_aggregate = IS_AGGREGATE (operandType (op));
 }
 
 /*-----------------------------------------------------------------*/
@@ -862,8 +869,8 @@ mcs251FormatStackOperand (char *buffer, size_t size, int displacement)
 }
 
 /* Materialize a stack object's flat address before changing SPX, then place
-   its little-endian bytes on the hardware stack.  Callers can pop the bytes
-   into an arbitrary result without DPX aliasing that result's storage. */
+   its native big-endian bytes on the hardware stack.  Callers can pop the
+   bytes into an arbitrary result without DPX aliasing that result's storage. */
 static void
 mcs251PushStackAddress (symbol *sym, int extraOffset, int size)
 {
@@ -876,7 +883,7 @@ mcs251PushStackAddress (symbol *sym, int extraOffset, int size)
   else if (displacement < 0)
     emitcode ("sub", "dpx,#%d", -displacement);
 
-  for (int offset = 0; offset < size; ++offset)
+  for (int offset = size - 1; offset >= 0; --offset)
     {
       if (offset == 0)
         emitpush ("dpl");
@@ -1279,6 +1286,7 @@ aopOp (operand *op, iCode *ic, bool result)
       aop->aop_litimmd_is_gptr = opIsGptr (op);
       aop->aop_is_volatile = isOperandVolatile (op, false);
       aop->valinfo = getOperandValinfo (ic, op);
+      aopSetOperandType (aop, op);
       return;
     }
 
@@ -1286,6 +1294,7 @@ aopOp (operand *op, iCode *ic, bool result)
   if (op->aop)
     {
       op->aop->allocated++;
+      aopSetOperandType (op->aop, op);
       return;
     }
 
@@ -1293,6 +1302,7 @@ aopOp (operand *op, iCode *ic, bool result)
   if (IS_TRUE_SYMOP (op))
     {
       op->aop = aopForSym (ic, OP_SYMBOL (op), result);
+      aopSetOperandType (op->aop, op);
       if (!result)
         op->aop->valinfo = getOperandValinfo (ic, op);
       return;
@@ -1314,6 +1324,7 @@ aopOp (operand *op, iCode *ic, bool result)
       sym->aop = op->aop = aop = newAsmop (AOP_CRY);
       aop->aopu.aop_dir = "c";
       aop->size = sym->ruonly ? 1 : 0;
+      aopSetOperandType (aop, op);
       return;
     }
 
@@ -1328,6 +1339,7 @@ aopOp (operand *op, iCode *ic, bool result)
           sym->aop = op->aop = aop = aopForRemat (sym);
           aop->size = operandSize (op);
           aop->aop_litimmd_is_gptr = (aop->size == GPTRSIZE && (IS_GENPTR (sym->type) || IFFUNC_ISBANKEDCALL (sym->type)));
+          aopSetOperandType (aop, op);
           return;
         }
 
@@ -1341,6 +1353,7 @@ aopOp (operand *op, iCode *ic, bool result)
               aop->aopu.aop_reg[i] = &regs8051[i ? B_IDX : A_IDX];
               aop->regs[i ? B_IDX : A_IDX] = i;
             }
+          aopSetOperandType (aop, op);
           return;
         }
 
@@ -1352,6 +1365,7 @@ aopOp (operand *op, iCode *ic, bool result)
           aop->size = getSize (sym->type);
           for (i = 0; i < aop->size; i++)
             aop->aopu.aop_str[i] = fReturn[i];
+          aopSetOperandType (aop, op);
           return;
         }
 
@@ -1374,12 +1388,14 @@ aopOp (operand *op, iCode *ic, bool result)
               sym->usl.spillLoc->aop = oldAsmOp;
             }
           aop->size = getSize (sym->type);
+          aopSetOperandType (aop, op);
           return;
         }
 
       /* else must be a dummy iTemp */
       sym->aop = op->aop = aop = newAsmop (AOP_DUMMY);
       aop->size = getSize (sym->type);
+      aopSetOperandType (aop, op);
       return;
     }
 
@@ -1390,6 +1406,7 @@ aopOp (operand *op, iCode *ic, bool result)
       aop->size = sym->nRegs;   //1???
       aop->aopu.aop_reg[0] = sym->regs[0];
       aop->aopu.aop_dir = sym->regs[0]->name;
+      aopSetOperandType (aop, op);
       return;
     }
 
@@ -1401,6 +1418,7 @@ aopOp (operand *op, iCode *ic, bool result)
       aop->aopu.aop_reg[i] = sym->regs[i];
       aop->regs[sym->regs[i]->rIdx] = i;
     }
+  aopSetOperandType (aop, op);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1771,6 +1789,24 @@ aopGetUsesAcc (const asmop* aop, int offset)
     }
 }
 
+/* Map the generator's least-significant-byte-first offsets to the physical
+   byte address of a scalar object in the native big-endian MCS251 ABI. */
+static int
+mcs251ScalarByteOffset (const asmop *aop, int offset)
+{
+  if (TARGET_IS_MCS251 && !aop->aop_is_aggregate && aop->size > 1)
+    return aop->size - offset - 1;
+  return offset;
+}
+
+static int
+mcs251PointerByteOffset (sym_link *type, int physicalOffset, int size)
+{
+  if (TARGET_IS_MCS251 && size > 1 && !IS_AGGREGATE (type))
+    return size - physicalOffset - 1;
+  return physicalOffset;
+}
+
 /*-------------------------------------------------------------------*/
 /* aopGet - for fetching value of the aop                            */
 /*-------------------------------------------------------------------*/
@@ -1828,9 +1864,12 @@ aopGet (asmop *aop, int offset, bool bit16, bool dname)
           break;
 
         case AOP_DPTR:
+          {
+            int physicalOffset = mcs251ScalarByteOffset (aop, offset);
+
           if (TARGET_IS_MCS251 && aop->aopu.aop_sym)
             {
-              mcs251LoadFarSymbol (aop, offset);
+              mcs251LoadFarSymbol (aop, physicalOffset);
               loadFarPointerByte (aop->code);
             }
           else if (!TARGET_IS_MCS251 && aop->code && aop->coff == 0 && offset >= 1)
@@ -1840,30 +1879,33 @@ aopGet (asmop *aop, int offset, bool bit16, bool dname)
             }
           else
             {
-              while (offset > aop->coff)
+              while (physicalOffset > aop->coff)
                 {
                   incrementFarPointer ();
                   aop->coff++;
                 }
 
-              while (offset < aop->coff)
+              while (physicalOffset < aop->coff)
                 {
                   decrementFarPointer ();
                   aop->coff--;
                 }
 
-              aop->coff = offset;
+              aop->coff = physicalOffset;
               loadFarPointerByte (aop->code);
             }
           dbuf_append_str (&dbuf, dname ? "acc" : "a");
+          }
           break;
 
         case AOP_MCS251_STK:
           {
             char stackOperand[32];
+            int physicalOffset = mcs251ScalarByteOffset (aop, offset);
 
             mcs251FormatStackOperand (stackOperand, sizeof (stackOperand),
-                                    stackoffset (aop->aopu.aop_sym) + offset);
+                                    stackoffset (aop->aopu.aop_sym) +
+                                    physicalOffset);
             emitcode ("mov", "a,%s", stackOperand);
             dbuf_append_str (&dbuf, dname ? "acc" : "a");
           }
@@ -1898,18 +1940,23 @@ aopGet (asmop *aop, int offset, bool bit16, bool dname)
 
         case AOP_DIR:
         case AOP_SFR:
-          if (aop->type == AOP_SFR && aop->size > 1)
-            {
-              dbuf_printf (&dbuf, "((%s >> %d) & 0xFF)", aop->aopu.aop_dir, offset * 8);
-            }
-          else if (offset)
-            {
-              dbuf_printf (&dbuf, "(%s + %d)", aop->aopu.aop_dir, offset);
-            }
-          else
-            {
-              dbuf_printf (&dbuf, "%s", aop->aopu.aop_dir);
-            }
+          {
+            int physicalOffset = aop->type == AOP_DIR ?
+              mcs251ScalarByteOffset (aop, offset) : offset;
+
+            if (aop->type == AOP_SFR && aop->size > 1)
+              {
+                dbuf_printf (&dbuf, "((%s >> %d) & 0xFF)", aop->aopu.aop_dir, offset * 8);
+              }
+            else if (physicalOffset)
+              {
+                dbuf_printf (&dbuf, "(%s + %d)", aop->aopu.aop_dir, physicalOffset);
+              }
+            else
+              {
+                dbuf_printf (&dbuf, "%s", aop->aopu.aop_dir);
+              }
+          }
           break;
 
         case AOP_ACC:
@@ -2041,27 +2088,32 @@ aopPut (asmop *aop, const char *s, int offset)
 
     case AOP_DIR:
     case AOP_SFR:
-      if (aop->type == AOP_SFR && aop->size > 1)
-        {
-          dbuf_printf (&dbuf, "((%s >> %d) & 0xFF)", aop->aopu.aop_dir, offset * 8);
-        }
-      else if (offset)
-        {
-          dbuf_printf (&dbuf, "(%s + %d)", aop->aopu.aop_dir, offset);
-        }
-      else
-        {
-          dbuf_append_str (&dbuf, aop->aopu.aop_dir);
-        }
+      {
+        int physicalOffset = aop->type == AOP_DIR ?
+          mcs251ScalarByteOffset (aop, offset) : offset;
 
-      if (!EQ (dbuf_c_str (&dbuf), s) || aop->aop_is_volatile)
-        {
-          emitcode ("mov", "%s,%s", dbuf_c_str (&dbuf), s);
-        }
-      if (EQ (dbuf_c_str (&dbuf), "acc"))
-        {
-          accuse = TRUE;
-        }
+        if (aop->type == AOP_SFR && aop->size > 1)
+          {
+            dbuf_printf (&dbuf, "((%s >> %d) & 0xFF)", aop->aopu.aop_dir, offset * 8);
+          }
+        else if (physicalOffset)
+          {
+            dbuf_printf (&dbuf, "(%s + %d)", aop->aopu.aop_dir, physicalOffset);
+          }
+        else
+          {
+            dbuf_append_str (&dbuf, aop->aopu.aop_dir);
+          }
+
+        if (!EQ (dbuf_c_str (&dbuf), s) || aop->aop_is_volatile)
+          {
+            emitcode ("mov", "%s,%s", dbuf_c_str (&dbuf), s);
+          }
+        if (EQ (dbuf_c_str (&dbuf), "acc"))
+          {
+            accuse = TRUE;
+          }
+      }
       break;
 
     case AOP_ACC:
@@ -2087,6 +2139,9 @@ aopPut (asmop *aop, const char *s, int offset)
       break;
 
     case AOP_DPTR:
+      {
+      int physicalOffset = mcs251ScalarByteOffset (aop, offset);
+
       if (aop->code)
         {
           werror (E_INTERNAL_ERROR, __FILE__, __LINE__, "opPutwriting to code space");
@@ -2098,35 +2153,38 @@ aopPut (asmop *aop, const char *s, int offset)
 
       if (TARGET_IS_MCS251 && aop->aopu.aop_sym)
         {
-          mcs251LoadFarSymbol (aop, offset);
+          mcs251LoadFarSymbol (aop, physicalOffset);
           storeFarPointerByte ();
           break;
         }
 
-      while (offset > aop->coff)
+      while (physicalOffset > aop->coff)
         {
           aop->coff++;
           incrementFarPointer ();
         }
 
-      while (offset < aop->coff)
+      while (physicalOffset < aop->coff)
         {
           aop->coff--;
           decrementFarPointer ();
         }
 
-      aop->coff = offset;
+      aop->coff = physicalOffset;
 
       storeFarPointerByte ();
+      }
       break;
 
     case AOP_MCS251_STK:
       {
         char stackOperand[32];
+        int physicalOffset = mcs251ScalarByteOffset (aop, offset);
 
         MOVA (s);
         mcs251FormatStackOperand (stackOperand, sizeof (stackOperand),
-                                stackoffset (aop->aopu.aop_sym) + offset);
+                                stackoffset (aop->aopu.aop_sym) +
+                                physicalOffset);
         emitcode ("mov", "%s,a", stackOperand);
         accuse = TRUE;
       }
@@ -3627,7 +3685,11 @@ genXpush (iCode * ic)
 
   while (offset < size)
     {
-      MOVA (opGet (IC_LEFT (ic), offset++, FALSE, FALSE));
+      int logicalOffset = mcs251PointerByteOffset (
+        operandType (IC_LEFT (ic)), offset, size);
+
+      MOVA (opGet (IC_LEFT (ic), logicalOffset, FALSE, FALSE));
+      offset++;
       emitcode ("movx", "@%s,a", r->name);
       emitcode ("inc", "%s", r->name);
     }
@@ -3688,7 +3750,12 @@ genIpush (iCode * ic)
   prev = Safe_strdup ("");
   while (size--)
     {
-      const char *l = opGet (IC_LEFT (ic), offset++, FALSE, TRUE);
+      int logicalOffset = mcs251PointerByteOffset (
+        operandType (IC_LEFT (ic)), offset,
+        AOP_SIZE (IC_LEFT (ic)));
+      const char *l = opGet (IC_LEFT (ic), logicalOffset, FALSE, TRUE);
+
+      offset++;
       if (AOP_TYPE (IC_LEFT (ic)) != AOP_REG && AOP_TYPE (IC_LEFT (ic)) != AOP_DIR && AOP_TYPE (IC_LEFT (ic)) != AOP_SFR)
         {
           if (!EQ (l, prev) || *l == '@')
@@ -4144,14 +4211,28 @@ pushbigreturn (operand *result)
     }
   else if (!sym->onStack)
     {
-      emitcode ("mov", "a, #%s", sym->rname);
-      emitpush ("acc");
-      emitcode ("mov", "a, #(%s >> 8)", sym->rname);
-      emitpush ("acc");
-      if (GPTRSIZE <= FARPTRSIZE)
-        emitcode ("mov", "a, #(%s >> 16)", sym->rname);
+      if (TARGET_IS_MCS251)
+        {
+          if (GPTRSIZE <= FARPTRSIZE)
+            emitcode ("mov", "a, #(%s >> 16)", sym->rname);
+          else
+            emitcode ("mov", "a, #0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (result))), 0, 0));
+          emitpush ("acc");
+          emitcode ("mov", "a, #(%s >> 8)", sym->rname);
+          emitpush ("acc");
+          emitcode ("mov", "a, #%s", sym->rname);
+        }
       else
-        emitcode ("mov", "a, #0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (result))), 0, 0));
+        {
+          emitcode ("mov", "a, #%s", sym->rname);
+          emitpush ("acc");
+          emitcode ("mov", "a, #(%s >> 8)", sym->rname);
+          emitpush ("acc");
+          if (GPTRSIZE <= FARPTRSIZE)
+            emitcode ("mov", "a, #(%s >> 16)", sym->rname);
+          else
+            emitcode ("mov", "a, #0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (result))), 0, 0));
+        }
       emitpush ("acc");
     }
   else if (!options.useXstack)
@@ -5629,7 +5710,7 @@ genRet (iCode *ic)
                                       hiddenPointerOffset + byte);
               emitcode ("mov", "a,%s", stackOperand);
               emitcode ("mov", "%s,a",
-                        byte == 0 ? "dpl" : byte == 1 ? "dph" : "dpxl");
+                        byte == 0 ? "dpxl" : byte == 1 ? "dph" : "dpl");
             }
           emitcode ("mov", "dr28,dpx");
           if (sourceUsesDpx)
@@ -11768,7 +11849,8 @@ static void
 genDataPointerGet (operand * left, operand * result, iCode * ic)
 {
   const char *l;
-  int size, offset = 0;
+  int size, physicalOffset = 0;
+  sym_link *type = operandType (result);
 
   D (emitcode (";", "genDataPointerGet"));
 
@@ -11777,21 +11859,24 @@ genDataPointerGet (operand * left, operand * result, iCode * ic)
   /* get the string representation of the name */
   l = opGet (left, 0, FALSE, TRUE) + 1;        // remove #
   size = AOP_SIZE (result);
-  while (size--)
+  while (physicalOffset < size)
     {
       struct dbuf_s dbuf;
+      int logicalOffset = mcs251PointerByteOffset (
+        type, physicalOffset, size);
 
       dbuf_init (&dbuf, 128);
       if (AOP_SIZE (result) > 1)
         {
-          dbuf_printf (&dbuf, "(%s + %d)", l, offset);
+          dbuf_printf (&dbuf, "(%s + %d)", l, physicalOffset);
         }
       else
         {
           dbuf_append_str (&dbuf, l);
         }
-      opPut(result, dbuf_c_str (&dbuf), offset++);
+      opPut(result, dbuf_c_str (&dbuf), logicalOffset);
       dbuf_destroy (&dbuf);
+      physicalOffset++;
     }
 
   freeAsmop (result, NULL, ic, TRUE);
@@ -11875,15 +11960,18 @@ genNearPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCo
     {
       /* we can just get the values */
       int size = AOP_SIZE (result);
-      int offset = 0;
+      int physicalOffset = 0;
 
       while (size--)
         {
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (result), physicalOffset, AOP_SIZE (result));
+
           if (ifx || IS_AOP_PREG (result) || AOP_TYPE (result) == AOP_STK)
             {
               emitcode ("mov", "a,@%s", rname);
               if (!ifx)
-                opPut(result, "a", offset);
+                opPut(result, "a", logicalOffset);
             }
           else
             {
@@ -11891,10 +11979,10 @@ genNearPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCo
 
               dbuf_init (&dbuf, 128);
               dbuf_printf (&dbuf, "@%s", rname);
-              opPut(result, dbuf_c_str (&dbuf), offset);
+              opPut(result, dbuf_c_str (&dbuf), logicalOffset);
               dbuf_destroy (&dbuf);
             }
-          offset++;
+          physicalOffset++;
           if (size || pi)
             emitcode ("inc", "%s", rname);
         }
@@ -11987,15 +12075,18 @@ genPagedPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iC
     {
       /* we can just get the values */
       int size = AOP_SIZE (result);
-      int offset = 0;
+      int physicalOffset = 0;
 
       while (size--)
         {
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (result), physicalOffset, AOP_SIZE (result));
+
           emitcode ("movx", "a,@%s", rname);
           if (!ifx)
-            opPut(result, "a", offset);
+            opPut(result, "a", logicalOffset);
 
-          offset++;
+          physicalOffset++;
 
           if (size || pi)
             emitcode ("inc", "%s", rname);
@@ -12101,15 +12192,18 @@ genFarPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCod
 
       while (size--)
         {
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (result), offset, AOP_SIZE (result));
+
           loadFarPointerByte (FALSE);
           if (!ifx)
             {
               if (mcs251FarResult)
                 emitcode ("mov", "@dr24,a");
               else
-                opPut(result, "a", offset);
-              offset++;
+                opPut(result, "a", logicalOffset);
             }
+          offset++;
           if (size || pi)
             {
               incrementFarPointer ();
@@ -12181,15 +12275,18 @@ genCodePointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCo
 
       while (size--)
         {
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (result), offset, AOP_SIZE (result));
+
           loadFarPointerByte (TRUE);
           if (!ifx)
             {
               if (mcs251FarResult)
                 emitcode ("mov", "@dr24,a");
               else
-                opPut(result, "a", offset);
-              offset++;
+                opPut(result, "a", logicalOffset);
             }
+          offset++;
           if (size || pi)
             {
               incrementFarPointer ();
@@ -12263,15 +12360,18 @@ genGenPointerGet (operand * left, operand * result, iCode * ic, iCode * pi, iCod
 
       while (size--)
         {
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (result), offset, AOP_SIZE (result));
+
           emitcode (RUNTIME_CALL, "__gptrget");
           if (!ifx)
             {
               if (mcs251FarResult)
                 emitcode ("mov", "@dr24,a");
               else
-                opPut(result, "a", offset);
-              offset++;
+                opPut(result, "a", logicalOffset);
             }
+          offset++;
           if (size || pi)
             {
               incrementFarPointer ();
@@ -12633,7 +12733,7 @@ genDataPointerSet (operand * right, operand * result, iCode * ic)
   aopOp (right, ic, FALSE);
 
   size = max (AOP_SIZE (right), AOP_SIZE (result));
-  if ((size > 1) && IS_OP_LITERAL (right))
+  if (!TARGET_IS_MCS251 && (size > 1) && IS_OP_LITERAL (right))
     {
       genLiteralAssign (result, right, size, litPut);
     }
@@ -12644,13 +12744,16 @@ genDataPointerSet (operand * right, operand * result, iCode * ic)
       for (offset = 0; offset < size; offset++)
         {
           struct dbuf_s dbuf;
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (right), offset, size);
 
           dbuf_init (&dbuf, 128);
           if (size > 1)
             dbuf_printf (&dbuf, "(%s + %d)", l, offset);
           else
             dbuf_append_str (&dbuf, l);
-          emitcode ("mov", "%s,%s", dbuf_c_str (&dbuf), opGet (right, offset, FALSE, FALSE));
+          emitcode ("mov", "%s,%s", dbuf_c_str (&dbuf),
+                    opGet (right, logicalOffset, FALSE, FALSE));
           dbuf_destroy (&dbuf);
         }
       Safe_free (l);
@@ -12733,11 +12836,14 @@ genNearPointerSet (operand * right, operand * result, iCode * ic, iCode * pi)
     {
       /* we can just get the values */
       int size = AOP_SIZE (right);
-      int offset = 0;
+      int physicalOffset = 0;
 
       while (size--)
         {
-          const char *l = opGet (right, offset, FALSE, TRUE);
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (right), physicalOffset,
+            AOP_SIZE (right));
+          const char *l = opGet (right, logicalOffset, FALSE, TRUE);
           if ((*l == '@') || (EQ (l, "acc")))
             {
               MOVA (l);
@@ -12747,7 +12853,7 @@ genNearPointerSet (operand * right, operand * result, iCode * ic, iCode * pi)
             emitcode ("mov", "@%s,%s", rname, l);
           if (size || pi)
             emitcode ("inc", "%s", rname);
-          offset++;
+          physicalOffset++;
         }
     }
 
@@ -12843,15 +12949,19 @@ genPagedPointerSet (operand * right, operand * result, iCode * ic, iCode * pi)
     {
       /* we can just get the values */
       int size = AOP_SIZE (right);
-      int offset = 0;
+      int physicalOffset = 0;
 
       while (size--)
         {
-          MOVA (opGet (right, offset, FALSE, TRUE));
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (right), physicalOffset,
+            AOP_SIZE (right));
+
+          MOVA (opGet (right, logicalOffset, FALSE, TRUE));
           emitcode ("movx", "@%s,a", rname);
           if (size || pi)
             emitcode ("inc", "%s", rname);
-          offset++;
+          physicalOffset++;
         }
     }
 
@@ -12923,10 +13033,13 @@ genFarPointerSet (operand * right, operand * result, iCode * ic, iCode * pi)
 
       while (size--)
         {
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (right), offset, AOP_SIZE (right));
+
           if (mcs251FarSource)
             emitcode ("mov", "a,@dr24");
           else
-            MOVA (opGet (right, offset, FALSE, FALSE));
+            MOVA (opGet (right, logicalOffset, FALSE, FALSE));
           if (offset++ > 0)
             incrementFarPointer ();
           storeFarPointerByte ();
@@ -12992,10 +13105,13 @@ genGenPointerSet (operand * right, operand * result, iCode * ic, iCode * pi)
 
       while (size--)
         {
+          int logicalOffset = mcs251PointerByteOffset (
+            operandType (right), offset, AOP_SIZE (right));
+
           if (mcs251FarSource)
             emitcode ("mov", "a,@dr24");
           else
-            MOVA (opGet (right, offset, FALSE, FALSE));
+            MOVA (opGet (right, logicalOffset, FALSE, FALSE));
           offset++;
           emitcode (RUNTIME_CALL, "__gptrput");
           if (size || pi)
@@ -13163,11 +13279,11 @@ genAddrOf (iCode * ic)
         {
           size = AOP_SIZE (IC_RESULT (ic));
           mcs251PushStackAddress (sym, 0, size);
-          offset = size;
-          while (offset--)
+          offset = 0;
+          while (offset < size)
             {
               emitpop ("acc");
-              opPut (IC_RESULT (ic), "a", offset);
+              opPut (IC_RESULT (ic), "a", offset++);
             }
           goto release;
         }

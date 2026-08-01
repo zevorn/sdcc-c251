@@ -116,6 +116,7 @@ def main():
     parser.add_argument("--longlong-source", required=True)
     parser.add_argument("--startup-memory-source", required=True)
     parser.add_argument("--setjmp-spx-source", required=True)
+    parser.add_argument("--endianness-runtime-source", required=True)
     parser.add_argument("--aggregate-source", required=True)
     parser.add_argument("--memory-model-main-source", required=True)
     parser.add_argument("--memory-model-source", required=True)
@@ -142,6 +143,8 @@ def main():
     longlong_source = Path(args.longlong_source).resolve()
     startup_memory_source = Path(args.startup_memory_source).resolve()
     setjmp_spx_source = Path(args.setjmp_spx_source).resolve()
+    endianness_runtime_source = \
+        Path(args.endianness_runtime_source).resolve()
     aggregate_source = Path(args.aggregate_source).resolve()
     memory_model_main_source = Path(args.memory_model_main_source).resolve()
     memory_model_source = Path(args.memory_model_source).resolve()
@@ -158,6 +161,7 @@ def main():
                  abi_regression_source,
                  longlong_source,
                  startup_memory_source, setjmp_spx_source,
+                 endianness_runtime_source,
                  aggregate_source,
                  memory_model_main_source,
                  memory_model_source, device_include, library_dir,
@@ -379,6 +383,17 @@ def main():
             sys.stdout.buffer.write(run_qemu(
                 qemu, machine, longlong_image, trace_for(longlong_image),
             ))
+
+        endianness_image = tmpdir / "endianness-runtime.hex"
+        run([
+            str(sdcc), "-mmcs251", "--no-xinit-opt", *board_link_flags,
+            f"-I{device_include}", f"-I{device_include / 'mcs51'}",
+            f"-L{library_dir}", "-o", str(endianness_image),
+            str(endianness_runtime_source),
+        ], env=env)
+        sys.stdout.buffer.write(run_qemu(
+            qemu, machine, endianness_image, trace_for(endianness_image),
+        ))
 
         aggregate_image = tmpdir / "aggregate-return.hex"
         run([

@@ -71,6 +71,10 @@ check: all
 	$(PYTHON) $(srcdir)/tests/check-native-isa-selection.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/native-extension.c
+	$(PYTHON) $(srcdir)/tests/check-endianness.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--source $(srcdir)/tests/endianness-layout.c \
+		--aggregate-source $(srcdir)/tests/aggregate-return.c
 
 QEMU_MCS251 ?= $(HOME)/oss/qemu/builds/build-mcs251/qemu-system-mcs251
 QEMU_MCS51 ?= $(HOME)/oss/qemu/builds/build-mcs51/qemu-system-mcs51
@@ -96,6 +100,8 @@ check-qemu: all check-official-qemu check-gdbstub
 		--longlong-source $(srcdir)/tests/longlong-runtime.c \
 		--startup-memory-source $(srcdir)/tests/startup-memory.c \
 		--setjmp-spx-source $(srcdir)/tests/setjmp-spx-runtime.c \
+		--endianness-runtime-source \
+			$(srcdir)/tests/endianness-runtime.c \
 		--aggregate-source $(srcdir)/tests/aggregate-return.c \
 		--memory-model-main-source $(srcdir)/tests/memory-model-runtime.c \
 		--memory-model-source $(srcdir)/tests/memory-model.c \
