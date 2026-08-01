@@ -1,6 +1,8 @@
 volatile unsigned char gnu_expect_value_count;
 volatile unsigned char gnu_expect_hint_count;
 
+typedef _Bool gnu_bool;
+
 _Static_assert (__builtin_expect (7, 1) == 7,
                 "__builtin_expect must return its first argument");
 _Static_assert (__builtin_types_compatible_p (
@@ -28,6 +30,15 @@ int
 gnu_unlikely (int value)
 {
   if (__builtin_expect (!!value, 0) != 0L)
+    return 1;
+
+  return 0;
+}
+
+int
+gnu_likely_boolean_cast (int value)
+{
+  if (__builtin_expect ((gnu_bool) !!(value), 1) != 0L)
     return 1;
 
   return 0;
