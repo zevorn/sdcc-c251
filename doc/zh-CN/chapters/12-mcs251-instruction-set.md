@@ -95,6 +95,9 @@ make -C support/valdiag test-mcs251
 当前 code generation 断言覆盖：
 
 - 原生带步长 `INC`/`DEC`；
+- 原生 `MOVS`/`MOVZ` byte extension 与 `MOVH` high-word replacement；
+- 对齐 register tuple 上的原生 32 位 `ADD DR,DR`、`SUB DR,DR`，并通过跨字节
+  carry 与 borrow 运行测题；
 - 16 位 `ANL`、`ORL`、`XRL`，以及部分 32 位 `XRL`；
 - 16 位 immediate `CMP`；
 - 合法的 DPX、SPX addressing，并排除 unsupported operand form；
@@ -112,6 +115,9 @@ target，也不表示每个 C 表达式都已经获得最优 instruction selecti
 
 - 未限定地址空间的三字节 pointer 是没有 address-space tag 的平坦地址，不能表示
   独立的 direct SFR window；把 `__sfr` 的地址转换成普通 pointer 会按设计报错。
+- 原生 32 位 register 加减目前要求两个对齐的 DR tuple，且 destructive result 已经
+  alias 某个合法 input。memory operand 与任意交叠 tuple 继续使用经过测试的逐字节
+  fallback。
 - DSP32、TFPU、MDU32 和芯片外设是由寄存器控制的 STC SoC 功能，不是 MCS-251
   CPU opcode，因此不计入 65 个指令族。
 - golden bytes 来自已经审阅的指令表，这并不会让 QEMU 成为独立的硬件真值；

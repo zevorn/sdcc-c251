@@ -5,6 +5,8 @@ static volatile signed char signed_char_input;
 static volatile unsigned char unsigned_char_input;
 static volatile unsigned int extension_addend;
 static volatile unsigned long dword_input;
+static volatile unsigned long left_dword_input;
+static volatile unsigned long right_dword_input;
 static volatile unsigned int left_word_input;
 static volatile unsigned int right_word_input;
 
@@ -30,6 +32,28 @@ static unsigned long
 native_replace_high_word (unsigned long value)
 {
     return (value & 0x0000fffful) | 0x56780000ul;
+}
+
+static unsigned long
+native_add_register_longs (const volatile unsigned long *left,
+                           const volatile unsigned long *right)
+{
+    unsigned long left_value = *left;
+    unsigned long right_value = *right;
+
+    left_value += right_value;
+    return left_value ^ right_value;
+}
+
+static unsigned long
+native_subtract_register_longs (const volatile unsigned long *left,
+                                const volatile unsigned long *right)
+{
+    unsigned long left_value = *left;
+    unsigned long right_value = *right;
+
+    left_value -= right_value;
+    return left_value ^ right_value;
 }
 
 static unsigned int
@@ -183,6 +207,18 @@ main (void)
         passed = 0;
     dword_input = 0x89abcdeful;
     if (native_replace_high_word (dword_input) != 0x5678cdeful)
+        passed = 0;
+
+    left_dword_input = 0x00fffffeul;
+    right_dword_input = 0x00000003ul;
+    if (native_add_register_longs (&left_dword_input,
+                                   &right_dword_input) != 0x01000002ul)
+        passed = 0;
+
+    left_dword_input = 0x00000000ul;
+    right_dword_input = 0x00000001ul;
+    if (native_subtract_register_longs (&left_dword_input,
+                                        &right_dword_input) != 0xfffffffeul)
         passed = 0;
 
     print_result (passed);

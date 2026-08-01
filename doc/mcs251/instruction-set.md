@@ -104,6 +104,9 @@ It compiles the port and runtime sources in small, large, small stack-auto and
 large stack-auto configurations.  Current code-generation assertions cover:
 
 - native stepped `INC`/`DEC`;
+- native `MOVS`/`MOVZ` byte extension and `MOVH` high-word replacement;
+- native 32-bit `ADD DR,DR` and `SUB DR,DR` for aligned register tuples,
+  including cross-byte carry and borrow runtime cases;
 - 16-bit `ANL`, `ORL` and `XRL`, plus selected 32-bit `XRL` operations;
 - immediate 16-bit `CMP`;
 - legal DPX and SPX addressing without unsupported operand forms;
@@ -124,6 +127,10 @@ selection is optimal for every C expression.
 - The unqualified three-byte pointer is a flat address without an address-space
   tag.  It cannot represent the separate direct SFR window; taking the address
   of an `__sfr` as an unqualified pointer is intentionally diagnosed.
+- Native 32-bit register addition and subtraction currently require two
+  aligned DR tuples and a destructive result that already aliases a legal
+  input.  Memory operands and arbitrary overlapping tuples retain the tested
+  byte-at-a-time fallback.
 - DSP32, TFPU, MDU32 and chip peripherals are STC SoC facilities controlled
   through registers.  They are not MCS-251 CPU opcodes and are not included in
   the 65-family ISA total.

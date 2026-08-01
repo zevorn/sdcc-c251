@@ -33,3 +33,36 @@ mcs251_replace_high_word (unsigned long value)
 {
     return (value & 0x0000fffful) | 0x56780000ul;
 }
+
+unsigned long
+mcs251_add_register_longs (const unsigned long *left,
+                           const unsigned long *right)
+{
+    unsigned long left_value = *left;
+    unsigned long right_value = *right;
+
+    left_value += right_value;
+    return left_value ^ right_value;
+}
+
+unsigned long
+mcs251_reverse_add_register_longs (const unsigned long *left,
+                                   const unsigned long *right)
+{
+    unsigned long left_value = *left;
+    unsigned long right_value = *right;
+
+    right_value += left_value;
+    return right_value ^ left_value;
+}
+
+unsigned long
+mcs251_subtract_register_longs (const unsigned long *left,
+                                const unsigned long *right)
+{
+    unsigned long left_value = *left;
+    unsigned long right_value = *right;
+
+    left_value -= right_value;
+    return left_value ^ right_value;
+}

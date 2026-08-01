@@ -6190,6 +6190,69 @@ adjustArithmeticResult (iCode * ic)
     }
 }
 
+/* Return the architectural dword register for a four-byte scalar tuple.
+
+   The generator indexes a scalar from its least-significant byte.  Native
+   big-endian allocation therefore records [Rn+3, Rn+2, Rn+1, Rn], while
+   DRn names the aligned high register first. */
+static const char *
+mcs251DwordForNativeTuple (const asmop *aop)
+{
+  static const char *const dwordRegisters[] = {
+    "dr0", "dr4", "dr8", "dr12", "dr16", "dr20", "dr24", "dr28"
+  };
+  int first;
+  int offset;
+
+  if (!TARGET_IS_MCS251 || aop->type != AOP_REG || aop->size != 4)
+    return NULL;
+
+  first = aop->aopu.aop_reg[3]->offset;
+  if (first < 0 || first > 28 || (first & 3))
+    return NULL;
+
+  for (offset = 0; offset < 4; ++offset)
+    if (aop->aopu.aop_reg[offset]->offset != first + 3 - offset)
+      return NULL;
+
+  return dwordRegisters[first / 4];
+}
+
+/* Select a destructive native dword arithmetic instruction only when the
+   register allocator has already made its destination one of the inputs.
+   This keeps the fallback responsible for memory operands and arbitrary
+   overlapping tuples. */
+static bool
+mcs251GenDwordArithmetic (operand *left, operand *right, operand *result,
+                          const char *instruction, bool commutative)
+{
+  const asmop *source;
+  const char *destinationName;
+  const char *sourceName;
+
+  if (!TARGET_IS_MCS251 || AOP_SIZE (result) != 4 ||
+      AOP_SIZE (left) != 4 || AOP_SIZE (right) != 4)
+    return FALSE;
+
+  destinationName = mcs251DwordForNativeTuple (AOP (result));
+  if (!destinationName)
+    return FALSE;
+
+  if (sameRegs (AOP (result), AOP (left)))
+    source = AOP (right);
+  else if (commutative && sameRegs (AOP (result), AOP (right)))
+    source = AOP (left);
+  else
+    return FALSE;
+
+  sourceName = mcs251DwordForNativeTuple (source);
+  if (!sourceName)
+    return FALSE;
+
+  emitcode (instruction, "%s,%s", destinationName, sourceName);
+  return TRUE;
+}
+
 /*-----------------------------------------------------------------*/
 /* genPlus - generates code for addition                           */
 /*-----------------------------------------------------------------*/
@@ -6265,6 +6328,11 @@ genPlus (iCode * ic)
   leftOp = IC_LEFT (ic);
   rightOp = IC_RIGHT (ic);
   op = IC_LEFT (ic);
+
+  if (!maskedtopbyte &&
+      mcs251GenDwordArithmetic (leftOp, rightOp, IC_RESULT (ic),
+                               "add", TRUE))
+    goto release;
 
   /* if this is an add for an array access
      at a 256 byte boundary */
@@ -6584,6 +6652,11 @@ genMinus (iCode * ic)
     goto release;
 
   size = getDataSize (IC_RESULT (ic));
+
+  if (!maskedtopbyte &&
+      mcs251GenDwordArithmetic (IC_LEFT (ic), IC_RIGHT (ic),
+                               IC_RESULT (ic), "sub", FALSE))
+    goto release;
 
   /* if literal, add a,#-lit, else normal subb */
   if (AOP_TYPE (IC_RIGHT (ic)) == AOP_LIT)

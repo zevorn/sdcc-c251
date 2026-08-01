@@ -38,6 +38,11 @@ def require_instruction(body, pattern, description):
         raise AssertionError(f"missing {description}:\n{body}")
 
 
+def forbid_instruction(body, pattern, description):
+    if re.search(pattern, body, re.MULTILINE | re.IGNORECASE):
+        raise AssertionError(f"found {description}:\n{body}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sdcc", required=True)
@@ -113,6 +118,13 @@ def main():
         replace_high_word = function_body(
             mcs251, "mcs251_replace_high_word"
         )
+        add_longs = function_body(mcs251, "mcs251_add_register_longs")
+        reverse_add_longs = function_body(
+            mcs251, "mcs251_reverse_add_register_longs"
+        )
+        subtract_longs = function_body(
+            mcs251, "mcs251_subtract_register_longs"
+        )
 
         require_instruction(
             signed,
@@ -141,6 +153,33 @@ def main():
             r"[ \t]*\|[ \t]*(?:0x)?78\))[ \t]*$",
             "MCS251 high-word replacement with MOVH",
         )
+        require_instruction(
+            add_longs,
+            r"^[ \t]*add[ \t]+dr(?:0|4|8|12|16|20|24|28),[ \t]*"
+            r"dr(?:0|4|8|12|16|20|24|28)[ \t]*$",
+            "MCS251 native 32-bit register addition",
+        )
+        forbid_instruction(
+            add_longs,
+            r"^[ \t]*addc[ \t]+a,",
+            "byte-at-a-time carry chain in MCS251 long addition",
+        )
+        require_instruction(
+            reverse_add_longs,
+            r"^[ \t]*add[ \t]+dr0,[ \t]*dr4[ \t]*$",
+            "MCS251 native addition with the right-hand result tuple",
+        )
+        require_instruction(
+            subtract_longs,
+            r"^[ \t]*sub[ \t]+dr(?:0|4|8|12|16|20|24|28),[ \t]*"
+            r"dr(?:0|4|8|12|16|20|24|28)[ \t]*$",
+            "MCS251 native 32-bit register subtraction",
+        )
+        forbid_instruction(
+            subtract_longs,
+            r"^[ \t]*subb[ \t]+a,",
+            "byte-at-a-time borrow chain in MCS251 long subtraction",
+        )
 
         mcs251_stack_auto = mcs251_stack_auto_asm.read_text()
         stack_auto_high_word = function_body(
@@ -159,7 +198,8 @@ def main():
 
         mcs51 = mcs51_asm.read_text()
         forbidden = re.search(
-            r"^[ \t]*(?:movs|movz|movh)[ \t]+",
+            r"^[ \t]*(?:(?:movs|movz|movh)[ \t]+|"
+            r"(?:add|sub)[ \t]+dr(?:0|4|8|12|16|20|24|28),)",
             mcs51,
             re.MULTILINE | re.IGNORECASE,
         )
