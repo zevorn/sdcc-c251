@@ -3382,7 +3382,8 @@ compareTypeExact (sym_link *dest, sym_link *src, long level, bool check_top_std_
         {
           if (DCL_TYPE (src) == DCL_TYPE (dest))
             {
-              if ((DCL_TYPE (src) == ARRAY) && (DCL_ELEM (src) != DCL_ELEM (dest)))
+              if ((DCL_TYPE (src) == ARRAY) && DCL_ELEM (src) && DCL_ELEM (dest) &&
+                  (DCL_ELEM (src) != DCL_ELEM (dest)))
                 return 0;
               if (check_top_std_qual)
                 {
