@@ -1168,9 +1168,15 @@ static const char *_asmCmd[] =
 };
 
 #ifdef MCS251_PORT
-static const char * const _libs[] = { "mcs251", STD_LIB, STD_INT_LIB, STD_LONG_LIB, STD_FP_LIB, NULL, };
+static const char * const _libs[] = {
+  "mcs251", STD_LIB, STD_INT_LIB, STD_LONG_LIB, "liblonglong", STD_FP_LIB,
+  NULL,
+};
 #else
-static const char * const _libs[] = { "mcs51", STD_LIB, STD_INT_LIB, STD_LONG_LIB, STD_FP_LIB, NULL, };
+static const char * const _libs[] = {
+  "mcs51", STD_LIB, STD_INT_LIB, STD_LONG_LIB, "liblonglong", STD_FP_LIB,
+  NULL,
+};
 #endif
 
 #ifdef MCS251_PORT
