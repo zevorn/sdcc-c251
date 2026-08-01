@@ -5724,11 +5724,22 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
             heir = tree->right->right;
             
           heir = decorateType (heir, resultTypeProp, reduceTypeAllowed);
-          if (IS_LITERAL (TETYPE (heir)))
-            TTYPE (heir) = valRecastLitVal (TTYPE (tree->right), valFromType (TETYPE (heir)))->type;
-          else
-            TTYPE (heir) = TTYPE (tree->right);
+          if (TTYPE (tree->right) != NULL)
+            {
+              /* Recast the selected branch to the colon result type.  When
+                 the colon type is not yet available (e.g. inside a compound
+                 literal initializer) keep the branch's own type. */
+              if (IS_LITERAL (TETYPE (heir)))
+                TTYPE (heir) = valRecastLitVal (TTYPE (tree->right), valFromType (TETYPE (heir)))->type;
+              else
+                TTYPE (heir) = TTYPE (tree->right);
+            }
           TETYPE (heir) = getSpec (TTYPE (heir));
+          /* The initializer list still references this '?' node; give it a
+             type as well so a later decoration pass does not see a NULL
+             type (compound literal members are decorated more than once). */
+          TTYPE (tree) = TTYPE (heir);
+          TETYPE (tree) = TETYPE (heir);
           return heir;
         }
 

@@ -52,6 +52,7 @@ def main():
     parser.add_argument("--attribute-source", required=True)
     parser.add_argument("--invalid-attribute-source", required=True)
     parser.add_argument("--empty-declaration-source", required=True)
+    parser.add_argument("--compound-literal-source", required=True)
     args = parser.parse_args()
 
     sdcc = Path(args.sdcc).resolve()
@@ -60,6 +61,7 @@ def main():
     attribute_source = Path(args.attribute_source).resolve()
     invalid_attribute_source = Path(args.invalid_attribute_source).resolve()
     empty_declaration_source = Path(args.empty_declaration_source).resolve()
+    compound_literal_source = Path(args.compound_literal_source).resolve()
     for path in (
         sdcc,
         empty_aggregate_source,
@@ -67,6 +69,7 @@ def main():
         attribute_source,
         invalid_attribute_source,
         empty_declaration_source,
+        compound_literal_source,
     ):
         if not path.exists():
             parser.error(f"required path does not exist: {path}")
@@ -135,6 +138,15 @@ def main():
                     port,
                     mode,
                     False,
+                    workspace,
+                )
+            for mode in ("gnu11", "gnu17", "c11", "c17", None):
+                compile_source(
+                    sdcc,
+                    compound_literal_source,
+                    port,
+                    mode,
+                    True,
                     workspace,
                 )
 
