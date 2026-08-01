@@ -312,6 +312,9 @@ static PORT *_ports[] = {
 #if !OPT_DISABLE_MCS51
   &mcs51_port,
 #endif
+#if !OPT_DISABLE_MCS251
+  &mcs251_port,
+#endif
 #if !OPT_DISABLE_Z80
   &z80_port,
 #endif
@@ -2394,7 +2397,7 @@ preProcess (char **envp)
         It got removed a few times, but keeps coming back.
         This time it got added back for the 3.7.0 release
         to support the old SiLabs IDE */
-      if (TARGET_IS_MCS51 && options.std_sdcc)
+      if ((TARGET_IS_MCS51 || TARGET_IS_MCS251) && options.std_sdcc)
         {
           struct dbuf_s dbuf;
 
@@ -3011,4 +3014,3 @@ main (int argc, char **argv, char **envp)
 
   return 0;
 }
-

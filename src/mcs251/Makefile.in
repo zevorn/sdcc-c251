@@ -1,0 +1,102 @@
+VPATH        = @srcdir@
+srcdir       = @srcdir@
+top_builddir = @top_builddir@
+top_srcdir   = @top_srcdir@
+
+CPPFLAGS += -I.
+SOURCES = main.c
+PEEPRULES = peeph.rul
+.DEFAULT_GOAL := all
+
+ifeq (@OPT_DISABLE_MCS51@, 1)
+VPATH += :@srcdir@/../mcs51
+SOURCES += gen.c peep.c ralloc.c rtrack.c
+endif
+
+peeph.rul: $(top_srcdir)/src/mcs51/peeph.def $(srcdir)/peeph-mcs251.def
+	$(AWK) -f $(top_srcdir)/src/SDCCpeeph.awk $^ > $@
+
+.PHONY: check
+check: all
+	$(SHELL) $(srcdir)/tests/check-driver.sh \
+		$(top_builddir)/bin/sdcc \
+		$(srcdir)/tests/compiler-smoke.c \
+		$(top_srcdir)/device/include \
+		$(top_srcdir)/device/lib/_atof.c \
+		$(top_srcdir)/device/lib/_fsneq.c \
+		$(top_srcdir)/device/lib/bsearch.c \
+		$(top_srcdir)/device/lib/_setjmp.c \
+		$(top_srcdir)/device/lib/_gptrget.c \
+		$(top_srcdir)/device/lib/_gptrgetc.c \
+		$(top_srcdir)/device/lib/_gptrput.c \
+		$(top_srcdir)/device/lib/_decdptr.c \
+		$(top_srcdir)/device/lib/sprintf.c \
+		$(top_srcdir)/device/lib/vprintf.c
+	$(SHELL) $(srcdir)/tests/check-codegen.sh \
+		$(top_builddir)/bin/sdcc \
+		$(srcdir)/tests/native-optimization.c \
+		$(srcdir)/tests/call-24bit.c \
+		$(srcdir)/tests/interrupt-vector.c \
+		$(srcdir)/tests/aggregate-initializer.c \
+		$(srcdir)/tests/memory-model.c \
+		$(top_srcdir)/device/lib/bsearch.c \
+		$(top_srcdir)/device/include
+
+QEMU_MCS251 ?= $(HOME)/oss/qemu/builds/build-mcs251/qemu-system-mcs251
+QEMU_MCS51 ?= $(HOME)/oss/qemu/builds/build-mcs51/qemu-system-mcs51
+MCS251_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-small
+MCS251_STACK_AUTO_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-small-stack-auto
+MCS251_LARGE_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-large
+MCS251_LARGE_STACK_AUTO_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-large-stack-auto
+
+.PHONY: check-qemu check-official-qemu check-gdbstub
+check-qemu: all check-official-qemu check-gdbstub
+	$(PYTHON) $(srcdir)/tests/check-qemu.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--sdas251 $(top_builddir)/bin/sdas251 \
+		--qemu $(QEMU_MCS251) \
+		--main-source $(srcdir)/tests/far-main.c \
+		--far-source $(srcdir)/tests/far-callee.c \
+		--crt0 $(srcdir)/tests/crt0.asm \
+		--runtime-source $(srcdir)/tests/runtime-main.c \
+		--optimization-runtime-source \
+			$(srcdir)/tests/optimization-runtime.c \
+		--abi-regression-source $(srcdir)/tests/abi-regression-runtime.c \
+		--startup-memory-source $(srcdir)/tests/startup-memory.c \
+		--setjmp-spx-source $(srcdir)/tests/setjmp-spx-runtime.c \
+		--aggregate-source $(srcdir)/tests/aggregate-return.c \
+		--memory-model-main-source $(srcdir)/tests/memory-model-runtime.c \
+		--memory-model-source $(srcdir)/tests/memory-model.c \
+		--device-include $(top_srcdir)/device/include \
+		--library-dir $(MCS251_LIBRARY_DIR) \
+		--stack-auto-library-dir $(MCS251_STACK_AUTO_LIBRARY_DIR) \
+		--large-library-dir $(MCS251_LARGE_LIBRARY_DIR) \
+		--large-stack-auto-library-dir $(MCS251_LARGE_STACK_AUTO_LIBRARY_DIR)
+
+check-official-qemu: all
+	$(PYTHON) $(srcdir)/tests/official/check-official-examples.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--qemu $(QEMU_MCS251) \
+		--source-dir $(srcdir)/tests/official \
+		--device-include $(top_srcdir)/device/include \
+		--library-dir $(MCS251_LIBRARY_DIR)
+
+check-gdbstub: all
+	$(PYTHON) $(srcdir)/tests/check-gdbstub.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--qemu $(QEMU_MCS251) \
+		--source $(srcdir)/tests/debug-smoke.c \
+		--device-include $(top_srcdir)/device/include \
+		--library-dir $(MCS251_LIBRARY_DIR)
+
+.PHONY: check-mcs51-qemu
+check-mcs51-qemu: all
+	$(PYTHON) $(srcdir)/tests/check-mcs51-qemu.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--qemu $(QEMU_MCS51) \
+		--source $(srcdir)/tests/mcs51-regression.c \
+		--device-include $(top_srcdir)/device/include \
+		--library-dir $(top_builddir)/device/lib/build/small \
+		--baseline-digest $(srcdir)/tests/mcs51-regression.sha256
+
+include $(srcdir)/../port.mk

@@ -719,6 +719,7 @@ AC_SUBST(SVN_REVISION)
 rm -f ports.all ports.build
 
 # Supported targets
+AC_DO_PORT_ENABLER(mcs251, mcs251, MCS251, [Includes the Intel MCS-251 port (experimental)])
 AC_DO_PORT(mcs51,    mcs51,  MCS51,    [Excludes the Intel mcs51 port])
 AC_DO_PORT(z80,      z80,    Z80,      [Excludes the Z80 port])
 AC_DO_PORT(z180,     z80,    Z180,     [Excludes the Z180 port])
@@ -799,6 +800,12 @@ test $OPT_DISABLE_UCSIM   = 0 && AC_CONFIG_SUBDIRS(sim/ucsim)
 test $OPT_DISABLE_SDCDB   = 0 && AC_CONFIG_SUBDIRS(debugger/mcs51)
 test $OPT_DISABLE_SDBINUTILS = 0 && AC_CONFIG_SUBDIRS(support/sdbinutils)
 AC_CONFIG_FILES([doc/Makefile])
+
+if test $OPT_DISABLE_MCS251 = 0; then
+  AC_CONFIG_FILES([src/mcs251/Makefile
+                   sdas/as251/Makefile])
+  test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/mcs251/Makefile])
+fi
 
 if test $OPT_DISABLE_DS390 = 0 || test $OPT_DISABLE_DS400; then
   AC_CONFIG_FILES([src/ds390/Makefile
@@ -1001,6 +1008,7 @@ sdcc ${VERSION} is now configured for
     hc08                ${enable_hc08_port}
     s08                 ${enable_s08_port}
     mcs51               ${enable_mcs51_port}
+    mcs251                ${enable_mcs251_port}
     pic14               ${enable_pic14_port}
     pic16               ${enable_pic16_port}
     z80                 ${enable_z80_port}
