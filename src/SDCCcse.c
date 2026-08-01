@@ -1346,7 +1346,7 @@ algebraicOpts (iCode *ic, eBBlock *ebp)
             {
               double litval = operandLitValue (IC_RIGHT (ic));
               unsigned long long llitval = operandLitValueUll (IC_RIGHT (ic));
-              if (IS_GENPTR(ctype) && IS_PTR(otype))
+              if (!TARGET_IS_MCS251 && IS_GENPTR(ctype) && IS_PTR(otype))
                 {
                   unsigned long gpVal = 0;
                   const char *name = IS_SYMOP (IC_RESULT (ic)) ? OP_SYMBOL (IC_RESULT (ic))->name : NULL;
@@ -2834,4 +2834,3 @@ freeCSEdata (eBBlock * ebb)
   deleteSet (&ebb->addrOf);
   freeBitVect (ebb->linds);
 }
-

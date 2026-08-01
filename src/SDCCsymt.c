@@ -2196,7 +2196,7 @@ checkSClass (symbol *sym, bool isProto)
     if (IS_ABSOLUTE (sym->etype))
       SPEC_VOLATILE (sym->etype) = 1;
 
-  if (TARGET_IS_MCS51 && IS_ABSOLUTE (sym->etype) && SPEC_SCLS (sym->etype) == S_SFR)
+  if ((TARGET_IS_MCS51 || TARGET_IS_MCS251) && IS_ABSOLUTE (sym->etype) && SPEC_SCLS (sym->etype) == S_SFR)
     {
       int n, size;
       unsigned addr;
@@ -2215,12 +2215,12 @@ checkSClass (symbol *sym, bool isProto)
         if (((addr >> n) & 0xFF) < 0x80)
           werror (W_SFR_ABSRANGE, sym->name);
     }
-  else if (TARGET_IS_MCS51 && IS_ABSOLUTE (sym->etype) && SPEC_SCLS (sym->etype) == S_DATA)
+  else if ((TARGET_IS_MCS51 || TARGET_IS_MCS251) && IS_ABSOLUTE (sym->etype) && SPEC_SCLS (sym->etype) == S_DATA)
     {
       if (SPEC_ADDR (sym->etype) + getSize (sym->type) - 1 > 0x7f)
         werror (W_DATA_ABSRANGE, sym->name);
     }
-  else if (TARGET_IS_MCS51 && IS_ABSOLUTE (sym->etype) && SPEC_SCLS (sym->etype) == S_IDATA)
+  else if ((TARGET_IS_MCS51 || TARGET_IS_MCS251) && IS_ABSOLUTE (sym->etype) && SPEC_SCLS (sym->etype) == S_IDATA)
     {
       if (SPEC_ADDR (sym->etype) + getSize (sym->type) - 1 > 0xff)
         werror (W_IDATA_ABSRANGE, sym->name);
@@ -5669,4 +5669,3 @@ prepareDeclarationSymbol (attribute *attr, sym_link *declSpecs, symbol *initDecl
 
   return sym1;
 }
-

@@ -1026,7 +1026,7 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
 
       /* don't perform integer promotion of explicitly typecasted variable arguments
        * if sdcc extensions are enabled */
-      if (options.std_sdcc && (TARGET_IS_MCS51 || TARGET_IS_DS390 || TARGET_MOS6502_LIKE || TARGET_PIC_LIKE) &&
+      if (options.std_sdcc && (TARGET_MCS51_LIKE || TARGET_MOS6502_LIKE || TARGET_PIC_LIKE) &&
         IFFUNC_HASVARARGS (functype) &&
         (IS_CAST_OP (*actParm) ||
           (IS_AST_SYM_VALUE (*actParm) && AST_VALUES (*actParm, cast.removedCast)) ||
@@ -1259,6 +1259,7 @@ createIvalStruct (ast *sym, sym_link *type, initList *ilist, ast *rootValue)
     }
 
   // Handle the rest and fill in the gaps.
+  unsigned prevEnd = 0;
   for (symbol *sflds = SPEC_STRUCT (type)->fields; sflds; sflds = sflds->next)
     {
       if (isinSet (initialized_fields, sflds)) // Already initalized by designated initializer
@@ -1267,6 +1268,19 @@ createIvalStruct (ast *sym, sym_link *type, initList *ilist, ast *rootValue)
       /* skip past unnamed bitfields */
       if (sflds && IS_BITFIELD (sflds->type) && SPEC_BUNNAMED (sflds->etype))
         continue;
+
+      /* Anonymous-union members are promoted into the enclosing structure
+         and therefore share storage offsets.  Once the first member has
+         consumed an initializer, skip the overlapping aliases instead of
+         consuming the following structure member's initializer.  Bitfields
+         are exempt because several distinct bitfields can share a byte. */
+      if (TARGET_IS_MCS251 && !IS_BITFIELD (sflds->type) &&
+          sflds->offset < prevEnd)
+        {
+          if (sflds->offset + getSize (sflds->type) > prevEnd)
+            prevEnd = sflds->offset + getSize (sflds->type);
+          continue;
+        }
 
       /* if we have come to end */
       if (!iloop && (!AST_SYMBOL (rootValue)->islocal || SPEC_STAT (etype)))
@@ -1278,6 +1292,7 @@ createIvalStruct (ast *sym, sym_link *type, initList *ilist, ast *rootValue)
       lAst = decorateType (resolveSymbols (lAst), RESULT_TYPE_NONE, true);
       rast = decorateType (resolveSymbols (createIval (lAst, sflds->type, iloop, rast, rootValue, 1)), RESULT_TYPE_NONE, true);
       addSet (&initialized_fields, sflds);
+      prevEnd = sflds->offset + getSize (sflds->type);
       iloop = iloop ? iloop->next : NULL;
 
       /* Unions can only initialize a single field */
@@ -5229,7 +5244,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
 #endif
 
       /* if the right is a literal replace the tree */
-      if (IS_LITERAL (RETYPE (tree)))
+      if (IS_LITERAL (RETYPE (tree)) &&
+          !(TARGET_IS_MCS251 && IS_GENPTR (LTYPE (tree)) &&
+            IS_PTR (RTYPE (tree)) && DCL_TYPE (RTYPE (tree)) == PPOINTER))
         {
 #if 0
           if (IS_PTR (LTYPE (tree)) && !IS_GENPTR (LTYPE (tree)))
@@ -5291,7 +5308,8 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
               unsigned long long pVal = ullFromVal (valFromType (RTYPE (tree))) & mask;
 
               /* if casting literal specific pointer to generic pointer */
-              if (IS_GENPTR (LTYPE (tree)) && IS_PTR (RTYPE (tree)) && !IS_GENPTR (RTYPE (tree)))
+              if (!TARGET_IS_MCS251 && IS_GENPTR (LTYPE (tree)) &&
+                  IS_PTR (RTYPE (tree)) && !IS_GENPTR (RTYPE (tree)))
                 {
                   if (resultType != RESULT_TYPE_GPTR)
                     {
@@ -8795,4 +8813,3 @@ offsetofOp (sym_link *type, ast *snd)
 
   return offsetofOp_rec (type, snd, &result_type);
 }
-

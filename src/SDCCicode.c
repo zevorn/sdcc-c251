@@ -2202,6 +2202,8 @@ geniCodeCast (sym_link *type, operand *op, bool implicit)
   sym_link *optype;
   sym_link *opetype = getSpec (optype = operandType (op));
   sym_link *restype;
+  bool mcs251PdataWidening = TARGET_IS_MCS251 && IS_GENPTR (type) &&
+    IS_PTR (optype) && DCL_TYPE (optype) == PPOINTER;
 
   /* one of them has size zero then error */
   if (IS_VOID (optype))
@@ -2216,7 +2218,7 @@ geniCodeCast (sym_link *type, operand *op, bool implicit)
     }
 
   /* if the operand is already the desired type then do nothing */
-  if (compareType (type, optype, false) == 1)
+  if (compareType (type, optype, false) == 1 && !mcs251PdataWidening)
   {
     if (IS_PTR (type))
       {
@@ -3496,7 +3498,9 @@ checkTypes (operand * left, operand * right)
       werror (W_LIT_OVERFLOW);
     }
 
-  if (always_cast || compareType (ltype, rtype, false) == -1)
+  if (always_cast || compareType (ltype, rtype, false) == -1 ||
+      TARGET_IS_MCS251 && IS_GENPTR (ltype) && IS_PTR (rtype) &&
+      DCL_TYPE (rtype) == PPOINTER)
     {
       if (IS_VOLATILE (ltype)) // Don't propagate volatile to right side - we don't want volatile iTemps.
         {

@@ -55,7 +55,9 @@ aopLiteralGptr (const char *name, const value *val)
 
   v >>= ((GPTRSIZE - 1) * 8);
 
-  if (IS_FUNCPTR (val->type))
+  if (TARGET_IS_MCS251)
+    dbuf_tprintf (&dbuf, "!immedbyte", (unsigned int) v & 0xff);
+  else if (IS_FUNCPTR (val->type))
     dbuf_tprintf (&dbuf, "!immedbyte", v | pointerTypeToGPByte (DCL_TYPE (val->type->next), val->name, name));
   else if (IS_PTR (val->type) && !IS_GENPTR (val->type))
     dbuf_tprintf (&dbuf, "!immedbyte", pointerTypeToGPByte (DCL_TYPE (val->type), val->name, name));
@@ -825,7 +827,9 @@ _printPointerType (struct dbuf_s *oBuf, const char *name, int size)
 static void
 printPointerType (struct dbuf_s *oBuf, const char *name)
 {
-  _printPointerType (oBuf, name, (options.model == MODEL_FLAT24) ? 3 : 2);
+  _printPointerType (oBuf, name,
+                     TARGET_IS_MCS251 ? FARPTRSIZE :
+                     (options.model == MODEL_FLAT24) ? 3 : 2);
   dbuf_printf (oBuf, "\n");
 }
 
@@ -835,6 +839,13 @@ printPointerType (struct dbuf_s *oBuf, const char *name)
 static void
 printGPointerType (struct dbuf_s *oBuf, const char *iname, const char *oname, int type)
 {
+  if (TARGET_IS_MCS251)
+    {
+      _printPointerType (oBuf, iname, GPTRSIZE);
+      dbuf_printf (oBuf, "\n");
+      return;
+    }
+
   int byte = pointerTypeToGPByte (type, iname, oname);
   int size = (options.model == MODEL_FLAT24) ? 3 : 2;
   if (byte == -1)
@@ -1481,7 +1492,7 @@ printIvalFuncPtr (sym_link * type, initList * ilist, struct dbuf_s *oBuf)
           dbuf_printf (oBuf, "\tret #<%s\n", name);
           dbuf_printf (oBuf, "\tret #>%s\n", name);
         }
-      else if (TARGET_IS_STM8 && FUNCPTRSIZE == 3)
+      else if ((TARGET_IS_STM8 || TARGET_IS_MCS251) && FUNCPTRSIZE == 3)
         {
           _printPointerType (oBuf, name, size);
           dbuf_printf (oBuf, "\n");
@@ -1736,7 +1747,7 @@ printIvalPtr (symbol *sym, sym_link *type, initList *ilist, struct dbuf_s *oBuf)
             dbuf_printf (oBuf, "\t.byte %s,%s", aopLiteral (val, 1), aopLiteral (val, 0));
           if (IS_GENPTR (val->type))
             dbuf_printf (oBuf, ",%s\n", aopLiteral (val, 2));
-          else if (IS_PTR (val->type))
+          else if (IS_PTR (val->type) && !TARGET_IS_MCS251)
             dbuf_tprintf (oBuf, ",!immedbyte\n", pointerTypeToGPByte (DCL_TYPE (val->type), val->name, sym->name));
           else
             dbuf_printf (oBuf, ",%s\n", aopLiteral (val, 2));
@@ -1995,7 +2006,7 @@ void
 emitMaps (void)
 {
   namedspacemap *nm;
-  int publicsfr = TARGET_IS_MCS51 || TARGET_PDK_LIKE;      /* Ideally, this should be true for all  */
+  int publicsfr = TARGET_IS_MCS51 || TARGET_IS_MCS251 || TARGET_PDK_LIKE; /* Ideally, this should be true for all  */
                                                            /* ports but let's be conservative - EEP */
 
   inInitMode++;
@@ -2263,8 +2274,7 @@ glue (void)
   dbuf_init (&vBuf, 4096);
   dbuf_init (&ovrBuf, 4096);
 
-  mcs51_like = (port->general.glue_up_main &&
-                (TARGET_IS_MCS51 || TARGET_IS_DS390 || TARGET_IS_DS400));
+  mcs51_like = (port->general.glue_up_main && TARGET_MCS51_LIKE);
 
   /* print the global struct definitions */
   if (options.debug)
@@ -2559,6 +2569,8 @@ glue (void)
         fprintf (asmFile, "\tjp\t#__sdcc_program_startup\n");
       else if(TARGET_PDK_LIKE)
         fprintf (asmFile, "\tgoto\t__sdcc_program_startup\n");
+      else if(TARGET_IS_MCS251)
+        fprintf (asmFile, "\tejmp\t__sdcc_program_startup\n");
       else
         fprintf (asmFile, "\t%cjmp\t__sdcc_program_startup\n", options.acall_ajmp ? 'a' : 'l');
     }
@@ -2584,6 +2596,17 @@ glue (void)
         fprintf (asmFile, "\tjp\t#_main\n");
       else if(TARGET_PDK_LIKE)
         fprintf (asmFile, "\tgoto\t_main\n");
+      else if(TARGET_IS_MCS251)
+        {
+          if (IFFUNC_ISNORETURN (mainf->type))
+            fprintf (asmFile, "\tejmp\t_main\n");
+          else
+            {
+              fprintf (asmFile, "\tecall\t_main\n");
+              fprintf (asmFile, "__sdcc_program_exit:\n");
+              fprintf (asmFile, "\tsjmp\t.\n");
+            }
+        }
       else
         {
           if (IFFUNC_ISNORETURN (mainf->type))
@@ -2648,4 +2671,3 @@ isTargetKeyword (const char *s)
 
   return 0;
 }
-

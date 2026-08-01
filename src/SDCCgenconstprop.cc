@@ -1399,7 +1399,10 @@ optimizeNarrowOpNet (iCode *ic)
       for (int key = bitVectFirstBit (uses); bitVectnBitsOn (uses); bitVectUnSetBit (uses, key), key = bitVectFirstBit (uses))
         {
           iCode *uic = (iCode *)hTabItemWithKey (iCodehTab, key);
-          wassert (uic || TARGET_IS_MCS51 && (options.model == MODEL_LARGE || options.model == MODEL_HUGE)); // Shouldn't happen, but does for some mcs51 models.
+          wassert (uic || TARGET_IS_MCS51 &&
+                   (options.model == MODEL_LARGE || options.model == MODEL_HUGE) ||
+                   TARGET_IS_MCS251 &&
+                   (options.stackAuto || options.model == MODEL_LARGE || options.model == MODEL_HUGE)); // Shouldn't happen, but does for some mcs51-like models.
           if (!uic)
             bitVectUnSetBit (OP_USES (op), key); // Looks like some earlier optimization didn't clean up properly. Do it now. Shouldn't happen, see lines above.
           else if (uic->op == CAST && !IS_FLOAT (operandType (uic->result)))
@@ -1647,4 +1650,3 @@ optimizeValinfo (iCode *sic)
   optimizeValinfoConst (sic);
   optimizeValinfoNarrow (sic);
 }
-
