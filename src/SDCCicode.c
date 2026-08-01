@@ -4616,6 +4616,46 @@ isLvaluereq (int lvl)
 /*-----------------------------------------------------------------*/
 /* ast2iCode - creates an icodeList from an ast                    */
 /*-----------------------------------------------------------------*/
+static operand *
+ast2iCodeStatementExpression (ast *tree, int lvl)
+{
+  operand *result;
+  int oldInlinedActive;
+
+  if (!tree)
+    return NULL;
+
+  if (tree->isExprStmt &&
+      !(IS_AST_OP (tree) && tree->opval.op == BLOCK &&
+        tree->isStmtExpr))
+    return ast2iCode (tree, lvl);
+
+  if (!IS_AST_OP (tree) ||
+      (tree->opval.op != NULLOP &&
+       !(tree->opval.op == BLOCK &&
+         (tree->isStmtExpr || tree->isImplicitBlock))))
+    {
+      if (tree->type == EX_VALUE)
+        geniCodeDummyRead (ast2iCode (tree, lvl));
+      else
+        ast2iCode (tree, lvl);
+      return NULL;
+    }
+
+  oldInlinedActive = inlinedActive;
+  if (tree->inlined)
+    inlinedActive = 1;
+
+  if (tree->left && tree->left->type == EX_VALUE)
+    geniCodeDummyRead (ast2iCode (tree->left, lvl + 1));
+  else
+    ast2iCode (tree->left, lvl + 1);
+  result = ast2iCodeStatementExpression (tree->right, lvl + 1);
+
+  inlinedActive = oldInlinedActive;
+  return result;
+}
+
 operand *
 ast2iCode (ast * tree, int lvl)
 {
@@ -4641,6 +4681,10 @@ ast2iCode (ast * tree, int lvl)
 
   if (tree->type == EX_LINK)
     return operandFromLink (tree->opval.lnk);
+
+  if (tree->type == EX_OP && tree->opval.op == BLOCK &&
+      tree->isStmtExpr)
+    return ast2iCodeStatementExpression (tree, lvl);
 
   /* if we find a nullop */
   if (tree->type == EX_OP && (tree->opval.op == NULLOP || tree->opval.op == BLOCK))

@@ -26,17 +26,21 @@ def run(command, *, env=None):
     subprocess.run(command, check=True, env=env)
 
 
-def build(sdcc, source, device_include, library_dir, output_dir, stem):
+def build(
+    sdcc, source, device_include, library_dir, output_dir, stem,
+    extra_flags=(),
+):
     env = os.environ.copy()
     env["PATH"] = f"{sdcc.parent}{os.pathsep}{env.get('PATH', '')}"
     assembly = output_dir / f"{stem}.asm"
     image = output_dir / f"{stem}.hex"
 
     run([
-        str(sdcc), "-mmcs51", "-S", "-o", str(assembly), str(source),
+        str(sdcc), "-mmcs51", *extra_flags,
+        "-S", "-o", str(assembly), str(source),
     ], env=env)
     run([
-        str(sdcc), "-mmcs51", f"-I{device_include}",
+        str(sdcc), "-mmcs51", *extra_flags, f"-I{device_include}",
         f"-I{device_include / 'mcs51'}", f"-L{library_dir}",
         "-o", str(image), str(source),
     ], env=env)
@@ -150,6 +154,7 @@ def main():
     parser.add_argument("--qemu", required=True)
     parser.add_argument("--machine")
     parser.add_argument("--source", required=True)
+    parser.add_argument("--statement-expression-source", required=True)
     parser.add_argument("--longlong-source", required=True)
     parser.add_argument("--device-include", required=True)
     parser.add_argument("--library-dir", required=True)
@@ -163,14 +168,16 @@ def main():
     sdcc = Path(args.sdcc).resolve()
     qemu = Path(args.qemu).resolve()
     source = Path(args.source).resolve()
+    statement_expression_source = \
+        Path(args.statement_expression_source).resolve()
     longlong_source = Path(args.longlong_source).resolve()
     device_include = Path(args.device_include).resolve()
     library_dir = Path(args.library_dir).resolve()
     stack_auto_library_dir = Path(args.stack_auto_library_dir).resolve()
     trace_dir = Path(args.trace_dir).resolve() if args.trace_dir else None
     required = (
-        sdcc, qemu, source, longlong_source, device_include, library_dir,
-        stack_auto_library_dir,
+        sdcc, qemu, source, statement_expression_source, longlong_source,
+        device_include, library_dir, stack_auto_library_dir,
     )
     for path in required:
         if not path.exists():
@@ -247,6 +254,23 @@ def main():
 
         if baseline_digest is not None:
             print("MCS-51 upstream 4.6.0 digest comparison passed")
+
+        statement_configurations = (
+            ("statement-expression", ("--std=gnu17",), library_dir),
+            ("statement-expression-stack-auto",
+             ("--std=gnu17", "--stack-auto"), stack_auto_library_dir),
+        )
+        for statement_name, statement_flags, statement_library in \
+                statement_configurations:
+            _, statement_image = build(
+                sdcc, statement_expression_source, device_include,
+                statement_library, output_dir, statement_name,
+                statement_flags,
+            )
+            run_qemu(
+                qemu, machine, statement_image,
+                trace_for(statement_image),
+            )
 
         longlong_image = build_longlong(
             sdcc, longlong_source, device_include,

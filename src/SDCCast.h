@@ -51,6 +51,9 @@ typedef struct ast
   unsigned initMode:1;
   unsigned reversed:1;
   unsigned inlined:1;
+  unsigned isExprStmt:1;
+  unsigned isImplicitBlock:1;
+  unsigned isStmtExpr:1;
   long level;                   /* level for expr */
   int block;                    /* block number   */
   int seqPoint;                 /* sequence point */
@@ -209,6 +212,7 @@ ast *createRMW (ast *, unsigned, ast *);
 symbol * createFunctionDecl (symbol *);
 ast *createFunction (symbol *, ast *);
 ast *createBlock (symbol *, ast *);
+ast *statementExpressionResult (ast *);
 ast *createLabel (symbol *, ast *);
 ast *createCase (ast *, ast *, ast *);
 ast *createCaseRange (ast *, ast *, ast *, ast *);

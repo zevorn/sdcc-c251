@@ -50,7 +50,9 @@ check: all
 		--empty-declaration-source \
 			$(srcdir)/tests/gnu-empty-declaration.c \
 		--compound-literal-source \
-			$(srcdir)/tests/conditional-compound-literal.c
+			$(srcdir)/tests/conditional-compound-literal.c \
+		--statement-expression-source \
+			$(srcdir)/tests/gnu-statement-expressions.c
 	$(PYTHON) $(srcdir)/tests/check-diagnostics.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--incompatible-extern-source \
@@ -120,6 +122,8 @@ check-qemu: all check-official-qemu check-gdbstub
 		--far-source $(srcdir)/tests/far-callee.c \
 		--crt0 $(srcdir)/tests/crt0.asm \
 		--runtime-source $(srcdir)/tests/runtime-main.c \
+		--statement-expression-source \
+			$(srcdir)/tests/statement-expression-runtime.c \
 		--optimization-runtime-source \
 			$(srcdir)/tests/optimization-runtime.c \
 		--abi-regression-source $(srcdir)/tests/abi-regression-runtime.c \
@@ -169,6 +173,8 @@ check-mcs51-qemu: all
 		--sdcc $(top_builddir)/bin/sdcc \
 		--qemu $(QEMU_MCS51) \
 		--source $(srcdir)/tests/mcs51-regression.c \
+		--statement-expression-source \
+			$(srcdir)/tests/statement-expression-runtime.c \
 		--longlong-source $(srcdir)/tests/longlong-runtime.c \
 		--device-include $(top_srcdir)/device/include \
 		--library-dir $(top_builddir)/device/lib/build/small \

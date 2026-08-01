@@ -182,6 +182,13 @@ primary_expression
    | CONSTANT        { $$ = newAst_VALUE ($1); }
    | string_literal_val
    | '(' expression ')'    { $$ = $2; }
+   | '(' compound_statement ')'
+                      {
+                        if (!options.std_gnu)
+                          werror (E_SYNTAX_ERROR);
+                        $$ = $2 ? $2 : newNode (BLOCK, NULL, NULL);
+                        $$->isStmtExpr = 1;
+                      }
    | generic_selection
    | predefined_constant
    | BUILTIN_EXPECT '(' assignment_expr ',' assignment_expr ')'
@@ -2324,7 +2331,17 @@ block_item_list
 
 expression_statement
    : expression_opt ';'
-   | attribute_specifier_sequence expression ';'           { $$ = $2; seqPointNo++;}
+     {
+       $$ = $1;
+       if ($$)
+         $$->isExprStmt = 1;
+     }
+   | attribute_specifier_sequence expression ';'
+     {
+       $$ = $2;
+       $$->isExprStmt = 1;
+       seqPointNo++;
+     }
    ;
 
 else_statement
@@ -3114,6 +3131,8 @@ implicit_block
        NestLevel -= SUBLEVEL_UNIT;
        currBlockno = STACK_POP(blockNum);
        $$ = createBlock($1, $2);
+       if ($$)
+         $$->isImplicitBlock = 1;
        cleanUpLevel(StructTab, NestLevel + SUBLEVEL_UNIT);
      }
    | declaration_after_statement
@@ -3122,6 +3141,8 @@ implicit_block
        NestLevel -= SUBLEVEL_UNIT;
        currBlockno = STACK_POP(blockNum);
        $$ = createBlock($1, NULL);
+       if ($$)
+         $$->isImplicitBlock = 1;
        cleanUpLevel(StructTab, NestLevel + SUBLEVEL_UNIT);
      }
    ;

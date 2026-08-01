@@ -254,6 +254,9 @@ copyAst (ast * src)
   dest->reversed = src->reversed;
   dest->inlined = src->inlined;
   dest->initMode = src->initMode;
+  dest->isExprStmt = src->isExprStmt;
+  dest->isImplicitBlock = src->isImplicitBlock;
+  dest->isStmtExpr = src->isStmtExpr;
 
   if (src->ftype)
     dest->etype = getSpec (dest->ftype = copyLinkChain (src->ftype));
@@ -3930,6 +3933,24 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
 
   switch (tree->opval.op)
     {
+    case BLOCK:
+      if (tree->isStmtExpr)
+        {
+          ast *result = statementExpressionResult (tree);
+
+          if (result && result->ftype)
+            {
+              COPYTYPE (TTYPE (tree), TETYPE (tree), result->ftype);
+              tree->rvalue = result->rvalue;
+              tree->lvalue = result->lvalue;
+            }
+          else
+            TETYPE (tree) = getSpec (TTYPE (tree) = newVoidLink ());
+        }
+      else
+        TTYPE (tree) = TETYPE (tree) = NULL;
+      return tree;
+
     case BUILTIN_EXPECT:
       if (!IS_INTEGRAL (LTYPE (tree)) || !IS_INTEGRAL (RTYPE (tree)))
         {
@@ -6578,6 +6599,30 @@ createBlock (symbol * decl, ast * body)
   if (body)
     ex->block = body->block;
   return ex;
+}
+
+/*-----------------------------------------------------------------*/
+/* statementExpressionResult - find the final expression statement */
+/*-----------------------------------------------------------------*/
+ast *
+statementExpressionResult (ast *tree)
+{
+  if (!tree)
+    return NULL;
+
+  if (tree->isExprStmt &&
+      !(IS_AST_OP (tree) && tree->opval.op == BLOCK &&
+        tree->isStmtExpr))
+    return tree;
+
+  if (IS_AST_OP (tree) && tree->opval.op == NULLOP)
+    return statementExpressionResult (tree->right);
+
+  if (IS_AST_OP (tree) && tree->opval.op == BLOCK &&
+      (tree->isStmtExpr || tree->isImplicitBlock))
+    return statementExpressionResult (tree->right);
+
+  return NULL;
 }
 
 /*-----------------------------------------------------------------*/
