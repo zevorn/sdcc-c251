@@ -13722,13 +13722,13 @@ mcs251CopyPlainBytes (operand *result, operand *right, int size)
     opPut (result, opGet (right, offset, FALSE, FALSE), offset);
 }
 
-/* Return the native word register for a two-byte SDCC register tuple.
+/* Return the native word register for a two-byte MCS251 scalar tuple.
 
-   SDCC stores the least-significant byte first.  A native MCS251 WRn names
-   its most-significant even register first, so the matching tuple is
-   [Rn+1, Rn]. */
+   The generator visits the least-significant byte first.  Native big-endian
+   allocation therefore records [Rn+1, Rn], while WRn names the even high
+   register first. */
 static const char *
-mcs251WordForLittleEndianPair (const asmop *aop, int offset)
+mcs251WordForNativePair (const asmop *aop, int offset)
 {
   reg_info *low;
   reg_info *high;
@@ -13955,7 +13955,7 @@ genCast (iCode * ic)
       AOP_SIZE (result) >= 2 && IS_SPEC (rtype))
     {
       const char *word =
-        mcs251WordForLittleEndianPair (AOP (result), 0);
+        mcs251WordForNativePair (AOP (result), 0);
 
       if (word)
         {

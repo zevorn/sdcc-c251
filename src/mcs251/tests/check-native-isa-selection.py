@@ -53,6 +53,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="sdcc-mcs251-native-isa-") as tmp:
         workspace = Path(tmp)
         mcs251_asm = workspace / "mcs251.asm"
+        mcs251_stack_auto_asm = workspace / "mcs251-stack-auto.asm"
         mcs51_asm = workspace / "mcs51.asm"
         mcs251_rel = workspace / "mcs251.rel"
 
@@ -65,6 +66,19 @@ def main():
                 "-S",
                 "-o",
                 str(mcs251_asm),
+                str(source),
+            ]
+        )
+        run(
+            [
+                str(sdcc),
+                "-mmcs251",
+                "--model-small",
+                "--stack-auto",
+                "--opt-code-speed",
+                "-S",
+                "-o",
+                str(mcs251_stack_auto_asm),
                 str(source),
             ]
         )
@@ -96,8 +110,8 @@ def main():
         mcs251 = mcs251_asm.read_text()
         signed = function_body(mcs251, "mcs251_extend_signed_char")
         unsigned = function_body(mcs251, "mcs251_extend_unsigned_add")
-        replace_low_word = function_body(
-            mcs251, "mcs251_replace_low_word"
+        replace_high_word = function_body(
+            mcs251, "mcs251_replace_high_word"
         )
 
         require_instruction(
@@ -121,11 +135,26 @@ def main():
                 f"{signed}"
             )
         require_instruction(
-            replace_low_word,
+            replace_high_word,
             r"^[ \t]*movh[ \t]+dr(?:0|4),[ \t]*#(?:"
-            r"(?:0x)?7856|\(\((?:0x)?78[ \t]*<<[ \t]*8\)"
-            r"[ \t]*\|[ \t]*(?:0x)?56\))[ \t]*$",
-            "MCS251 low-word replacement with MOVH",
+            r"(?:0x)?5678|\(\((?:0x)?56[ \t]*<<[ \t]*8\)"
+            r"[ \t]*\|[ \t]*(?:0x)?78\))[ \t]*$",
+            "MCS251 high-word replacement with MOVH",
+        )
+
+        mcs251_stack_auto = mcs251_stack_auto_asm.read_text()
+        stack_auto_high_word = function_body(
+            mcs251_stack_auto, "mcs251_replace_high_word"
+        )
+        require_instruction(
+            stack_auto_high_word,
+            r"^[ \t]*mov[ \t]+r7,[ \t]*dpl[ \t]*$",
+            "stack-auto low byte preservation before MOVH",
+        )
+        require_instruction(
+            stack_auto_high_word,
+            r"^[ \t]*mov[ \t]+r6,[ \t]*dph[ \t]*$",
+            "stack-auto low word preservation before MOVH",
         )
 
         mcs51 = mcs51_asm.read_text()

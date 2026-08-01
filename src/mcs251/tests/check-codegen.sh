@@ -22,6 +22,8 @@ mkdir -p "$test_dir"
 
 "$sdcc" -mmcs251 -S -o "$test_dir/native-optimization.asm" \
     "$optimization_source"
+"$sdcc" -mmcs251 --stack-auto -S \
+    -o "$test_dir/native-optimization-stack-auto.asm" "$optimization_source"
 "$sdcc" -mmcs251 --model-large -S \
     -o "$test_dir/native-optimization-large.asm" "$optimization_source"
 "$sdcc" -mmcs251 --model-large -S -I"$device_include" \
@@ -72,7 +74,9 @@ grep -Eq '^[[:space:]]*inc[[:space:]]+a,#[^;]*(2|0x02)$' \
     "$test_dir/native-optimization.asm"
 grep -Eq '^[[:space:]]*dec[[:space:]]+a,#[^;]*(2|0x02)$' \
     "$test_dir/native-optimization.asm"
-grep -Eq '^[[:space:]]*mov[[:space:]]+wr6,[[:space:]]*dpl$' \
+grep -Eq '^[[:space:]]*mov[[:space:]]+r7,[[:space:]]*dpl$' \
+    "$test_dir/native-optimization.asm"
+grep -Eq '^[[:space:]]*mov[[:space:]]+r6,[[:space:]]*dph$' \
     "$test_dir/native-optimization.asm"
 grep -Eq '^[[:space:]]*anl[[:space:]]+wr6,[[:space:]]*_and16_PARM_2$' \
     "$test_dir/native-optimization.asm"
@@ -101,6 +105,16 @@ grep -Eq '^[[:space:]]*xrl[[:space:]]+wr6,[[:space:]]*#' \
     "$test_dir/xor16-literal.asm"
 grep -Eq '^[[:space:]]*cmp[[:space:]]+wr6,[[:space:]]*#' \
     "$test_dir/less-than16-literal.asm"
+
+sed -n '/^_less_than16_literal:/,/^[[:space:]]*\.area[[:space:]]/p' \
+    "$test_dir/native-optimization-stack-auto.asm" \
+    > "$test_dir/less-than16-stack-auto.asm"
+grep -Eq '^[[:space:]]*mov[[:space:]]+r7,[[:space:]]*dpl$' \
+    "$test_dir/less-than16-stack-auto.asm"
+grep -Eq '^[[:space:]]*mov[[:space:]]+r6,[[:space:]]*dph$' \
+    "$test_dir/less-than16-stack-auto.asm"
+grep -Eq '^[[:space:]]*cmp[[:space:]]+wr6,[[:space:]]*#' \
+    "$test_dir/less-than16-stack-auto.asm"
 
 # A MCS251 stack operand is loaded through A, so an in-place compound logical
 # operation must explicitly write A back after ANL, ORL, and XRL.  The first
@@ -163,16 +177,18 @@ fi
 grep -Eq '^[[:space:]]*ecall[[:space:]]+@dr28$' \
     "$test_dir/call-24bit.asm"
 grep -Eq '^[[:space:]]*eret$' "$test_dir/call-24bit.asm"
-grep -Eq '^[[:space:]]*\.byte[[:space:]]+_mcs251_callee,[[:space:]]*\(_mcs251_callee[[:space:]]*>>[[:space:]]*8\),[[:space:]]*\(_mcs251_callee[[:space:]]*>>[[:space:]]*16\)$' \
+grep -Eq '^[[:space:]]*\.byte[[:space:]]+\(_mcs251_callee[[:space:]]*>>[[:space:]]*16\),[[:space:]]*\(_mcs251_callee[[:space:]]*>>[[:space:]]*8\),[[:space:]]*_mcs251_callee$' \
     "$test_dir/call-24bit.asm"
 
 sed -n '/^_mcs251_forward_four_bytes:/,/^[[:space:]]*\.area[[:space:]]/p' \
     "$test_dir/call-24bit-large.asm" > "$test_dir/forward-four-bytes.asm"
-grep -Eq '^[[:space:]]*mov[[:space:]]+dpl,[[:space:]]*wr4$' \
+grep -Eq '^[[:space:]]*mov[[:space:]]+dpl,[[:space:]]*r7$' \
     "$test_dir/forward-four-bytes.asm"
-grep -Eq '^[[:space:]]*mov[[:space:]]+b,[[:space:]]*r6$' \
+grep -Eq '^[[:space:]]*mov[[:space:]]+dph,[[:space:]]*r6$' \
     "$test_dir/forward-four-bytes.asm"
-grep -Eq '^[[:space:]]*mov[[:space:]]+a,[[:space:]]*r7$' \
+grep -Eq '^[[:space:]]*mov[[:space:]]+b,[[:space:]]*r5$' \
+    "$test_dir/forward-four-bytes.asm"
+grep -Eq '^[[:space:]]*mov[[:space:]]+a,[[:space:]]*r4$' \
     "$test_dir/forward-four-bytes.asm"
 grep -Eq '^[[:space:]]*ejmp[[:space:]]+_mcs251_two_argument_callee$' \
     "$test_dir/forward-four-bytes.asm"
@@ -210,7 +226,7 @@ grep -Eq '^.*\(_initializer_value[[:space:]]*\+[[:space:]]*0x0006\).*,#0x04$' \
 
 # MCS251 far and generic pointers are flat 24-bit values even outside the
 # DS390-only MODEL_FLAT24 mode.  Keep all three relocation bytes in const data.
-grep -Eq '^[[:space:]]*\.byte[[:space:]]+_initializer_target,[[:space:]]*\(_initializer_target[[:space:]]*>>[[:space:]]*8\),[[:space:]]*\(_initializer_target[[:space:]]*>>[[:space:]]*16\)$' \
+grep -Eq '^[[:space:]]*\.byte[[:space:]]+\(_initializer_target[[:space:]]*>>[[:space:]]*16\),[[:space:]]*\(_initializer_target[[:space:]]*>>[[:space:]]*8\),[[:space:]]*_initializer_target$' \
     "$test_dir/aggregate-initializer-mcs251.asm"
 
 # Each high byte of a flat MCS251 function address needs its own relocation.

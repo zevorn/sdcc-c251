@@ -27,3 +27,9 @@ mcs251_replace_low_word (unsigned long value)
 {
     return (value & 0xffff0000ul) | 0x5678ul;
 }
+
+unsigned long
+mcs251_replace_high_word (unsigned long value)
+{
+    return (value & 0x0000fffful) | 0x56780000ul;
+}

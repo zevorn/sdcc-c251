@@ -5,6 +5,8 @@ static volatile signed char signed_char_input;
 static volatile unsigned char unsigned_char_input;
 static volatile unsigned int extension_addend;
 static volatile unsigned long dword_input;
+static volatile unsigned int left_word_input;
+static volatile unsigned int right_word_input;
 
 static signed int
 native_extend_signed_char (signed char value)
@@ -22,6 +24,12 @@ static unsigned long
 native_replace_low_word (unsigned long value)
 {
     return (value & 0xffff0000ul) | 0x5678ul;
+}
+
+static unsigned long
+native_replace_high_word (unsigned long value)
+{
+    return (value & 0x0000fffful) | 0x56780000ul;
 }
 
 static unsigned int
@@ -46,6 +54,24 @@ static unsigned char
 native_less_than16_literal (unsigned int value)
 {
     return value < 0x5aa5u;
+}
+
+static unsigned int
+native_and16_words (unsigned int left, unsigned int right)
+{
+    return left & right;
+}
+
+static unsigned int
+native_or16_words (unsigned int left, unsigned int right)
+{
+    return left | right;
+}
+
+static unsigned int
+native_xor16_words (unsigned int left, unsigned int right)
+{
+    return left ^ right;
 }
 
 static void
@@ -95,6 +121,13 @@ main (void)
         native_less_than16_literal (optimization_input))
         passed = 0;
 
+    left_word_input = 0x12e4u;
+    right_word_input = 0xa50fu;
+    if (native_and16_words (left_word_input, right_word_input) != 0x0004u ||
+        native_or16_words (left_word_input, right_word_input) != 0xb7efu ||
+        native_xor16_words (left_word_input, right_word_input) != 0xb7ebu)
+        passed = 0;
+
     signed_char_input = -128;
     if (native_extend_signed_char (signed_char_input) != -128)
         passed = 0;
@@ -137,6 +170,19 @@ main (void)
         passed = 0;
     dword_input = 0x89abcdeful;
     if (native_replace_low_word (dword_input) != 0x89ab5678ul)
+        passed = 0;
+
+    dword_input = 0x00000000ul;
+    if (native_replace_high_word (dword_input) != 0x56780000ul)
+        passed = 0;
+    dword_input = 0x1234abcdul;
+    if (native_replace_high_word (dword_input) != 0x5678abcdul)
+        passed = 0;
+    dword_input = 0x0000fffful;
+    if (native_replace_high_word (dword_input) != 0x5678fffful)
+        passed = 0;
+    dword_input = 0x89abcdeful;
+    if (native_replace_high_word (dword_input) != 0x5678cdeful)
         passed = 0;
 
     print_result (passed);

@@ -1,63 +1,8 @@
 // MCS251-only rules are appended to the mature MCS-51 rule set.
 
-// Wide MOV preserves SDCC's byte order: direct byte N maps to Rn and byte
-// N+1 maps to Rn+1.  These rules use native word registers without changing
-// the revision-1 little-endian ABI.
-replace {
-	mov	r0,dpl
-	mov	r1,dph
-} by {
-	mov	wr0,dpl
-}
-
-replace {
-	mov	r2,dpl
-	mov	r3,dph
-} by {
-	mov	wr2,dpl
-}
-
-replace {
-	mov	r4,dpl
-	mov	r5,dph
-} by {
-	mov	wr4,dpl
-}
-
-replace {
-	mov	r6,dpl
-	mov	r7,dph
-} by {
-	mov	wr6,dpl
-}
-
-replace {
-	mov	dpl,r0
-	mov	dph,r1
-} by {
-	mov	dpl,wr0
-}
-
-replace {
-	mov	dpl,r2
-	mov	dph,r3
-} by {
-	mov	dpl,wr2
-}
-
-replace {
-	mov	dpl,r4
-	mov	dph,r5
-} by {
-	mov	dpl,wr4
-}
-
-replace {
-	mov	dpl,r6
-	mov	dph,r7
-} by {
-	mov	dpl,wr6
-}
+// MCS251 scalar register tuples follow the native big-endian register-file
+// order.  The generator still visits the least-significant byte first, so a
+// scalar load reaches the odd low register before the even high register.
 
 replace {
 	mov	r0,%1
@@ -83,6 +28,34 @@ replace {
 replace {
 	mov	r6,%1
 	mov	r7,(%1 + 1)
+} by {
+	mov	wr6,%1
+} if notVolatile(%1)
+
+replace {
+	mov	r1,(%1 + 1)
+	mov	r0,%1
+} by {
+	mov	wr0,%1
+} if notVolatile(%1)
+
+replace {
+	mov	r3,(%1 + 1)
+	mov	r2,%1
+} by {
+	mov	wr2,%1
+} if notVolatile(%1)
+
+replace {
+	mov	r5,(%1 + 1)
+	mov	r4,%1
+} by {
+	mov	wr4,%1
+} if notVolatile(%1)
+
+replace {
+	mov	r7,(%1 + 1)
+	mov	r6,%1
 } by {
 	mov	wr6,%1
 } if notVolatile(%1)
@@ -116,6 +89,34 @@ replace {
 } if notVolatile(%1)
 
 replace {
+	mov	(%1 + 1),r1
+	mov	%1,r0
+} by {
+	mov	%1,wr0
+} if notVolatile(%1)
+
+replace {
+	mov	(%1 + 1),r3
+	mov	%1,r2
+} by {
+	mov	%1,wr2
+} if notVolatile(%1)
+
+replace {
+	mov	(%1 + 1),r5
+	mov	%1,r4
+} by {
+	mov	%1,wr4
+} if notVolatile(%1)
+
+replace {
+	mov	(%1 + 1),r7
+	mov	%1,r6
+} by {
+	mov	%1,wr6
+} if notVolatile(%1)
+
+replace {
 	mov	wr0,%1
 	mov	wr2,(%1 + 2)
 } by {
@@ -125,6 +126,20 @@ replace {
 replace {
 	mov	wr4,%1
 	mov	wr6,(%1 + 2)
+} by {
+	mov	dr4,%1
+} if notVolatile(%1)
+
+replace {
+	mov	wr2,(%1 + 2)
+	mov	wr0,%1
+} by {
+	mov	dr0,%1
+} if notVolatile(%1)
+
+replace {
+	mov	wr6,(%1 + 2)
+	mov	wr4,%1
 } by {
 	mov	dr4,%1
 } if notVolatile(%1)
@@ -143,278 +158,302 @@ replace {
 	mov	%1,dr4
 } if notVolatile(%1)
 
-// SDCC's low two bytes occupy the high half of a native DR register.  Fold
-// a known replacement of those bytes into MOVH without changing the
-// little-endian object representation.
 replace {
-	mov	r0,#0x00
+	mov	(%1 + 2),wr2
+	mov	%1,wr0
+} by {
+	mov	%1,dr0
+} if notVolatile(%1)
+
+replace {
+	mov	(%1 + 2),wr6
+	mov	%1,wr4
+} by {
+	mov	%1,dr4
+} if notVolatile(%1)
+
+// MOVH writes the high word of a native dword register.  With the big-endian
+// register tuple this is also the C scalar's high word.
+replace {
 	mov	r1,#0x00
-	orl	ar0,#%1
-	orl	ar1,#%2
+	mov	r0,#0x00
+	orl	ar1,#%1
+	orl	ar0,#%2
 } by {
-	movh	dr0,#((%1 << 8) | %2)
+	movh	dr0,#((%2 << 8) | %1)
 }
 
 replace {
-	mov	r4,#0x00
 	mov	r5,#0x00
-	orl	ar4,#%1
-	orl	ar5,#%2
+	mov	r4,#0x00
+	orl	ar5,#%1
+	orl	ar4,#%2
 } by {
-	movh	dr4,#((%1 << 8) | %2)
+	movh	dr4,#((%2 << 8) | %1)
 }
 
-// Logical operations are endian-invariant, so an SDCC byte pair or quartet
-// can use the native WR/DR operation directly.  A is required to be dead
+// Logical operations can use native words once both the register tuple and
+// the memory operand are in big-endian order.  A is required to be dead
 // because the byte-at-a-time sequence leaves its final source byte there.
 replace {
-	mov	a,%1
-	anl	a,r6
-	mov	dpl,a
 	mov	a,(%1 + 1)
 	anl	a,r7
+	mov	dpl,a
+	mov	a,%1
+	anl	a,r6
 	mov	dph,a
 } by {
 	anl	wr6,%1
-	mov	dpl,wr6
+	mov	dpl,r7
+	mov	dph,r6
 } if notVolatile(%1), notUsed('a' 'r6' 'r7')
 
 replace {
-	mov	a,%1
-	orl	a,r6
-	mov	dpl,a
 	mov	a,(%1 + 1)
 	orl	a,r7
+	mov	dpl,a
+	mov	a,%1
+	orl	a,r6
 	mov	dph,a
 } by {
 	orl	wr6,%1
-	mov	dpl,wr6
+	mov	dpl,r7
+	mov	dph,r6
 } if notVolatile(%1), notUsed('a' 'r6' 'r7')
 
 replace {
-	mov	a,%1
-	xrl	a,r6
-	mov	dpl,a
 	mov	a,(%1 + 1)
 	xrl	a,r7
+	mov	dpl,a
+	mov	a,%1
+	xrl	a,r6
 	mov	dph,a
 } by {
 	xrl	wr6,%1
-	mov	dpl,wr6
+	mov	dpl,r7
+	mov	dph,r6
 } if notVolatile(%1), notUsed('a' 'r6' 'r7')
 
 replace {
-	mov	a,%1
-	anl	a,r6
-	mov	dpl,a
 	mov	a,(%1 + 1)
 	anl	a,r7
+	mov	dpl,a
+	mov	a,%1
+	anl	a,r6
 	mov	dph,a
 	eret
 } by {
 	anl	wr6,%1
-	mov	dpl,wr6
+	mov	dpl,r7
+	mov	dph,r6
 	eret
 } if notVolatile(%1)
 
 replace {
-	mov	a,%1
-	orl	a,r6
-	mov	dpl,a
 	mov	a,(%1 + 1)
 	orl	a,r7
+	mov	dpl,a
+	mov	a,%1
+	orl	a,r6
 	mov	dph,a
 	eret
 } by {
 	orl	wr6,%1
-	mov	dpl,wr6
+	mov	dpl,r7
+	mov	dph,r6
 	eret
 } if notVolatile(%1)
 
 replace {
-	mov	a,%1
-	xrl	a,r6
-	mov	dpl,a
 	mov	a,(%1 + 1)
 	xrl	a,r7
+	mov	dpl,a
+	mov	a,%1
+	xrl	a,r6
 	mov	dph,a
 	eret
 } by {
 	xrl	wr6,%1
-	mov	dpl,wr6
+	mov	dpl,r7
+	mov	dph,r6
 	eret
 } if notVolatile(%1)
 
 replace {
-	mov	a,%1
-	anl	ar4,a
-	mov	a,(%1 + 1)
-	anl	ar5,a
-	mov	a,(%1 + 2)
-	anl	ar6,a
 	mov	a,(%1 + 3)
 	anl	ar7,a
+	mov	a,(%1 + 2)
+	anl	ar6,a
+	mov	a,(%1 + 1)
+	anl	ar5,a
+	mov	a,%1
+	anl	ar4,a
 } by {
 	anl	wr4,%1
 	anl	wr6,(%1 + 2)
 } if notVolatile(%1), notUsed('a')
 
 replace {
-	mov	a,%1
-	orl	ar4,a
-	mov	a,(%1 + 1)
-	orl	ar5,a
-	mov	a,(%1 + 2)
-	orl	ar6,a
 	mov	a,(%1 + 3)
 	orl	ar7,a
+	mov	a,(%1 + 2)
+	orl	ar6,a
+	mov	a,(%1 + 1)
+	orl	ar5,a
+	mov	a,%1
+	orl	ar4,a
 } by {
 	orl	wr4,%1
 	orl	wr6,(%1 + 2)
 } if notVolatile(%1), notUsed('a')
 
 replace {
-	mov	a,%1
-	xrl	ar4,a
-	mov	a,(%1 + 1)
-	xrl	ar5,a
-	mov	a,(%1 + 2)
-	xrl	ar6,a
 	mov	a,(%1 + 3)
 	xrl	ar7,a
+	mov	a,(%1 + 2)
+	xrl	ar6,a
+	mov	a,(%1 + 1)
+	xrl	ar5,a
+	mov	a,%1
+	xrl	ar4,a
 } by {
 	xrl	wr4,%1
 	xrl	wr6,(%1 + 2)
 } if notVolatile(%1), notUsed('a')
 
 replace {
-	mov	a,%1
-	anl	ar4,a
-	mov	a,(%1 + 1)
-	anl	ar5,a
-	mov	a,(%1 + 2)
-	anl	ar6,a
 	mov	a,(%1 + 3)
 	anl	ar7,a
-	mov	dpl,wr4
-	mov	b,r6
-	mov	a,r7
+	mov	a,(%1 + 2)
+	anl	ar6,a
+	mov	a,(%1 + 1)
+	anl	ar5,a
+	mov	a,%1
+	anl	ar4,a
+	mov	dpl,r7
+	mov	dph,r6
+	mov	b,r5
+	mov	a,r4
 	eret
 } by {
 	anl	wr4,%1
 	anl	wr6,(%1 + 2)
-	mov	dpl,wr4
-	mov	b,r6
-	mov	a,r7
+	mov	dpl,r7
+	mov	dph,r6
+	mov	b,r5
+	mov	a,r4
 	eret
 } if notVolatile(%1)
 
 replace {
-	mov	a,%1
-	orl	ar4,a
-	mov	a,(%1 + 1)
-	orl	ar5,a
-	mov	a,(%1 + 2)
-	orl	ar6,a
 	mov	a,(%1 + 3)
 	orl	ar7,a
-	mov	dpl,wr4
-	mov	b,r6
-	mov	a,r7
+	mov	a,(%1 + 2)
+	orl	ar6,a
+	mov	a,(%1 + 1)
+	orl	ar5,a
+	mov	a,%1
+	orl	ar4,a
+	mov	dpl,r7
+	mov	dph,r6
+	mov	b,r5
+	mov	a,r4
 	eret
 } by {
 	orl	wr4,%1
 	orl	wr6,(%1 + 2)
-	mov	dpl,wr4
-	mov	b,r6
-	mov	a,r7
+	mov	dpl,r7
+	mov	dph,r6
+	mov	b,r5
+	mov	a,r4
 	eret
 } if notVolatile(%1)
 
 replace {
-	mov	a,%1
-	xrl	ar4,a
-	mov	a,(%1 + 1)
-	xrl	ar5,a
-	mov	a,(%1 + 2)
-	xrl	ar6,a
 	mov	a,(%1 + 3)
 	xrl	ar7,a
-	mov	dpl,wr4
-	mov	b,r6
-	mov	a,r7
+	mov	a,(%1 + 2)
+	xrl	ar6,a
+	mov	a,(%1 + 1)
+	xrl	ar5,a
+	mov	a,%1
+	xrl	ar4,a
+	mov	dpl,r7
+	mov	dph,r6
+	mov	b,r5
+	mov	a,r4
 	eret
 } by {
 	xrl	wr4,%1
 	xrl	wr6,(%1 + 2)
-	mov	dpl,wr4
-	mov	b,r6
-	mov	a,r7
+	mov	dpl,r7
+	mov	dph,r6
+	mov	b,r5
+	mov	a,r4
 	eret
 } if notVolatile(%1)
 
-// Fold little-endian byte operations with one 16-bit literal into the MCS251
-// immediate WR forms.  WR6 has its MSB in R6, while SDCC has the scalar LSB
-// there, so the immediate bytes must be reversed.  Logical operations remain
-// valid because they do not propagate state between bytes.
+// Fold byte operations with one 16-bit literal into the native immediate WR
+// forms.  The first captured byte is the scalar LSB and therefore occupies
+// the low odd register.
 replace {
 	mov	a,#%1
-	anl	a,r6
-	mov	dpl,a
-	mov	a,#%2
 	anl	a,r7
+	mov	dpl,a
+	mov	a,#%2
+	anl	a,r6
 	mov	dph,a
 	eret
 } by {
-	anl	wr6,#((%1 << 8) | %2)
-	mov	dpl,wr6
+	anl	wr6,#((%2 << 8) | %1)
+	mov	dpl,r7
+	mov	dph,r6
 	eret
 }
 
 replace {
 	mov	a,#%1
-	orl	a,r6
-	mov	dpl,a
-	mov	a,#%2
 	orl	a,r7
+	mov	dpl,a
+	mov	a,#%2
+	orl	a,r6
 	mov	dph,a
 	eret
 } by {
-	orl	wr6,#((%1 << 8) | %2)
-	mov	dpl,wr6
+	orl	wr6,#((%2 << 8) | %1)
+	mov	dpl,r7
+	mov	dph,r6
 	eret
 }
 
 replace {
 	mov	a,#%1
-	xrl	a,r6
+	xrl	a,r7
 	mov	dpl,a
 	mov	a,#%2
-	xrl	a,r7
+	xrl	a,r6
 	mov	dph,a
 	eret
 } by {
-	xrl	wr6,#((%1 << 8) | %2)
-	mov	dpl,wr6
+	xrl	wr6,#((%2 << 8) | %1)
+	mov	dpl,r7
+	mov	dph,r6
 	eret
 }
 
-// Unlike logical operations, comparison is not endian-invariant.  Convert
-// the SDCC little-endian R6/R7 pair into the native WR6 order before CMP.
+// The scalar tuple already has the native WR6 order, so comparison needs no
+// byte exchange before the word instruction.
 replace {
 	clr	c
-	mov	a,r6
-	subb	a,#%1
 	mov	a,r7
+	subb	a,#%1
+	mov	a,r6
 	subb	a,#%2
 	clr	a
 	rlc	a
 	mov	dpl,a
 	eret
 } by {
-	xch	a,r6
-	xch	a,r7
-	xch	a,r6
 	cmp	wr6,#((%2 << 8) | %1)
 	clr	a
 	rlc	a

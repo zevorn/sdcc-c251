@@ -1254,6 +1254,36 @@ xchgPositions:
     }
 }
 
+/* Keep logical byte zero as the least-significant byte while assigning
+   MCS251 scalar tuples in native register-file order.  Aggregates remain
+   byte-preserving and the MCS51 allocator retains its historical order. */
+static void
+sortAssignedRegs (symbol *sym)
+{
+  bool descending = TARGET_IS_MCS251 && sym->nRegs > 1 &&
+    !IS_AGGREGATE (sym->type);
+  int j;
+
+  if (!sym->regs[0])
+    return;
+
+  for (j = 0; j < sym->nRegs - 1; j++)
+    {
+      int k;
+
+      for (k = j + 1; k < sym->nRegs; k++)
+        if ((!descending &&
+             sym->regs[j]->offset > sym->regs[k]->offset) ||
+            (descending &&
+             sym->regs[j]->offset < sym->regs[k]->offset))
+          {
+            reg_info *tmp = sym->regs[j];
+            sym->regs[j] = sym->regs[k];
+            sym->regs[k] = tmp;
+          }
+    }
+}
+
 /*------------------------------------------------------------------*/
 /* verifyRegsAssigned - make sure an iTemp is properly initialized; */
 /* it should either have registers or have beed spilled. Otherwise, */
@@ -1484,24 +1514,7 @@ serialRegAssign (eBBlock ** ebbs, int count)
                     }
                 }
 
-              /* for debugging prefer to keep the sym in ascending
-                 registers so sort them by address */
-              if (sym->regs[0])
-                {
-                  for (j = 0; j < sym->nRegs - 1; j++)
-                    {
-                      int k;
-                      for (k=j+1; k<sym->nRegs; k++)
-                        {
-                          if (sym->regs[j]->offset > sym->regs[k]->offset)
-                            {
-                              reg_info *tmp = sym->regs[j];
-                              sym->regs[j] = sym->regs[k];
-                              sym->regs[k] = tmp;
-                            }
-                        }
-                    }
-                }
+              sortAssignedRegs (sym);
 
               if (!POINTER_SET (ic) && !POINTER_GET (ic))
                 {
@@ -1637,6 +1650,7 @@ fillGaps (void)
             }
           D (printf ("%s ", sym->regs[i]->name));
         }
+      sortAssignedRegs (sym);
       D (printf ("]\n"));
 
       /* For all its definitions check if the registers

@@ -828,7 +828,7 @@ mcs251UpdateWideOperandRW (asmLineNode *aln, const char *op,
   if (!strncmp (name, "wr", 2))
     bytes = 2;
   else if (!strncmp (name, "dr", 2))
-    bytes = 4;
+    bytes = strchr (optype, 'h') ? 2 : 4;
   else
     return false;
 
@@ -930,10 +930,17 @@ static mcs51opcodedata mcs51opcodeDataTable[] =
     {"anl",  "",  "",   "rw", "r"},
     {"cjne", "j", "w",  "r",  "r"},
     {"clr",  "",  "",   "w",  ""},
+#ifdef MCS251_PORT
+    {"cmp",  "",  "w",  "r",  "r"},
+#endif
     {"cpl",  "",  "",   "rw", ""},
     {"da",   "",  "rw", "rw", ""},
     {"dec",  "",  "",   "rw", ""},
+#ifdef MCS251_PORT
+    {"div",  "",  "w",  "rw", "r"},
+#else
     {"div",  "",  "w",  "rw", ""},
+#endif
     {"djnz", "j", "",  "rw",  ""},
 #ifdef MCS251_PORT
     {"ecall","j", "",   "",   ""},
@@ -953,8 +960,17 @@ static mcs51opcodedata mcs51opcodeDataTable[] =
     {"ljmp", "j", "",   "",   ""},
     {"mov",  "",  "",   "w",  "r"},
     {"movc", "",  "",   "w",  "r"},
+#ifdef MCS251_PORT
+    {"movh", "",  "",   "wh", "r"},
+    {"movs", "",  "",   "w",  "r"},
+#endif
     {"movx", "",  "",   "w",  "r"},
+#ifdef MCS251_PORT
+    {"movz", "",  "",   "w",  "r"},
+    {"mul",  "",  "w",  "rw", "r"},
+#else
     {"mul",  "",  "w",  "rw", ""},
+#endif
     {"nop",  "",  "",   "",   ""},
     {"orl",  "",  "",   "rw", "r"},
     {"pop",  "",  "",   "w",  ""},
@@ -967,6 +983,12 @@ static mcs51opcodedata mcs51opcodeDataTable[] =
     {"rrc",  "",  "rw", "rw", ""},
     {"setb", "",  "",   "w",  ""},
     {"sjmp", "j", "",   "",   ""},
+#ifdef MCS251_PORT
+    {"sll",  "",  "w",  "rw", "r"},
+    {"sra",  "",  "w",  "rw", "r"},
+    {"srl",  "",  "w",  "rw", "r"},
+    {"sub",  "",  "w",  "rw", "r"},
+#endif
     {"subb", "",  "rw", "rw", "r"},
     {"swap", "",  "",   "rw", ""},
     {"xch",  "",  "",   "rw", "rw"},
