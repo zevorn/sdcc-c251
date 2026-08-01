@@ -98,6 +98,10 @@ main (void)
       pointer_count != 1)
     failure = 13;
 
+  if (__builtin_add_overflow (17, 25, &signed_int) ||
+      signed_int != 42)
+    failure = 16;
+
   print_result (failure);
   for (;;)
     {

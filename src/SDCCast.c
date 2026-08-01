@@ -3775,9 +3775,10 @@ foldBitBuiltinCall (ast *tree)
 
 typedef enum
 {
-  OVERFLOW_BUILTIN_ADD,
-  OVERFLOW_BUILTIN_SUB,
-  OVERFLOW_BUILTIN_MUL,
+  /* These values are part of the __sdcc_overflow runtime protocol. */
+  OVERFLOW_BUILTIN_ADD = 1,
+  OVERFLOW_BUILTIN_SUB = 2,
+  OVERFLOW_BUILTIN_MUL = 3,
 } overflowBuiltinOperation;
 
 typedef enum
