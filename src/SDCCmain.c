@@ -197,7 +197,7 @@ static const OPTION optionsTable[] = {
   {0,   OPTION_WERROR, NULL, "Treat the warnings as errors"},
   {0,   OPTION_DEBUG, NULL, "Enable debugging symbol output"},
   {0,   "--cyclomatic", &options.cyclomatic, "Display complexity of compiled functions"},
-  {0,   OPTION_STD, NULL, "Determine the language standard (c90, c99, c11, c23, c2y, sdcc89 etc.)"},
+  {0,   OPTION_STD, NULL, "Determine the language standard (c90, c99, c11, c17, c23, c2y, sdcc89 etc.)"},
   {0,   OPTION_DOLLARS_IN_IDENT, &options.dollars_in_ident, "Permit '$' as an identifier character"},
   {0,   OPTION_SIGNED_CHAR, &options.signed_char, "Make \"char\" signed by default"},
   {0,   OPTION_CONST_STRINGLIT, &options.const_stringlit, "Make string literals const, like in C++"},
@@ -673,6 +673,7 @@ setDefaultOptions (void)
   options.std_c95 = 1;
   options.std_c99 = 1;
   options.std_c11 = 1;          /* default to C11 (we want inline by default, so we need at least C99, and support for C11 is more complete than C99) */
+  options.std_c17 = 0;
   options.std_c23 = 0;
   options.std_c2y = 0;
   options.code_seg = CODE_NAME ? Safe_strdup (CODE_NAME) : NULL;        /* default to CSEG for generated code */
@@ -1295,6 +1296,7 @@ parseCmdLine (int argc, char **argv)
                   options.std_c95 = 0;
                   options.std_c99 = 0;
                   options.std_c11 = 0;
+                  options.std_c17 = 0;
                   options.std_c23 = 0;
                   options.std_c2y = 0;
                   options.std_sdcc = 0;
@@ -1306,6 +1308,7 @@ parseCmdLine (int argc, char **argv)
                   options.std_c95 = 1;
                   options.std_c99 = 0;
                   options.std_c11 = 0;
+                  options.std_c17 = 0;
                   options.std_c23 = 0;
                   options.std_c2y = 0;
                   options.std_sdcc = 0;
@@ -1317,18 +1320,32 @@ parseCmdLine (int argc, char **argv)
                   options.std_c95 = 1;
                   options.std_c99 = 1;
                   options.std_c11 = 0;
+                  options.std_c17 = 0;
                   options.std_c23 = 0;
                   options.std_c2y = 0;
                   options.std_sdcc = 0;
                   continue;
                 }
 
-              if (strcmp (langVer, "c11") == 0 || strcmp (langVer, "iso9899:2011") == 0 || strcmp (langVer, "c17") == 0 ||
-                  strcmp (langVer, "iso9899:2017") == 0 || strcmp (langVer, "c18") == 0 || strcmp (langVer, "iso9899:2018") == 0)
+              if (strcmp (langVer, "c11") == 0 || strcmp (langVer, "iso9899:2011") == 0)
                 {
                   options.std_c95 = 1;
                   options.std_c99 = 1;
                   options.std_c11 = 1;
+                  options.std_c17 = 0;
+                  options.std_c23 = 0;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 0;
+                  continue;
+                }
+
+              if (strcmp (langVer, "c17") == 0 || strcmp (langVer, "iso9899:2017") == 0 ||
+                  strcmp (langVer, "c18") == 0 || strcmp (langVer, "iso9899:2018") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 1;
+                  options.std_c17 = 1;
                   options.std_c23 = 0;
                   options.std_c2y = 0;
                   options.std_sdcc = 0;
@@ -1340,6 +1357,7 @@ parseCmdLine (int argc, char **argv)
                   options.std_c95 = 1;
                   options.std_c99 = 1;
                   options.std_c11 = 1;
+                  options.std_c17 = 1;
                   options.std_c23 = 1;
                   options.std_c2y = 0;
                   options.std_sdcc = 0;
@@ -1351,6 +1369,7 @@ parseCmdLine (int argc, char **argv)
                   options.std_c95 = 1;
                   options.std_c99 = 1;
                   options.std_c11 = 1;
+                  options.std_c17 = 1;
                   options.std_c23 = 1;
                   options.std_c2y = 1;
                   options.std_sdcc = 0;
@@ -1362,6 +1381,7 @@ parseCmdLine (int argc, char **argv)
                   options.std_c95 = 0;
                   options.std_c99 = 0;
                   options.std_c11 = 0;
+                  options.std_c17 = 0;
                   options.std_c23 = 0;
                   options.std_c2y = 0;
                   options.std_sdcc = 1;
@@ -1373,17 +1393,31 @@ parseCmdLine (int argc, char **argv)
                   options.std_c95 = 1;
                   options.std_c99 = 1;
                   options.std_c11 = 0;
+                  options.std_c17 = 0;
                   options.std_c23 = 0;
                   options.std_c2y = 0;
                   options.std_sdcc = 1;
                   continue;
                 }
 
-              if (strcmp (langVer, "sdcc11") == 0 || strcmp (langVer, "sdcc17") == 0 || strcmp (langVer, "sdcc18") == 0)
+              if (strcmp (langVer, "sdcc11") == 0)
                 {
                   options.std_c95 = 1;
                   options.std_c99 = 1;
                   options.std_c11 = 1;
+                  options.std_c17 = 0;
+                  options.std_c23 = 0;
+                  options.std_c2y = 0;
+                  options.std_sdcc = 1;
+                  continue;
+                }
+
+              if (strcmp (langVer, "sdcc17") == 0 || strcmp (langVer, "sdcc18") == 0)
+                {
+                  options.std_c95 = 1;
+                  options.std_c99 = 1;
+                  options.std_c11 = 1;
+                  options.std_c17 = 1;
                   options.std_c23 = 0;
                   options.std_c2y = 0;
                   options.std_sdcc = 1;
@@ -1395,6 +1429,7 @@ parseCmdLine (int argc, char **argv)
                   options.std_c95 = 1;
                   options.std_c99 = 1;
                   options.std_c11 = 1;
+                  options.std_c17 = 1;
                   options.std_c23 = 1;
                   options.std_c2y = 0;
                   options.std_sdcc = 1;
@@ -1406,6 +1441,7 @@ parseCmdLine (int argc, char **argv)
                   options.std_c95 = 1;
                   options.std_c99 = 1;
                   options.std_c11 = 1;
+                  options.std_c17 = 1;
                   options.std_c23 = 1;
                   options.std_c2y = 1;
                   options.std_sdcc = 1;
@@ -2728,10 +2764,11 @@ initValues (void)
    */
   setMainValue ("cppstd",
     options.std_c23 ? "-std=c23 " :
+    (options.std_c17 ? "-std=c17 " :
     (options.std_c11 ? "-std=c11 " :
     (options.std_c99 ? "-std=c99 " :
     (options.std_c95 ? "-std=iso9899:199409 " :
-    "-std=c89 "))));
+    "-std=c89 ")))));
 }
 
 static void

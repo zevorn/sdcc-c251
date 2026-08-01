@@ -18,6 +18,9 @@ peeph.rul: $(top_srcdir)/src/mcs51/peeph.def $(srcdir)/peeph-mcs251.def
 
 .PHONY: check
 check: all
+	$(PYTHON) $(srcdir)/tests/check-language-modes.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--source $(srcdir)/tests/language-mode.c
 	$(SHELL) $(srcdir)/tests/check-driver.sh \
 		$(top_builddir)/bin/sdcc \
 		$(srcdir)/tests/compiler-smoke.c \
