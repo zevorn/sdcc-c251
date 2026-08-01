@@ -143,7 +143,9 @@ a negative indexed operand, call the installed `setjmp`/`longjmp` library,
 and require both the restored SPX (`0x0120`) and return value (`0x1234`).  A
 trace of the passing image shows SPX at `0x0123` inside the three-byte ECALL
 frame, the restore helper rebuilding that frame, and `ERET` resuming with SPX
-back at `0x0120`.  The same test passes with both small and large libraries.
+back at `0x0120`.  A C subtest also keeps values live in R0-R7 across the two
+returns.  The same test passes with all four small/large and
+default/stack-auto library combinations.
 
 ## Confirmed signed-displacement diagnostic
 

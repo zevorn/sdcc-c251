@@ -105,14 +105,16 @@ flat pointer，因此 frame 跨过 256-byte boundary 后，array 与 aggregate �
 STC32G144K246 在 `00:0000`–`00:3fff` 实现 16 KiB edata；针对该设备的构建必须
 预留 startup stack，并确保最深 call、interrupt 与 reentrant-frame 嵌套不会越界。
 
-所有 MCS251 data model 中，`jmp_buf` 都是七字节：两个 big-endian byte 保存 SPX，
-三个 big-endian byte 保存完整 `ECALL` return PC，另两个 big-endian private
-scratch byte 把规范化后的 `longjmp` result 传给 naked restore helper。`setjmp` 在
-禁止中断时快照 frame；`longjmp` 重建三字节 frame，恢复 SPX 的两个 byte 与原
-interrupt-enable state，并返回请求的非零值。
+所有 MCS251 data model 中，`jmp_buf` 都是 15 字节：两个 big-endian byte 保存
+SPX，三个 big-endian byte 保存完整 `ECALL` return PC，另两个 big-endian
+private scratch byte 把规范化后的 `longjmp` result 传给 naked restore helper，
+最后八个 byte 保存 R0–R7。`setjmp` 在禁止中断时快照 frame 和当前可分配的通用
+寄存器；`longjmp` 重建三字节 frame，恢复 SPX、R0–R7 与原 interrupt-enable
+state，并返回请求的非零值。
 
 QEMU conformance image 会在 `setjmp` 前把 SPX 设为 `0x0120`，随后以 small 与
-large 两套 library 验证 SPX 已恢复且结果为 `0x1234`。
+large、default 与 stack-auto 的四种 library 组合，验证 SPX、`0x1234` 结果以及
+live register value 均已恢复。
 
 ## memory space 与 memory model
 

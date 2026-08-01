@@ -120,15 +120,17 @@ STC32G144K246 implements 16 KiB of edata at `00:0000`-`00:3fff`; builds for
 that device must reserve the startup stack and account for the deepest call,
 interrupt, and reentrant-frame nesting within that RAM.
 
-`jmp_buf` is seven bytes in every MCS251 data model: two big-endian bytes for
-SPX, three big-endian bytes for the complete `ECALL` return PC, and two
+`jmp_buf` is 15 bytes in every MCS251 data model: two big-endian bytes for
+SPX, three big-endian bytes for the complete `ECALL` return PC, two
 big-endian private scratch bytes used to carry the normalized `longjmp`
-result into the naked restore helper.  `setjmp` snapshots the frame with
-interrupts excluded.  `longjmp` re-creates the three-byte frame, restores both
-bytes of SPX, restores the previous interrupt-enable state, and returns the
-requested nonzero value.
+result into the naked restore helper, and eight bytes for R0-R7.  `setjmp`
+snapshots the frame and the currently allocatable general registers with
+interrupts excluded.  `longjmp` re-creates the three-byte frame, restores
+SPX, R0-R7, and the previous interrupt-enable state, and returns the requested
+nonzero value.
 The QEMU conformance image sets SPX to `0x0120` before `setjmp` and verifies
-the restored SPX and `0x1234` result with both the small and large libraries.
+the restored SPX, the `0x1234` result, and live register values with all four
+small/large and default/stack-auto library combinations.
 
 ## Memory spaces
 
