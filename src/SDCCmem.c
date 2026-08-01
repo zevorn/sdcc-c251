@@ -894,7 +894,9 @@ allocLocal (symbol *sym)
   sym->localof = currFunc;
 
   if (!IS_EXTERN (sym->type) && !IS_STATIC (sym->type) &&
-    (IS_ARRAY (sym->type) && !DCL_ELEM (sym->type) || IS_STRUCT (sym->type) && !SPEC_STRUCT (sym->type)->fields))
+    (IS_ARRAY (sym->type) && !DCL_ELEM (sym->type) ||
+     IS_STRUCT (sym->type) && !SPEC_STRUCT (sym->type)->fields &&
+       !SPEC_STRUCT (sym->type)->b_empty_complete))
     werrorfl (sym->fileDef, sym->lineDef, E_NO_LINKAGE_INCOMPLETE_TYPE, sym->name);
 
   /* if this is a static variable */

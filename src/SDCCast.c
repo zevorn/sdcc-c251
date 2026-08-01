@@ -4518,7 +4518,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
               werrorfl (tree->filename, tree->lineno, E_PTR_REQD);
               goto errorTreeReturn;
             }
-          else if (IS_STRUCT (tree->left->ftype->next) && !getSize (tree->left->ftype->next))
+          else if (IS_STRUCT (tree->left->ftype->next) &&
+                   !getSize (tree->left->ftype->next) &&
+                   !SPEC_STRUCT (tree->left->ftype->next)->b_empty_complete)
             {
               werrorfl (tree->filename, tree->lineno, E_INCOMPLETE_TYPE_LVALUE);
               goto errorTreeReturn;
@@ -5655,7 +5657,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
 
         dbuf_init (&dbuf, 128);
         dbuf_printf (&dbuf, "%d", size);
-        if (!size && !IS_VOID (tree->right->ftype))
+        if (!size && !IS_VOID (tree->right->ftype) &&
+            !(IS_STRUCT (tree->right->ftype) &&
+              SPEC_STRUCT (tree->right->ftype)->b_empty_complete))
           werrorfl (tree->filename, tree->lineno, E_SIZEOF_INCOMPLETE_TYPE);
         tree->type = EX_VALUE;
         tree->opval.val = constVal (dbuf_c_str (&dbuf));
@@ -6304,7 +6308,8 @@ sizeofOp (sym_link *type)
   /* get the size and convert it to character  */
   dbuf_init (&dbuf, 128);
   dbuf_printf (&dbuf, "%d", size = getSize (type));
-  if (!size && !IS_VOID (type))
+  if (!size && !IS_VOID (type) &&
+      !(IS_STRUCT (type) && SPEC_STRUCT (type)->b_empty_complete))
     werror (E_SIZEOF_INCOMPLETE_TYPE);
 
   /* now convert into value  */

@@ -1276,8 +1276,11 @@ checkStructFlexArray (symbol * sym, sym_link * p)
           werror (W_INVALID_FLEXARRAY);
           return INCOMPLETE;
         }
-      /* or otherwise incomplete (nested) struct? */
-      if (IS_STRUCT (p) && ((SPEC_STRUCT (p)->size == 0) || !SPEC_STRUCT (p)->fields))
+      /* or otherwise incomplete (nested) struct?  A struct defined with an
+         empty body (GNU C extension, e.g. "struct x { };") is complete even
+         though it has no members and size zero. */
+      if (IS_STRUCT (p) && !SPEC_STRUCT (p)->b_empty_complete &&
+          ((SPEC_STRUCT (p)->size == 0) || !SPEC_STRUCT (p)->fields))
         {
           return INCOMPLETE;
         }

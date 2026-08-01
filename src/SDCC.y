@@ -137,7 +137,7 @@ bool uselessDecl = true;
 %type <attr> attribute_specifier_sequence attribute_specifier_sequence_opt attribute_specifier attribute_list attribute attribute_opt
 %type <sym> identifier attribute_token declarator declarator2 direct_declarator array_declarator enumerator_list enumerator
 %type <sym> member_declarator function_declarator
-%type <sym> member_declarator_list member_declaration member_declaration_list
+%type <sym> member_declarator_list member_declaration member_declaration_list struct_body
 %type <sym> declaration init_declarator_list init_declarator simple_declaration
 %type <sym> declaration_list identifier_list
 %type <sym> kr_declaration kr_declaration_list
@@ -877,13 +877,13 @@ struct_or_union_specifier
                   werror(E_BAD_TAG, $3->tag, $1==STRUCT ? "struct" : "union");
             }
         }
-   '{' member_declaration_list '}'
+   struct_body
         {
           structdef *sdef;
           symbol *sym, *dsym;
 
           // check for errors in structure members
-          for (sym=$6; sym; sym=sym->next)
+          for (sym=$5; sym; sym=sym->next)
             {
               if (IS_ABSOLUTE(sym->etype))
                 {
@@ -908,8 +908,18 @@ struct_or_union_specifier
             }
 
           /* Create a structdef   */
-          $3->fields = reverseSyms($6);        /* link the fields */
-          $3->size = compStructSize($1, $3);   /* update size of  */
+          $3->fields = reverseSyms($5);        /* link the fields */
+          if ($5 == NULL)
+            {
+              /* GNU C: empty struct/union body ("struct x { };").  The
+                 struct is complete but has no members and size zero. */
+              $3->size = 0;
+              $3->b_empty_complete = true;
+            }
+          else
+            {
+              $3->size = compStructSize($1, $3);   /* update size of  */
+            }
           promoteAnonStructs ($1, $3);
 
           if ($3->redefinition) // Since C23, multiple definitions for struct / union are allowed, if they are compatible and have the same tags. The current standard draft N3047 allows redeclarations of unions to have a different order of the members. We don't. The rule in N3047 is now considered a mistake by many, and will hopefully be changed to the SDCC behaviour via a national body comment for the final version of the standard.
@@ -986,6 +996,18 @@ member_declaration_list
           sym->next = $1;
 
            $$ = $2;
+        }
+   ;
+
+/* GNU C allows an empty struct/union body ("struct foo { };").  Zephyr's
+   per-arch structs (e.g. _cpu_arch) rely on this extension. */
+struct_body
+   : '{' member_declaration_list '}'  { $$ = $2; }
+   | '{' '}'
+        {
+          if (!options.std_gnu)
+            werror (E_SYNTAX_ERROR);
+          $$ = NULL;
         }
    ;
 

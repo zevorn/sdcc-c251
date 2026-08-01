@@ -358,7 +358,8 @@ emitRegularMap (memmap *map, bool addPublics, bool arFlag)
       else
         {
           int size = getSize (sym->type) + sym->flexArrayLength;
-          if (size == 0)
+          if (size == 0 && !(IS_STRUCT (sym->type) &&
+                             SPEC_STRUCT (sym->type)->b_empty_complete))
             {
               werrorfl (sym->fileDef, sym->lineDef, E_UNKNOWN_SIZE, sym->name);
             }
@@ -1917,7 +1918,8 @@ emitStaticSeg (memmap *map, struct dbuf_s *oBuf)
         {
           int size = getSize (sym->type);
 
-          if (size == 0)
+          if (size == 0 && !(IS_STRUCT (sym->type) &&
+                             SPEC_STRUCT (sym->type)->b_empty_complete))
             {
               werrorfl (sym->fileDef, sym->lineDef, E_UNKNOWN_SIZE, sym->name);
             }
@@ -2239,7 +2241,8 @@ emitOverlay (struct dbuf_s *aBuf)
             {
               int size = getSize (sym->type);
 
-              if (size == 0)
+              if (size == 0 && !(IS_STRUCT (sym->type) &&
+                                 SPEC_STRUCT (sym->type)->b_empty_complete))
                 {
                   werrorfl (sym->fileDef, sym->lineDef, E_UNKNOWN_SIZE, sym->name);
                 }

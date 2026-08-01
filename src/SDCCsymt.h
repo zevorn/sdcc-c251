@@ -68,6 +68,7 @@ typedef struct structdef
   bool b_flexArrayMember;       /* has got a flexible array member,
                                    only needed for syntax checks */
   bool redefinition;            /* is a redefinition only needed for syntax checks */
+  bool b_empty_complete;        /* defined with an empty body (GNU C: "struct x { };") */
   struct symbol *tagsym;        /* tag symbol (NULL if no tag) */
 }
 structdef;

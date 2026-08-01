@@ -2551,7 +2551,9 @@ geniCodeAdd (operand *left, operand *right, RESULT_TYPE resultType, int lvl)
       nBytes = getSize (ltype->next);
       ptrSize = getArraySizePtr (left); // works for both arrays and pointers
 
-      if (nBytes == 0 && !IS_VOID (ltype->next))
+      if (nBytes == 0 && !IS_VOID (ltype->next) &&
+          !(IS_STRUCT (ltype->next) &&
+            SPEC_STRUCT (ltype->next)->b_empty_complete))
         werror (E_UNKNOWN_SIZE, IS_SYMOP (left) ? OP_SYMBOL (left)->name : "<no name>");
       // there is no need to multiply with 1
       if (nBytes != 1)
