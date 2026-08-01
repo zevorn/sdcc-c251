@@ -47,6 +47,10 @@ check: all
 			$(srcdir)/tests/gnu-builtin-expect.c \
 		--invalid-builtin-expect-source \
 			$(srcdir)/tests/gnu-builtin-expect-invalid.c \
+		--builtin-constant-p-source \
+			$(srcdir)/tests/gnu-builtin-constant-p.c \
+		--invalid-builtin-constant-p-source \
+			$(srcdir)/tests/gnu-builtin-constant-p-invalid.c \
 		--empty-declaration-source \
 			$(srcdir)/tests/gnu-empty-declaration.c \
 		--compound-literal-source \

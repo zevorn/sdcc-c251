@@ -92,7 +92,8 @@ bool uselessDecl = true;
 
 %token <yychar> IDENTIFIER TYPE_NAME ADDRSPACE_NAME
 %token <val> CONSTANT
-%token SIZEOF COUNTOF OFFSETOF BUILTIN_EXPECT BUILTIN_TYPES_COMPATIBLE_P
+%token SIZEOF COUNTOF OFFSETOF BUILTIN_CONSTANT_P BUILTIN_EXPECT
+%token BUILTIN_TYPES_COMPATIBLE_P
 %token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP
 %token ATTR_START TOK_SEP
@@ -191,6 +192,14 @@ primary_expression
                       }
    | generic_selection
    | predefined_constant
+   | BUILTIN_CONSTANT_P '(' assignment_expr ')'
+                      {
+                        if (!options.std_gnu)
+                          werror (E_SYNTAX_ERROR);
+                        $$ = newAst_VALUE (constIntVal (
+                          constExprTree ($3) && !hasSEFcalls ($3) ?
+                          "1" : "0"));
+                      }
    | BUILTIN_EXPECT '(' assignment_expr ',' assignment_expr ')'
                       {
                         if (!options.std_gnu)
