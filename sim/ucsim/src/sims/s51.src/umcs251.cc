@@ -1,5 +1,5 @@
 /*
- * Simulator of microcontrollers (uc251.cc)
+ * Simulator of microcontrollers (umcs251.cc)
  *
  * Copyright (C) 1999 Drotos Daniel
  * 
@@ -29,16 +29,16 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 //#include <stdio.h>
 
-#include "uc251cl.h"
+#include "umcs251cl.h"
 
 
 /*
  * Making an 251 CPU object
  */
 
-cl_uc251::cl_uc251(struct cpu_entry *Itype, class cl_sim *asim):
+cl_umcs251::cl_umcs251(struct cpu_entry *Itype, class cl_sim *asim):
   cl_uc89c51r(Itype, asim)
 {
 }
 
-/* End of s51.src/uc251.cc */
+/* End of s51.src/umcs251.cc */

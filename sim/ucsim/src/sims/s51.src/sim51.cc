@@ -33,7 +33,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "globals.h"
 #include "sim51cl.h"
 #include "uc517cl.h"
-#include "uc251cl.h"
+#include "umcs251cl.h"
 #include "uc390cl.h"
 #include "uc88xcl.h"
 #include "uc320cl.h"
@@ -72,7 +72,7 @@ cl_sim51::mk_controller(void)
     case CPU_F380:
       return(new cl_uc380(ct, this));
     case CPU_251:
-      return(new cl_uc251(ct, this));
+      return(new cl_umcs251(ct, this));
     case CPU_DS320:
       return(new cl_uc320(ct, this));
     case CPU_DS390: case CPU_DS390F:

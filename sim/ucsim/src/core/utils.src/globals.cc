@@ -380,7 +380,7 @@ struct cpu_entry cpus_51[]=
     {"521"   , CPU_C521  , CPU_CMOS		, "AMD 80C521"	, "cmos"},
     
     {"251"   , CPU_251, CPU_CMOS		, "Intel mcs251", "cmos"},
-    {"C251"  , CPU_251, CPU_CMOS		, "Intel mcs251", "cmos"},
+    {"MCS251"  , CPU_251, CPU_CMOS		, "Intel mcs251", "cmos"},
     
     {"517"   , CPU_517, CPU_CMOS		, "Siemens C517", "cmos"},
     {"C517"  , CPU_517, CPU_CMOS		, "Siemens C517", "cmos"},
