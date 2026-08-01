@@ -124,6 +124,10 @@ The current GNU C compatibility boundary is:
   GCC-compatible.
 - `__typeof(type-or-expression)` and `__typeof__(type-or-expression)` are
   accepted, although nontrivial expressions still have implementation limits.
+- `__builtin_types_compatible_p(type1, type2)` is accepted in GNU11 and
+  GNU17 modes and folds to an integer constant expression. It observes C type
+  compatibility for qualifiers, arrays, function prototypes, structures and
+  enumerations.
 - `__asm__("instruction")` accepts a basic literal using `sdas251`/ASxxxx
   instruction syntax. GCC extended-asm operands and constraints are not
   accepted.
@@ -158,7 +162,8 @@ The current compiler cannot build stock Zephyr. Zephyr 4.4 defaults to C17,
 but its common headers and build pipeline also require GNU-compatible
 attributes, builtins, statement expressions, `__typeof__`, section placement,
 weak symbols and compiler barriers. The implemented GNU language modes remove
-part of this frontend gap; they are not by themselves Zephyr support.
+part of this frontend gap, including type-compatibility queries; they are not
+by themselves Zephyr support.
 
 There are two additional compatibility boundaries outside the C parser:
 

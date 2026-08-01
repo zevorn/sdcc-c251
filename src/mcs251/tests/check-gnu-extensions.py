@@ -23,7 +23,12 @@ def compile_source(sdcc, source, port, mode, expect_success, workspace):
         check=False,
     )
     has_error = re.search(r"(?:^|\s)error(?:\s+[0-9]+)?:", result.stdout)
-    succeeded = not result.returncode and not has_error
+    has_failed_assertion = "static assertion failed" in result.stdout
+    succeeded = (
+        not result.returncode
+        and not has_error
+        and not has_failed_assertion
+    )
     if expect_success:
         if (
             not succeeded
@@ -51,6 +56,8 @@ def main():
     parser.add_argument("--keyword-alias-source", required=True)
     parser.add_argument("--attribute-source", required=True)
     parser.add_argument("--invalid-attribute-source", required=True)
+    parser.add_argument("--types-compatible-source", required=True)
+    parser.add_argument("--invalid-types-compatible-source", required=True)
     parser.add_argument("--empty-declaration-source", required=True)
     parser.add_argument("--compound-literal-source", required=True)
     args = parser.parse_args()
@@ -60,6 +67,10 @@ def main():
     keyword_alias_source = Path(args.keyword_alias_source).resolve()
     attribute_source = Path(args.attribute_source).resolve()
     invalid_attribute_source = Path(args.invalid_attribute_source).resolve()
+    types_compatible_source = Path(args.types_compatible_source).resolve()
+    invalid_types_compatible_source = Path(
+        args.invalid_types_compatible_source
+    ).resolve()
     empty_declaration_source = Path(args.empty_declaration_source).resolve()
     compound_literal_source = Path(args.compound_literal_source).resolve()
     for path in (
@@ -68,6 +79,8 @@ def main():
         keyword_alias_source,
         attribute_source,
         invalid_attribute_source,
+        types_compatible_source,
+        invalid_types_compatible_source,
         empty_declaration_source,
         compound_literal_source,
     ):
@@ -115,6 +128,32 @@ def main():
                 compile_source(
                     sdcc,
                     invalid_attribute_source,
+                    port,
+                    mode,
+                    False,
+                    workspace,
+                )
+            for mode in ("gnu11", "gnu17"):
+                compile_source(
+                    sdcc,
+                    types_compatible_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                )
+                compile_source(
+                    sdcc,
+                    invalid_types_compatible_source,
+                    port,
+                    mode,
+                    False,
+                    workspace,
+                )
+            for mode in ("c11", "c17", None):
+                compile_source(
+                    sdcc,
+                    types_compatible_source,
                     port,
                     mode,
                     False,

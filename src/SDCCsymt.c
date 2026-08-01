@@ -3609,6 +3609,130 @@ compareTypeExact (sym_link *dest, sym_link *src, long level, bool check_top_std_
   return 1;
 }
 
+/*--------------------------------------------------------------------*/
+/* compareTypeCompatible - compare C types for compatibility          */
+/*--------------------------------------------------------------------*/
+static int
+compareTypeCompatibleInternal (sym_link *dest, sym_link *src,
+                               bool check_top_std_qual)
+{
+  value *dest_arg;
+  value *src_arg;
+
+  if (!dest || !src)
+    return dest == src;
+
+  if (IS_ARRAY (dest) || IS_ARRAY (src))
+    {
+      if (!IS_ARRAY (dest) || !IS_ARRAY (src))
+        return 0;
+      if (DCL_ELEM (dest) && DCL_ELEM (src) &&
+          DCL_ELEM (dest) != DCL_ELEM (src))
+        return 0;
+
+      /* An array's qualifiers are the qualifiers of its element type.
+         Keep ignoring them while walking through the outermost array. */
+      return compareTypeCompatibleInternal (dest->next, src->next,
+                                            check_top_std_qual);
+    }
+
+  if (IS_PTR (dest) || IS_PTR (src))
+    {
+      if (!IS_PTR (dest) || !IS_PTR (src) ||
+          DCL_TYPE (dest) != DCL_TYPE (src))
+        return 0;
+      if (check_top_std_qual &&
+          (DCL_PTR_CONST (dest) != DCL_PTR_CONST (src) ||
+           DCL_PTR_RESTRICT (dest) != DCL_PTR_RESTRICT (src) ||
+           DCL_PTR_VOLATILE (dest) != DCL_PTR_VOLATILE (src) ||
+           DCL_PTR_ATOMIC (dest) != DCL_PTR_ATOMIC (src) ||
+           DCL_PTR_OPTIONAL (dest) != DCL_PTR_OPTIONAL (src)))
+        return 0;
+
+      return compareTypeCompatibleInternal (dest->next, src->next, true);
+    }
+
+  if (IS_FUNC (dest) || IS_FUNC (src))
+    {
+      bool dest_noprototype;
+      bool src_noprototype;
+
+      if (!IS_FUNC (dest) || !IS_FUNC (src))
+        return 0;
+      if (!compareTypeCompatibleInternal (dest->next, src->next, true))
+        return 0;
+      if (FUNC_ISISR (dest) != FUNC_ISISR (src) ||
+          FUNC_REGBANK (dest) != FUNC_REGBANK (src) ||
+          IFFUNC_ISNAKED (dest) != IFFUNC_ISNAKED (src) ||
+          IFFUNC_ISBANKEDCALL (dest) != IFFUNC_ISBANKEDCALL (src) ||
+          IFFUNC_ISZ88DK_FASTCALL (dest) !=
+            IFFUNC_ISZ88DK_FASTCALL (src) ||
+          IFFUNC_ISRAISONANCE (dest) != IFFUNC_ISRAISONANCE (src) ||
+          IFFUNC_ISCOSMIC (dest) != IFFUNC_ISCOSMIC (src) ||
+          IFFUNC_ISIAR (dest) != IFFUNC_ISIAR (src) ||
+          (FUNC_SDCCCALL (dest) >= 0 && FUNC_SDCCCALL (src) >= 0 &&
+           FUNC_SDCCCALL (dest) != FUNC_SDCCCALL (src)))
+        return 0;
+
+      dest_noprototype = FUNC_NOPROTOTYPE (dest);
+      src_noprototype = FUNC_NOPROTOTYPE (src);
+      if (dest_noprototype || src_noprototype)
+        {
+          if (dest_noprototype && src_noprototype)
+            return 1;
+          if (FUNC_HASVARARGS (dest) || FUNC_HASVARARGS (src))
+            return 0;
+
+          dest_arg = dest_noprototype ? FUNC_ARGS (src) : FUNC_ARGS (dest);
+          for (; dest_arg; dest_arg = dest_arg->next)
+            {
+              sym_link *type = dest_arg->type;
+
+              if (!IS_SPEC (type))
+                continue;
+              if (SPEC_ENUM (type))
+                {
+                  if (bitsForType (type) < INTSIZE * 8)
+                    return 0;
+                }
+              else if (IS_FLOAT (type) || IS_CHAR (type) || IS_BOOL (type) ||
+                       IS_BIT (type) || IS_BITFIELD (type) ||
+                       (IS_INT (type) && SPEC_SHORT (type)))
+                return 0;
+            }
+          return 1;
+        }
+
+      if (FUNC_HASVARARGS (dest) != FUNC_HASVARARGS (src))
+        return 0;
+
+      dest_arg = FUNC_ARGS (dest);
+      src_arg = FUNC_ARGS (src);
+      for (; dest_arg && src_arg;
+           dest_arg = dest_arg->next, src_arg = src_arg->next)
+        if (!compareTypeCompatibleInternal (dest_arg->type, src_arg->type,
+                                            false))
+          return 0;
+
+      return !dest_arg && !src_arg;
+    }
+
+  if (!IS_SPEC (dest) || !IS_SPEC (src))
+    return 0;
+
+  if (SPEC_ENUM (dest) && SPEC_ENUM (src) &&
+      SPEC_CVAL (dest).v_enum != SPEC_CVAL (src).v_enum)
+    return 0;
+
+  return compareTypeExact (dest, src, -1, check_top_std_qual) == 1;
+}
+
+int
+compareTypeCompatible (sym_link *dest, sym_link *src)
+{
+  return compareTypeCompatibleInternal (dest, src, false);
+}
+
 /*---------------------------------------------------------------------------*/
 /* compareTypeInexact - will do type check return 1 if representation is same. */
 /* Useful for redundancy elimination.                                        */
@@ -5372,6 +5496,7 @@ newEnumType (symbol *enumlist, sym_link *userRequestedType)
   symbol *sym;
   sym_link *type = newLink (SPECIFIER);
   SPEC_ENUM (type) = 1;
+  SPEC_CVAL (type).v_enum = enumlist;
 
   /* Catch user-requested types that make no sense for an enum; provide fallback if none specified */
   if (userRequestedType)

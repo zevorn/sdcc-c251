@@ -741,6 +741,7 @@ sym_link *newPtrDiffLink ();
 sym_link *newVoidLink ();
 int compareType (sym_link *, sym_link *, bool ignoreimplicitintrinsic);
 int compareTypeExact (sym_link *, sym_link *, long level, bool check_top_std_qual);
+int compareTypeCompatible (sym_link *, sym_link *);
 int compareTypeInexact (sym_link *, sym_link *);
 int checkFunction (symbol *, symbol *);
 void cleanUpLevel (bucket **, long);
