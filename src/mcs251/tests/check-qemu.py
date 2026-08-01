@@ -254,7 +254,11 @@ def main():
 
         setjmp_spx_configurations = (
             ("small", (), library_dir),
+            ("small-stack-auto", ("--stack-auto",),
+             stack_auto_library_dir),
             ("large", ("--model-large",), large_library_dir),
+            ("large-stack-auto", ("--model-large", "--stack-auto"),
+             large_stack_auto_library_dir),
         )
         for setjmp_name, model_flags, setjmp_library_dir in \
                 setjmp_spx_configurations:

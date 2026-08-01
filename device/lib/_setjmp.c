@@ -38,9 +38,9 @@
  * one-byte compiler-generated prologue would make the saved SPX ambiguous.
  *
  * Buffer layout:
- *   0..1  SPX, low byte first
- *   2..4  bytes at SPX, SPX-1, and SPX-2
- *   5..6  normalized longjmp return value, low byte first
+ *   0..1  SPX, high byte first
+ *   2..4  ECALL return address, high byte first
+ *   5..6  normalized longjmp return value, high byte first
  */
 int
 __setjmp (jmp_buf buf) __naked
@@ -63,15 +63,15 @@ mcs251_setjmp_irq_off$:
         dec     dr24
         mov     r4,@dr24
 
-        mov     @dr20,r0
-        inc     dr20
         mov     @dr20,r1
         inc     dr20
-        mov     @dr20,r2
+        mov     @dr20,r0
+        inc     dr20
+        mov     @dr20,r4
         inc     dr20
         mov     @dr20,r3
         inc     dr20
-        mov     @dr20,r4
+        mov     @dr20,r2
 
         mov     ea,c
         mov     dptr,#0
@@ -107,18 +107,18 @@ mcs251_longjmp_irq_off$:
 
         ; Re-create the saved ECALL frame without signed indexed addressing.
         mov     dpx,#0
-        mov     dpl,r0
-        mov     dph,r1
-        mov     @dpx,r2
+        mov     dpl,r1
+        mov     dph,r0
+        mov     @dpx,r4
         dec     dpx
         mov     @dpx,r3
         dec     dpx
-        mov     @dpx,r4
+        mov     @dpx,r2
         inc     dpx,#2
         mov     spx,dpx
 
-        mov     dpl,r5
-        mov     dph,r6
+        mov     dpl,r6
+        mov     dph,r5
         mov     ea,c
         eret
     __endasm;
@@ -129,8 +129,8 @@ longjmp (jmp_buf buf, int rv)
 {
     if (!rv)
         rv = 1;
-    buf[5] = (unsigned char)rv;
-    buf[6] = (unsigned int)rv >> 8;
+    buf[5] = (unsigned int)rv >> 8;
+    buf[6] = (unsigned char)rv;
     __mcs251_longjmp_restore (buf);
 }
 
