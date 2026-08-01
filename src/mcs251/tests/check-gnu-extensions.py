@@ -51,6 +51,7 @@ def main():
     parser.add_argument("--keyword-alias-source", required=True)
     parser.add_argument("--attribute-source", required=True)
     parser.add_argument("--invalid-attribute-source", required=True)
+    parser.add_argument("--empty-declaration-source", required=True)
     args = parser.parse_args()
 
     sdcc = Path(args.sdcc).resolve()
@@ -58,12 +59,14 @@ def main():
     keyword_alias_source = Path(args.keyword_alias_source).resolve()
     attribute_source = Path(args.attribute_source).resolve()
     invalid_attribute_source = Path(args.invalid_attribute_source).resolve()
+    empty_declaration_source = Path(args.empty_declaration_source).resolve()
     for path in (
         sdcc,
         empty_aggregate_source,
         keyword_alias_source,
         attribute_source,
         invalid_attribute_source,
+        empty_declaration_source,
     ):
         if not path.exists():
             parser.error(f"required path does not exist: {path}")
@@ -109,6 +112,26 @@ def main():
                 compile_source(
                     sdcc,
                     invalid_attribute_source,
+                    port,
+                    mode,
+                    False,
+                    workspace,
+                )
+            # Empty declarations at file scope are a GNU extension before
+            # C23.
+            for mode in ("gnu11", "gnu17"):
+                compile_source(
+                    sdcc,
+                    empty_declaration_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                )
+            for mode in ("c11", "c17", None):
+                compile_source(
+                    sdcc,
+                    empty_declaration_source,
                     port,
                     mode,
                     False,

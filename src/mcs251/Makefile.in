@@ -30,7 +30,9 @@ check: all
 		--attribute-source \
 			$(srcdir)/tests/gnu-attributes.c \
 		--invalid-attribute-source \
-			$(srcdir)/tests/gnu-attribute-invalid.c
+			$(srcdir)/tests/gnu-attribute-invalid.c \
+		--empty-declaration-source \
+			$(srcdir)/tests/gnu-empty-declaration.c
 	$(PYTHON) $(srcdir)/tests/check-diagnostics.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--incompatible-extern-source \

@@ -2550,6 +2550,13 @@ external_declaration
         {
           // blockNo = 0;
         }
+   | ';'
+        {
+          /* Empty declaration (C23, also a common GNU C idiom in headers
+             such as Zephyr's). */
+          if (!options.std_c23 && !options.std_gnu)
+            werror (E_SYNTAX_ERROR);
+        }
    | declaration
         {
           ignoreTypedefType = 0;
