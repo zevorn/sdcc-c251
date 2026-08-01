@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-if test "$#" -ne 9; then
-    echo "usage: $0 SDCC OPTIMIZATION_SOURCE CALL_SOURCE INTERRUPT_SOURCE INITIALIZER_SOURCE MEMORY_MODEL_SOURCE BSEARCH_SOURCE MULLONGLONG_SOURCE DEVICE_INCLUDE" >&2
+if test "$#" -ne 10; then
+    echo "usage: $0 SDCC OPTIMIZATION_SOURCE CALL_SOURCE INTERRUPT_SOURCE INITIALIZER_SOURCE MEMORY_MODEL_SOURCE BSEARCH_SOURCE MULLONGLONG_SOURCE DIVUINT_SOURCE DEVICE_INCLUDE" >&2
     exit 2
 fi
 
@@ -14,7 +14,8 @@ initializer_source=$5
 memory_model_source=$6
 bsearch_source=$7
 mullonglong_source=$8
-device_include=$9
+divuint_source=$9
+device_include=${10}
 test_dir=${TMPDIR:-/tmp}/sdcc-mcs251-codegen.$$
 trap 'rm -rf "$test_dir"' 0 HUP INT TERM
 mkdir -p "$test_dir"
@@ -42,6 +43,9 @@ mkdir -p "$test_dir"
 "$sdcc" -mmcs251 --stack-auto -I"$device_include" \
     -I"$device_include/mcs51" -S -o "$test_dir/mullonglong.asm" \
     "$mullonglong_source"
+"$sdcc" -mmcs251 --stack-auto -I"$device_include" \
+    -I"$device_include/mcs51" -S -o "$test_dir/divuint.asm" \
+    "$divuint_source"
 
 # Indexed MCS251 stack operands are loaded through A.  An in-place increment
 # must store the incremented byte back before the following comparison.
@@ -53,6 +57,16 @@ awk '
     { previous = $0 }
     END { exit !found }
 ' "$test_dir/mullonglong.asm"
+
+# The same accumulator proxy is used for an indexed stack decrement.
+awk '
+    previous ~ /^[[:space:]]*dec[[:space:]]+a[[:space:]]*$/ &&
+        $0 ~ /^[[:space:]]*mov[[:space:]]+@spx[-+][^,]*,[[:space:]]*a[[:space:]]*$/ {
+        found = 1
+    }
+    { previous = $0 }
+    END { exit !found }
+' "$test_dir/divuint.asm"
 
 grep -Eq '^[[:space:]]*inc[[:space:]]+a,#[^;]*(2|0x02)$' \
     "$test_dir/native-optimization.asm"

@@ -6365,7 +6365,8 @@ genMinusDec (iCode * ic)
   /* we can if the aops of the left & result match or
      if they are in registers and the registers are the
      same */
-  if (sameRegs (AOP (IC_LEFT (ic)), AOP (IC_RESULT (ic))))
+  if (sameRegs (AOP (IC_LEFT (ic)), AOP (IC_RESULT (ic))) &&
+      !(TARGET_IS_MCS251 && AOP_TYPE (IC_LEFT (ic)) == AOP_MCS251_STK))
     {
       const char *l;
 
