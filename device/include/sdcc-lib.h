@@ -45,6 +45,9 @@
 #elif defined(__SDCC_mcs51)
 #include <asm/mcs51/features.h>
 
+#elif defined(__SDCC_mcs251)
+#include <asm/mcs251/features.h>
+
 #elif defined(__SDCC_ds390)
 #include <asm/ds390/features.h>
 
@@ -64,4 +67,3 @@
 #endif
 
 #endif
-

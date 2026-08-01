@@ -36,6 +36,12 @@ typedef unsigned char *va_list;
 #define va_start(marker, ...) do {marker = __va_start;} while (0)
 #define va_arg(marker, type)  *((type *)((marker += sizeof(type)) - sizeof(type)))
 
+#elif defined(__SDCC_mcs251)
+
+typedef unsigned char __far *va_list;
+#define va_start(marker, ...) do {marker = __va_start + 1;} while (0)
+#define va_arg(marker, type)  *((type __far *)(marker -= sizeof(type)))
+
 #elif defined(__SDCC_ds390) || defined(__SDCC_ds400)
 
 typedef unsigned char *va_list;
@@ -66,4 +72,3 @@ typedef unsigned char __data *va_list;
 #define va_end(marker)          { marker = (va_list) 0; };
 
 #endif
-

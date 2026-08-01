@@ -36,7 +36,7 @@
 
 #ifndef __PTRDIFF_T_DEFINED
 #define __PTRDIFF_T_DEFINED
-#if defined (__SDCC_mcs51) || defined (__SDCC_ds390)
+#if defined (__SDCC_mcs51) || defined (__SDCC_mcs251) || defined (__SDCC_ds390)
   typedef long int ptrdiff_t;
 #else
   typedef int ptrdiff_t; // 16 bit ptrdiff_t is in violation of the ISO C99, C11, C17 standards, but complies with C90 and C23.
@@ -86,4 +86,3 @@ typedef typeof(nullptr) nullptr_t;
 #endif
 
 #endif
-

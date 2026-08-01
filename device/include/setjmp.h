@@ -72,6 +72,12 @@ typedef unsigned char jmp_buf[3]; /* 1 for the stack pointer, 2 for the return a
         #define __SETJMP_H_STACK_PTR_SIZE 1
     #endif
 typedef unsigned char jmp_buf[2 * __SETJMP_H_STACK_PTR_SIZE + 4];
+#elif defined (__SDCC_mcs251)
+/*
+ * SPX (2), the ECALL return address (3), and two scratch bytes used to
+ * transfer longjmp's return value to the model-independent restore helper.
+ */
+typedef unsigned char jmp_buf[7];
 #elif defined (__SDCC_mcs51)
 typedef unsigned char jmp_buf[RET_SIZE + SP_SIZE + BP_SIZE + SPX_SIZE + BPX_SIZE];
 #endif
@@ -93,4 +99,3 @@ _Noreturn void longjmp(jmp_buf, int);
 #undef BPX_SIZE
 
 #endif
-

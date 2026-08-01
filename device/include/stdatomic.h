@@ -11,7 +11,7 @@ typedef struct {unsigned char flag;} atomic_flag;
 
 _Bool atomic_flag_test_and_set(volatile atomic_flag object[static 1]) __SDCC_NONBANKED;
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390)
 
 #define ATOMIC_FLAG_INIT {0}
 
@@ -60,4 +60,3 @@ inline void atomic_flag_clear(volatile atomic_flag object[static 1])
 #endif
 
 #endif
-
