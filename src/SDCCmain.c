@@ -2469,6 +2469,33 @@ preProcess (char **envp)
             "__SDCC_HAS_BUILTIN___builtin_expect", "1");
           addPreprocessorDefine (
             "__SDCC_HAS_BUILTIN___builtin_types_compatible_p", "1");
+          if (TARGET_IS_MCS51 || TARGET_IS_MCS251)
+            {
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_clz", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_clzl", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_clzll", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_ctz", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_ctzl", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_ctzll", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_popcount", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_popcountl", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_popcountll", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_ffs", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_ffsl", "1");
+              addPreprocessorDefine (
+                "__SDCC_HAS_BUILTIN___builtin_ffsll", "1");
+            }
         }
 
       if (NULL != port->linker.rel_ext)

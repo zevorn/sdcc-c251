@@ -125,6 +125,7 @@ SOURCES_LONGLONG = $(COMMON_LONGLONG) \
 
 SOURCES_SDCC = $(COMMON_SDCC) \
   _autobaud.c \
+  _bitbuiltins.c \
   _bp.c \
   _decdptr.c \
   _gptrget.c \

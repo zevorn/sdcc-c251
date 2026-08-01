@@ -178,6 +178,8 @@ def main():
     parser.add_argument("--builtin-constant-p-source", required=True)
     parser.add_argument("--invalid-builtin-constant-p-source", required=True)
     parser.add_argument("--has-builtin-source", required=True)
+    parser.add_argument("--bit-builtins-source", required=True)
+    parser.add_argument("--invalid-bit-builtins-source", required=True)
     parser.add_argument("--auto-type-source", required=True)
     parser.add_argument("--invalid-auto-type-source", required=True)
     parser.add_argument("--multiple-auto-type-source", required=True)
@@ -207,6 +209,10 @@ def main():
         args.invalid_builtin_constant_p_source
     ).resolve()
     has_builtin_source = Path(args.has_builtin_source).resolve()
+    bit_builtins_source = Path(args.bit_builtins_source).resolve()
+    invalid_bit_builtins_source = Path(
+        args.invalid_bit_builtins_source
+    ).resolve()
     auto_type_source = Path(args.auto_type_source).resolve()
     invalid_auto_type_source = Path(args.invalid_auto_type_source).resolve()
     multiple_auto_type_source = Path(
@@ -233,6 +239,8 @@ def main():
         builtin_constant_p_source,
         invalid_builtin_constant_p_source,
         has_builtin_source,
+        bit_builtins_source,
+        invalid_bit_builtins_source,
         auto_type_source,
         invalid_auto_type_source,
         multiple_auto_type_source,
@@ -407,6 +415,41 @@ def main():
                     port,
                     mode,
                     True,
+                    workspace,
+                )
+            for mode in ("gnu11", "gnu17"):
+                compile_source(
+                    sdcc,
+                    bit_builtins_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                )
+                compile_source(
+                    sdcc,
+                    bit_builtins_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                    ("--stack-auto",),
+                )
+                compile_source(
+                    sdcc,
+                    invalid_bit_builtins_source,
+                    port,
+                    mode,
+                    False,
+                    workspace,
+                )
+            for mode in ("c11", "c17", None):
+                compile_source(
+                    sdcc,
+                    bit_builtins_source,
+                    port,
+                    mode,
+                    False,
                     workspace,
                 )
             for mode in ("gnu11", "gnu17"):

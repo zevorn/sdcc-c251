@@ -1919,7 +1919,8 @@ constExprTree (ast *cexpr)
           // the offset of a struct field will never change
           return TRUE;
         }
-      if (IS_AST_SYM_VALUE (cexpr) && SPEC_CONSTEXPR (AST_SYMBOL (cexpr)->type))
+      if (IS_AST_SYM_VALUE (cexpr) &&
+          SPEC_CONSTEXPR (AST_SYMBOL (cexpr)->etype))
         {
           // a C23 constexpr is by definition a constant expression
           return TRUE;
@@ -3637,6 +3638,117 @@ rewriteAstNodeVal (ast *tree, value *val)
   tree->decorated = 0;
   
   rewriteAstJoinSideEffects (tree, oLeft, oRight);
+}
+
+typedef enum
+{
+  BIT_BUILTIN_NONE,
+  BIT_BUILTIN_CLZ,
+  BIT_BUILTIN_CTZ,
+  BIT_BUILTIN_POPCOUNT,
+  BIT_BUILTIN_FFS,
+} bitBuiltinOperation;
+
+/*------------------------------------------------------------------*/
+/* bitBuiltinInfo - identify GNU bit-count builtins and their width */
+/*------------------------------------------------------------------*/
+static bitBuiltinOperation
+bitBuiltinInfo (const char *name, unsigned int *width)
+{
+  static const struct
+  {
+    const char *name;
+    bitBuiltinOperation operation;
+    unsigned char sizeKind;
+  } builtins[] =
+  {
+    {"__builtin_clz", BIT_BUILTIN_CLZ, 0},
+    {"__builtin_clzl", BIT_BUILTIN_CLZ, 1},
+    {"__builtin_clzll", BIT_BUILTIN_CLZ, 2},
+    {"__builtin_ctz", BIT_BUILTIN_CTZ, 0},
+    {"__builtin_ctzl", BIT_BUILTIN_CTZ, 1},
+    {"__builtin_ctzll", BIT_BUILTIN_CTZ, 2},
+    {"__builtin_popcount", BIT_BUILTIN_POPCOUNT, 0},
+    {"__builtin_popcountl", BIT_BUILTIN_POPCOUNT, 1},
+    {"__builtin_popcountll", BIT_BUILTIN_POPCOUNT, 2},
+    {"__builtin_ffs", BIT_BUILTIN_FFS, 0},
+    {"__builtin_ffsl", BIT_BUILTIN_FFS, 1},
+    {"__builtin_ffsll", BIT_BUILTIN_FFS, 2},
+  };
+
+  for (unsigned int i = 0;
+       i < sizeof (builtins) / sizeof (builtins[0]); i++)
+    if (!strcmp (name, builtins[i].name))
+      {
+        *width = 8 * (builtins[i].sizeKind == 0 ? INTSIZE :
+                      builtins[i].sizeKind == 1 ? LONGSIZE :
+                      LONGLONGSIZE);
+        return builtins[i].operation;
+      }
+
+  return BIT_BUILTIN_NONE;
+}
+
+/*------------------------------------------------------------------*/
+/* foldBitBuiltinCall - fold a GNU bit-count call with a constant   */
+/*------------------------------------------------------------------*/
+static bool
+foldBitBuiltinCall (ast *tree)
+{
+  if (!options.std_gnu ||
+      !(TARGET_IS_MCS51 || TARGET_IS_MCS251) ||
+      !IS_AST_SYM_VALUE (tree->left) || !tree->right)
+    return false;
+
+  unsigned int width;
+  bitBuiltinOperation operation =
+    bitBuiltinInfo (AST_SYMBOL (tree->left)->name, &width);
+
+  if (operation == BIT_BUILTIN_NONE || !constExprTree (tree->right) ||
+      hasSEFcalls (tree->right))
+    return false;
+
+  TYPE_TARGET_ULONGLONG bits =
+    ullFromVal (constExprValue (tree->right, true));
+  TYPE_TARGET_ULONGLONG mask =
+    width < sizeof (bits) * 8 ?
+    (((TYPE_TARGET_ULONGLONG) 1 << width) - 1) :
+    ~(TYPE_TARGET_ULONGLONG) 0;
+  unsigned int result = 0;
+
+  bits &= mask;
+  if (!bits &&
+      (operation == BIT_BUILTIN_CLZ || operation == BIT_BUILTIN_CTZ))
+    return false;
+
+  switch (operation)
+    {
+    case BIT_BUILTIN_CLZ:
+      for (TYPE_TARGET_ULONGLONG bit =
+             (TYPE_TARGET_ULONGLONG) 1 << (width - 1);
+           !(bits & bit); bit >>= 1)
+        result++;
+      break;
+    case BIT_BUILTIN_CTZ:
+      for (; !(bits & 1); bits >>= 1)
+        result++;
+      break;
+    case BIT_BUILTIN_POPCOUNT:
+      for (; bits; bits >>= 1)
+        result += bits & 1;
+      break;
+    case BIT_BUILTIN_FFS:
+      if (bits)
+        for (result = 1; !(bits & 1); bits >>= 1)
+          result++;
+      break;
+    default:
+      wassert (0);
+    }
+
+  rewriteAstNodeVal (
+    tree, valCastLiteral (newIntLink (), result, result));
+  return true;
 }
 
 /*-----------------------------------------------------------*/
@@ -6248,6 +6360,9 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
 
           if (processParms (tree->left, FUNC_ARGS (functype), &tree->right, &parmNumber, TRUE))
             goto errorTreeReturn;
+
+          if (foldBitBuiltinCall (tree))
+            return decorateType (tree, resultType, reduceTypeAllowed);
 
           if (!optimize.noStdLibCall)
             optStdLibCall (tree, resultType);

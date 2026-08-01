@@ -155,6 +155,7 @@ def main():
     parser.add_argument("--machine")
     parser.add_argument("--source", required=True)
     parser.add_argument("--statement-expression-source", required=True)
+    parser.add_argument("--bit-builtins-source", required=True)
     parser.add_argument("--longlong-source", required=True)
     parser.add_argument("--device-include", required=True)
     parser.add_argument("--library-dir", required=True)
@@ -170,14 +171,16 @@ def main():
     source = Path(args.source).resolve()
     statement_expression_source = \
         Path(args.statement_expression_source).resolve()
+    bit_builtins_source = Path(args.bit_builtins_source).resolve()
     longlong_source = Path(args.longlong_source).resolve()
     device_include = Path(args.device_include).resolve()
     library_dir = Path(args.library_dir).resolve()
     stack_auto_library_dir = Path(args.stack_auto_library_dir).resolve()
     trace_dir = Path(args.trace_dir).resolve() if args.trace_dir else None
     required = (
-        sdcc, qemu, source, statement_expression_source, longlong_source,
-        device_include, library_dir, stack_auto_library_dir,
+        sdcc, qemu, source, statement_expression_source,
+        bit_builtins_source, longlong_source, device_include, library_dir,
+        stack_auto_library_dir,
     )
     for path in required:
         if not path.exists():
@@ -271,6 +274,19 @@ def main():
                 qemu, machine, statement_image,
                 trace_for(statement_image),
             )
+
+        bit_configurations = (
+            ("bit-builtins", ("--std=gnu17",), library_dir),
+            ("bit-builtins-stack-auto",
+             ("--std=gnu17", "--stack-auto"),
+             stack_auto_library_dir),
+        )
+        for bit_name, bit_flags, bit_library in bit_configurations:
+            _, bit_image = build(
+                sdcc, bit_builtins_source, device_include,
+                bit_library, output_dir, bit_name, bit_flags,
+            )
+            run_qemu(qemu, machine, bit_image, trace_for(bit_image))
 
         longlong_image = build_longlong(
             sdcc, longlong_source, device_include,

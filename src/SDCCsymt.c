@@ -5399,6 +5399,38 @@ initBuiltIns ()
     builtin_memcpy = nonbuiltin_memcpy;
 
   builtin_unreachable = funcOfTypeVarg ("__builtin_unreachable", "v", 0, 0);
+
+  if (options.std_gnu && (TARGET_IS_MCS51 || TARGET_IS_MCS251))
+    {
+      static const struct
+      {
+        const char *name;
+        const char *argumentType;
+      } bitBuiltins[] =
+      {
+        {"__builtin_clz", "Ui"},
+        {"__builtin_clzl", "Ul"},
+        {"__builtin_clzll", "UL"},
+        {"__builtin_ctz", "Ui"},
+        {"__builtin_ctzl", "Ul"},
+        {"__builtin_ctzll", "UL"},
+        {"__builtin_popcount", "Ui"},
+        {"__builtin_popcountl", "Ul"},
+        {"__builtin_popcountll", "UL"},
+        {"__builtin_ffs", "i"},
+        {"__builtin_ffsl", "l"},
+        {"__builtin_ffsll", "L"},
+      };
+
+      for (unsigned int i = 0;
+           i < sizeof (bitBuiltins) / sizeof (bitBuiltins[0]); i++)
+        {
+          const char *argumentTypes[] = {bitBuiltins[i].argumentType};
+
+          funcOfTypeVarg (bitBuiltins[i].name, "i", 1,
+                          argumentTypes);
+        }
+    }
 }
 
 sym_link *

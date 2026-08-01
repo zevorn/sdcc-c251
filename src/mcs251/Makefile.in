@@ -53,6 +53,10 @@ check: all
 			$(srcdir)/tests/gnu-builtin-constant-p-invalid.c \
 		--has-builtin-source \
 			$(srcdir)/tests/gnu-has-builtin.c \
+		--bit-builtins-source \
+			$(srcdir)/tests/gnu-bit-builtins.c \
+		--invalid-bit-builtins-source \
+			$(srcdir)/tests/gnu-bit-builtins-invalid.c \
 		--auto-type-source \
 			$(srcdir)/tests/gnu-auto-type.c \
 		--invalid-auto-type-source \
@@ -138,6 +142,8 @@ check-qemu: all check-official-qemu check-gdbstub
 		--runtime-source $(srcdir)/tests/runtime-main.c \
 		--statement-expression-source \
 			$(srcdir)/tests/statement-expression-runtime.c \
+		--bit-builtins-source \
+			$(srcdir)/tests/gnu-bit-builtins-runtime.c \
 		--optimization-runtime-source \
 			$(srcdir)/tests/optimization-runtime.c \
 		--abi-regression-source $(srcdir)/tests/abi-regression-runtime.c \
@@ -189,6 +195,8 @@ check-mcs51-qemu: all
 		--source $(srcdir)/tests/mcs51-regression.c \
 		--statement-expression-source \
 			$(srcdir)/tests/statement-expression-runtime.c \
+		--bit-builtins-source \
+			$(srcdir)/tests/gnu-bit-builtins-runtime.c \
 		--longlong-source $(srcdir)/tests/longlong-runtime.c \
 		--device-include $(top_srcdir)/device/include \
 		--library-dir $(top_builddir)/device/lib/build/small \

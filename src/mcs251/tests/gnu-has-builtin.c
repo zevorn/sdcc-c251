@@ -24,6 +24,23 @@
 #if !__has_builtin (__builtin_types_compatible_p)
 #error "__builtin_types_compatible_p must be reported in GNU modes"
 #endif
+#if !__has_builtin (__builtin_clz) || !__has_builtin (__builtin_clzl) || \
+    !__has_builtin (__builtin_clzll)
+#error "leading-zero builtins must be reported in GNU modes"
+#endif
+#if !__has_builtin (__builtin_ctz) || !__has_builtin (__builtin_ctzl) || \
+    !__has_builtin (__builtin_ctzll)
+#error "trailing-zero builtins must be reported in GNU modes"
+#endif
+#if !__has_builtin (__builtin_popcount) || \
+    !__has_builtin (__builtin_popcountl) || \
+    !__has_builtin (__builtin_popcountll)
+#error "population-count builtins must be reported in GNU modes"
+#endif
+#if !__has_builtin (__builtin_ffs) || !__has_builtin (__builtin_ffsl) || \
+    !__has_builtin (__builtin_ffsll)
+#error "find-first-set builtins must be reported in GNU modes"
+#endif
 #else
 #if __has_builtin (__builtin_constant_p)
 #error "__builtin_constant_p must not be reported in strict modes"
@@ -33,6 +50,10 @@
 #endif
 #if __has_builtin (__builtin_types_compatible_p)
 #error "__builtin_types_compatible_p must not be reported in strict modes"
+#endif
+#if __has_builtin (__builtin_clz) || __has_builtin (__builtin_ctz) || \
+    __has_builtin (__builtin_popcount) || __has_builtin (__builtin_ffs)
+#error "bit-count builtins must not be reported in strict modes"
 #endif
 #endif
 
