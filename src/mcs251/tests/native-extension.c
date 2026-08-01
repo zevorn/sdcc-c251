@@ -21,3 +21,9 @@ mcs251_extend_unsigned_add (unsigned char value, unsigned int addend)
 {
     return value + addend;
 }
+
+unsigned long
+mcs251_replace_low_word (unsigned long value)
+{
+    return (value & 0xffff0000ul) | 0x5678ul;
+}

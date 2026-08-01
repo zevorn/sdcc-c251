@@ -96,6 +96,9 @@ def main():
         mcs251 = mcs251_asm.read_text()
         signed = function_body(mcs251, "mcs251_extend_signed_char")
         unsigned = function_body(mcs251, "mcs251_extend_unsigned_add")
+        replace_low_word = function_body(
+            mcs251, "mcs251_replace_low_word"
+        )
 
         require_instruction(
             signed,
@@ -117,6 +120,13 @@ def main():
                 "signed extension retained the byte-at-a-time sequence:\n"
                 f"{signed}"
             )
+        require_instruction(
+            replace_low_word,
+            r"^[ \t]*movh[ \t]+dr(?:0|4),[ \t]*#(?:"
+            r"(?:0x)?7856|\(\((?:0x)?78[ \t]*<<[ \t]*8\)"
+            r"[ \t]*\|[ \t]*(?:0x)?56\))[ \t]*$",
+            "MCS251 low-word replacement with MOVH",
+        )
 
         mcs51 = mcs51_asm.read_text()
         forbidden = re.search(

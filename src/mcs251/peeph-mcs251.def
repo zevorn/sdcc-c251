@@ -143,6 +143,27 @@ replace {
 	mov	%1,dr4
 } if notVolatile(%1)
 
+// SDCC's low two bytes occupy the high half of a native DR register.  Fold
+// a known replacement of those bytes into MOVH without changing the
+// little-endian object representation.
+replace {
+	mov	r0,#0x00
+	mov	r1,#0x00
+	orl	ar0,#%1
+	orl	ar1,#%2
+} by {
+	movh	dr0,#((%1 << 8) | %2)
+}
+
+replace {
+	mov	r4,#0x00
+	mov	r5,#0x00
+	orl	ar4,#%1
+	orl	ar5,#%2
+} by {
+	movh	dr4,#((%1 << 8) | %2)
+}
+
 // Logical operations are endian-invariant, so an SDCC byte pair or quartet
 // can use the native WR/DR operation directly.  A is required to be dead
 // because the byte-at-a-time sequence leaves its final source byte there.
