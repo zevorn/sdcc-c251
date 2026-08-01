@@ -26,6 +26,13 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
+#include <sdcc-lib.h>
+
+/* Keep the shared inline assembly spelling while selecting MCS251's
+   24-bit-return instruction through the target feature header. */
+#if defined(__SDCC_mcs251)
+#define ret _RETURN
+#endif
 
 /* the  return value is expected to be in acc, and not in the standard
  * location dpl. Therefore we choose return type void here: */
@@ -41,6 +48,10 @@ _gptrgetc (char *gptr) __naked
     gptr; /* hush the compiler */
 
     __asm
+#ifdef __SDCC_mcs251
+        mov     a,@dpx
+        ret
+#else
     ;   save values passed
     ;
     ;   depending on the pointer type acc. to SDCCsymt.h
@@ -78,6 +89,7 @@ _gptrgetc (char *gptr) __naked
         ret												; 1
         												;===
         												;28 bytes
+#endif
      __endasm;
 }
 

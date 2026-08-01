@@ -26,6 +26,12 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
+#include <sdcc-lib.h>
+
+#if defined(__SDCC_mcs251)
+#define ret _RETURN
+#endif
+
 /* not all devices use P2 to page pdata memory, therefore __XPAGE was
    introduced. On some targets __XPAGE itself is a paged SFR so it is
    not safe for all platforms to set this. Furthermore some targets
@@ -172,6 +178,10 @@ _gptrget (char *gptr) __naked
     gptr; /* hush the compiler */
 
     __asm
+#ifdef __SDCC_mcs251
+        mov     a,@dpx
+        ret
+#else
     ;
     ;   depending on the pointer type acc. to SDCCsymt.h
     ;
@@ -211,6 +221,7 @@ _gptrget (char *gptr) __naked
         ret                                             ; 1
                                                         ;===
                                                         ;28 bytes
+#endif
      __endasm;
 }
 

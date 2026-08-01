@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
 #define HEAPSPACE __xdata
 #elif defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15)
 #define HEAPSPACE __near
@@ -50,7 +50,7 @@ header_t *HEAPSPACE __sdcc_heap_free; // First free block, 0 if no free blocks.
 extern header_t __sdcc_heap;
 #define HEAP_START &__sdcc_heap
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08) || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08) || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
 
 extern const unsigned int __sdcc_heap_size;
 #define HEAP_END (struct header HEAPSPACE *)((char HEAPSPACE *)&__sdcc_heap + (__sdcc_heap_size - 1)) // -1 To be sure that HEAP_END is bigger than HEAP_START.
@@ -69,7 +69,7 @@ void __sdcc_heap_init(void)
 	__sdcc_heap_free->next_free = 0;
 }
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
 void HEAPSPACE *malloc(size_t size)
 #else
 void *malloc(size_t size)
@@ -78,7 +78,7 @@ void *malloc(size_t size)
 	header_t *h;
 	header_t *HEAPSPACE *f;
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08) || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08) || defined(__SDCC_mos6502) || defined(__SDCC_mos65c02)
 	if(!__sdcc_heap_free)
 		__sdcc_heap_init();
 #endif
@@ -111,4 +111,3 @@ void *malloc(size_t size)
 
 	return(0);
 }
-

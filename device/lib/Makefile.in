@@ -65,6 +65,7 @@ OPT_DISABLE_DS400    = @OPT_DISABLE_DS400@
 OPT_DISABLE_HC08     = @OPT_DISABLE_HC08@
 OPT_DISABLE_S08      = @OPT_DISABLE_S08@
 OPT_DISABLE_MCS51    = @OPT_DISABLE_MCS51@
+OPT_DISABLE_MCS251     = @OPT_DISABLE_MCS251@
 OPT_DISABLE_PIC14    = @OPT_DISABLE_PIC14@
 OPT_DISABLE_PIC16    = @OPT_DISABLE_PIC16@
 OPT_DISABLE_XA51     = @OPT_DISABLE_XA51@
@@ -227,6 +228,12 @@ ifeq ($(OPT_DISABLE_MCS51), 0)
 TARGETS        += models small-mcs51-stack-auto large-mcs51-stack-auto
 endif
 
+ifeq ($(OPT_DISABLE_MCS251), 0)
+TARGETS        += model-mcs251
+MCS251_SRC_DIR   = $(srcdir)/mcs251
+MCS251_BUILD_DIR = mcs251
+endif
+
 ifeq ($(OPT_DISABLE_PIC14), 0)
 TARGETS        += model-pic14
 endif
@@ -332,6 +339,20 @@ models:
 	if grep '^mcs51$$' $(top_builddir)/ports.build > /dev/null; then \
 	  for model in $(MODELS); do \
 	    $(MAKE) MODELFLAGS="--model-$$model" PORT=$$model PORTINCDIR=$(INCDIR)/mcs51 objects || exit 1; \
+	  done \
+	fi
+
+model-mcs251:
+	if grep '^mcs251$$' $(top_builddir)/ports.build > /dev/null; then \
+	  for model in small large; do \
+	    for stack in static auto; do \
+	      suffix=; stackflag=; \
+	      if test "$$stack" = auto; then suffix=-stack-auto; stackflag=--stack-auto; fi; \
+	      port=mcs251-$$model$$suffix; \
+	      mkdir -p $$port; cp mcs251/Makefile $$port/Makefile; \
+	      sed -i.bak 's#^srcdir = \.$$#srcdir = ../mcs251#' $$port/Makefile; rm -f $$port/Makefile.bak; \
+	      $(MAKE) MODELFLAGS="-mmcs251 --model-$$model $$stackflag" PORT=$$port PORTDIR=$(BUILDDIR)/$$port PORTINCDIR=$(INCDIR)/mcs51 objects || exit 1; \
+	    done; \
 	  done \
 	fi
 
@@ -729,7 +750,7 @@ clean_intermediate-pic14:
 # ---------------------------------------------------
 install: all installdirs
 	[ ! -d "$(BUILDDIR)" ] || $(CP_U) -r $(BUILDDIR)/* $(sdcc_libdir)
-	$(CP_U) -r $(MODELS) $(srcdir)/mcs51 $(srcdir)/ds390 $(srcdir)/ds400 \
+	$(CP_U) -r $(MODELS) $(srcdir)/mcs51 $(MCS251_SRC_DIR) $(srcdir)/ds390 $(srcdir)/ds400 \
 	                     $(srcdir)/z80 $(srcdir)/z180 $(srcdir)/ez80 $(srcdir)/z80n $(srcdir)/r2k $(srcdir)/r2ka $(srcdir)/r3ka $(srcdir)/r4k $(srcdir)/r5k $(srcdir)/r6k $(srcdir)/tlcs90 $(srcdir)/sm83 $(srcdir)/r800 \
 	                     $(srcdir)/hc08 $(srcdir)/s08 \
 	                     $(srcdir)/mos6502 $(srcdir)/mos65c02 \
@@ -737,9 +758,9 @@ install: all installdirs
 	                     $(srcdir)/pdk13 $(srcdir)/pdk14 $(srcdir)/pdk15 \
 	                     $(srcdir)/f8 $(srcdir)/f8l \
 	                     $(srcdir)/pic14 $(srcdir)/pic16 $(srcdir)/*.c $(sdcc_libdir)/src
-	$(CP_U) -r $(MODELS) mcs51 ds390 ds400 z80 z180 ez80 z80n r2k r2ka r3ka r4k r5k r6k tlcs90 sm83 r800 hc08 s08 stm8 pdk13 pdk14 pdk15 f8 f8l $(sdcc_libdir)/src
+	$(CP_U) -r $(MODELS) mcs51 $(MCS251_BUILD_DIR) ds390 ds400 z80 z180 ez80 z80n r2k r2ka r3ka r4k r5k r6k tlcs90 sm83 r800 hc08 s08 stm8 pdk13 pdk14 pdk15 f8 f8l $(sdcc_libdir)/src
 
-	for src in $(MODELS) ds390 ds400 z80 z180 ez80 z80n r2k r2ka r3ka r4k r5k r6k tlcs90 sm83 r800 hc08 s08 mos6502 mos65c02 stm8 pdk13 pdk14 pdk15 f8 f8l pic14 pic16; do \
+	for src in $(MODELS) $(MCS251_BUILD_DIR) ds390 ds400 z80 z180 ez80 z80n r2k r2ka r3ka r4k r5k r6k tlcs90 sm83 r800 hc08 s08 mos6502 mos65c02 stm8 pdk13 pdk14 pdk15 f8 f8l pic14 pic16; do \
 	  find $(sdcc_libdir)/src/$$src -depth \
 	    \( -name '*.rel' -o -name '*.dump*' -o -name '*.sym' -o -name '*.o' -o -name '*.lib' -o \
 	    -name '*.lst' -o -name '*.asm' -o -name '.svn' -o -name 'autom4te.cache' -o \

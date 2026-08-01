@@ -34,7 +34,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
 #define HEAPSPACE __xdata
 #elif defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15)
 #define HEAPSPACE __near
@@ -54,7 +54,7 @@ extern header_t *HEAPSPACE __sdcc_heap_free;
 
 void __sdcc_heap_init(void);
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
 void HEAPSPACE *realloc(void *ptr, size_t size)
 #else
 void *realloc(void *ptr, size_t size)
@@ -65,7 +65,7 @@ void *realloc(void *ptr, size_t size)
 	header_t *HEAPSPACE *f, *HEAPSPACE *pf;
 	size_t blocksize, oldblocksize, maxblocksize;
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08)
 	if(!__sdcc_heap_free)
 		__sdcc_heap_init();
 #endif
@@ -138,4 +138,3 @@ void *realloc(void *ptr, size_t size)
 
 	return(0);
 }
-

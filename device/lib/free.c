@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
 #define HEAPSPACE __xdata
 #elif defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15)
 #define HEAPSPACE __near
@@ -77,4 +77,3 @@ void free(void *ptr)
 		prev_free->next_free = h->next_free;
 	}
 }
-

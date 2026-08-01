@@ -1,0 +1,63 @@
+# MCS251 run-time support library
+
+VPATH  = @srcdir@
+srcdir = @srcdir@
+
+top_srcdir   = @top_srcdir@
+top_builddir = @top_builddir@
+
+LIB_TYPE = @LIB_TYPE@
+AS = $(top_builddir)/bin/sdas251
+SDAR = $(top_builddir)/bin/sdar
+
+override PORTDIR = ../build/$(PORT)
+
+MCS51_RUNTIME = $(top_srcdir)/device/lib/mcs51
+OBJ = crtstart.rel crtxinit.rel crtxclear.rel crtclear.rel \
+      crtpagesfr.rel crtxstack.rel crtxpush.rel crtxpushr0.rel \
+      crtxpop.rel crtxpopr0.rel gptr_cmp.rel \
+      atomic_flag_test_and_set.rel atomic_flag_clear.rel
+LIB = mcs251.lib
+
+MCS251_ASM_OBJ = crtxinit.rel crtxclear.rel \
+               atomic_flag_test_and_set.rel atomic_flag_clear.rel
+MCS51_GENERATED_ASM = $(filter-out $(MCS251_ASM_OBJ:.rel=.asm),$(OBJ:.rel=.asm))
+
+ASFLAGS = -plosgff
+
+all: $(PORTDIR)/$(LIB)
+
+$(PORTDIR)/$(LIB): $(OBJ) Makefile
+ifeq ($(LIB_TYPE), SDCCLIB)
+	rm -f $@
+	$(top_builddir)/bin/sdcclib -a $@ $(OBJ)
+else ifeq ($(LIB_TYPE), AR)
+	$(SDAR) -rcSD $@ $(OBJ)
+else ifeq ($(LIB_TYPE), RANLIB)
+	$(SDAR) -rcD $@ $(OBJ)
+else
+	rm -f $@
+	for object in $(basename $(OBJ)); do echo $$object >> $@; done
+	cp $(OBJ) $(PORTDIR)
+endif
+
+$(MCS251_ASM_OBJ): %.rel: $(srcdir)/%.asm
+	test $(srcdir) = . || cp $< .
+	-$(AS) $(ASFLAGS) $(notdir $<)
+	test $(srcdir) = . || rm $(notdir $<)
+
+%.rel: $(MCS51_RUNTIME)/%.asm
+	sed \
+		-e 's/\([[:space:]]\)lcall\([[:space:]]\)/\1ecall\2/g' \
+		-e 's/\([[:space:]]\)ljmp\([[:space:]]\)/\1ejmp\2/g' \
+		-e 's/^\([[:space:]]*\)mov\([[:space:]][[:space:]]*\)sp,#__start__stack/\1mov\2spx,#__start__stack/' \
+		-e 's/^\([[:space:]]*\)ret$$/\1eret/' \
+		-e 's/^\([[:space:]]*\)ret\([[:space:];]\)/\1eret\2/' \
+		$< > $*.asm
+	-$(AS) $(ASFLAGS) $*.asm
+
+clean:
+	rm -f $(MCS51_GENERATED_ASM) *.rel *.sym *.lst *~ *.lib
+
+distclean: clean
+	rm -f Makefile

@@ -30,7 +30,111 @@
 #define __SDCC_HIDE_LONGJMP
 #include <setjmp.h>
 
-#if defined(__SDCC_ds390)
+#if defined(__SDCC_mcs251)
+
+/*
+ * MCS251 calls push a three-byte return address on the 16-bit hardware SPX
+ * stack.  Both routines that manipulate that frame must be naked: even a
+ * one-byte compiler-generated prologue would make the saved SPX ambiguous.
+ *
+ * Buffer layout:
+ *   0..1  SPX, low byte first
+ *   2..4  bytes at SPX, SPX-1, and SPX-2
+ *   5..6  normalized longjmp return value, low byte first
+ */
+int
+__setjmp (jmp_buf buf) __naked
+{
+    (void)buf;
+    __asm
+        ; Atomically snapshot SPX and its ECALL frame.  Carry remembers EA.
+        setb    c
+        jbc     ea,mcs251_setjmp_irq_off$
+        clr     c
+mcs251_setjmp_irq_off$:
+        mov     dpxl,b
+        mov     dr20,dpx
+        mov     r0,sp
+        mov     r1,sph
+        mov     dr24,spx
+        mov     r2,@dr24
+        dec     dr24
+        mov     r3,@dr24
+        dec     dr24
+        mov     r4,@dr24
+
+        mov     @dr20,r0
+        inc     dr20
+        mov     @dr20,r1
+        inc     dr20
+        mov     @dr20,r2
+        inc     dr20
+        mov     @dr20,r3
+        inc     dr20
+        mov     @dr20,r4
+
+        mov     ea,c
+        mov     dptr,#0
+        eret
+    __endasm;
+}
+
+static _Noreturn void
+__mcs251_longjmp_restore (jmp_buf buf) __naked
+{
+    (void)buf;
+    __asm
+        ; Carry remembers the interrupt-enable state while SPX is replaced.
+        setb    c
+        jbc     ea,mcs251_longjmp_irq_off$
+        clr     c
+mcs251_longjmp_irq_off$:
+        mov     dpxl,b
+        mov     dr20,dpx
+        mov     r0,@dr20
+        inc     dr20
+        mov     r1,@dr20
+        inc     dr20
+        mov     r2,@dr20
+        inc     dr20
+        mov     r3,@dr20
+        inc     dr20
+        mov     r4,@dr20
+        inc     dr20
+        mov     r5,@dr20
+        inc     dr20
+        mov     r6,@dr20
+
+        ; Re-create the saved ECALL frame without signed indexed addressing.
+        mov     dpx,#0
+        mov     dpl,r0
+        mov     dph,r1
+        mov     @dpx,r2
+        dec     dpx
+        mov     @dpx,r3
+        dec     dpx
+        mov     @dpx,r4
+        inc     dpx,#2
+        mov     spx,dpx
+
+        mov     dpl,r5
+        mov     dph,r6
+        mov     ea,c
+        eret
+    __endasm;
+}
+
+_Noreturn void
+longjmp (jmp_buf buf, int rv)
+{
+    if (!rv)
+        rv = 1;
+    buf[5] = (unsigned char)rv;
+    buf[6] = (unsigned int)rv >> 8;
+    __mcs251_longjmp_restore (buf);
+}
+
+#elif defined(__SDCC_ds390)
 
 #include <ds80c390.h>
 

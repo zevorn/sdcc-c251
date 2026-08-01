@@ -26,6 +26,12 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
+#include <sdcc-lib.h>
+
+#if defined(__SDCC_mcs251)
+#define ret _RETURN
+#endif
+
 static void
 dummy (void) __naked
 {
@@ -35,7 +41,9 @@ dummy (void) __naked
         .globl  __decdptr
 __decdptr:
 
-#ifdef __SDCC_ds390
+#ifdef __SDCC_mcs251
+        dec     dpx
+#elif defined(__SDCC_ds390)
         orl     dps, #0xc0
         inc     dptr
         anl     dps, #0x3f

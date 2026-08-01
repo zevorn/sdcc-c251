@@ -30,7 +30,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
 #define HEAPSPACE __xdata
 #elif defined(__SDCC_pdk13) || defined(__SDCC_pdk14) || defined(__SDCC_pdk15)
 #define HEAPSPACE __near
@@ -38,7 +38,7 @@
 #define HEAPSPACE
 #endif
 
-#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
+#if defined(__SDCC_mcs51) || defined(__SDCC_mcs251) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
 void HEAPSPACE *calloc (size_t nmemb, size_t size)
 #else
 void *calloc (size_t nmemb, size_t size)
@@ -59,4 +59,3 @@ void *calloc (size_t nmemb, size_t size)
 
 	return(ptr);
 }
-
