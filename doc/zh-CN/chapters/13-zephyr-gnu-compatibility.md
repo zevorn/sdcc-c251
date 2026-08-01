@@ -1,0 +1,164 @@
+# Zephyr 与 GNU C 兼容性评估
+
+评估日期：2026-08-01
+
+本章将 C frontend 兼容性与构建 Zephyr 所需的 ABI、目标文件格式和架构移植工作
+分开说明。首个可复现目标确定为采用默认 C17 配置的 Zephyr 4.4。
+
+## 结论
+
+SDCC 已能为 MCS-51 和 MCS-251 接受严格的 ISO C17 源码，但目前还不能识别
+`--std=gnu11` 或 `--std=gnu17`；common frontend 已实现的 GNU extension 也不足以
+编译 Zephyr。
+
+只增加两个 language mode 名称并不等于支持 Zephyr。stock Zephyr 与现行 MCS-251
+ABI 以及 ASxxxx `.rel`/`.ihx` 构建流程同样不兼容。完整的前置条件包括：
+
+1. C17，以及 Zephyr 实际使用的 GNU C 子集；
+2. 单独选择的 ABI，其中 `int` 为 32 bit，C pointer representation 也为 32 bit；
+3. ELF32 relocatable object、archive、named section、symbol、relocation 和最终 ELF
+   executable；
+4. Zephyr 下游中的 SDCC toolchain 定义，以及 MCS-251 architecture、SoC 和 board
+   port。
+
+MCS-51 和 MCS-251 的默认语言行为与 ABI 均不得改变。
+
+## 当前 SDCC 的能力边界
+
+common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17` 和
+`sdcc17` 作为与 C11 兼容的修订版本名称接受；`sdcpp` 会在 C17 模式下于
+[`libcpp/init.cc`](../../../support/cpp/libcpp/init.cc) 中把
+`__STDC_VERSION__` 定义为 `201710L`。
+
+直接使用当前 MCS-251 编译器探测，可得到以下基线：
+
+| 语法或选项 | 当前结果 |
+|---|---|
+| `--std=c17`、`--std=sdcc17` | 接受 |
+| `--std=gnu11`、`--std=gnu17` | 作为未知标准拒绝 |
+| `__typeof(type-or-expression)` | 接受，但 expression 仍有限制 |
+| `__typeof__(...)` | 拒绝 |
+| 基本形式 `__asm__("instruction")` | 接受 |
+| 带 operand、constraint 和 clobber 的 extended asm | 拒绝 |
+| statement expression `({ ... })` | 拒绝 |
+| `__auto_type` 和 `__extension__` | 拒绝 |
+| nested function 和 computed `goto` | 拒绝 |
+| `case low ... high` | 仅在 C2y extension mode 下接受 |
+| GCC `__attribute__((...))` 语法 | 不直接解析 |
+
+可选的 [`gcc_attr.h`](../../../device/include/gcc_attr.h) 会在非 C23 模式下删除 GCC
+attribute，或在 C23 模式下把它的语法改写为 C23 attribute。它不会因此实现 GCC
+attribute 的 placement、linkage、layout 或 calling semantics。目前 frontend 只对
+`nodiscard`、`maybe_unused`、`deprecated` 和 `fallthrough` 赋予完整语义。
+
+MCS-251 输出由 `sdas251` 和 `sdld` 处理，而不是 GAS 和 GNU ld。即使 parser 接受
+GCC 的 inline assembly 写法，其中的汇编文本仍必须使用 ASxxxx syntax。
+
+## Zephyr 对 C frontend 的要求
+
+Zephyr 4.4 默认选择 C17。Kconfig 也允许启用 GNU extension，compiler abstraction
+则要求把 language mode 正确映射到 `-std=`。参见官方
+[Zephyr Kconfig](https://github.com/zephyrproject-rtos/zephyr/blob/v4.4.0/Kconfig.zephyr)
+和 [GCC compiler properties](https://github.com/zephyrproject-rtos/zephyr/blob/v4.4.0/cmake/compiler/gcc/compiler_flags.cmake)。
+
+即使应用代码只使用 standard C，Zephyr common header 仍需要下列能力，或者需要
+compiler-specific 的等价实现：
+
+- `__typeof__`、`__auto_type`、`_Generic`、statement expression，以及 variadic
+  macro 的 comma elision；
+- `__builtin_types_compatible_p`、`__builtin_expect`、
+  `__builtin_unreachable`、bit-counting builtin 和 overflow builtin；
+- `section`、`used`、`weak`、`packed`、`aligned`、`always_inline`、`noinline`、
+  `noreturn`、`alias` 等 attribute semantics；
+- context switch 和 interrupt code 使用的 compiler barrier 与 target operation；
+- global、weak 和 absolute assembly symbol。
+
+具体定义见 Zephyr 官方
+[`toolchain/gcc.h`](https://github.com/zephyrproject-rtos/zephyr/blob/v4.4.0/include/zephyr/toolchain/gcc.h)。
+并非所有 GCC extension 都必须逐字实现。Zephyr 允许 custom compiler header，因而
+可以用 SDCC-specific 的等价实现替代 extended asm 或某个 builtin，只要所需语义
+保持一致。不能通过定义 `__GNUC__` 强迫 Zephyr 包含 `gcc.h`；这种做法会虚假声称
+SDCC 提供了大量并不存在的 GCC semantics。
+
+## ABI 边界
+
+当前 MCS-251 后端在 [`mcs51/main.c`](../../../src/mcs51/main.c) 中定义了以下 C
+类型大小：
+
+| 类型 | 常规 MCS-251 ABI |
+|---|---:|
+| `char` | 1 byte |
+| `short` | 2 bytes |
+| `int` | 2 bytes |
+| `long` | 4 bytes |
+| generic/data/code pointer | 3 bytes |
+
+Zephyr 的 public kernel header 断言：`int32_t` 与 `int` 大小相同，`int64_t` 与
+`long long` 大小相同，`intptr_t` 与 `long` 大小相同。参见
+[`kernel.h`](https://github.com/zephyrproject-rtos/zephyr/blob/v4.4.0/include/zephyr/kernel.h)。
+它的 minimal libc 也以 32-bit `int` data model 为前提。
+
+建议增加一个显式选择的 Zephyr ABI。现行 16-bit `int` ABI 继续作为默认值；
+Zephyr ABI 把 `int` 设为 32 bit，并用 32-bit C pointer representation 保存 24-bit
+hardware address。pointer 的未使用 bit 必须写入规范并纳入测试。这个 ABI 还需要
+独立的 runtime library、calling-convention test 和 QEMU test。
+
+若改为让 stock Zephyr 支持 16-bit `int` 和 3-byte pointer，就必须同时修改 generic
+kernel、libc assumption 和 post-link tool；这条路线范围更大，也更难长期维护。
+
+## 目标文件格式与 linker 边界
+
+Zephyr 会无条件构建 offsets object，再从中提取 absolute symbol。生成脚本使用
+`pyelftools` 读取 object，后续阶段也会检查 ELF section 和 symbol。参见
+[`gen_offset_header.py`](https://github.com/zephyrproject-rtos/zephyr/blob/v4.4.0/scripts/build/gen_offset_header.py)
+以及官方 [top-level build](https://github.com/zephyrproject-rtos/zephyr/blob/v4.4.0/CMakeLists.txt)。
+
+因此，只有最终 Intel HEX image 并不够。MCS-251 toolchain 必须提供：
+
+- ELF32 relocatable object 与 static archive；
+- target relocation record，以及稳定的 ELF machine/ABI 定义；
+- local、global、weak 和 absolute symbol；
+- 任意命名的 code、data、read-only、BSS 与 metadata section；
+- linker-script placement、section retention 和生成的 boundary symbol；
+- 可继续转换为 QEMU 所需 Intel HEX 的最终 ELF executable。
+
+在构建末端加一层 `.ihx` 到 ELF 的 wrapper，无法恢复 relocation、已丢弃的 symbol
+和 input-section identity。assembler/linker 必须原生支持 ELF，或在 link 之前完成
+无损转换。
+
+## Zephyr 接入边界
+
+Zephyr 官方 [custom toolchain guide](https://docs.zephyrproject.org/latest/develop/toolchains/custom_cmake.html)
+允许 out-of-tree toolchain variant 提供自己的 compiler、linker、bintools 和
+`toolchain/other.h`。这是 SDCC 正确的接入点，可以避免把 SDCC 伪装成 GCC。
+
+stock Zephyr 中没有 MCS-51 或 MCS-251 architecture。官方
+[architecture porting guide](https://docs.zephyrproject.org/latest/hardware/porting/arch.html)
+要求实现 early boot、interrupt entry/exit、context switching、thread frame、
+atomic 与 IRQ primitive、system timer、linker integration 和 stack alignment。
+architecture port 完成后，还需要 STC32G144K246 SoC/board 定义，以及用于测试输出的
+最小 UART driver。
+
+## 实现门槛
+
+按以下顺序推进，可以让失败原因保持清晰，并保护 MCS-51：
+
+1. 在接受 `gnu11` 或 `gnu17` 之前，先增加 frontend 正向与反向测试。mode 必须设置
+   正确的 `__STDC_VERSION__`，并且只启用已经实现的 extension。
+2. 在 common frontend 中实现所需的 keyword alias、expression、attribute 和
+   builtin。MCS-51 与 MCS-251 共用 parser，因此两者必须运行相同的 probe。
+3. 增加 opt-in Zephyr ABI，并构建独立的 MCS-251 runtime library。现有 default-ABI
+   regression input 的输出应保持 byte-for-byte 一致。
+4. 增加 ELF32 assembly/link 支持，并覆盖 Zephyr 使用的每种 relocation、symbol
+   binding 和 section-placement rule。
+5. 在 Zephyr 下游增加 out-of-tree SDCC toolchain，以及 MCS-251
+   architecture/SoC/board port。
+6. 依次编译和运行 freestanding C、Zephyr `hello_world`、interrupt/timer smoke、
+   cooperative thread、preemptive thread 和 synchronization primitive。
+7. 每次 CI 变更都运行完整 MCS-51 regression，以及 MCS-51/MCS-251 QEMU test。使用
+   QEMU TCG `icount` 获得确定性 timeout，并通过 UART 输出测试结果；QEMU 只负责
+   执行，不充当测试 oracle。
+
+只有 feature test 全部通过，才能声称实现了 `gnu17`；只有从 stock baseline
+编译、链接 Zephyr image 并在 MCS-251 QEMU machine 上执行成功，才能声称实现了
+Zephyr 支持。

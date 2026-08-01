@@ -52,3 +52,6 @@ PDF/HTML artifact；tag 构建还会把 PDF 附加到对应 GitHub Release。
 MCS-251 的英文 ABI、instruction-set coverage、QEMU/GDB、memory model 和测试资料
 统一保存在 [`doc/mcs251/`](../mcs251/README.md)。仓库不再使用平行的 `docs/`
 目录；英文手册、中文手册和目标资料都从上游原有的 `doc/` 目录维护。
+
+MCS-251 编译 Zephyr 所需的 GNU C、ABI、ELF 和 architecture port 边界见
+[`Zephyr 与 GNU C 兼容性评估`](chapters/13-zephyr-gnu-compatibility.md)。

@@ -25,3 +25,5 @@ manual hierarchy:
 - [Keil memory-model research](keil-memory-model.md)
 - [Official-example clean-room plan](official-example-plan.md)
 - [Architecture and toolchain research](research.md)
+- [Zephyr and GNU C compatibility assessment](zephyr-gnu-compatibility.md)
+- [Zephyr 与 GNU C 兼容性评估（简体中文）](../zh-CN/chapters/13-zephyr-gnu-compatibility.md)
