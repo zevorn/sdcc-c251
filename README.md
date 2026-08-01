@@ -146,6 +146,10 @@ The current GNU C compatibility boundary is:
   final expression statement supplies the value and type; an empty block or
   a block ending in another statement has type `void`. Declarations and side
   effects retain their normal block scope and source order.
+- `__auto_type` is accepted in GNU11 and GNU17. A declaration must contain
+  one identifier declarator with an initializer. The initializer determines
+  the object type and is evaluated once; the declared name enters scope only
+  after its initializer.
 - The driver defines target data-model macros such as `__SIZEOF_INT__`,
   `__SIZEOF_POINTER__`, `__INT32_TYPE__`, `__INTPTR_TYPE__` and the integer
   constant macros. Host preprocessor ABI and architecture macros are removed.
@@ -162,8 +166,8 @@ The current GNU C compatibility boundary is:
   attribute names are currently syntax-only.
 - Nested functions, labels as values and computed `goto` are not supported.
 - Keyword aliases including `__inline__`, `__signed__`, `__const__`,
-  `__restrict__` and `__volatile__` are accepted. `__extension__` and
-  `__auto_type` remain unsupported.
+  `__restrict__` and `__volatile__` are accepted. `__extension__` remains
+  unsupported.
 
 The `gcc_attr.h` compatibility header only translates attribute syntax. The
 frontend implements the C23 `nodiscard`, `maybe_unused`, `deprecated` and
@@ -185,8 +189,8 @@ but its common headers and build pipeline also require GNU-compatible
 attributes, builtins, statement expressions, `__typeof__`, section placement,
 weak symbols and compiler barriers. The implemented GNU language modes remove
 part of this frontend gap, including type-compatibility queries and statement
-expressions, branch-expectation hints and constant-expression queries; they
-are not by themselves Zephyr support.
+expressions, inferred object types, branch-expectation hints and
+constant-expression queries; they are not by themselves Zephyr support.
 
 There are two additional compatibility boundaries outside the C parser:
 

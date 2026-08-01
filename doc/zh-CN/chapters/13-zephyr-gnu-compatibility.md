@@ -48,7 +48,8 @@ common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17`、
 | 基本形式 `__asm__("instruction")` | 接受 |
 | 带 operand、constraint 和 clobber 的 extended asm | 拒绝 |
 | statement expression `({ ... })` | GNU11/GNU17 接受；最后一个 expression statement 决定结果的值和类型 |
-| `__auto_type` 和 `__extension__` | 拒绝 |
+| `__auto_type` | GNU11/GNU17 接受；必须有且仅有一个 identifier declarator 和 initializer，由 initializer 推断类型且只求值一次 |
+| `__extension__` | 拒绝 |
 | nested function 和 computed `goto` | 拒绝 |
 | `case low ... high` | 仅在 C2y extension mode 下接受 |
 | 常见位置的 GCC `__attribute__((...))` | 可以解析；多数名称目前只接受语法 |
@@ -78,8 +79,8 @@ Zephyr 4.4 默认选择 C17。Kconfig 也允许启用 GNU extension，compiler a
 即使应用代码只使用 standard C，Zephyr common header 仍需要下列能力，或者需要
 compiler-specific 的等价实现：
 
-- 已在 GNU11/GNU17 实现的 `__typeof__`、`_Generic` 和 statement expression，
-  以及仍待实现的 `__auto_type` 与 variadic macro comma elision；
+- 已在 GNU11/GNU17 实现的 `__typeof__`、`_Generic`、statement expression
+  和 `__auto_type`，以及仍待实现的 variadic macro comma elision；
 - 已在 GNU11/GNU17 实现的 `__builtin_types_compatible_p`、
   `__builtin_expect` 与 `__builtin_constant_p`，以及所有模式均已实现的
   `__builtin_unreachable`；仍待实现 bit-counting builtin 和 overflow

@@ -53,7 +53,8 @@ Direct probes against the current MCS-251 compiler give this baseline:
 | basic `__asm__("instruction")` | accepted |
 | extended asm operands, constraints and clobbers | rejected |
 | statement expression `({ ... })` | accepted in GNU11/GNU17; the final expression statement supplies the value and type |
-| `__auto_type` and `__extension__` | rejected |
+| `__auto_type` | accepted in GNU11/GNU17; requires one identifier declarator with an initializer, which determines the type and is evaluated once |
+| `__extension__` | rejected |
 | nested function and computed `goto` | rejected |
 | `case low ... high` | accepted only in the C2y extension mode |
 | common GCC `__attribute__((...))` placements | parsed; most names are syntax-only |
@@ -86,8 +87,8 @@ and [GCC compiler properties](https://github.com/zephyrproject-rtos/zephyr/blob/
 Even when application code is written in standard C, common Zephyr headers
 need compiler-specific equivalents for these facilities:
 
-- `__typeof__`, `_Generic` and statement expressions (implemented in
-  GNU11/GNU17), plus `__auto_type` and variadic macro comma elision;
+- `__typeof__`, `_Generic`, statement expressions and `__auto_type`
+  (implemented in GNU11/GNU17), plus variadic macro comma elision;
 - `__builtin_types_compatible_p`, `__builtin_expect` and
   `__builtin_constant_p` (implemented in GNU11/GNU17), and
   `__builtin_unreachable` (implemented in every mode), plus the remaining
