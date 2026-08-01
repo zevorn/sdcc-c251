@@ -1147,6 +1147,15 @@ MAIN_RETURN_TYPE core_main(int argc, char *argv[]) {
 		ee_printf("Cannot validate operation for these seed values, please compare with results on a known platform.\n");
 
         /* deviation from benchmark: report errors to regression test infrastructure */
+	ASSERT (known_id >= 0);
+	if (known_id >= 0) {
+		ASSERT (!(results[0].execs & ID_LIST) ||
+			results[0].crclist == list_known_crc[known_id]);
+		ASSERT (!(results[0].execs & ID_MATRIX) ||
+			results[0].crcmatrix == matrix_known_crc[known_id]);
+		ASSERT (!(results[0].execs & ID_STATE) ||
+			results[0].crcstate == state_known_crc[known_id]);
+	}
 	ASSERT (!total_errors);
 
 #if (MEM_METHOD==MEM_MALLOC)
@@ -1896,7 +1905,10 @@ ee_u8 check_data_types() {
 		ee_printf("ERROR: ee_u32 is not a 32b datatype!\n");
 		retval++;
 	}
-	if (sizeof(ee_ptr_int) != sizeof(int *)) {
+	/* uintptr_t may be wider than a pointer when the target has no native
+	   integer type with the pointer's exact width (MCS251 uses 24-bit flat
+	   pointers and a 32-bit uintptr_t). */
+	if (sizeof(ee_ptr_int) < sizeof(int *)) {
 		ee_printf("ERROR: ee_ptr_int is not a datatype that holds an int pointer!\n");
 		retval++;
 	}
@@ -2007,7 +2019,7 @@ void portable_init(core_portable *p, int *argc, char *argv[])
 {
 	init();
 
-	if (sizeof(ee_ptr_int) != sizeof(ee_u8 *)) {
+	if (sizeof(ee_ptr_int) < sizeof(ee_u8 *)) {
 		ee_printf("ERROR! Please define ee_ptr_int to a type that holds a pointer!\n");
 	}
 	if (sizeof(ee_u32) != 4) {
@@ -2037,4 +2049,3 @@ void testCoremark(void)
 {
 }
 #endif
-

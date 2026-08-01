@@ -14,6 +14,9 @@
 #define ADDRESS 0x3000
 #elif defined(__SDCC_pic14)
 #define ADDRESS 0x01A0
+#elif defined(__SDCC_mcs251)
+/* Keep the absolute test inside the STC32G XRAM aperture. */
+#define ADDRESS 0x01F000
 #else
 #define ADDRESS 0xF000
 #endif
@@ -46,4 +49,3 @@ void testBug(void)
 #endif
 #endif
 }
-

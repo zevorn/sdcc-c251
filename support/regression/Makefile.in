@@ -158,7 +158,11 @@ EXCLUDE_PORTS += \
 # simulator may be unavailable
 EXCLUDE_PORTS += \
 	mos6502 \
-	mos6502-stack-auto
+	mos6502-stack-auto \
+	mcs251 \
+	mcs251-stack-auto \
+	mcs251-large \
+	mcs251-large-stack-auto
 
 # unstable
 EXCLUDE_PORTS += \
@@ -442,4 +446,3 @@ $(PORT_CASES_DIR)/fwk.lib: $(srcdir)/fwk/lib/fwk.lib ${SPEC_LIB}
 
 Makefile: $(srcdir)/Makefile.in
 	 cd $(top_builddir); ./config.status support/regression/Makefile
-

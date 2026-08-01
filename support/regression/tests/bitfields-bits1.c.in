@@ -62,12 +62,21 @@ typedef struct
 #define bitToTest_(b) bitToTest__(b)
 #define bitToTest bitToTest_(BIT_TO_TEST)
 
+#if defined(__SDCC_mcs251)
+    #define ABS_STORAGE __xdata
+#else
+    #define ABS_STORAGE
+#endif
+
 #if defined(__SDCC_pic16)
     #define ABS_ADDR1 0x0200
     #define ABS_ADDR2 0x0204
 #elif defined(__SDCC_pic14)
     #define ABS_ADDR1 0x0100
     #define ABS_ADDR2 0x0104
+#elif defined(__SDCC_mcs251)
+    #define ABS_ADDR1 0x2000
+    #define ABS_ADDR2 0x2004
 #elif defined(__SDCC_stm8)
     #define ABS_ADDR1 0x1000
     #define ABS_ADDR2 0x1004
@@ -87,13 +96,13 @@ typedef struct
     volatile struct_8bits volatileBits;
 #elif VAR_TYPE == 1
     #ifdef ABS_ADDR1
-        #define volatileBits (*(volatile struct_8bits*)ABS_ADDR1)
+        #define volatileBits (*(volatile ABS_STORAGE struct_8bits*)ABS_ADDR1)
     #else
         #define DUMMY_CASE
     #endif
 #elif VAR_TYPE == 2
     #ifdef ABS_ADDR2
-        #define volatileBits (*(volatile struct_8bits*)ABS_ADDR2)
+        #define volatileBits (*(volatile ABS_STORAGE struct_8bits*)ABS_ADDR2)
     #else
         #define DUMMY_CASE
     #endif
@@ -103,13 +112,13 @@ typedef struct
     #define VOLATILE_BITS_DEF static volatile struct_8bits volatileBits
 #elif VAR_TYPE == 5
     #ifdef ABS_ADDR1
-        #define VOLATILE_BITS_DEF static volatile struct_8bits __at(ABS_ADDR1) volatileBits
+        #define VOLATILE_BITS_DEF static volatile ABS_STORAGE struct_8bits __at(ABS_ADDR1) volatileBits
     #else
         #define DUMMY_CASE
     #endif
 #elif VAR_TYPE == 6
     #ifdef ABS_ADDR2
-        #define VOLATILE_BITS_DEF static volatile struct_8bits __at(ABS_ADDR2) volatileBits
+        #define VOLATILE_BITS_DEF static volatile ABS_STORAGE struct_8bits __at(ABS_ADDR2) volatileBits
         #define USE_ONLY_1_BYTE
     #else
         #define DUMMY_CASE
@@ -490,4 +499,3 @@ testBitfields(void)
         bit_test_7();
     #endif
 }
-

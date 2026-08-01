@@ -5,7 +5,16 @@
 #include <testfwk.h>
 #include <stddef.h>
 
-#ifdef __SDCC_pic16
+#define TEST_MEMORY_IS_CODE___code 1
+#define TEST_MEMORY_IS_CODE___xdata 0
+#define TEST_MEMORY_IS_CODE_(memory) TEST_MEMORY_IS_CODE_ ## memory
+#define TEST_MEMORY_IS_CODE(memory) TEST_MEMORY_IS_CODE_(memory)
+
+#if defined(__SDCC_mcs251) && TEST_MEMORY_IS_CODE({mem})
+# define ADDRESS(x) (0xFEF0 ## x)
+#elif defined(__SDCC_mcs251)
+# define ADDRESS(x) (0x030F ## x)
+#elif defined(__SDCC_pic16)
 # define ADDRESS(x) (0x02 ## x)
 #elif defined(__SDCC_pic14)
 # define ADDRESS(x) (0x01 ## x)
@@ -58,10 +67,17 @@ testAbsolute(void)
   ASSERT(pC[6] == 's');
   ASSERT(pI[0] == 0x1234);
 
+#if defined(__SDCC_mcs251)
+  ASSERT((unsigned long)&pc==ADDRESS(A0));
+  ASSERT((unsigned long)&p==ADDRESS(A4));
+  ASSERT((unsigned long)&a==ADDRESS(A8));
+  ASSERT((unsigned long)&f==ADDRESS(AC));
+#else
   ASSERT((unsigned int)&pc==ADDRESS(A0));
   ASSERT((unsigned int)&p==ADDRESS(A4));
   ASSERT((unsigned int)&a==ADDRESS(A8));
   ASSERT((unsigned int)&f==ADDRESS(AC));
+#endif
 
   //bug 2941749
   ASSERT((*((TestStruct *)&k)).a == 0x1234);
@@ -86,4 +102,3 @@ testAbsBdata(void)
   ASSERT(Byte0 == 0xFF);
 #endif
 }
-

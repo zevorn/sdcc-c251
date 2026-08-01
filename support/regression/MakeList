@@ -122,6 +122,8 @@ EXCLUDE_ARCH_hc08 += \
 EXCLUDE_hc08 += \
 	gte_memcpy-1
 # compile issue - test is malformed unless STACK_SIZE is defined
+EXCLUDE_ARCH_mcs251 += \
+	gte_memcpy-1
 EXCLUDE_ARCH_mos6502 += \
 	gte_memcpy-1
 EXCLUDE_ARCH_stm8 += \
@@ -311,6 +313,8 @@ EXCLUDE_mcs51-small += \
 	qct_0080-arrays
 EXCLUDE_mcs51-medium += \
 	qct_0080-arrays
+EXCLUDE_mcs251 += \
+	qct_0080-arrays
 EXCLUDE_uc6502-stack-auto += \
 	qct_0080-arrays
 
@@ -432,6 +436,11 @@ EXCLUDE_mcs51-stack-auto += ${EXCLUDE_ARCH_mcs51}
 EXCLUDE_mcs51-large-stack-auto += ${EXCLUDE_ARCH_mcs51}
 EXCLUDE_mcs51-xstack-auto += ${EXCLUDE_ARCH_mcs51}
 ###################################################
+EXCLUDE_mcs251 += ${EXCLUDE_ARCH_mcs251}
+EXCLUDE_mcs251-large += ${EXCLUDE_ARCH_mcs251}
+EXCLUDE_mcs251-stack-auto += ${EXCLUDE_ARCH_mcs251}
+EXCLUDE_mcs251-large-stack-auto += ${EXCLUDE_ARCH_mcs251}
+###################################################
 EXCLUDE_pdk13 += ${EXCLUDE_ARCH_pdk}
 EXCLUDE_pdk14 += ${EXCLUDE_ARCH_pdk}
 EXCLUDE_pdk15 += ${EXCLUDE_ARCH_pdk}
@@ -447,4 +456,3 @@ EXCLUDE_f8l += ${EXCLUDE_ARCH_f8}
 EXCLUDE_hc08 += ${EXCLUDE_ARCH_hc08}
 EXCLUDE_s08 += ${EXCLUDE_ARCH_hc08}
 EXCLUDE_s08-stack-auto += ${EXCLUDE_ARCH_hc08}
-
