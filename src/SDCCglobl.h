@@ -319,6 +319,7 @@ struct options
     int std_c17;                /* select the C17 preprocessor mode */
     int std_c23;                /* enable C23 keywords/constructs */
     int std_c2y;                /* enable C2y keywords/constructs */
+    int std_gnu;                /* enable GNU C compatibility extensions */
     int std_sdcc;               /* enable SDCC extensions to C */
     int dollars_in_ident;       /* zero means dollar signs are punctuation */
     int signed_char;            /* use signed for char without signed/unsigned modifier */

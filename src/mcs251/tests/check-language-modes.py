@@ -44,14 +44,18 @@ def main():
             parser.error(f"required path does not exist: {path}")
 
     modes = (
-        ("c11", 201112),
-        ("c17", 201710),
-        ("sdcc11", 201112),
-        ("sdcc17", 201710),
+        ("c11", 201112, False),
+        ("c17", 201710, False),
+        ("sdcc11", 201112, False),
+        ("sdcc17", 201710, False),
+        ("gnu11", 201112, True),
+        ("gnu17", 201710, True),
     )
     for port in ("mcs51", "mcs251"):
-        for mode, stdc_version in modes:
-            check_mode(sdcc, source, port, mode, stdc_version, False)
+        for mode, stdc_version, gnu_extensions in modes:
+            check_mode(
+                sdcc, source, port, mode, stdc_version, gnu_extensions
+            )
 
 
 if __name__ == "__main__":
