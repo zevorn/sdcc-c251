@@ -96,7 +96,9 @@ jobs:
       - name: Build and install Windows package
         shell: msys2 {0}
         run: |
-          export PATH="$PWD/windows-build/bin:$PATH"
+          make -C windows-build -j2 sdcc-base
+          install -m 755 windows-build/support/cpp/gcc/cpp.exe \
+            windows-build/bin/sdcpp.exe
           make -C windows-build -j2
           make -C windows-build \
             DESTDIR="$PWD/windows-build/windows-stage" install
