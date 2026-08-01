@@ -1229,7 +1229,7 @@ copyStr (const char *src, size_t *size)
 
 static char prefix[256] = "";
 static char suffix[256] = "";
-static char cmd[4096] = "";
+static struct dbuf_s cmd;
 
 void getPrefixSuffix(const char *arg)
 {
@@ -1263,8 +1263,11 @@ char *setPrefixSuffix(const char *arg)
 
   if (!arg)
     return NULL;
+
+  if (!dbuf_is_initialized (&cmd))
+    dbuf_init (&cmd, 4096);
   else
-    memset (cmd, 0x00, sizeof (cmd));
+    dbuf_set_length (&cmd, 0);
 
   /* find the core name of command line */
   for (p = arg; (*p) && isblank (*p); p++);
@@ -1273,12 +1276,12 @@ char *setPrefixSuffix(const char *arg)
   for (p = arg; (*p) && !isblank (*p); p++);
 
   /* compose new command line with prefix and suffix */
-  strcpy (cmd, prefix);
-  strncat (cmd, arg, p - arg);
-  strcat (cmd, suffix);
-  strcat (cmd, p);
+  dbuf_append_str (&cmd, prefix);
+  dbuf_append (&cmd, arg, p - arg);
+  dbuf_append_str (&cmd, suffix);
+  dbuf_append_str (&cmd, p);
 
-  return cmd;
+  return (char *) dbuf_c_str (&cmd);
 }
 
 char *formatInlineAsm (char *asmStr)
@@ -1501,4 +1504,3 @@ process_identifier (char *dest, const char *src, size_t n)
     }
 #endif
 }
-
