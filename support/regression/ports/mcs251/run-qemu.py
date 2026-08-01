@@ -10,6 +10,13 @@ import sys
 import time
 
 
+sys.path.insert(
+    0,
+    str(Path(__file__).resolve().parents[4] / "src" / "mcs251" / "tests"),
+)
+from qemu_trace import capture_instruction_trace
+
+
 MACHINE_CANDIDATES = ("stc32g144k246", "stc32g144k246-evb")
 SUMMARY_RE = re.compile(
     rb"^--- Summary:\s*(x[0-9A-Fa-f]+|[0-9]+)/"
@@ -53,6 +60,7 @@ def main():
     parser.add_argument("image")
     parser.add_argument("--timeout", type=float, default=20.0)
     parser.add_argument("--trace-log")
+    parser.add_argument("--trace-dir")
     args = parser.parse_args()
 
     qemu = Path(args.qemu).resolve()
@@ -65,19 +73,17 @@ def main():
     except RuntimeError as error:
         parser.error(str(error))
 
-    trace_log = None
+    if args.trace_log and args.trace_dir:
+        parser.error("trace-log and trace-dir are mutually exclusive")
+    trace_log = Path(args.trace_log).resolve() if args.trace_log else None
+    if args.trace_dir:
+        trace_dir = Path(args.trace_dir).resolve()
+        trace_log = trace_dir / f"{image.stem}.trace"
     command = [
         str(qemu), "-M", machine, "-bios", str(image),
         "-accel", "tcg", "-icount", "shift=0,align=off,sleep=off",
         "-display", "none", "-monitor", "none", "-serial", "stdio",
     ]
-    if args.trace_log:
-        trace_log = Path(args.trace_log).resolve()
-        trace_log.parent.mkdir(parents=True, exist_ok=True)
-        command.extend([
-            "-d", "in_asm,exec,nochain", "-D", str(trace_log),
-        ])
-
     process = subprocess.Popen(
         command,
         stdin=subprocess.DEVNULL,
@@ -120,6 +126,12 @@ def main():
                 process.wait()
 
     if not completed:
+        if trace_log is not None:
+            plugin_trace = capture_instruction_trace(
+                qemu, command, trace_log
+            )
+            trace_kind = "execlog plugin" if plugin_trace else "QEMU -d"
+            sys.stderr.write(f"{trace_kind} trace: {trace_log}\n")
         if not output:
             sys.stderr.write("MCS251 QEMU produced no regression output\n")
         else:
@@ -128,6 +140,12 @@ def main():
             sys.stderr.write(f"MCS251 QEMU trace: {trace_log}\n")
         return 1
     if failures != 0:
+        if trace_log is not None:
+            plugin_trace = capture_instruction_trace(
+                qemu, command, trace_log
+            )
+            trace_kind = "execlog plugin" if plugin_trace else "QEMU -d"
+            sys.stderr.write(f"{trace_kind} trace: {trace_log}\n")
         sys.stderr.write(f"MCS251 regression reported {failures} failure(s)\n")
         if trace_log is not None:
             sys.stderr.write(f"MCS251 QEMU trace: {trace_log}\n")

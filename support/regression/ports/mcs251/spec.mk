@@ -11,6 +11,9 @@ MCS251_LIBRARY_SUFFIX = $(if $(filter 1,$(MCS251_STACK_AUTO)),-stack-auto,)
 MCS251_LIBDIR ?= $(top_builddir)/device/lib/build/mcs251-$(MCS251_MODEL)$(MCS251_LIBRARY_SUFFIX)
 
 EMU = $(PYTHON) $(PORTS_DIR)/mcs251/run-qemu.py --qemu $(QEMU_MCS251)
+ifneq ($(QEMU_TRACE_DIR),)
+EMU += --trace-dir $(QEMU_TRACE_DIR)
+endif
 EMU_PORT_FLAG =
 EMU_FLAGS =
 EMU_INPUT =

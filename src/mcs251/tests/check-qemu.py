@@ -10,6 +10,8 @@ import sys
 import tempfile
 import time
 
+from qemu_trace import capture_instruction_trace
+
 
 MACHINE_CANDIDATES = ("stc32g144k246", "stc32g144k246-evb")
 
@@ -44,11 +46,6 @@ def run_qemu(qemu, machine, image, trace_log=None):
         "-accel", "tcg", "-icount", "shift=0,align=off,sleep=off",
         "-display", "none", "-monitor", "none", "-serial", "stdio",
     ]
-    if trace_log is not None:
-        command.extend([
-            "-d", "in_asm,exec,nochain", "-D", str(trace_log),
-        ])
-
     process = subprocess.Popen(
         command,
         stdin=subprocess.DEVNULL,
@@ -84,9 +81,21 @@ def run_qemu(qemu, machine, image, trace_log=None):
 
     normalized_output = bytes(output).replace(b"\r\n", b"\n")
     if b"PASS\n" not in normalized_output:
+        if trace_log is not None:
+            plugin_trace = capture_instruction_trace(
+                qemu, command, trace_log
+            )
+            trace_kind = "execlog plugin" if plugin_trace else "QEMU -d"
+            sys.stderr.write(f"{trace_kind} trace: {trace_log}\n")
         sys.stderr.buffer.write(bytes(output))
         raise SystemExit(f"QEMU did not emit PASS for {image.name}")
     if b"FAIL" in normalized_output:
+        if trace_log is not None:
+            plugin_trace = capture_instruction_trace(
+                qemu, command, trace_log
+            )
+            trace_kind = "execlog plugin" if plugin_trace else "QEMU -d"
+            sys.stderr.write(f"{trace_kind} trace: {trace_log}\n")
         sys.stderr.buffer.write(bytes(output))
         raise SystemExit(f"QEMU emitted FAIL for {image.name}")
     return bytes(output)

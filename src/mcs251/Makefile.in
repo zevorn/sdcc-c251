@@ -71,6 +71,7 @@ check: all
 
 QEMU_MCS251 ?= $(HOME)/oss/qemu/builds/build-mcs251/qemu-system-mcs251
 QEMU_MCS51 ?= $(HOME)/oss/qemu/builds/build-mcs51/qemu-system-mcs51
+QEMU_TRACE_DIR ?=
 MCS251_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-small
 MCS251_STACK_AUTO_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-small-stack-auto
 MCS251_LARGE_LIBRARY_DIR ?= $(top_builddir)/device/lib/build/mcs251-large
@@ -99,7 +100,8 @@ check-qemu: all check-official-qemu check-gdbstub
 		--library-dir $(MCS251_LIBRARY_DIR) \
 		--stack-auto-library-dir $(MCS251_STACK_AUTO_LIBRARY_DIR) \
 		--large-library-dir $(MCS251_LARGE_LIBRARY_DIR) \
-		--large-stack-auto-library-dir $(MCS251_LARGE_STACK_AUTO_LIBRARY_DIR)
+		--large-stack-auto-library-dir $(MCS251_LARGE_STACK_AUTO_LIBRARY_DIR) \
+		$(if $(QEMU_TRACE_DIR),--trace-dir $(QEMU_TRACE_DIR)/mcs251)
 
 check-official-qemu: all
 	$(PYTHON) $(srcdir)/tests/official/check-official-examples.py \
@@ -137,6 +139,7 @@ check-mcs51-qemu: all
 		--library-dir $(top_builddir)/device/lib/build/small \
 		--stack-auto-library-dir \
 			$(top_builddir)/device/lib/build/small-stack-auto \
-		--baseline-digest $(srcdir)/tests/mcs51-regression.sha256
+		--baseline-digest $(srcdir)/tests/mcs51-regression.sha256 \
+		$(if $(QEMU_TRACE_DIR),--trace-dir $(QEMU_TRACE_DIR)/mcs51)
 
 include $(srcdir)/../port.mk

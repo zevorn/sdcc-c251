@@ -9,6 +9,8 @@ import subprocess
 import sys
 import tempfile
 
+from qemu_trace import capture_instruction_trace
+
 
 MACHINE_CANDIDATES = ("stc8g1k08a", "stc8g1k08a-evb")
 LONGLONG_SYMBOLS = (
@@ -80,13 +82,14 @@ def resolve_machine(qemu, requested):
     )
 
 
-def run_qemu(qemu, machine, image):
+def run_qemu(qemu, machine, image, trace_log=None):
+    command = [
+        str(qemu), "-M", machine, "-bios", str(image),
+        "-accel", "tcg", "-icount", "shift=0,align=off,sleep=off",
+        "-display", "none", "-monitor", "none", "-serial", "stdio",
+    ]
     process = subprocess.Popen(
-        [
-            str(qemu), "-M", machine, "-bios", str(image),
-            "-accel", "tcg", "-icount", "shift=0,align=off,sleep=off",
-            "-display", "none", "-monitor", "none", "-serial", "stdio",
-        ],
+        command,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
@@ -105,6 +108,12 @@ def run_qemu(qemu, machine, image):
 
     normalized = output.replace(b"\r\n", b"\n")
     if b"PASS\n" not in normalized or b"FAIL" in normalized:
+        if trace_log is not None:
+            plugin_trace = capture_instruction_trace(
+                qemu, command, trace_log
+            )
+            trace_kind = "execlog plugin" if plugin_trace else "QEMU -d"
+            sys.stderr.write(f"{trace_kind} trace: {trace_log}\n")
         sys.stderr.buffer.write(output)
         raise SystemExit(f"MCS-51 QEMU regression failed for {image.name}")
     sys.stdout.buffer.write(output)
@@ -148,6 +157,7 @@ def main():
     parser.add_argument("--baseline-digest")
     parser.add_argument("--baseline-sdcc")
     parser.add_argument("--baseline-library-dir")
+    parser.add_argument("--trace-dir")
     args = parser.parse_args()
 
     sdcc = Path(args.sdcc).resolve()
@@ -157,6 +167,7 @@ def main():
     device_include = Path(args.device_include).resolve()
     library_dir = Path(args.library_dir).resolve()
     stack_auto_library_dir = Path(args.stack_auto_library_dir).resolve()
+    trace_dir = Path(args.trace_dir).resolve() if args.trace_dir else None
     required = (
         sdcc, qemu, source, longlong_source, device_include, library_dir,
         stack_auto_library_dir,
@@ -181,10 +192,18 @@ def main():
 
     with tempfile.TemporaryDirectory(prefix="sdcc-mcs51-qemu.") as tmp:
         output_dir = Path(tmp)
+        if trace_dir is not None:
+            trace_dir.mkdir(parents=True, exist_ok=True)
+
+        def trace_for(image_path):
+            if trace_dir is None:
+                return None
+            return trace_dir / f"{image_path.stem}.trace"
+
         assembly, image = build(
             sdcc, source, device_include, library_dir, output_dir, "current",
         )
-        run_qemu(qemu, machine, image)
+        run_qemu(qemu, machine, image, trace_for(image))
 
         if baseline_digest is not None:
             expected = read_baseline_digests(baseline_digest)
@@ -222,7 +241,9 @@ def main():
                 raise SystemExit(
                     "modified toolchain changed MCS-51 Intel HEX versus baseline"
                 )
-            run_qemu(qemu, machine, baseline_image)
+            run_qemu(
+                qemu, machine, baseline_image, trace_for(baseline_image)
+            )
 
         if baseline_digest is not None:
             print("MCS-51 upstream 4.6.0 digest comparison passed")
@@ -231,7 +252,7 @@ def main():
             sdcc, longlong_source, device_include,
             stack_auto_library_dir, output_dir,
         )
-        run_qemu(qemu, machine, longlong_image)
+        run_qemu(qemu, machine, longlong_image, trace_for(longlong_image))
 
 
 if __name__ == "__main__":

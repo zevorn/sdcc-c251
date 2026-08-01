@@ -109,30 +109,36 @@ jobs:
           ./configure \
             --target-list=mcs51-softmmu,mcs251-softmmu \
             --disable-docs \
+            --enable-plugins \
             --disable-werror
 
       - name: Build QEMU execution backend
         run: |
           ninja -C qemu/build \
             qemu-system-mcs51 \
-            qemu-system-mcs251
+            qemu-system-mcs251 \
+            contrib/plugins/libexeclog.so \
+            contrib/plugins/libstoptrigger.so
 
       - name: Test MCS-251 64-bit compiler regression
         run: |
           make -C sdcc-build/support/regression \
             test-mcs251-stack-auto \
             TEST_PREFIX=tst_mcs251-longlong \
-            QEMU_MCS251="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs251"
+            QEMU_MCS251="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs251" \
+            QEMU_TRACE_DIR="$GITHUB_WORKSPACE/qemu-traces/regression"
 
       - name: Test MCS-251 compiler and runtime on QEMU
         run: |
           make -C sdcc-build/src/mcs251 check-qemu \
-            QEMU_MCS251="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs251"
+            QEMU_MCS251="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs251" \
+            QEMU_TRACE_DIR="$GITHUB_WORKSPACE/qemu-traces/features"
 
       - name: Test MCS-51 runtime and stability
         run: |
           make -C sdcc-build/src/mcs251 check-mcs51-qemu \
-            QEMU_MCS51="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs51"
+            QEMU_MCS51="$GITHUB_WORKSPACE/qemu/build/qemu-system-mcs51" \
+            QEMU_TRACE_DIR="$GITHUB_WORKSPACE/qemu-traces/features"
 
       - name: Upload failure logs
         if: failure()
@@ -142,5 +148,6 @@ jobs:
           path: |
             sdcc-build/support/regression/results/
             sdcc-build/support/valdiag/results/
+            qemu-traces/
           if-no-files-found: ignore
           retention-days: 14
