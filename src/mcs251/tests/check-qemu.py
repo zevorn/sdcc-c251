@@ -384,16 +384,21 @@ def main():
                 qemu, machine, longlong_image, trace_for(longlong_image),
             ))
 
-        endianness_image = tmpdir / "endianness-runtime.hex"
-        run([
-            str(sdcc), "-mmcs251", "--no-xinit-opt", *board_link_flags,
-            f"-I{device_include}", f"-I{device_include / 'mcs51'}",
-            f"-L{library_dir}", "-o", str(endianness_image),
-            str(endianness_runtime_source),
-        ], env=env)
-        sys.stdout.buffer.write(run_qemu(
-            qemu, machine, endianness_image, trace_for(endianness_image),
-        ))
+        for endian_name, model_flags, endian_library_dir in \
+                runtime_configurations:
+            endianness_image = \
+                tmpdir / f"endianness-runtime-{endian_name}.hex"
+            run([
+                str(sdcc), "-mmcs251", *model_flags, "--no-xinit-opt",
+                *board_link_flags, f"-I{device_include}",
+                f"-I{device_include / 'mcs51'}",
+                f"-L{endian_library_dir}", "-o", str(endianness_image),
+                str(endianness_runtime_source),
+            ], env=env)
+            sys.stdout.buffer.write(run_qemu(
+                qemu, machine, endianness_image,
+                trace_for(endianness_image),
+            ))
 
         aggregate_image = tmpdir / "aggregate-return.hex"
         run([

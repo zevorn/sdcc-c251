@@ -18,9 +18,9 @@ union endian_qword
     unsigned char bytes[8];
 };
 
-static volatile union endian_word direct_word = {0x1234u};
-static volatile union endian_dword direct_dword = {0x12345678ul};
-static volatile union endian_qword direct_qword = {
+static volatile __data union endian_word direct_word = {0x1234u};
+static volatile __data union endian_dword direct_dword = {0x12345678ul};
+static volatile __data union endian_qword direct_qword = {
     0x0123456789abcdefull,
 };
 static volatile __xdata union endian_word external_word = {0x5678u};

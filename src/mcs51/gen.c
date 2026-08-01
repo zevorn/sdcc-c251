@@ -5128,7 +5128,10 @@ genFunction (iCode * ic)
           D (emitcode (";", "genReceive"));
           for (ofs = 0; ofs < getSize (rsym->type); ofs++)
             {
-              emitpush (fReturn[ofs]);
+              int logicalOffset = mcs251PointerByteOffset (
+                rsym->type, ofs, getSize (rsym->type));
+
+              emitpush (fReturn[logicalOffset]);
               _G.stack.pushed--; /* cancel out pushed++ from emitpush() */
             }
           stackAdjust -= getSize (rsym->type);
