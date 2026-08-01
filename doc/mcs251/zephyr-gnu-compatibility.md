@@ -14,8 +14,9 @@ and attribute syntax, implements statement expressions and constant
 type-compatibility and constant-expression queries, and preserves GNU
 branch-expectation hints. MCS-51 and MCS-251 also provide the GNU bit-counting
 builtin families and the type-generic add, subtract and multiply overflow
-builtins. The GNU subset implemented by the common frontend is still not
-sufficient for Zephyr.
+builtins, together with all 18 typed variants for signed and unsigned `int`,
+`long` and `long long`. The GNU subset implemented by the common frontend is
+still not sufficient for Zephyr.
 
 The two language modes alone do not provide Zephyr support. Stock Zephyr is
 also incompatible with the normal MCS-251 ABI and with the ASxxxx
@@ -51,6 +52,7 @@ Direct probes against the current MCS-251 compiler give this baseline:
 | `__builtin_constant_p(expression)` | accepted in GNU11/GNU17; conservatively folds to zero or one without evaluating the operand |
 | `__builtin_clz*`, `__builtin_ctz*`, `__builtin_popcount*`, `__builtin_ffs*` | MCS-51/MCS-251 GNU11/GNU17; constant arguments fold and dynamic arguments use ABI-matched runtime helpers |
 | `__builtin_add_overflow`, `__builtin_sub_overflow`, `__builtin_mul_overflow` | MCS-51/MCS-251 GNU11/GNU17; type-generic exact arithmetic with a wrapped result and overflow status |
+| typed `sadd`/`uadd`/`ssub`/`usub`/`smul`/`umul` overflow families | all 18 `int`, `long` and `long long` variants on MCS-51/MCS-251 GNU11/GNU17 |
 | `__has_builtin(name)` | reports common builtins in every mode, GNU-only builtins in GNU11/GNU17, and zero for unknown names |
 | `__builtin_unreachable()` | accepted in every mode; no external call is emitted |
 | target data-model macros | MCS-51/MCS-251 sizes, types, limits, constants and byte order are predefined; host ABI macros are suppressed |
@@ -90,6 +92,18 @@ results. Positive, mixed-signedness, wraparound, invalid-type, invalid-arity
 and single-evaluation cases run across both QEMU targets, stack-auto and all
 four MCS-251 memory-model combinations.
 
+The typed overflow set consists of the signed and unsigned add, subtract and
+multiply families, each with `int`, `long` and `long long` forms. For example,
+it includes `__builtin_uadd_overflow`, `__builtin_ssubl_overflow` and
+`__builtin_smulll_overflow`. Before the exact calculation, the first two
+arguments undergo the conversion required by that builtin's declared type.
+The third argument must point to the same writable standard integer type;
+signedness, width, qualifiers, enum types and code-memory pointers are checked.
+The implementation shares the reentrant type-generic helper and preserves
+single evaluation. Static tests cover all 18 names, both GNU modes,
+stack-auto, strict-mode exclusion and invalid signatures. Runtime boundary
+tests execute on both QEMU targets and all MCS-251 memory-model combinations.
+
 The preprocessor data model follows the selected SDCC target rather than the
 machine on which SDCC runs. MCS-51 advertises its existing little-endian ABI;
 MCS-251 advertises its native big-endian ABI. Both report a 16-bit `int`, a
@@ -115,8 +129,8 @@ need compiler-specific equivalents for these facilities:
   `__builtin_constant_p` (implemented in GNU11/GNU17), and
   `__builtin_unreachable` (implemented in every mode), plus the MCS
   `clz`/`ctz`/`popcount`/`ffs` families and type-generic add/subtract/multiply
-  overflow builtins (implemented in GNU11/GNU17), plus any remaining typed or
-  predicate overflow builtins required by Zephyr;
+  overflow builtins and all 18 typed variants (implemented in GNU11/GNU17),
+  plus any remaining predicate overflow builtins required by Zephyr;
 - `section`, `used`, `weak`, `packed`, `aligned`, `always_inline`, `noinline`,
   `noreturn`, `alias` and related attribute semantics;
 - compiler barriers and target operations used by context switching and

@@ -11,8 +11,9 @@ SDCC 已能为 MCS-51 和 MCS-251 接受严格的 ISO C17 源码。当前下游�
 `--std=gnu11` 和 `--std=gnu17`，提供常用 GNU keyword alias 与 attribute syntax，
 实现了 statement expression、类型兼容性查询和常量表达式查询，并能保留 GNU
 分支预期提示；MCS-51 与 MCS-251 还提供了 GNU bit-counting builtin family，以及
-type-generic 的加法、减法和乘法 overflow builtin。common frontend 现有的 GNU
-子集仍不足以编译 Zephyr。
+type-generic 的加法、减法和乘法 overflow builtin，并完整支持 signed/unsigned
+`int`、`long` 与 `long long` 对应的 18 个 typed variant。common frontend 现有的
+GNU 子集仍不足以编译 Zephyr。
 
 支持这两个 language mode 并不等于支持 Zephyr。stock Zephyr 与现行 MCS-251 ABI
 以及 ASxxxx `.rel`/`.ihx` 构建流程同样不兼容。完整的前置条件包括：
@@ -46,6 +47,7 @@ common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17`、
 | `__builtin_constant_p(expression)` | GNU11/GNU17 接受；保守地折叠为零或一，不会求值 operand |
 | `__builtin_clz*`、`__builtin_ctz*`、`__builtin_popcount*`、`__builtin_ffs*` | MCS-51/MCS-251 的 GNU11/GNU17 接受；常量参数由 frontend 折叠，动态参数调用与 ABI 匹配的 runtime helper |
 | `__builtin_add_overflow`、`__builtin_sub_overflow`、`__builtin_mul_overflow` | MCS-51/MCS-251 的 GNU11/GNU17 接受；执行 type-generic 的精确运算，写回截断结果并报告 overflow |
+| typed `sadd`/`uadd`/`ssub`/`usub`/`smul`/`umul` overflow family | MCS-51/MCS-251 的 GNU11/GNU17 完整支持 `int`、`long` 与 `long long` 共 18 个 variant |
 | `__has_builtin(name)` | 所有模式均报告 common builtin，GNU11/GNU17 另报告 GNU-only builtin；未知名称为零 |
 | `__builtin_unreachable()` | 所有模式均接受；不生成外部调用 |
 | target data-model macro | 预定义 MCS-51/MCS-251 的大小、类型、范围、常量和 byte order，并抑制 host ABI macro |
@@ -81,6 +83,17 @@ target 的 byte order：MCS-51 沿用 little-endian representation，原生 MCS-
 非法参数个数和单次求值，并在两个 QEMU target、stack-auto 以及 MCS-251 的四种
 memory-model 组合上运行。
 
+typed overflow 集合由 signed/unsigned 的 add、subtract 和 multiply family 组成，
+每组均提供 `int`、`long` 与 `long long` 形式，例如
+`__builtin_uadd_overflow`、`__builtin_ssubl_overflow` 和
+`__builtin_smulll_overflow`。执行精确运算前，前两个 argument 会先按照 builtin
+声明的类型完成转换；第三个 argument 必须指向完全相同且可写的 standard integer
+type。编译器会检查 signedness、width、qualifier、enum type 与 code-memory
+pointer。实现复用 reentrant 的 type-generic helper，并保证每个 argument 只求值
+一次。静态测试覆盖全部 18 个名称、两种 GNU mode、stack-auto、strict mode 隔离
+与非法 signature；runtime boundary test 则覆盖两个 QEMU target 和 MCS-251 的全部
+memory-model 组合。
+
 预处理器的数据模型取决于所选择的 SDCC target，而不是运行 SDCC 的 host machine。
 MCS-51 声明现有的 little-endian ABI，MCS-251 则声明原生 big-endian ABI。两者均为
 16-bit `int`、32-bit `long`、64-bit `long long` 和 3-byte generic pointer。driver
@@ -103,8 +116,9 @@ compiler-specific 的等价实现：
 - 已在 GNU11/GNU17 实现的 `__builtin_types_compatible_p`、
   `__builtin_expect` 与 `__builtin_constant_p`，以及所有模式均已实现的
   `__builtin_unreachable`；MCS target 的 `clz`/`ctz`/`popcount`/`ffs` family
-  和 type-generic add/subtract/multiply overflow builtin 也已在 GNU11/GNU17
-  实现；Zephyr 若用到其他 typed 或 predicate overflow builtin，仍需继续补齐；
+  以及 type-generic add/subtract/multiply overflow builtin 和全部 18 个 typed
+  variant，也已在 GNU11/GNU17 实现；Zephyr 若用到 predicate overflow builtin，
+  仍需继续补齐；
 - `section`、`used`、`weak`、`packed`、`aligned`、`always_inline`、`noinline`、
   `noreturn`、`alias` 等 attribute semantics；
 - context switch 和 interrupt code 使用的 compiler barrier 与 target operation；

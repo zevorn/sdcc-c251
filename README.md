@@ -151,6 +151,13 @@ The current GNU C compatibility boundary is:
   standard integer object, and return `_Bool` to report whether the exact
   result fits. Each argument is evaluated once, and the runtime helper writes
   the result in the selected target's byte order.
+- The same targets also provide all 18 GNU typed add, subtract and multiply
+  overflow builtins for signed and unsigned `int`, `long` and `long long`.
+  These are the `sadd`, `uadd`, `ssub`, `usub`, `smul` and `umul` families,
+  with the `l` and `ll` suffixes. The two operands are converted to the type
+  named by the builtin before exact arithmetic; the result pointer must name
+  that exact writable integer type. Arguments are evaluated once, and
+  `__has_builtin` reports each supported spelling in GNU11 and GNU17.
 - `__has_builtin(name)` reports the builtins accepted by the selected
   frontend mode. Unknown names produce zero. `__builtin_offsetof` and
   `__builtin_unreachable` are available in every mode; the GNU-only queries
@@ -203,8 +210,8 @@ attributes, builtins, statement expressions, `__typeof__`, section placement,
 weak symbols and compiler barriers. The implemented GNU language modes remove
 part of this frontend gap, including type-compatibility queries and statement
 expressions, inferred object types, branch-expectation hints and
-constant-expression, bit-counting and generic overflow queries; they are not
-by themselves Zephyr support.
+constant-expression, bit-counting, generic overflow and typed overflow
+queries; they are not by themselves Zephyr support.
 
 There are two additional compatibility boundaries outside the C parser:
 
