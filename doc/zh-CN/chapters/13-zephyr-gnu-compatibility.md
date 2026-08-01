@@ -10,7 +10,8 @@
 SDCC 已能为 MCS-51 和 MCS-251 接受严格的 ISO C17 源码。当前下游还支持
 `--std=gnu11` 和 `--std=gnu17`，提供常用 GNU keyword alias 与 attribute syntax，
 实现了 statement expression、类型兼容性查询和常量表达式查询，并能保留 GNU
-分支预期提示；但 common frontend 现有的 GNU 子集仍不足以编译 Zephyr。
+分支预期提示；MCS-51 与 MCS-251 还提供了 GNU bit-counting builtin family。但
+common frontend 现有的 GNU 子集仍不足以编译 Zephyr。
 
 支持这两个 language mode 并不等于支持 Zephyr。stock Zephyr 与现行 MCS-251 ABI
 以及 ASxxxx `.rel`/`.ihx` 构建流程同样不兼容。完整的前置条件包括：
@@ -42,6 +43,7 @@ common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17`、
 | `__builtin_types_compatible_p(type1, type2)` | GNU11/GNU17 接受；结果为整数常量表达式 |
 | `__builtin_expect(expression, expected)` | GNU11/GNU17 接受；返回 expression 转换为 `long` 后的值；expected 为常量时提供 90/10 分支提示 |
 | `__builtin_constant_p(expression)` | GNU11/GNU17 接受；保守地折叠为零或一，不会求值 operand |
+| `__builtin_clz*`、`__builtin_ctz*`、`__builtin_popcount*`、`__builtin_ffs*` | MCS-51/MCS-251 的 GNU11/GNU17 接受；常量参数由 frontend 折叠，动态参数调用与 ABI 匹配的 runtime helper |
 | `__has_builtin(name)` | 所有模式均报告 common builtin，GNU11/GNU17 另报告 GNU-only builtin；未知名称为零 |
 | `__builtin_unreachable()` | 所有模式均接受；不生成外部调用 |
 | target data-model macro | 预定义 MCS-51/MCS-251 的大小、类型、范围、常量和 byte order，并抑制 host ABI macro |
@@ -61,6 +63,12 @@ attribute 的 placement、linkage、layout 或 calling semantics。目前 fronte
 
 MCS-251 输出由 `sdas251` 和 `sdld` 处理，而不是 GAS 和 GNU ld。即使 parser 接受
 GCC 的 inline assembly 写法，其中的汇编文本仍必须使用 ASxxxx syntax。
+
+bit-counting family 覆盖 `int`、`long` 与 `long long` 三组 spelling。动态 operand
+只求值一次；`__builtin_ffs*` 的 operand 为零时返回零，GNU C 则没有定义
+`__builtin_clz*` 和 `__builtin_ctz*` 对零的结果。测试覆盖 constant expression、
+错误参数个数，以及 MCS-51/MCS-251 QEMU 上的动态执行；其中包含 stack-auto 和
+MCS-251 的四种 memory-model 组合。
 
 预处理器的数据模型取决于所选择的 SDCC target，而不是运行 SDCC 的 host machine。
 MCS-51 声明现有的 little-endian ABI，MCS-251 则声明原生 big-endian ABI。两者均为
@@ -83,8 +91,8 @@ compiler-specific 的等价实现：
   和 `__auto_type`，以及仍待实现的 variadic macro comma elision；
 - 已在 GNU11/GNU17 实现的 `__builtin_types_compatible_p`、
   `__builtin_expect` 与 `__builtin_constant_p`，以及所有模式均已实现的
-  `__builtin_unreachable`；仍待实现 bit-counting builtin 和 overflow
-  builtin；
+  `__builtin_unreachable`；MCS target 的 `clz`/`ctz`/`popcount`/`ffs` family
+  也已在 GNU11/GNU17 实现，overflow builtin 仍待实现；
 - `section`、`used`、`weak`、`packed`、`aligned`、`always_inline`、`noinline`、
   `noreturn`、`alias` 等 attribute semantics；
 - context switch 和 interrupt code 使用的 compiler barrier 与 target operation；

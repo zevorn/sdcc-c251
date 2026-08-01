@@ -12,8 +12,9 @@ SDCC accepts strict ISO C17 for MCS-51 and MCS-251. This downstream also
 accepts `--std=gnu11` and `--std=gnu17`, provides common GNU keyword aliases
 and attribute syntax, implements statement expressions and constant
 type-compatibility and constant-expression queries, and preserves GNU
-branch-expectation hints. The GNU subset implemented by the common frontend
-is still not sufficient for Zephyr.
+branch-expectation hints. MCS-51 and MCS-251 also provide the GNU bit-counting
+builtin families. The GNU subset implemented by the common frontend is still
+not sufficient for Zephyr.
 
 The two language modes alone do not provide Zephyr support. Stock Zephyr is
 also incompatible with the normal MCS-251 ABI and with the ASxxxx
@@ -47,6 +48,7 @@ Direct probes against the current MCS-251 compiler give this baseline:
 | `__builtin_types_compatible_p(type1, type2)` | accepted in GNU11/GNU17; integer constant expression |
 | `__builtin_expect(expression, expected)` | accepted in GNU11/GNU17; returns `long` expression and supplies a 90/10 branch hint when expected is constant |
 | `__builtin_constant_p(expression)` | accepted in GNU11/GNU17; conservatively folds to zero or one without evaluating the operand |
+| `__builtin_clz*`, `__builtin_ctz*`, `__builtin_popcount*`, `__builtin_ffs*` | MCS-51/MCS-251 GNU11/GNU17; constant arguments fold and dynamic arguments use ABI-matched runtime helpers |
 | `__has_builtin(name)` | reports common builtins in every mode, GNU-only builtins in GNU11/GNU17, and zero for unknown names |
 | `__builtin_unreachable()` | accepted in every mode; no external call is emitted |
 | target data-model macros | MCS-51/MCS-251 sizes, types, limits, constants and byte order are predefined; host ABI macros are suppressed |
@@ -67,6 +69,13 @@ to only `nodiscard`, `maybe_unused`, `deprecated` and `fallthrough`.
 
 MCS-251 output uses `sdas251` and `sdld`, not GAS and GNU ld. Inline assembly
 therefore uses ASxxxx syntax even after the parser accepts the GCC spelling.
+
+The bit-counting families cover the `int`, `long` and `long long` spellings.
+Dynamic operands are evaluated once. `__builtin_ffs*` returns zero for a zero
+operand; GNU C leaves `__builtin_clz*` and `__builtin_ctz*` undefined for zero.
+The tests exercise constant expressions, invalid arity and dynamic execution
+on both MCS-51 and MCS-251 QEMU targets, including stack-auto and all four
+MCS-251 memory-model combinations.
 
 The preprocessor data model follows the selected SDCC target rather than the
 machine on which SDCC runs. MCS-51 advertises its existing little-endian ABI;
@@ -91,8 +100,9 @@ need compiler-specific equivalents for these facilities:
   (implemented in GNU11/GNU17), plus variadic macro comma elision;
 - `__builtin_types_compatible_p`, `__builtin_expect` and
   `__builtin_constant_p` (implemented in GNU11/GNU17), and
-  `__builtin_unreachable` (implemented in every mode), plus the remaining
-  bit-counting and overflow builtins;
+  `__builtin_unreachable` (implemented in every mode), plus the MCS
+  `clz`/`ctz`/`popcount`/`ffs` families (implemented in GNU11/GNU17) and the
+  remaining overflow builtins;
 - `section`, `used`, `weak`, `packed`, `aligned`, `always_inline`, `noinline`,
   `noreturn`, `alias` and related attribute semantics;
 - compiler barriers and target operations used by context switching and
