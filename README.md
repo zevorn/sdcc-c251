@@ -106,21 +106,24 @@ MCS-251 uses the common SDCC C frontend, so its language syntax support is the
 same as MCS-51. Strict ISO C17 source is accepted with `--std=c17`, and the
 preprocessor defines `__STDC_VERSION__` as `201710L`. C17 is a defect-correction
 revision of C11 rather than a new syntax revision. SDCC also provides ISO C
-modes and SDCC extension modes, but it does not provide GCC dialect names such
-as `gnu11`, `gnu17` or `gnu23`. The default is the SDCC-extended C11 mode.
-Select another mode with, for example, `--std=sdcc23` or `--std=c23`.
+modes and SDCC extension modes. This downstream additionally accepts
+`--std=gnu11` and `--std=gnu17`; these modes select the corresponding ISO base
+revision and enable only the GNU extensions implemented by the frontend. They
+do not imply complete GCC compatibility. The default remains the SDCC-extended
+C11 mode. Select another mode with, for example, `--std=sdcc23` or
+`--std=c23`.
 
 Do not confuse the host-build setting `CFLAGS=-std=gnu17` with the language
 mode used for firmware. That `CFLAGS` value only tells GCC or Clang how to
-compile SDCC itself. Passing `--std=gnu17` to `sdcc` is an error.
+compile SDCC itself. The firmware language mode is passed directly to `sdcc`,
+for example `sdcc -mmcs251 --std=gnu17 source.c`.
 
 The current GNU C compatibility boundary is:
 
 - `sdcpp` is based on GNU CPP, but this does not make the C parser
   GCC-compatible.
-- `__typeof(type-or-expression)` is accepted, although nontrivial expressions
-  still have implementation limits. The `__typeof__` spelling is not
-  accepted.
+- `__typeof(type-or-expression)` and `__typeof__(type-or-expression)` are
+  accepted, although nontrivial expressions still have implementation limits.
 - `__asm__("instruction")` accepts a basic literal using `sdas251`/ASxxxx
   instruction syntax. GCC extended-asm operands and constraints are not
   accepted.
@@ -128,12 +131,13 @@ The current GNU C compatibility boundary is:
   mode rejects it.
 - A zero-length trailing array is accepted when it follows another structure
   member. Prefer a standard flexible array in portable code.
-- `__attribute__((...))` is not parsed directly. Using
-  `--std=sdcc23 --include gcc_attr.h` can rewrite it to C23 attribute syntax.
+- Common `__attribute__((...))` placements are parsed directly, but most
+  attribute names are currently syntax-only.
 - Statement expressions `({ ... })`, nested functions, labels as values and
   computed `goto` are not supported.
-- GNU keywords such as `__extension__` and `__inline__` are not supported as
-  general GCC compatibility aliases.
+- Keyword aliases including `__inline__`, `__signed__`, `__const__`,
+  `__restrict__` and `__volatile__` are accepted. `__extension__` and
+  `__auto_type` remain unsupported.
 
 The `gcc_attr.h` compatibility header only translates attribute syntax. The
 frontend implements the C23 `nodiscard`, `maybe_unused`, `deprecated` and
@@ -153,8 +157,8 @@ extensions for the remaining code.
 The current compiler cannot build stock Zephyr. Zephyr 4.4 defaults to C17,
 but its common headers and build pipeline also require GNU-compatible
 attributes, builtins, statement expressions, `__typeof__`, section placement,
-weak symbols and compiler barriers. Adding `--std=gnu11` and `--std=gnu17` as
-aliases would therefore be misleading and is not considered Zephyr support.
+weak symbols and compiler barriers. The implemented GNU language modes remove
+part of this frontend gap; they are not by themselves Zephyr support.
 
 There are two additional compatibility boundaries outside the C parser:
 
@@ -167,12 +171,12 @@ There are two additional compatibility boundaries outside the C parser:
   relocations, symbol tables and a final ELF executable for its generated
   offsets and other post-link processing.
 
-The planned compatibility target is real `gnu11` and `gnu17` language modes,
-with Zephyr 4.4 and C17 as the first acceptance baseline. Completion also
-requires an SDCC toolchain definition and MCS-251 architecture, SoC and board
-ports in a Zephyr downstream. The work is complete only when a Zephyr image is
-compiled, linked and run on the MCS-251 QEMU target while the existing MCS-51
-and MCS-251 regressions remain green. See the
+The compatibility target is the GNU C subset required by Zephyr 4.4, with C17
+as the first acceptance baseline. Completion also requires an SDCC toolchain
+definition and MCS-251 architecture, SoC and board ports in a Zephyr
+downstream. The work is complete only when a Zephyr image is compiled, linked
+and run on the MCS-251 QEMU target while the existing MCS-51 and MCS-251
+regressions remain green. See the
 [`Zephyr and GNU C compatibility assessment`](doc/mcs251/zephyr-gnu-compatibility.md)
 for the detailed requirements and implementation gates.
 

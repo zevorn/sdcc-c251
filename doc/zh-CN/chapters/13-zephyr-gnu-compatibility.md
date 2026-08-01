@@ -1,18 +1,18 @@
 # Zephyr 与 GNU C 兼容性评估
 
-评估日期：2026-08-01
+评估日期：2026-08-02
 
 本章将 C frontend 兼容性与构建 Zephyr 所需的 ABI、目标文件格式和架构移植工作
 分开说明。首个可复现目标确定为采用默认 C17 配置的 Zephyr 4.4。
 
 ## 结论
 
-SDCC 已能为 MCS-51 和 MCS-251 接受严格的 ISO C17 源码，但目前还不能识别
-`--std=gnu11` 或 `--std=gnu17`；common frontend 已实现的 GNU extension 也不足以
-编译 Zephyr。
+SDCC 已能为 MCS-51 和 MCS-251 接受严格的 ISO C17 源码。当前下游还支持
+`--std=gnu11` 和 `--std=gnu17`，提供常用 GNU keyword alias 与 attribute syntax，
+但 common frontend 现有的 GNU 子集仍不足以编译 Zephyr。
 
-只增加两个 language mode 名称并不等于支持 Zephyr。stock Zephyr 与现行 MCS-251
-ABI 以及 ASxxxx `.rel`/`.ihx` 构建流程同样不兼容。完整的前置条件包括：
+支持这两个 language mode 并不等于支持 Zephyr。stock Zephyr 与现行 MCS-251 ABI
+以及 ASxxxx `.rel`/`.ihx` 构建流程同样不兼容。完整的前置条件包括：
 
 1. C17，以及 Zephyr 实际使用的 GNU C 子集；
 2. 单独选择的 ABI，其中 `int` 为 32 bit，C pointer representation 也为 32 bit；
@@ -25,26 +25,26 @@ MCS-51 和 MCS-251 的默认语言行为与 ABI 均不得改变。
 
 ## 当前 SDCC 的能力边界
 
-common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17` 和
-`sdcc17` 作为与 C11 兼容的修订版本名称接受；`sdcpp` 会在 C17 模式下于
-[`libcpp/init.cc`](../../../support/cpp/libcpp/init.cc) 中把
-`__STDC_VERSION__` 定义为 `201710L`。
+common frontend 在 [`SDCCmain.c`](../../../src/SDCCmain.c) 中把 `c17`、
+`sdcc17` 和 `gnu17` 作为 C17 修订版本名称接受；`sdcpp` 会在 C17 与 GNU17
+模式下于 [`libcpp/init.cc`](../../../support/cpp/libcpp/init.cc) 中把
+`__STDC_VERSION__` 定义为 `201710L`。GNU11 同样会选择 C11 基础版本，并定义
+`201112L`。
 
 直接使用当前 MCS-251 编译器探测，可得到以下基线：
 
 | 语法或选项 | 当前结果 |
 |---|---|
 | `--std=c17`、`--std=sdcc17` | 接受 |
-| `--std=gnu11`、`--std=gnu17` | 作为未知标准拒绝 |
-| `__typeof(type-or-expression)` | 接受，但 expression 仍有限制 |
-| `__typeof__(...)` | 拒绝 |
+| `--std=gnu11`、`--std=gnu17` | 接受；启用已经过测试的 GNU 子集 |
+| `__typeof(...)`、`__typeof__(...)` | 接受，但 expression 仍有限制 |
 | 基本形式 `__asm__("instruction")` | 接受 |
 | 带 operand、constraint 和 clobber 的 extended asm | 拒绝 |
 | statement expression `({ ... })` | 拒绝 |
 | `__auto_type` 和 `__extension__` | 拒绝 |
 | nested function 和 computed `goto` | 拒绝 |
 | `case low ... high` | 仅在 C2y extension mode 下接受 |
-| GCC `__attribute__((...))` 语法 | 不直接解析 |
+| 常见位置的 GCC `__attribute__((...))` | 可以解析；多数名称目前只接受语法 |
 
 可选的 [`gcc_attr.h`](../../../device/include/gcc_attr.h) 会在非 C23 模式下删除 GCC
 attribute，或在 C23 模式下把它的语法改写为 C23 attribute。它不会因此实现 GCC
@@ -143,9 +143,9 @@ architecture port 完成后，还需要 STC32G144K246 SoC/board 定义，以及�
 
 按以下顺序推进，可以让失败原因保持清晰，并保护 MCS-51：
 
-1. 在接受 `gnu11` 或 `gnu17` 之前，先增加 frontend 正向与反向测试。mode 必须设置
-   正确的 `__STDC_VERSION__`，并且只启用已经实现的 extension。
-2. 在 common frontend 中实现所需的 keyword alias、expression、attribute 和
+1. 持续维护 `gnu11` 与 `gnu17` 的 frontend 正向和反向测试。mode 必须设置正确的
+   `__STDC_VERSION__`，并且只启用已经实现的 extension。
+2. 继续在 common frontend 中实现所需的 keyword alias、expression、attribute 和
    builtin。MCS-51 与 MCS-251 共用 parser，因此两者必须运行相同的 probe。
 3. 增加 opt-in Zephyr ABI，并构建独立的 MCS-251 runtime library。现有 default-ABI
    regression input 的输出应保持 byte-for-byte 一致。
@@ -159,6 +159,6 @@ architecture port 完成后，还需要 STC32G144K246 SoC/board 定义，以及�
    QEMU TCG `icount` 获得确定性 timeout，并通过 UART 输出测试结果；QEMU 只负责
    执行，不充当测试 oracle。
 
-只有 feature test 全部通过，才能声称实现了 `gnu17`；只有从 stock baseline
-编译、链接 Zephyr image 并在 MCS-251 QEMU machine 上执行成功，才能声称实现了
-Zephyr 支持。
+接受 `gnu17` mode 只表示提供了经过测试的兼容子集，并不代表已经完整兼容 GCC。
+只有从 stock baseline 编译、链接 Zephyr image，并在 MCS-251 QEMU machine 上
+执行成功，才能声称实现了 Zephyr 支持。

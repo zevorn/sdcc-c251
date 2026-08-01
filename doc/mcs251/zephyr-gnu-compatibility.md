@@ -1,6 +1,6 @@
 # Zephyr and GNU C compatibility assessment
 
-Assessment date: 2026-08-01
+Assessment date: 2026-08-02
 
 This document separates C frontend compatibility from the ABI, object-format
 and architecture work required to build Zephyr. The first reproducible target
@@ -8,13 +8,14 @@ is Zephyr 4.4 with its default C17 configuration.
 
 ## Result
 
-SDCC already accepts strict ISO C17 for MCS-51 and MCS-251. It does not yet
-accept `--std=gnu11` or `--std=gnu17`, and the GNU extensions currently
-implemented by the common frontend are not sufficient for Zephyr.
+SDCC accepts strict ISO C17 for MCS-51 and MCS-251. This downstream also
+accepts `--std=gnu11` and `--std=gnu17`, provides common GNU keyword aliases
+and attribute syntax. The GNU subset implemented by the common frontend is
+still not sufficient for Zephyr.
 
-Adding the two language-mode names alone would not provide Zephyr support.
-Stock Zephyr is also incompatible with the normal MCS-251 ABI and with the
-ASxxxx `.rel`/`.ihx` build pipeline. The complete prerequisite is:
+The two language modes alone do not provide Zephyr support. Stock Zephyr is
+also incompatible with the normal MCS-251 ABI and with the ASxxxx
+`.rel`/`.ihx` build pipeline. The complete prerequisite is:
 
 1. C17 plus the GNU C subset actually used by Zephyr;
 2. a separately selected ABI with a 32-bit `int` and a 32-bit C pointer
@@ -28,26 +29,26 @@ The default MCS-51 and MCS-251 language and ABI behavior must not change.
 
 ## Current SDCC boundary
 
-The common frontend accepts `c17` and `sdcc17` as C11-compatible revision
-names in [`SDCCmain.c`](../../src/SDCCmain.c). `sdcpp` defines
-`__STDC_VERSION__` as `201710L` for C17 in
-[`libcpp/init.cc`](../../support/cpp/libcpp/init.cc).
+The common frontend accepts `c17`, `sdcc17` and `gnu17` as C17 revision names
+in [`SDCCmain.c`](../../src/SDCCmain.c). `sdcpp` defines
+`__STDC_VERSION__` as `201710L` for C17 and GNU17 in
+[`libcpp/init.cc`](../../support/cpp/libcpp/init.cc). GNU11 similarly selects
+the C11 base revision and defines `201112L`.
 
 Direct probes against the current MCS-251 compiler give this baseline:
 
 | Construct | Current result |
 |---|---|
 | `--std=c17`, `--std=sdcc17` | accepted |
-| `--std=gnu11`, `--std=gnu17` | rejected as unknown standards |
-| `__typeof(type-or-expression)` | accepted, with expression limits |
-| `__typeof__(...)` | rejected |
+| `--std=gnu11`, `--std=gnu17` | accepted; enable the tested GNU subset |
+| `__typeof(...)`, `__typeof__(...)` | accepted, with expression limits |
 | basic `__asm__("instruction")` | accepted |
 | extended asm operands, constraints and clobbers | rejected |
 | statement expression `({ ... })` | rejected |
 | `__auto_type` and `__extension__` | rejected |
 | nested function and computed `goto` | rejected |
 | `case low ... high` | accepted only in the C2y extension mode |
-| GCC `__attribute__((...))` syntax | not parsed directly |
+| common GCC `__attribute__((...))` placements | parsed; most names are syntax-only |
 
 The optional [`gcc_attr.h`](../../device/include/gcc_attr.h) header can remove
 GCC attributes outside C23 mode or rewrite their syntax to C23 attributes in
@@ -155,12 +156,12 @@ needed for test output are required after the architecture port exists.
 
 The following order keeps failures attributable and protects MCS-51:
 
-1. Add positive and negative frontend tests before accepting `gnu11` or
-   `gnu17`. The modes must set the correct `__STDC_VERSION__` and enable only
-   implemented extensions.
-2. Implement the required keyword aliases, expressions, attributes and
-   builtins in the common frontend. Run the same probes for MCS-51 and
-   MCS-251 because they share the parser.
+1. Keep positive and negative frontend tests for `gnu11` and `gnu17`. The
+   modes set the correct `__STDC_VERSION__` and enable only implemented
+   extensions.
+2. Continue implementing the required keyword aliases, expressions,
+   attributes and builtins in the common frontend. Run the same probes for
+   MCS-51 and MCS-251 because they share the parser.
 3. Add an opt-in Zephyr ABI and build separate MCS-251 runtime libraries.
    Preserve byte-for-byte output for existing default-ABI regression inputs.
 4. Add ELF32 assembly/link support and tests for every relocation, symbol
@@ -174,6 +175,7 @@ The following order keeps failures attributable and protects MCS-51:
    in every CI change. Use QEMU TCG `icount` for deterministic timeouts; use
    UART output for test results rather than treating QEMU as the test oracle.
 
-`gnu17` is considered implemented only after the feature tests pass. Zephyr
-support is considered implemented only after a stock-baseline Zephyr image is
-compiled, linked and executed on the MCS-251 QEMU machine.
+Accepting the `gnu17` mode describes a tested compatibility subset, not full
+GCC compatibility. Zephyr support is considered implemented only after a
+stock-baseline Zephyr image is compiled, linked and executed on the MCS-251
+QEMU machine.
