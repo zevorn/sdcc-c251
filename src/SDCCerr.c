@@ -789,6 +789,8 @@ struct
      "qualifier on return type has no effect", 0},
   {E_BUILTIN_EXPECT_INTEGRAL, ERROR_LEVEL_ERROR,
      "arguments to __builtin_expect must have integer type", 0},
+  {E_AUTO_TYPE_DECLARATION, ERROR_LEVEL_ERROR,
+     "__auto_type requires one identifier declarator with an initializer", 0},
 };
 
 /* -------------------------------------------------------------------------------

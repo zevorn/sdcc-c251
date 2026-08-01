@@ -163,6 +163,7 @@ static void checkCurrFile (const char *s);
 }
 
  /* C90 */
+"__auto_type"           { count (); return AUTO_TYPE; }
 "auto"                  { count (); return AUTO; }
 "break"                 { count (); return BREAK; }
 "case"                  { count (); return CASE; }

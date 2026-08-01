@@ -146,6 +146,7 @@ typedef struct specifier
   unsigned b_absadr:1;              /* absolute address specfied  */
   unsigned b_const:1;               /* is a constant              */
   unsigned b_constexpr:1;           /* is a constant expression   */
+  bool     b_auto_type:1;           /* GNU __auto_type inference  */
   bool     b_restrict:1;                // is restricted
   bool     b_volatile:1;                // is marked as volatile
   bool     b_atomic:1;                  // is qualified as _Atomic
@@ -533,6 +534,7 @@ extern sym_link *validateLink (sym_link * l,
 #define SPEC_ISR_SAVED_BANKS(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s._bitStart
 #define SPEC_CONST(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_const
 #define SPEC_CONSTEXPR(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_constexpr
+#define SPEC_AUTO_TYPE(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_auto_type
 #define SPEC_RESTRICT(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_restrict
 #define SPEC_VOLATILE(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_volatile
 #define SPEC_ATOMIC(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_atomic
@@ -791,4 +793,3 @@ extern const char *nounName (sym_link *);     /* noun strings */
 extern void printFromToType (sym_link *, sym_link *);
 
 #endif
-

@@ -2964,27 +2964,45 @@ getLeftResultType (ast * tree, RESULT_TYPE resultType)
     }
 }
 
-static void gatherImplicitVariables (ast *tree, ast *block);
+static void gatherImplicitVariables (ast *tree, ast *block,
+                                     symbol *before);
 
 static void
-gatherImplicitVariablesInInitializers (initList *ilist, ast *block)
+gatherImplicitVariablesInInitializers (initList *ilist, ast *block,
+                                       symbol *before)
 {
   for (; ilist; ilist = ilist->next)
     {
       if (ilist->type == INIT_NODE)
-        gatherImplicitVariables (ilist->init.node, block);
+        gatherImplicitVariables (ilist->init.node, block, before);
       else if (ilist->type == INIT_DEEP)
-        gatherImplicitVariablesInInitializers (ilist->init.deep, block);
+        gatherImplicitVariablesInInitializers (ilist->init.deep, block,
+                                               before);
     }
 }
 
+static void
+addImplicitVariableToBlock (ast *block, symbol *sym, symbol *before)
+{
+  symbol **decl = &(block->values.sym);
+
+  wassert (sym->next == NULL);
+  while (*decl && *decl != before)
+    {
+      wassert (*decl != sym);
+      decl = &((*decl)->next);
+    }
+
+  sym->next = *decl;
+  *decl = sym;
+}
+
 /*------------------------------------------------------------------*/
-/* gatherImplicitVariables:  adds the symbols created by            */
-/*            replaceAstWithTemporary to the declarations list of   */
-/*            the innermost block that contains them                */
+/* gatherImplicitVariables:  adds compiler-created symbols to the   */
+/*            declarations list of the innermost containing block   */
 /*------------------------------------------------------------------*/
 static void
-gatherImplicitVariables (ast *tree, ast *block)
+gatherImplicitVariables (ast *tree, ast *block, symbol *before)
 {
   if (!tree)
     return;
@@ -2997,7 +3015,8 @@ gatherImplicitVariables (ast *tree, ast *block)
       block = tree;
       for (decl = block->values.sym; decl; decl = decl->next)
         if (decl->ival)
-          gatherImplicitVariablesInInitializers (decl->ival, block);
+          gatherImplicitVariablesInInitializers (decl->ival, block,
+                                                 decl);
     }
   if (tree->type == EX_OP && tree->opval.op == '=' && tree->left->type == EX_VALUE && tree->left->opval.val->sym)
     {
@@ -3010,17 +3029,7 @@ gatherImplicitVariables (ast *tree, ast *block)
           wassertl (block != NULL, "implicit variable not contained in block");
           wassert (assignee->next == NULL);
           if (block != NULL)
-            {
-              symbol **decl = &(block->values.sym);
-
-              while (*decl)
-                {
-                  wassert (*decl != assignee);  /* should not already be in list */
-                  decl = &((*decl)->next);
-                }
-
-              *decl = assignee;
-            }
+            addImplicitVariableToBlock (block, assignee, before);
           assignee->implicitaddtoblock = false;
         }
     }
@@ -3030,15 +3039,10 @@ gatherImplicitVariables (ast *tree, ast *block)
       symbol *tempsym = AST_SYMBOL (tree);
       if (block != NULL)
         {
-          symbol **decl = &(block->values.sym);
-
-          while (*decl)
-            {
-              wassert (*decl != tempsym);  /* should not already be in list */
-              decl = &((*decl)->next);
-            }
-
-          *decl = tempsym;
+          if (tempsym->ival)
+            gatherImplicitVariablesInInitializers (tempsym->ival, block,
+                                                   before);
+          addImplicitVariableToBlock (block, tempsym, before);
           AST_SYMBOL (tree)->iscomplit = false;
         }
     }
@@ -3054,8 +3058,8 @@ gatherImplicitVariables (ast *tree, ast *block)
           sym->isinscope = 1;
           sym = sym->next;
         }
-      gatherImplicitVariables (tree->left, block);
-      gatherImplicitVariables (tree->right, block);
+      gatherImplicitVariables (tree->left, block, NULL);
+      gatherImplicitVariables (tree->right, block, NULL);
       sym = tree->values.sym;
       while (sym)
         {
@@ -3065,8 +3069,8 @@ gatherImplicitVariables (ast *tree, ast *block)
     }
   else
     {
-      gatherImplicitVariables (tree->left, block);
-      gatherImplicitVariables (tree->right, block);
+      gatherImplicitVariables (tree->left, block, before);
+      gatherImplicitVariables (tree->right, block, before);
     }
 }
 
@@ -4273,8 +4277,22 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
         }
 
       p = newLink (DECLARATOR);
-      
-      if (!LETYPE (tree))
+
+      symbol *addressedSym = IS_AST_SYM_VALUE (tree->left) ?
+        AST_SYMBOL (tree->left) : NULL;
+      bool futureStackObject = addressedSym && addressedSym->level &&
+        !IS_STATIC (addressedSym->etype) &&
+        (options.stackAuto ||
+         (currFunc && IFFUNC_ISREENT (currFunc->type)));
+
+      if (futureStackObject)
+        {
+          memmap *stackMap = options.useXstack ? xstack : istack;
+
+          DCL_TYPE (p) = PTR_TYPE (stackMap);
+          DCL_TYPE_IMPLICITINTRINSIC (p) = true;
+        }
+      else if (!LETYPE (tree))
         {
           DCL_TYPE (p) = POINTER;
           DCL_TYPE_IMPLICITINTRINSIC (p) = true;
@@ -6472,6 +6490,7 @@ typeofOp (ast *tree)
   for (spec_type = type; !IS_SPEC (spec_type); spec_type = spec_type->next);
   SPEC_SCLS (spec_type) = 0;
   SPEC_STAT (spec_type) = 0;
+  SPEC_CONSTEXPR (spec_type) = 0;
   return type;
 }
 
@@ -7936,7 +7955,7 @@ createFunction (symbol * name, ast * body)
   inlineState.count = 0;
   expandInlineFuncs (body, NULL);
 
-  gatherImplicitVariables (body, NULL); /* move implicit variables into blocks */
+  gatherImplicitVariables (body, NULL, NULL); /* move implicit variables into blocks */
 
   if (FUNC_ISINLINE (name->type))
     name->funcTree = copyAst (body);

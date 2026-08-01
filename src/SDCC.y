@@ -101,6 +101,7 @@ bool uselessDecl = true;
 %token <yyint> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token <yyint> XOR_ASSIGN OR_ASSIGN
 %token TYPEDEF EXTERN STATIC AUTO REGISTER CONSTEXPR CODE EEPROM INTERRUPT SFR SFR16 SFR32 ADDRESSMOD
+%token AUTO_TYPE
 %token AT SBIT REENTRANT USING  XDATA DATA IDATA PDATA ELLIPSIS CRITICAL
 %token NONBANKED BANKED SHADOWREGS SD_WPARAM
 %token SD_BOOL SD_CHAR SD_SHORT SD_INT SD_LONG SIGNED UNSIGNED SD_FLOAT DOUBLE FIXED16X16 SD_CONST VOLATILE SD_VOID BIT OPTIONAL
@@ -673,6 +674,12 @@ storage_class_specifier
    | AUTO      {
                   $$ = newLink (SPECIFIER);
                   SPEC_SCLS($$) = S_AUTO;
+               }
+   | AUTO_TYPE {
+                  if (!options.std_gnu)
+                    werror (E_SYNTAX_ERROR);
+                  $$ = newLink (SPECIFIER);
+                  SPEC_AUTO_TYPE($$) = 1;
                }
    | REGISTER  {
                   $$ = newLink (SPECIFIER);

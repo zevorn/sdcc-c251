@@ -836,6 +836,7 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
   SPEC_NORETURN (dest) |= SPEC_NORETURN(src);
   SPEC_CONST (dest) |= SPEC_CONST (src);
   SPEC_CONSTEXPR (dest) |= SPEC_CONSTEXPR (src);
+  SPEC_AUTO_TYPE (dest) |= SPEC_AUTO_TYPE (src);
   SPEC_ABSA (dest) |= SPEC_ABSA (src);
   SPEC_VOLATILE (dest) |= SPEC_VOLATILE (src);
   SPEC_RESTRICT (dest) |= SPEC_RESTRICT (src);
@@ -5778,7 +5779,17 @@ prepareDeclarationSymbol (attribute *attr, sym_link *declSpecs, symbol *initDecl
 {
   symbol *sym , *sym1;
 
-  bool autocandidate = options.std_c23 && IS_SPEC (declSpecs) && SPEC_SCLS (declSpecs) == S_AUTO;
+  bool gnuAutoType = IS_SPEC (declSpecs) &&
+    SPEC_AUTO_TYPE (declSpecs);
+  bool validGnuAutoType = initDeclList && !initDeclList->next &&
+    !initDeclList->type && initDeclList->ival &&
+    initDeclList->ival->type == INIT_NODE;
+  bool c23AutoType = options.std_c23 && IS_SPEC (declSpecs) &&
+    SPEC_SCLS (declSpecs) == S_AUTO && !SPEC_NOUN (declSpecs);
+  bool autocandidate = c23AutoType || gnuAutoType;
+
+  if (gnuAutoType && !validGnuAutoType)
+    werror (E_AUTO_TYPE_DECLARATION);
 
   for (sym1 = sym = reverseSyms (initDeclList); sym != NULL; sym = sym->next)
     {
@@ -5811,11 +5822,14 @@ prepareDeclarationSymbol (attribute *attr, sym_link *declSpecs, symbol *initDecl
           break;
       //if (l0 == NULL && l2 == NULL && l1 != NULL)
       //  werrorfl (sym->fileDef, sym->lineDef, E_TYPE_IS_FUNCTION, sym->name);
-      /* C23 auto type inference */
+      /* C23 and GNU auto type inference */
       if (autocandidate && !sym->type && sym->ival && sym->ival->type == INIT_NODE)
         {
-          sym->type = sym->etype = typeofOp (sym->ival->init.node);
-          SPEC_SCLS (lnk) = 0;
+          sym->type = typeofOp (sym->ival->init.node);
+          sym->etype = getSpec (sym->type);
+          if (c23AutoType)
+            SPEC_SCLS (lnk) = 0;
+          SPEC_AUTO_TYPE (lnk) = 0;
         }
       /* do the pointer stuff */
       pointerTypes (sym->type, lnk);

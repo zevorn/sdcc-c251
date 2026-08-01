@@ -53,6 +53,14 @@ check: all
 			$(srcdir)/tests/gnu-builtin-constant-p-invalid.c \
 		--has-builtin-source \
 			$(srcdir)/tests/gnu-has-builtin.c \
+		--auto-type-source \
+			$(srcdir)/tests/gnu-auto-type.c \
+		--invalid-auto-type-source \
+			$(srcdir)/tests/gnu-auto-type-invalid.c \
+		--multiple-auto-type-source \
+			$(srcdir)/tests/gnu-auto-type-multiple.c \
+		--declarator-auto-type-source \
+			$(srcdir)/tests/gnu-auto-type-declarator.c \
 		--empty-declaration-source \
 			$(srcdir)/tests/gnu-empty-declaration.c \
 		--compound-literal-source \
