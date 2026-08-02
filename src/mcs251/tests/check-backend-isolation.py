@@ -18,6 +18,7 @@ TRANSITIONAL_TARGET_SELECTORS = (
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mcs251-source", required=True)
+    parser.add_argument("--mcs51-source", required=True)
     args = parser.parse_args()
 
     source = Path(args.mcs251_source)
@@ -37,6 +38,19 @@ def main():
     if selectors:
         raise RuntimeError(
             f"{source} still uses transitional target selectors: "
+            f"{', '.join(selectors)}"
+        )
+
+    mcs51_source = Path(args.mcs51_source)
+    mcs51_text = mcs51_source.read_text(encoding="utf-8")
+    selectors = [
+        selector
+        for selector in TRANSITIONAL_TARGET_SELECTORS
+        if re.search(rf"\b{selector}\b", mcs51_text)
+    ]
+    if selectors:
+        raise RuntimeError(
+            f"{mcs51_source} still contains MCS251 selectors: "
             f"{', '.join(selectors)}"
         )
 

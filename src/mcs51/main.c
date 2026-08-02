@@ -178,9 +178,8 @@ _mcs51_finaliseOptions (void)
       break;
     }
 
-  /* The MCS-51 assembly float library is reentrant.  MCS251 currently uses the
-     portable C implementation, which has static locals in the small model. */
-  if (!options.useXstack && !TARGET_IS_MCS251)
+  /* The MCS-51 assembly float library is reentrant. */
+  if (!options.useXstack)
     options.float_rent = 1;
 
   if (options.omitFramePtr)
@@ -194,15 +193,6 @@ _mcs51_finaliseOptions (void)
 static void
 _mcs51_setDefaultOptions (void)
 {
-#ifdef MCS251_PORT
-  /* MCS251 generic and far pointers share one flat address space.  Keep XSEG
-     out of page-zero edata by default; 0x010000 is also the STC32G on-chip
-     XRAM base.  Users can still override this with --xram-loc.  MCS251 stack
-     objects are addressed relative to the complete 16-bit SPX, so no legacy
-     8-bit frame pointer is needed. */
-  options.xdata_loc = 0x010000;
-  options.omitFramePtr = 1;
-#endif
 }
 
 static const char *
@@ -257,7 +247,7 @@ _mcs51_genAssemblerStart (FILE * of)
 static void
 mcs51_genAtomicSupport (struct dbuf_s *oBuf, unsigned int startaddr)
 {
-  const char *returnInsn = TARGET_IS_MCS251 ? "eret" : "ret";
+  const char *returnInsn = "ret";
 
 //  if (!options.std_c11)
 //    return;
@@ -353,14 +343,7 @@ _mcs51_genIVT (struct dbuf_s *oBuf, symbol **interrupts, int maxInterrupts)
   int i;
   unsigned int nextbyteaddr;
 
-#ifdef MCS251_PORT
-  /* The reset slot is only three bytes wide.  Keep its LJMP in the reset
-     region and let a HOME-area trampoline perform the full 24-bit jump to
-     startup code, which may be placed elsewhere in the linear code space. */
-  dbuf_printf (oBuf, "\tljmp\t__sdcc_mcs251_reset_trampoline\n");
-#else
   dbuf_printf (oBuf, "\t%cjmp\t__sdcc_gsinit_startup\n", options.acall_ajmp?'a':'l');
-#endif
   nextbyteaddr = options.acall_ajmp ? 2 : 3;
   if(options.acall_ajmp && maxInterrupts)
     {
@@ -373,18 +356,6 @@ _mcs51_genIVT (struct dbuf_s *oBuf, symbol **interrupts, int maxInterrupts)
     {
       if (interrupts[i])
         {
-#ifdef MCS251_PORT
-          /* Each MCS251 interrupt slot has room for a four-byte extended
-             jump.  Unlike the three-byte reset slot, an interrupt handler
-             may be linked outside the vector table's 64 KiB region. */
-          dbuf_printf (oBuf, "\tejmp\t%s\n", interrupts[i]->rname);
-          nextbyteaddr += 4;
-          if (i != maxInterrupts - 1)
-            {
-              dbuf_printf (oBuf, "\t.ds\t4\n");
-              nextbyteaddr += 4;
-            }
-#else
           dbuf_printf (oBuf, "\t%cjmp\t%s\n", options.acall_ajmp ? 'a' : 'l', interrupts[i]->rname);
           nextbyteaddr += options.acall_ajmp ? 2 : 3;
           if ( i != maxInterrupts - 1 )
@@ -392,7 +363,6 @@ _mcs51_genIVT (struct dbuf_s *oBuf, symbol **interrupts, int maxInterrupts)
               dbuf_printf (oBuf, "\t.ds\t%d\n", options.acall_ajmp ? 6 : 5);
               nextbyteaddr += options.acall_ajmp ? 6 : 5;
             }
-#endif
         }
       else
         {
@@ -406,17 +376,9 @@ _mcs51_genIVT (struct dbuf_s *oBuf, symbol **interrupts, int maxInterrupts)
         }
     }
 
-  /* MCS251 atomic_flag uses a short interrupt-masked critical section.  Its
-     flat 24-bit pointers have no MCS-51 generic-pointer space tag, so the
-     MCS-51 restartable DATA/PDATA/XDATA dispatcher is neither needed nor
-     valid for this target. */
-  if (!TARGET_IS_MCS251 && !options.norestartseqatomics)
+  if (!options.norestartseqatomics)
     mcs51_genAtomicSupport (oBuf, nextbyteaddr);
 
-#ifdef MCS251_PORT
-  dbuf_printf (oBuf, "__sdcc_mcs251_reset_trampoline::\n"
-                     "\tejmp\t__sdcc_gsinit_startup\n");
-#endif
 
   return true;
 }
@@ -548,66 +510,6 @@ instructionSize(char *inst, char *op1, char *op2)
   #define IS_Rn(s) (*(s) == 'r' && *(s+1) >= '0' && *(s+1) <= '7')
   #define IS_atRi(s) (*(s) == '@' && *(s+1) == 'r')
 
-#ifdef MCS251_PORT
-  /*
-   * These are conservative upper bounds for MCS251 Source-mode encodings.
-   * Area-II classic opcodes acquire an A5 prefix in Source mode, while
-   * native register, extended-direct, and 24-bit forms can be wider than
-   * their MCS-51 counterparts.  Peephole range checks must never
-   * underestimate an instruction: an overestimate merely keeps a long
-   * branch, but an underestimate can create an out-of-range short branch.
-   */
-  #define MCS251_ISINST(s) (strcmp (inst, (s)) == 0)
-
-  if (MCS251_ISINST ("movc") || MCS251_ISINST ("movx")) return 1;
-  if (MCS251_ISINST ("mov")) return 4;
-  if (MCS251_ISINST ("movh")) return 4;
-  if (MCS251_ISINST ("movs") || MCS251_ISINST ("movz")) return 2;
-
-  if (MCS251_ISINST ("push") || MCS251_ISINST ("pushw")) return 4;
-  if (MCS251_ISINST ("pop")) return 2;
-
-  if (MCS251_ISINST ("ecall") || MCS251_ISINST ("ejmp")) return 4;
-  if (MCS251_ISINST ("lcall") || MCS251_ISINST ("ljmp")) return 3;
-  if (MCS251_ISINST ("acall") || MCS251_ISINST ("ajmp")) return 2;
-  if (MCS251_ISINST ("call") || MCS251_ISINST ("jmp")) return 4;
-
-  if (MCS251_ISINST ("ret") || MCS251_ISINST ("reti") ||
-      MCS251_ISINST ("eret") || MCS251_ISINST ("nop") ||
-      MCS251_ISINST ("trap") || MCS251_ISINST ("esc")) return 1;
-
-  if (MCS251_ISINST ("rr") || MCS251_ISINST ("rrc") ||
-      MCS251_ISINST ("rl") || MCS251_ISINST ("rlc") ||
-      MCS251_ISINST ("swap") || MCS251_ISINST ("da")) return 1;
-  if (MCS251_ISINST ("sra") || MCS251_ISINST ("srl") ||
-      MCS251_ISINST ("sll")) return 2;
-
-  if (MCS251_ISINST ("jc") || MCS251_ISINST ("jnc") ||
-      MCS251_ISINST ("jz") || MCS251_ISINST ("jnz") ||
-      MCS251_ISINST ("je") || MCS251_ISINST ("jne") ||
-      MCS251_ISINST ("jg") || MCS251_ISINST ("jle") ||
-      MCS251_ISINST ("jsg") || MCS251_ISINST ("jsge") ||
-      MCS251_ISINST ("jsl") || MCS251_ISINST ("jsle") ||
-      MCS251_ISINST ("sjmp")) return 2;
-  if (MCS251_ISINST ("jb") || MCS251_ISINST ("jnb") ||
-      MCS251_ISINST ("jbc")) return 4;
-  if (MCS251_ISINST ("cjne")) return 4;
-  if (MCS251_ISINST ("djnz")) return 3;
-
-  if (MCS251_ISINST ("inc") || MCS251_ISINST ("dec")) return 2;
-  if (MCS251_ISINST ("add") || MCS251_ISINST ("sub") ||
-      MCS251_ISINST ("cmp")) return 4;
-  if (MCS251_ISINST ("addc") || MCS251_ISINST ("subb") ||
-      MCS251_ISINST ("xch")) return 2;
-  if (MCS251_ISINST ("anl") || MCS251_ISINST ("orl") ||
-      MCS251_ISINST ("xrl")) return 4;
-  if (MCS251_ISINST ("clr") || MCS251_ISINST ("setb") ||
-      MCS251_ISINST ("cpl")) return 3;
-  if (MCS251_ISINST ("mul") || MCS251_ISINST ("div") ||
-      MCS251_ISINST ("xchd")) return 2;
-
-  #undef MCS251_ISINST
-#endif
 
   /* Based on the current (2003-08-22) code generation for the
      small library, the top instruction probability is:
@@ -646,11 +548,6 @@ instructionSize(char *inst, char *op1, char *op2)
   if (ISINST ("pop")) return 2;
 
   if (ISINST ("lcall")) return 3;
-#ifdef MCS251_PORT
-  if (ISINST ("ecall")) return *op1 == '@' ? 2 : 4;
-  if (ISINST ("eret")) return 1;
-  if (ISINST ("ejmp")) return *op1 == '@' ? 2 : 4;
-#endif
   if (ISINST ("ret")) return 1;
   if (ISINST ("ljmp")) return 3;
   if (ISINST ("sjmp")) return 2;
@@ -685,9 +582,6 @@ instructionSize(char *inst, char *op1, char *op2)
     }
   if (ISINST ("inc") || ISINST ("dec"))
     {
-#ifdef MCS251_PORT
-      if (*op2) return 2;
-#endif
       if (IS_A(op1) || IS_Rn(op1) || IS_atRi(op1)) return 1;
       if (strcmp(op1, "dptr") == 0) return 1;
       return 2;
@@ -785,64 +679,6 @@ mcs51operandCompare (const void *key, const void *member)
   return strcmp((const char *)key, ((mcs51operanddata *)member)->name);
 }
 
-#ifdef MCS251_PORT
-static void
-mcs251UpdateRegRW (asmLineNode *aln, int regIdx, const char *optype)
-{
-  if (regIdx < 0 || regIdx >= END_IDX)
-    return;
-
-  if (strchr (optype, 'r'))
-    aln->regsRead = bitVectSetBit (aln->regsRead, regIdx);
-  if (strchr (optype, 'w'))
-    aln->regsWritten = bitVectSetBit (aln->regsWritten, regIdx);
-}
-
-static bool
-mcs251UpdateWideOperandRW (asmLineNode *aln, const char *op,
-                         const char *optype)
-{
-  const bool indirect = *op == '@';
-  const char *name = indirect ? op + 1 : op;
-  char *end;
-  long first;
-  int bytes;
-
-  if (!strcmp (name, "dpx") || !strncmp (name, "dpx+", 4))
-    {
-      const char *access = indirect ? "r" : optype;
-      mcs251UpdateRegRW (aln, DPL_IDX, access);
-      mcs251UpdateRegRW (aln, DPH_IDX, access);
-      /* DPXL has no slot in the inherited MCS-51 register tracker.  Treat B
-         as a conservative proxy so an optimization cannot move through a
-         24-bit pointer update unnoticed. */
-      mcs251UpdateRegRW (aln, B_IDX, access);
-      return true;
-    }
-  if (!strcmp (name, "dpxl"))
-    {
-      mcs251UpdateRegRW (aln, B_IDX, optype);
-      return true;
-    }
-
-  if (!strncmp (name, "wr", 2))
-    bytes = 2;
-  else if (!strncmp (name, "dr", 2))
-    bytes = strchr (optype, 'h') ? 2 : 4;
-  else
-    return false;
-
-  first = strtol (name + 2, &end, 10);
-  if (end == name + 2 || (*end && *end != '+') || first < 0 || first > 31)
-    return false;
-
-  for (int i = 0; i < bytes; ++i)
-    if (first + i <= 7)
-      mcs251UpdateRegRW (aln, R0_IDX - first - i,
-                       indirect ? "r" : optype);
-  return true;
-}
-#endif
 
 static void
 updateOpRW (asmLineNode *aln, const char *op_in, const char *optype)
@@ -854,10 +690,6 @@ updateOpRW (asmLineNode *aln, const char *op_in, const char *optype)
   if (*op_in == '/')
     op_in += 1;
 
-#ifdef MCS251_PORT
-  if (mcs251UpdateWideOperandRW (aln, op_in, optype))
-    return;
-#endif
 
   /* Ignore dots or brackets in operand (bit numbes) for operand table search.
      But remember that it's a bit access for special case handling.  */
@@ -930,23 +762,11 @@ static mcs51opcodedata mcs51opcodeDataTable[] =
     {"anl",  "",  "",   "rw", "r"},
     {"cjne", "j", "w",  "r",  "r"},
     {"clr",  "",  "",   "w",  ""},
-#ifdef MCS251_PORT
-    {"cmp",  "",  "w",  "r",  "r"},
-#endif
     {"cpl",  "",  "",   "rw", ""},
     {"da",   "",  "rw", "rw", ""},
     {"dec",  "",  "",   "rw", ""},
-#ifdef MCS251_PORT
-    {"div",  "",  "w",  "rw", "r"},
-#else
     {"div",  "",  "w",  "rw", ""},
-#endif
     {"djnz", "j", "",  "rw",  ""},
-#ifdef MCS251_PORT
-    {"ecall","j", "",   "",   ""},
-    {"ejmp", "j", "",   "",   ""},
-    {"eret", "j", "",   "",   ""},
-#endif
     {"inc",  "",  "",   "rw", ""},
     {"jb",   "j", "",   "r",  ""},
     {"jbc",  "j", "",  "rw",  ""},
@@ -960,17 +780,8 @@ static mcs51opcodedata mcs51opcodeDataTable[] =
     {"ljmp", "j", "",   "",   ""},
     {"mov",  "",  "",   "w",  "r"},
     {"movc", "",  "",   "w",  "r"},
-#ifdef MCS251_PORT
-    {"movh", "",  "",   "wh", "r"},
-    {"movs", "",  "",   "w",  "r"},
-#endif
     {"movx", "",  "",   "w",  "r"},
-#ifdef MCS251_PORT
-    {"movz", "",  "",   "w",  "r"},
-    {"mul",  "",  "w",  "rw", "r"},
-#else
     {"mul",  "",  "w",  "rw", ""},
-#endif
     {"nop",  "",  "",   "",   ""},
     {"orl",  "",  "",   "rw", "r"},
     {"pop",  "",  "",   "w",  ""},
@@ -983,12 +794,6 @@ static mcs51opcodedata mcs51opcodeDataTable[] =
     {"rrc",  "",  "rw", "rw", ""},
     {"setb", "",  "",   "w",  ""},
     {"sjmp", "j", "",   "",   ""},
-#ifdef MCS251_PORT
-    {"sll",  "",  "w",  "rw", "r"},
-    {"sra",  "",  "w",  "rw", "r"},
-    {"srl",  "",  "w",  "rw", "r"},
-    {"sub",  "",  "w",  "rw", "r"},
-#endif
     {"subb", "",  "rw", "rw", "r"},
     {"swap", "",  "",   "rw", ""},
     {"xch",  "",  "",   "rw", "rw"},
@@ -1120,17 +925,10 @@ getRegsWritten (lineNode *line)
 
 static const char * models[] =
 {
-#ifdef MCS251_PORT
-  "mcs251-small",  "mcs251-small-xstack",  "mcs251-small-stack-auto",  "mcs251-small-xstack-auto",
-  "mcs251-medium", "mcs251-medium-xstack", "mcs251-medium-stack-auto", "mcs251-medium-xstack-auto",
-  "mcs251-large",  "mcs251-large-xstack",  "mcs251-large-stack-auto",  "mcs251-large-xstack-auto",
-  "mcs251-huge",   "mcs251-huge-xstack",   "mcs251-huge-stack-auto",   "mcs251-huge-xstack-auto",
-#else
   "small",  "small-xstack",  "small-stack-auto",  "small-xstack-auto",
   "medium", "medium-xstack", "medium-stack-auto", "medium-xstack-auto",
   "large",  "large-xstack",  "large-stack-auto",  "large-xstack-auto",
   "huge",   "huge-xstack",   "huge-stack-auto",   "huge-xstack-auto",
-#endif
 };
 
 static const char *
@@ -1172,62 +970,31 @@ get_model (void)
 */
 static const char *_linkCmd[] =
 {
-#ifdef MCS251_PORT
-  "sdld", "-r", "-nf", "$1", "$L", NULL
-#else
   "sdld", "-nf", "$1", "$L", NULL
-#endif
 };
 
 /* $3 is replaced by assembler.debug_opts resp. port->assembler.plain_opts */
 static const char *_asmCmd[] =
 {
-#ifdef MCS251_PORT
-  "sdas251", "$l", "$3", "$2", "$1.asm", NULL
-#else
   "sdas8051", "$l", "$3", "$2", "$1.asm", NULL
-#endif
 };
 
-#ifdef MCS251_PORT
-static const char * const _libs[] = {
-  "mcs251", STD_LIB, STD_INT_LIB, STD_LONG_LIB, "liblonglong", STD_FP_LIB,
-  NULL,
-};
-#else
 static const char * const _libs[] = {
   "mcs51", STD_LIB, STD_INT_LIB, STD_LONG_LIB, "liblonglong", STD_FP_LIB,
   NULL,
 };
-#endif
-
-#ifdef MCS251_PORT
-#define MCS51_PORT_OBJECT mcs251_port
-#define MCS51_TARGET_ID TARGET_ID_MCS251
-#define MCS51_TARGET_OPTION "mcs251"
-#define MCS51_TARGET_NAME "Intel MCS-251"
-#else
-#define MCS51_PORT_OBJECT mcs51_port
-#define MCS51_TARGET_ID TARGET_ID_MCS51
-#define MCS51_TARGET_OPTION "mcs51"
-#define MCS51_TARGET_NAME "MCU 8051"
-#endif
 
 /* Globals */
-PORT MCS51_PORT_OBJECT =
+PORT mcs51_port =
 {
-  MCS51_TARGET_ID,
-  MCS51_TARGET_OPTION,
-  MCS51_TARGET_NAME,             /* Target name */
+  TARGET_ID_MCS51,
+  "mcs51",
+  "MCU 8051",                  /* Target name */
   NULL,                         /* Processor name */
   {
     glue,
     TRUE,                       /* glue_up_main: Emit glue around main */
-#ifdef MCS251_PORT
-    MODEL_SMALL | MODEL_LARGE,
-#else
     MODEL_SMALL | MODEL_MEDIUM | MODEL_LARGE | MODEL_HUGE,
-#endif
     MODEL_SMALL,
     get_model,
   },
@@ -1263,11 +1030,7 @@ PORT MCS51_PORT_OBJECT =
     NULL,
   },
   /* Sizes: char, short, int, long, long long, near ptr, far ptr, gptr, func ptr, banked func ptr, bit, float, _BitInt (in bits) */
-#ifdef MCS251_PORT
-  { 1, 2, 2, 4, 8, 1, 3, 3, 3, 3, 1, 4, 64 },
-#else
   { 1, 2, 2, 4, 8, 1, 2, 3, 2, 3, 1, 4, 64 },
-#endif
   /* tags for generic pointers */
   { 0x00, 0x40, 0x60, 0x80 },   /* far, near, xstack, code */
   {
@@ -1296,28 +1059,16 @@ PORT MCS51_PORT_OBJECT =
     NULL,
     NULL,
     1,
-#ifdef MCS251_PORT
-    false,                      // Flat MCS251 generic pointers address edata/xdata/code, not the direct SFR window.
-#else
     true,                       // unqualified pointer can point to __sfr: TODO: CHECK IF THIS IS ACTUALLY SUPPORTED. Set to true to emulate behaviour of rpevious version of sdcc for now.
-#endif
     1                           // No fancy alignments supported.
   },
   { _mcs51_genExtraAreas, NULL },
-#ifdef MCS251_PORT
-  2,                            // SDCC MCS251 ABI revision
-#else
   0,                            // ABI revision
-#endif
   {
     +1,         /* direction (+1 = stack grows up) */
     0,          /* bank_overhead (switch between register banks) */
     4,          /* isr_overhead */
-#ifdef MCS251_PORT
-    2,          /* call_overhead (3-byte extended return address - pre-increment) */
-#else
     1,          /* call_overhead (2 for return address - 1 for pre-incrementing push */
-#endif
     1,          /* reent_overhead */
     1,          /* banked_overhead (switch between code banks) */
     0           /* sp points directly at last item pushed */
@@ -1357,11 +1108,7 @@ PORT MCS51_PORT_OBJECT =
   hasExtBitOp,                  /* hasExtBitOp */
   oclsExpense,                  /* oclsExpense */
   FALSE,                        /* use_dw_for_init */
-#ifdef MCS251_PORT
-  FALSE,                        /* Native MCS251 scalars are big-endian. */
-#else
   TRUE,                         /* MCS51 keeps the SDCC little-endian ABI. */
-#endif
   0,                            /* leave lt */
   0,                            /* leave gt */
   1,                            /* transform <= to ! > */
@@ -1373,11 +1120,7 @@ PORT MCS51_PORT_OBJECT =
   "",                           // no builtin functions
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   true,                         // __far is a subspace of the generic space.
-#ifdef MCS251_PORT
-  true,                         // MCS251 generic and __far pointers share a flat 24-bit representation.
-#else
   false,                        // the generic space is not a subspace of __far.
-#endif
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local statics allowed */
   0,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */

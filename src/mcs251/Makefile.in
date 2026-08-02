@@ -19,7 +19,8 @@ peeph.rul: $(top_srcdir)/src/mcs51/peeph.def $(srcdir)/peeph-mcs251.def
 .PHONY: check
 check: all
 	$(PYTHON) $(srcdir)/tests/check-backend-isolation.py \
-		--mcs251-source $(srcdir)/main.c
+		--mcs251-source $(srcdir)/main.c \
+		--mcs51-source $(top_srcdir)/src/mcs51/main.c
 	$(PYTHON) $(srcdir)/tests/check-language-modes.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/language-mode.c
