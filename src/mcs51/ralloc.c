@@ -555,15 +555,7 @@ createStackSpil (symbol * sym)
   sloc->etype = getSpec (sloc->type);
   if (!IS_BIT (sloc->etype))
     {
-      /* The inherited MCS-51 allocator traditionally forces every spill
-         slot into direct DATA, even in the large model.  On MCS251 that
-         contradicts the model: non-register automatics in the large model
-         belong to the flat external-data allocation class.  Apart from
-         exhausting the 128-byte direct window, forcing a far temporary into
-         DATA can also truncate its address.  Keep the MCS-51 policy exactly
-         as-is and let MCS251 large-model spills follow the default XDATA map. */
-      SPEC_SCLS (sloc->etype) =
-        false && port->mem.default_local_map == xdata ? S_XDATA : S_DATA;
+      SPEC_SCLS (sloc->etype) = S_DATA;
     }
   else if (SPEC_SCLS (sloc->etype) == S_SBIT)
     {
@@ -1254,36 +1246,6 @@ xchgPositions:
     }
 }
 
-/* Keep logical byte zero as the least-significant byte while assigning
-   MCS251 scalar tuples in native register-file order.  Aggregates remain
-   byte-preserving and the MCS51 allocator retains its historical order. */
-static void
-sortAssignedRegs (symbol *sym)
-{
-  bool descending = false && sym->nRegs > 1 &&
-    !IS_AGGREGATE (sym->type);
-  int j;
-
-  if (!sym->regs[0])
-    return;
-
-  for (j = 0; j < sym->nRegs - 1; j++)
-    {
-      int k;
-
-      for (k = j + 1; k < sym->nRegs; k++)
-        if ((!descending &&
-             sym->regs[j]->offset > sym->regs[k]->offset) ||
-            (descending &&
-             sym->regs[j]->offset < sym->regs[k]->offset))
-          {
-            reg_info *tmp = sym->regs[j];
-            sym->regs[j] = sym->regs[k];
-            sym->regs[k] = tmp;
-          }
-    }
-}
-
 /*------------------------------------------------------------------*/
 /* verifyRegsAssigned - make sure an iTemp is properly initialized; */
 /* it should either have registers or have beed spilled. Otherwise, */
@@ -1514,7 +1476,24 @@ serialRegAssign (eBBlock ** ebbs, int count)
                     }
                 }
 
-              sortAssignedRegs (sym);
+              /* for debugging prefer to keep the sym in ascending
+                 registers so sort them by address */
+              if (sym->regs[0])
+                {
+                  for (j = 0; j < sym->nRegs - 1; j++)
+                    {
+                      int k;
+                      for (k=j+1; k<sym->nRegs; k++)
+                        {
+                          if (sym->regs[j]->offset > sym->regs[k]->offset)
+                            {
+                              reg_info *tmp = sym->regs[j];
+                              sym->regs[j] = sym->regs[k];
+                              sym->regs[k] = tmp;
+                            }
+                        }
+                    }
+                }
 
               if (!POINTER_SET (ic) && !POINTER_GET (ic))
                 {
@@ -1650,7 +1629,6 @@ fillGaps (void)
             }
           D (printf ("%s ", sym->regs[i]->name));
         }
-      sortAssignedRegs (sym);
       D (printf ("]\n"));
 
       /* For all its definitions check if the registers

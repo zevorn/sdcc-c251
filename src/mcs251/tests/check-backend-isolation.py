@@ -170,12 +170,14 @@ def main():
             f"{', '.join(missing_exports)}"
         )
 
+    mcs51_gen_source = Path(args.mcs51_gen_source)
+    mcs51_ralloc_source = Path(args.mcs51_ralloc_source)
     for mcs51_source in (
         Path(args.mcs51_source),
         Path(args.mcs51_peep_source),
         Path(args.mcs51_rtrack_source),
-        Path(args.mcs51_gen_source),
-        Path(args.mcs51_ralloc_source),
+        mcs51_gen_source,
+        mcs51_ralloc_source,
     ):
         mcs51_text = mcs51_source.read_text(encoding="utf-8")
         selectors = [
@@ -188,6 +190,11 @@ def main():
                 f"{mcs51_source} still contains MCS251 selectors: "
                 f"{', '.join(selectors)}"
             )
+
+    check_bound_policy(mcs51_gen_source, mcs51_gen_source.read_text(
+        encoding="utf-8"))
+    check_bound_policy(mcs51_ralloc_source, mcs51_ralloc_source.read_text(
+        encoding="utf-8"))
 
     print("PASS: MCS251 owns all backend implementation sources")
 
