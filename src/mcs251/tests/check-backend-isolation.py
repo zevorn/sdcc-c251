@@ -49,6 +49,7 @@ def main():
     parser.add_argument("--mcs251-source", required=True)
     parser.add_argument("--mcs251-peep-source", required=True)
     parser.add_argument("--mcs51-source", required=True)
+    parser.add_argument("--mcs51-peep-source", required=True)
     args = parser.parse_args()
 
     source = Path(args.mcs251_source)
@@ -76,18 +77,21 @@ def main():
             f"{', '.join(missing_callbacks)}"
         )
 
-    mcs51_source = Path(args.mcs51_source)
-    mcs51_text = mcs51_source.read_text(encoding="utf-8")
-    selectors = [
-        selector
-        for selector in TRANSITIONAL_TARGET_SELECTORS
-        if re.search(rf"\b{selector}\b", mcs51_text)
-    ]
-    if selectors:
-        raise RuntimeError(
-            f"{mcs51_source} still contains MCS251 selectors: "
-            f"{', '.join(selectors)}"
-        )
+    for mcs51_source in (
+        Path(args.mcs51_source),
+        Path(args.mcs51_peep_source),
+    ):
+        mcs51_text = mcs51_source.read_text(encoding="utf-8")
+        selectors = [
+            selector
+            for selector in TRANSITIONAL_TARGET_SELECTORS
+            if re.search(rf"\b{selector}\b", mcs51_text)
+        ]
+        if selectors:
+            raise RuntimeError(
+                f"{mcs51_source} still contains MCS251 selectors: "
+                f"{', '.join(selectors)}"
+            )
 
     print("PASS: MCS251 owns its port and peephole implementation sources")
 

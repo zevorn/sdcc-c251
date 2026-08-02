@@ -353,19 +353,6 @@ scan4op (lineNode **pl, const char *pReg, const char *untilOp,
           if (findPushPop && strstr (p, "sp"))
             return S4O_ABORT;
 
-          /* A MCS251 WR/DR operand names only its first byte register.  The
-             parsed read/write masks also contain the remaining implicit
-             byte registers, so consult them before the MCS-51 text filter.
-             Otherwise, for example, a write to r7 can be deleted in front
-             of "mov dpl,wr6" even though that instruction reads r7. */
-          if (TARGET_IS_MCS251)
-            {
-              if (bitVectBitValue (port->peep.getRegsRead ((*pl)), rIdx))
-                return S4O_RD_OP;
-              if (bitVectBitValue (port->peep.getRegsWritten ((*pl)), rIdx))
-                return S4O_WR_OP;
-            }
-
           /* course search */
           if (strstr (p, pReg + 1))
             {
@@ -435,37 +422,6 @@ scan4op (lineNode **pl, const char *pReg, const char *untilOp,
               {
                 isConditionalJump = TRUE;
                 break;
-              }
-            break;
-          case 'e':
-            if (TARGET_IS_MCS251 && strncmp ("ecall", (*pl)->line, 5) == 0)
-              {
-                ret = termScanAtFunc (*pl, rIdx);
-                if (ret != S4O_CONTINUE)
-                  return ret;
-                break;
-              }
-            if (TARGET_IS_MCS251 && strncmp ("ejmp", (*pl)->line, 4) == 0)
-              {
-                *pl = findLabel (*pl);
-                if (!*pl)
-                  return S4O_ABORT;
-                break;
-              }
-            if (TARGET_IS_MCS251 && strncmp ("eret", (*pl)->line, 4) == 0)
-              {
-                if (isFunc (*pl))
-                  {
-                    ret = termScanAtFunc (*pl, rIdx);
-                    if (ret != S4O_CONTINUE)
-                      return ret;
-                    break;
-                  }
-                if (!((*pl)->ic) || !currFunc->type || FUNC_CALLEESAVES (currFunc->type))
-                  return S4O_ABORT;
-                if (mcs51IsReturned (pReg))
-                  return S4O_ABORT;
-                return S4O_TERM;
               }
             break;
           case 'j':
@@ -958,33 +914,8 @@ mcs51notUsedFrom (const char *what, const char *label, lineNode *head)
   return false;
 }
 
-/* Check whether a peephole may replace an existing MOV with a direct
-   assignment between these operands.  MCS251 adds named word and dword
-   registers; inherited byte-oriented rules must not substitute A for one
-   side of a wide transfer. */
 bool
 mcs51CanAssign (const char *dst, const char *src, const char *exotic)
 {
-  if (TARGET_IS_MCS251)
-    {
-      const bool dst_wide = !strncmp (dst, "wr", 2) ||
-        !strncmp (dst, "dr", 2) || !strcmp (dst, "dptr") ||
-        !strcmp (dst, "dpx") || !strcmp (dst, "spx");
-      const bool src_wide = !strncmp (src, "wr", 2) ||
-        !strncmp (src, "dr", 2) || !strcmp (src, "dptr") ||
-        !strcmp (src, "dpx") || !strcmp (src, "spx");
-
-      if (dst_wide != src_wide)
-        return false;
-
-      /* B is addressed as a direct SFR.  MCS251 native pointer loads can
-         target byte/word registers, but cannot be folded into a direct
-         SFR load such as "mov b,@dpx" or "mov b,@spx-4". */
-      if ((!strncmp (src, "@dpx", 4) || !strncmp (src, "@spx", 4)) &&
-          strcmp (dst, "a") && strcmp (dst, "acc") &&
-          strncmp (dst, "r", 1) && strncmp (dst, "wr", 2))
-        return false;
-    }
-
   return true;
 }
