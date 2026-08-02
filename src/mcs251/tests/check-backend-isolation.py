@@ -25,9 +25,23 @@ MCS251_RTRACK_EXPORTS = (
     "mcs251_rtrackMoveALit",
     "mcs251_rtrackLoadDptrWithSym",
 )
+MCS251_GEN_EXPORTS = (
+    "mcs251_genCode",
+    "mcs251IsParmInCall",
+    "mcs251IsRegArg",
+    "mcs251IsReturned",
+    "mcs251_emitDebuggerSymbol",
+    "mcs251_init_asmops",
+)
+MCS251_RALLOC_EXPORTS = (
+    "mcs251_assignRegisters",
+    "mcs251_rUmaskForOp",
+    "mcs251_regWithIdx",
+    "mcs251_regname_to_idx",
+)
 
 
-def check_mcs251_source(source):
+def read_owned_source(source):
     text = source.read_text(encoding="utf-8")
     match = MCS51_SOURCE_INCLUDE.search(text)
     if match:
@@ -35,6 +49,12 @@ def check_mcs251_source(source):
             f"{source} directly includes MCS51 implementation source: "
             f"{match.group(0).strip()}"
         )
+
+    return text
+
+
+def check_mcs251_source(source):
+    text = read_owned_source(source)
 
     selectors = [
         selector
@@ -55,6 +75,8 @@ def main():
     parser.add_argument("--mcs251-source", required=True)
     parser.add_argument("--mcs251-peep-source", required=True)
     parser.add_argument("--mcs251-rtrack-source", required=True)
+    parser.add_argument("--mcs251-gen-source", required=True)
+    parser.add_argument("--mcs251-ralloc-source", required=True)
     parser.add_argument("--mcs51-source", required=True)
     parser.add_argument("--mcs51-peep-source", required=True)
     parser.add_argument("--mcs51-rtrack-source", required=True)
@@ -103,6 +125,32 @@ def main():
             f"{source} does not use the MCS251 register tracking callback"
         )
 
+    gen_source = Path(args.mcs251_gen_source)
+    gen_text = read_owned_source(gen_source)
+    missing_exports = [
+        symbol
+        for symbol in MCS251_GEN_EXPORTS
+        if not re.search(rf"\b{symbol}\s*\(", gen_text)
+    ]
+    if missing_exports:
+        raise RuntimeError(
+            f"{gen_source} does not define MCS251 code generation: "
+            f"{', '.join(missing_exports)}"
+        )
+
+    ralloc_source = Path(args.mcs251_ralloc_source)
+    ralloc_text = read_owned_source(ralloc_source)
+    missing_exports = [
+        symbol
+        for symbol in MCS251_RALLOC_EXPORTS
+        if not re.search(rf"\b{symbol}\s*\(", ralloc_text)
+    ]
+    if missing_exports:
+        raise RuntimeError(
+            f"{ralloc_source} does not define MCS251 allocation: "
+            f"{', '.join(missing_exports)}"
+        )
+
     for mcs51_source in (
         Path(args.mcs51_source),
         Path(args.mcs51_peep_source),
@@ -120,7 +168,7 @@ def main():
                 f"{', '.join(selectors)}"
             )
 
-    print("PASS: MCS251 owns its port, peephole, and rtrack sources")
+    print("PASS: MCS251 owns all backend implementation sources")
 
 
 if __name__ == "__main__":

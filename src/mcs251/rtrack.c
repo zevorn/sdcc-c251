@@ -41,8 +41,8 @@
 #include "SDCCglobl.h"
 
 #include "common.h"
-#include "../mcs51/ralloc.h"
-#include "../mcs51/gen.h"
+#include "ralloc.h"
+#include "gen.h"
 #include "rtrack.h"
 
 
@@ -75,17 +75,17 @@ static void rtrack_data_unset (const unsigned int idx)
   assert (idx >= 0);
   assert (idx < END_IDX);
 
-  if (regs8051[idx].rtrack.symbol || regs8051[idx].rtrack.valueKnown)
+  if (mcs251_regs[idx].rtrack.symbol || mcs251_regs[idx].rtrack.valueKnown)
     {
-      DD(emitcode (";", "\t%s=?", regs8051[idx].name););
+      DD(emitcode (";", "\t%s=?", mcs251_regs[idx].name););
     }
 
-  if (regs8051[idx].rtrack.symbol)
+  if (mcs251_regs[idx].rtrack.symbol)
     {
-      Safe_free (regs8051[idx].rtrack.symbol);
+      Safe_free (mcs251_regs[idx].rtrack.symbol);
     }
 
-  memset (&regs8051[idx].rtrack, 0, sizeof regs8051[idx].rtrack);
+  memset (&mcs251_regs[idx].rtrack, 0, sizeof mcs251_regs[idx].rtrack);
 }
 
 
@@ -94,19 +94,19 @@ static void rtrack_data_set_val (const unsigned int idx, const unsigned char val
   assert (idx >= 0);
   assert (idx < END_IDX);
 
-  regs8051[idx].rtrack.value = value;
-  regs8051[idx].rtrack.valueKnown = 1;
+  mcs251_regs[idx].rtrack.value = value;
+  mcs251_regs[idx].rtrack.valueKnown = 1;
 
   /* in case it was set by symbol, unset symbol */
-  if (regs8051[idx].rtrack.symbol)
+  if (mcs251_regs[idx].rtrack.symbol)
     {
-      Safe_free (regs8051[idx].rtrack.symbol);
-      regs8051[idx].rtrack.symbol = NULL;
+      Safe_free (mcs251_regs[idx].rtrack.symbol);
+      mcs251_regs[idx].rtrack.symbol = NULL;
     }
 
   DD(emitcode (";", "\t%s=#0x%02x",
-                    regs8051[idx].name,
-                    regs8051[idx].rtrack.value););
+                    mcs251_regs[idx].name,
+                    mcs251_regs[idx].rtrack.value););
 }
 
 
@@ -116,28 +116,28 @@ static void rtrack_data_set_symbol (const unsigned int idx, const char * const s
   assert (idx < END_IDX);
 
   /* in case it was set by value, unset value */
-  regs8051[idx].rtrack.value = 0;
-  regs8051[idx].rtrack.valueKnown = 0;
+  mcs251_regs[idx].rtrack.value = 0;
+  mcs251_regs[idx].rtrack.valueKnown = 0;
 
   /* eventually free a previous symbol */
-  if (regs8051[idx].rtrack.symbol)
+  if (mcs251_regs[idx].rtrack.symbol)
     {
-      Safe_free (regs8051[idx].rtrack.symbol);
+      Safe_free (mcs251_regs[idx].rtrack.symbol);
     }
-  regs8051[idx].rtrack.symbol = Safe_strdup(symbol);
+  mcs251_regs[idx].rtrack.symbol = Safe_strdup(symbol);
 
   DD(emitcode (";", "\t%s=#%s",
-                    regs8051[idx].name,
-                    regs8051[idx].rtrack.symbol););
+                    mcs251_regs[idx].name,
+                    mcs251_regs[idx].rtrack.symbol););
 }
 
 
 static int rtrack_data_is_same (const unsigned int idxdst, const unsigned int idxsrc)
 {
-  return ((regs8051[idxdst].rtrack.valueKnown && regs8051[idxsrc].rtrack.valueKnown) &&
-          (regs8051[idxdst].rtrack.value      == regs8051[idxsrc].rtrack.value)) ||
-         ((regs8051[idxdst].rtrack.symbol && regs8051[idxsrc].rtrack.symbol) &&
-         !strcmp (regs8051[idxdst].rtrack.symbol, regs8051[idxsrc].rtrack.symbol));
+  return ((mcs251_regs[idxdst].rtrack.valueKnown && mcs251_regs[idxsrc].rtrack.valueKnown) &&
+          (mcs251_regs[idxdst].rtrack.value      == mcs251_regs[idxsrc].rtrack.value)) ||
+         ((mcs251_regs[idxdst].rtrack.symbol && mcs251_regs[idxsrc].rtrack.symbol) &&
+         !strcmp (mcs251_regs[idxdst].rtrack.symbol, mcs251_regs[idxsrc].rtrack.symbol));
 }
 
 
@@ -150,13 +150,13 @@ static void rtrack_data_copy_dst_src (const unsigned int idxdst, const unsigned 
 
   DD
   (
-    if ((NULL != regs8051[idxsrc].rtrack.symbol) || regs8051[idxsrc].rtrack.valueKnown)
+    if ((NULL != mcs251_regs[idxsrc].rtrack.symbol) || mcs251_regs[idxsrc].rtrack.valueKnown)
       {
-        D(emitcode (";", "\t%s=%s", regs8051[idxdst].name, regs8051[idxsrc].name));
+        D(emitcode (";", "\t%s=%s", mcs251_regs[idxdst].name, mcs251_regs[idxsrc].name));
       }
-    else if (regs8051[idxdst].rtrack.symbol || regs8051[idxdst].rtrack.valueKnown)
+    else if (mcs251_regs[idxdst].rtrack.symbol || mcs251_regs[idxdst].rtrack.valueKnown)
       {
-        D(emitcode (";", "\t%s=*",regs8051[idxdst].name));
+        D(emitcode (";", "\t%s=*",mcs251_regs[idxdst].name));
       }
 
     if (rtrack_data_is_same (idxdst, idxsrc))
@@ -169,20 +169,20 @@ static void rtrack_data_copy_dst_src (const unsigned int idxdst, const unsigned 
   if (idxsrc == idxdst)
     return;
 
-  regs8051[idxdst].rtrack.valueKnown = regs8051[idxsrc].rtrack.valueKnown;
-  regs8051[idxdst].rtrack.value      = regs8051[idxsrc].rtrack.value;
+  mcs251_regs[idxdst].rtrack.valueKnown = mcs251_regs[idxsrc].rtrack.valueKnown;
+  mcs251_regs[idxdst].rtrack.value      = mcs251_regs[idxsrc].rtrack.value;
 
-  if (regs8051[idxdst].rtrack.symbol)
+  if (mcs251_regs[idxdst].rtrack.symbol)
     {
-      Safe_free (regs8051[idxdst].rtrack.symbol);
-      regs8051[idxdst].rtrack.symbol = NULL;
+      Safe_free (mcs251_regs[idxdst].rtrack.symbol);
+      mcs251_regs[idxdst].rtrack.symbol = NULL;
     }
 
-  memcpy (&regs8051[idxdst].rtrack, &regs8051[idxsrc].rtrack, sizeof regs8051[idxdst].rtrack);
+  memcpy (&mcs251_regs[idxdst].rtrack, &mcs251_regs[idxsrc].rtrack, sizeof mcs251_regs[idxdst].rtrack);
 
-  if (regs8051[idxsrc].rtrack.symbol)
+  if (mcs251_regs[idxsrc].rtrack.symbol)
     {
-      regs8051[idxdst].rtrack.symbol = Safe_strdup(regs8051[idxsrc].rtrack.symbol);
+      mcs251_regs[idxdst].rtrack.symbol = Safe_strdup(mcs251_regs[idxsrc].rtrack.symbol);
     }
 }
 
@@ -198,15 +198,15 @@ static void dumpAll()
     s[0] = 0;
     for (i = 0; i < END_IDX; i++)
       {
-        if (regs8051[i].rtrack.valueKnown)
+        if (mcs251_regs[i].rtrack.valueKnown)
           {
             column += sprintf(s + column, "%s%s:#0x%02x",
-                              column?" ":"", regs8051[i].name, regs8051[i].rtrack.value);
+                              column?" ":"", mcs251_regs[i].name, mcs251_regs[i].rtrack.value);
           }
-        if (NULL != regs8051[i].rtrack.symbol)
+        if (NULL != mcs251_regs[i].rtrack.symbol)
           {
             column += sprintf(s + column, "%s%s:#%s",
-                              column?" ":"", regs8051[i].name, regs8051[i].rtrack.symbol);
+                              column?" ":"", mcs251_regs[i].name, mcs251_regs[i].rtrack.symbol);
           }
         if (column>160)
           {
@@ -257,7 +257,7 @@ static int valuefromliteral (const char* const s)
 
 /* tracking values within registers by looking
    at the line passed to the assembler.
-   Tries to keep regs8051[] up to date */
+   Tries to keep mcs251_regs[] up to date */
 bool _mcs251_rtrackUpdate (const char *line)
 {
   bool modified = false;
@@ -287,7 +287,7 @@ bool _mcs251_rtrackUpdate (const char *line)
       /* mov to register (r0..r7, dpl, dph, a, b)*/
       if (!strncmp (line, "mov\t", 4))
         {
-          int regIdx = mcs51_regname_to_idx (line + 4);
+          int regIdx = mcs251_regname_to_idx (line + 4);
 
           if (0 <= regIdx)
             {
@@ -303,35 +303,35 @@ bool _mcs251_rtrackUpdate (const char *line)
               /* check literal mov to register */
               if ((s != argument + 1) && !strncmp (argument, "#0x", 3))
                 {
-                  if (regs8051[regIdx].rtrack.valueKnown && (value == regs8051[regIdx].rtrack.value))
+                  if (mcs251_regs[regIdx].rtrack.valueKnown && (value == mcs251_regs[regIdx].rtrack.value))
                     {
                       D(emitcode (";", "genFromRTrack removed\t%s", line));
                       modified = true;
                     }
-                  if (regs8051[A_IDX].rtrack.valueKnown && (value == regs8051[A_IDX].rtrack.value) &&
+                  if (mcs251_regs[A_IDX].rtrack.valueKnown && (value == mcs251_regs[A_IDX].rtrack.value) &&
                       (regIdx != A_IDX) && (regIdx != DPL_IDX) && (regIdx != DPH_IDX))
                       /* ignore DPL/DPH for now as peephole rule for MOV DPTR is much better */
                     {
                       /* occurs in regression test mcs51-small */
                       D(emitcode (";", "genFromRTrack-1 replaced\t%s", line));
-                      emitcode ("mov", "%s,a", regs8051[regIdx].dname);
+                      emitcode ("mov", "%s,a", mcs251_regs[regIdx].dname);
                       modified = true;
                     }
-                  else if (regs8051[regIdx].rtrack.valueKnown && (value == regs8051[regIdx].rtrack.value + 1) &&
-                           ((regIdx != A_IDX) || (0xff != regs8051[regIdx].rtrack.value)))
+                  else if (mcs251_regs[regIdx].rtrack.valueKnown && (value == mcs251_regs[regIdx].rtrack.value + 1) &&
+                           ((regIdx != A_IDX) || (0xff != mcs251_regs[regIdx].rtrack.value)))
                     {
                       /* occurs in regression test mcs51-small */
                       D(emitcode (";", "genFromRTrack-2 replaced\t%s", line));
-                      emitcode ("inc", "%s", regs8051[regIdx].name);
+                      emitcode ("inc", "%s", mcs251_regs[regIdx].name);
                       modified = true;
                     }
-                  else if (regs8051[regIdx].rtrack.valueKnown && (value == regs8051[regIdx].rtrack.value - 1) &&
-                           ((regIdx != A_IDX) || (0x01 != regs8051[regIdx].rtrack.value)))
+                  else if (mcs251_regs[regIdx].rtrack.valueKnown && (value == mcs251_regs[regIdx].rtrack.value - 1) &&
+                           ((regIdx != A_IDX) || (0x01 != mcs251_regs[regIdx].rtrack.value)))
                     {
                       /* does not occur in regression test mcs51-small */
                       /* occurs in regression test mcs51-small-stack-auto */
                       D(emitcode (";", "genFromRTrack-3 replaced\t%s", line));
-                      emitcode ("dec", "%s", regs8051[regIdx].name);
+                      emitcode ("dec", "%s", mcs251_regs[regIdx].name);
                       modified = true;
                     }
 
@@ -343,9 +343,9 @@ bool _mcs251_rtrackUpdate (const char *line)
                   rtrack_data_set_symbol (regIdx, argument + 1);
                 }
               /* check mov from register to register */
-              else if (0 <= mcs51_regname_to_idx (argument))
+              else if (0 <= mcs251_regname_to_idx (argument))
                 {
-                  rtrack_data_copy_dst_src (regIdx, mcs51_regname_to_idx (argument));
+                  rtrack_data_copy_dst_src (regIdx, mcs251_regname_to_idx (argument));
                 }
               else
                 {
@@ -373,10 +373,10 @@ bool _mcs251_rtrackUpdate (const char *line)
             {
               bool foundshortcut = 0;
 
-              if ( regs8051[DPH_IDX].rtrack.valueKnown &&
-                   regs8051[DPL_IDX].rtrack.valueKnown &&
-                  (regs8051[DPH_IDX].rtrack.value == (value >> 8)) &&
-                  (regs8051[DPL_IDX].rtrack.value == (value & 0xff)))
+              if ( mcs251_regs[DPH_IDX].rtrack.valueKnown &&
+                   mcs251_regs[DPL_IDX].rtrack.valueKnown &&
+                  (mcs251_regs[DPH_IDX].rtrack.value == (value >> 8)) &&
+                  (mcs251_regs[DPL_IDX].rtrack.value == (value & 0xff)))
                 {
                   D(emitcode (";", "genFromRTrack removed\t%s", line));
                   foundshortcut = 1;
@@ -384,8 +384,8 @@ bool _mcs251_rtrackUpdate (const char *line)
                 }
 
               if (!foundshortcut &&
-                   regs8051[DPH_IDX].rtrack.valueKnown &&
-                   regs8051[DPL_IDX].rtrack.valueKnown)
+                   mcs251_regs[DPH_IDX].rtrack.valueKnown &&
+                   mcs251_regs[DPL_IDX].rtrack.valueKnown)
                 {
                   /* some instructions are shorter than mov dptr,#0xabcd */
                   const struct
@@ -404,8 +404,8 @@ bool _mcs251_rtrackUpdate (const char *line)
                       { 255, "dec", "dpl"}    /* if overflow,    does not occur in any regression test */
                     };
 
-                  unsigned int dptr = (regs8051[DPH_IDX].rtrack.value << 8 ) |
-                                       regs8051[DPL_IDX].rtrack.value;
+                  unsigned int dptr = (mcs251_regs[DPH_IDX].rtrack.value << 8 ) |
+                                       mcs251_regs[DPL_IDX].rtrack.value;
                   unsigned int i;
 
                   for (i = 0; i < sizeof (reachable) / sizeof (reachable[0]); i++)
@@ -432,8 +432,8 @@ bool _mcs251_rtrackUpdate (const char *line)
                 }
 
               if (!foundshortcut &&
-                   regs8051[DPH_IDX].rtrack.valueKnown &&
-                  (regs8051[DPH_IDX].rtrack.value == (value >> 8)))
+                   mcs251_regs[DPH_IDX].rtrack.valueKnown &&
+                  (mcs251_regs[DPH_IDX].rtrack.value == (value >> 8)))
                 {
                   char s[32];
                   sprintf (s, "#0x%02x", value & 0xff);
@@ -448,8 +448,8 @@ bool _mcs251_rtrackUpdate (const char *line)
                     }
                 }
               if (!foundshortcut &&
-                   regs8051[DPL_IDX].rtrack.valueKnown &&
-                  (regs8051[DPL_IDX].rtrack.value == (value & 0xff)))
+                   mcs251_regs[DPL_IDX].rtrack.valueKnown &&
+                  (mcs251_regs[DPL_IDX].rtrack.value == (value & 0xff)))
                 {
                   char s[32];
                   sprintf (s, "#0x%02x", value >> 8);
@@ -546,7 +546,7 @@ bool _mcs251_rtrackUpdate (const char *line)
 
   if (!strncmp (line, "pop\t", 4))
     {
-      int regIdx = mcs51_regname_to_idx (line + 4);
+      int regIdx = mcs251_regname_to_idx (line + 4);
       if (0 <= regIdx)
         {
           rtrack_data_unset (regIdx);
@@ -558,10 +558,10 @@ bool _mcs251_rtrackUpdate (const char *line)
     {
       if (!strcmp (line, "inc\tdptr"))
         {
-          if (regs8051[DPH_IDX].rtrack.valueKnown &&
-              regs8051[DPL_IDX].rtrack.valueKnown)
+          if (mcs251_regs[DPH_IDX].rtrack.valueKnown &&
+              mcs251_regs[DPL_IDX].rtrack.valueKnown)
             {
-              int val = (regs8051[DPH_IDX].rtrack.value << 8) | regs8051[DPL_IDX].rtrack.value;
+              int val = (mcs251_regs[DPH_IDX].rtrack.value << 8) | mcs251_regs[DPL_IDX].rtrack.value;
               val += 1;
               rtrack_data_set_val (DPL_IDX, (unsigned char) val);
               rtrack_data_set_val (DPH_IDX, (unsigned char) (val >> 8));
@@ -581,11 +581,11 @@ bool _mcs251_rtrackUpdate (const char *line)
         }
       if (!strncmp (line, "inc\t", 4))
         {
-          int regIdx = mcs51_regname_to_idx (line + 4);
+          int regIdx = mcs251_regname_to_idx (line + 4);
           if (0 <= regIdx)
             {
-              if (regs8051[regIdx].rtrack.valueKnown)
-                rtrack_data_set_val (regIdx, (unsigned char) (regs8051[regIdx].rtrack.value + 1));
+              if (mcs251_regs[regIdx].rtrack.valueKnown)
+                rtrack_data_set_val (regIdx, (unsigned char) (mcs251_regs[regIdx].rtrack.value + 1));
               else
                 /* explicitly unsetting (could be known by symbol).
                    not yet handling offset to a symbol. (idata/pdata) */
@@ -625,7 +625,7 @@ bool _mcs251_rtrackUpdate (const char *line)
      r2 is known to be 8 */
   if (!strncmp (line, "cjne\t", 5))
     {
-      int regIdx = mcs51_regname_to_idx (line + 5);
+      int regIdx = mcs251_regname_to_idx (line + 5);
       if (0 <= regIdx)
         {
           char *argument = strstr (line, ",") + 1;
@@ -658,7 +658,7 @@ bool _mcs251_rtrackUpdate (const char *line)
 
   if (!strncmp (line, "djnz\t", 5))
     {
-      int regIdx = mcs51_regname_to_idx (line + 5);
+      int regIdx = mcs251_regname_to_idx (line + 5);
       if (0 <= regIdx)
         {
           rtrack_data_set_val (regIdx, 0x00); // branch not taken
@@ -705,75 +705,75 @@ bool _mcs251_rtrackUpdate (const char *line)
       !strncmp (line, "xrl\ta,", 6) ||
       !strcmp (line, "cpl\ta"))
     {
-      if (regs8051[A_IDX].rtrack.valueKnown)
+      if (mcs251_regs[A_IDX].rtrack.valueKnown)
         {
           if (!strncmp (line, "add\ta,", 6))
             {
-              int regIdx = mcs51_regname_to_idx (line + 6);
+              int regIdx = mcs251_regname_to_idx (line + 6);
 
-              if (0 <= regIdx && regs8051[regIdx].rtrack.valueKnown)
+              if (0 <= regIdx && mcs251_regs[regIdx].rtrack.valueKnown)
                 {
-                  rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value + regs8051[regIdx].rtrack.value));
+                  rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value + mcs251_regs[regIdx].rtrack.value));
                   return false;
                 }
               else if (('#' == line[6]) && (0 <= valuefromliteral (line + 7)))
                 {
-                  rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value + valuefromliteral (line + 7)));
+                  rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value + valuefromliteral (line + 7)));
                   return false;
                 }
             }
 
           if (!strncmp (line, "anl\ta,", 6))
             {
-              int regIdx = mcs51_regname_to_idx (line + 6);
+              int regIdx = mcs251_regname_to_idx (line + 6);
 
-              if (0 <= regIdx && regs8051[regIdx].rtrack.valueKnown)
+              if (0 <= regIdx && mcs251_regs[regIdx].rtrack.valueKnown)
                 {
-                  rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value & regs8051[regIdx].rtrack.value));
+                  rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value & mcs251_regs[regIdx].rtrack.value));
                   return false;
                 }
               else if (('#' == line[6]) && (0 <= valuefromliteral (line + 7)))
                 {
-                  rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value & valuefromliteral (line + 7)));
+                  rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value & valuefromliteral (line + 7)));
                   return false;
                 }
             }
 
           if (!strncmp (line, "orl\ta,", 6))
             {
-              int regIdx = mcs51_regname_to_idx (line + 6);
+              int regIdx = mcs251_regname_to_idx (line + 6);
 
-              if (0 <= regIdx && regs8051[regIdx].rtrack.valueKnown)
+              if (0 <= regIdx && mcs251_regs[regIdx].rtrack.valueKnown)
                 {
-                  rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value | regs8051[regIdx].rtrack.value));
+                  rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value | mcs251_regs[regIdx].rtrack.value));
                   return false;
                 }
               else if (('#' == line[6]) && (0 <= valuefromliteral (line + 7)))
                 {
-                  rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value | valuefromliteral (line + 7)));
+                  rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value | valuefromliteral (line + 7)));
                   return false;
                 }
             }
 
           if (!strncmp (line, "xrl\ta,", 6))
             {
-              int regIdx = mcs51_regname_to_idx (line + 6);
+              int regIdx = mcs251_regname_to_idx (line + 6);
 
-              if (0 <= regIdx && regs8051[regIdx].rtrack.valueKnown)
+              if (0 <= regIdx && mcs251_regs[regIdx].rtrack.valueKnown)
                 {
-                  rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value ^ regs8051[regIdx].rtrack.value));
+                  rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value ^ mcs251_regs[regIdx].rtrack.value));
                   return false;
                 }
               else if (('#' == line[6]) && (0 <= valuefromliteral (line + 7)))
                 {
-                  rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value ^ valuefromliteral (line + 7)));
+                  rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value ^ valuefromliteral (line + 7)));
                   return false;
                 }
             }
 
           if (!strcmp (line, "cpl\ta"))
             {
-              rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value ^ 0xff));
+              rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value ^ 0xff));
               return false;
             }
 
@@ -789,14 +789,14 @@ bool _mcs251_rtrackUpdate (const char *line)
 
   if (!strncmp (line, "dec\t", 4))
     {
-      int regIdx = mcs51_regname_to_idx (line + 4);
+      int regIdx = mcs251_regname_to_idx (line + 4);
       if (0 <= regIdx)
         {
-          if (regs8051[regIdx].rtrack.valueKnown)
-            rtrack_data_set_val (regIdx, (unsigned char) (regs8051[regIdx].rtrack.value - 1));
+          if (mcs251_regs[regIdx].rtrack.valueKnown)
+            rtrack_data_set_val (regIdx, (unsigned char) (mcs251_regs[regIdx].rtrack.value - 1));
 
           /* not handling offset to a symbol. invalidating if needed */
-          if (NULL != regs8051[regIdx].rtrack.symbol)
+          if (NULL != mcs251_regs[regIdx].rtrack.symbol)
             rtrack_data_unset (regIdx);
 
           return false;
@@ -806,7 +806,7 @@ bool _mcs251_rtrackUpdate (const char *line)
 
   if (!strcmp (line, "clr\ta"))
     {
-      if (regs8051[A_IDX].rtrack.valueKnown && (0 == regs8051[A_IDX].rtrack.value))
+      if (mcs251_regs[A_IDX].rtrack.valueKnown && (0 == mcs251_regs[A_IDX].rtrack.value))
         {
           D(emitcode (";", "genFromRTrack removed\t%s", line));
           modified = true;
@@ -817,8 +817,8 @@ bool _mcs251_rtrackUpdate (const char *line)
 
   if (!strcmp (line, "cpl\ta"))
     {
-      if (regs8051[A_IDX].rtrack.valueKnown)
-        rtrack_data_set_val (A_IDX, (unsigned char) (~regs8051[A_IDX].rtrack.value));
+      if (mcs251_regs[A_IDX].rtrack.valueKnown)
+        rtrack_data_set_val (A_IDX, (unsigned char) (~mcs251_regs[A_IDX].rtrack.value));
       else
         /* in case a holds a symbol */
         rtrack_data_unset (A_IDX);
@@ -826,27 +826,27 @@ bool _mcs251_rtrackUpdate (const char *line)
     }
   if (!strcmp (line, "rl\ta"))
     {
-      if (regs8051[A_IDX].rtrack.valueKnown)
-        rtrack_data_set_val (A_IDX, (unsigned char) ((regs8051[A_IDX].rtrack.value<<1) |
-                                    (regs8051[A_IDX].rtrack.value>>7)));
+      if (mcs251_regs[A_IDX].rtrack.valueKnown)
+        rtrack_data_set_val (A_IDX, (unsigned char) ((mcs251_regs[A_IDX].rtrack.value<<1) |
+                                    (mcs251_regs[A_IDX].rtrack.value>>7)));
       else
         rtrack_data_unset (A_IDX);
       return false;
     }
   if (!strcmp (line, "rr\ta"))
     {
-      if (regs8051[A_IDX].rtrack.valueKnown)
-        rtrack_data_set_val (A_IDX, (unsigned char) ((regs8051[A_IDX].rtrack.value>>1) |
-                                    (regs8051[A_IDX].rtrack.value<<7)));
+      if (mcs251_regs[A_IDX].rtrack.valueKnown)
+        rtrack_data_set_val (A_IDX, (unsigned char) ((mcs251_regs[A_IDX].rtrack.value>>1) |
+                                    (mcs251_regs[A_IDX].rtrack.value<<7)));
       else
         rtrack_data_unset (A_IDX);
       return false;
     }
   if (!strcmp (line, "swap\ta"))
     {
-      if (regs8051[A_IDX].rtrack.valueKnown)
-        rtrack_data_set_val (A_IDX, (unsigned char) ((regs8051[A_IDX].rtrack.value>>4) |
-                                    (regs8051[A_IDX].rtrack.value<<4)));
+      if (mcs251_regs[A_IDX].rtrack.valueKnown)
+        rtrack_data_set_val (A_IDX, (unsigned char) ((mcs251_regs[A_IDX].rtrack.value>>4) |
+                                    (mcs251_regs[A_IDX].rtrack.value<<4)));
       else
         rtrack_data_unset (A_IDX);
       return false;
@@ -854,10 +854,10 @@ bool _mcs251_rtrackUpdate (const char *line)
 
   if (!strncmp (line, "mul\t", 4))
     {
-      if (regs8051[A_IDX].rtrack.valueKnown && regs8051[B_IDX].rtrack.valueKnown)
+      if (mcs251_regs[A_IDX].rtrack.valueKnown && mcs251_regs[B_IDX].rtrack.valueKnown)
         {
-           unsigned int value = (unsigned int)regs8051[A_IDX].rtrack.value *
-                                (unsigned int)regs8051[B_IDX].rtrack.value;
+           unsigned int value = (unsigned int)mcs251_regs[A_IDX].rtrack.value *
+                                (unsigned int)mcs251_regs[B_IDX].rtrack.value;
 
            rtrack_data_set_val (A_IDX, (unsigned char) value);
            rtrack_data_set_val (B_IDX, (unsigned char) (value >> 8));
@@ -872,10 +872,10 @@ bool _mcs251_rtrackUpdate (const char *line)
 
   if (!strncmp (line, "div\t", 4))
     {
-      if (regs8051[A_IDX].rtrack.valueKnown && regs8051[B_IDX].rtrack.valueKnown)
+      if (mcs251_regs[A_IDX].rtrack.valueKnown && mcs251_regs[B_IDX].rtrack.valueKnown)
         {
-           rtrack_data_set_val (A_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value / regs8051[B_IDX].rtrack.value));
-           rtrack_data_set_val (B_IDX, (unsigned char) (regs8051[A_IDX].rtrack.value % regs8051[B_IDX].rtrack.value));
+           rtrack_data_set_val (A_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value / mcs251_regs[B_IDX].rtrack.value));
+           rtrack_data_set_val (B_IDX, (unsigned char) (mcs251_regs[A_IDX].rtrack.value % mcs251_regs[B_IDX].rtrack.value));
         }
       else
         {
@@ -902,10 +902,10 @@ bool _mcs251_rtrackUpdate (const char *line)
         }
       if (!strcmp (line, "lcall\t__decdptr"))
         {
-          if (regs8051[DPH_IDX].rtrack.valueKnown &&
-              regs8051[DPL_IDX].rtrack.valueKnown)
+          if (mcs251_regs[DPH_IDX].rtrack.valueKnown &&
+              mcs251_regs[DPL_IDX].rtrack.valueKnown)
             {
-              int val = (regs8051[DPH_IDX].rtrack.value << 8) | regs8051[DPL_IDX].rtrack.value;
+              int val = (mcs251_regs[DPH_IDX].rtrack.value << 8) | mcs251_regs[DPL_IDX].rtrack.value;
               val -= 1;
               rtrack_data_set_val (DPL_IDX, (unsigned char) val);
               rtrack_data_set_val (DPH_IDX, (unsigned char) (val >> 8));
@@ -923,14 +923,14 @@ bool _mcs251_rtrackUpdate (const char *line)
   if (!strncmp (line, "xch\ta,", 6))
     {
       /* handle xch from register (r0..r7, dpl, dph, b) */
-      int regIdx = mcs51_regname_to_idx (line + 6);
+      int regIdx = mcs251_regname_to_idx (line + 6);
       if (0 <= regIdx)
         {
-          void* swap = Safe_malloc (sizeof regs8051[A_IDX].rtrack);
+          void* swap = Safe_malloc (sizeof mcs251_regs[A_IDX].rtrack);
 
-          memcpy (swap,                     &regs8051[A_IDX].rtrack,  sizeof regs8051[A_IDX].rtrack);
-          memcpy (&regs8051[A_IDX ].rtrack, &regs8051[regIdx].rtrack, sizeof regs8051[A_IDX].rtrack);
-          memcpy (&regs8051[regIdx].rtrack, swap,                     sizeof regs8051[A_IDX].rtrack);
+          memcpy (swap,                     &mcs251_regs[A_IDX].rtrack,  sizeof mcs251_regs[A_IDX].rtrack);
+          memcpy (&mcs251_regs[A_IDX ].rtrack, &mcs251_regs[regIdx].rtrack, sizeof mcs251_regs[A_IDX].rtrack);
+          memcpy (&mcs251_regs[regIdx].rtrack, swap,                     sizeof mcs251_regs[A_IDX].rtrack);
 
           Safe_free (swap);
           return false;
@@ -965,7 +965,7 @@ char * mcs251_rtrackGetLit(const char *x)
       if (x+1 != s)
         {
           /* try to get from acc */
-          reg_info *r = &regs8051[A_IDX];
+          reg_info *r = &mcs251_regs[A_IDX];
           if (r->rtrack.valueKnown &&
               r->rtrack.value == val)
             {
@@ -975,7 +975,7 @@ char * mcs251_rtrackGetLit(const char *x)
           /* try to get from register R0..R7 */
           for (i = 0; i < 8; i++)
             {
-              reg_info *r = &regs8051[rx_num_to_idx(i)];
+              reg_info *r = &mcs251_regs[rx_num_to_idx(i)];
               if (r->rtrack.valueKnown &&
                   r->rtrack.value == val)
                 {
@@ -1006,7 +1006,7 @@ int mcs251_rtrackMoveALit (const char *x)
   /* if it is a literal mov try to get it cheaper */
   if ( *x == '#' )
     {
-      reg_info *a = &regs8051[A_IDX];
+      reg_info *a = &mcs251_regs[A_IDX];
 
       char *s;
       int val = strtol (x+1, &s, 16);
@@ -1093,7 +1093,7 @@ int mcs251_rtrackMoveALit (const char *x)
             /* not yet giving up - try to calculate from register R0..R7 */
             for (i = 0; i < 8; i++)
               {
-                reg_info *r = &regs8051[rx_num_to_idx(i)];
+                reg_info *r = &mcs251_regs[rx_num_to_idx(i)];
 
                 if (a->rtrack.valueKnown && r->rtrack.valueKnown)
                   {
@@ -1148,13 +1148,13 @@ void mcs251_rtrackLoadDptrWithSym (const char *x)
       return;
     }
 
-  if (regs8051[DPL_IDX].rtrack.symbol &&
-      regs8051[DPH_IDX].rtrack.symbol)
+  if (mcs251_regs[DPL_IDX].rtrack.symbol &&
+      mcs251_regs[DPH_IDX].rtrack.symbol)
     {
       /* rtrack.symbol for dph should look like "(something >> 8)" */
-      if ((!strcmp  (x, regs8051[DPL_IDX].rtrack.symbol) &&
-           !strncmp (x, regs8051[DPH_IDX].rtrack.symbol + 1, strlen (x) ) &&
-           !strncmp (" >> 8)", regs8051[DPH_IDX].rtrack.symbol + 1 + strlen (x), 6)))
+      if ((!strcmp  (x, mcs251_regs[DPL_IDX].rtrack.symbol) &&
+           !strncmp (x, mcs251_regs[DPH_IDX].rtrack.symbol + 1, strlen (x) ) &&
+           !strncmp (" >> 8)", mcs251_regs[DPH_IDX].rtrack.symbol + 1 + strlen (x), 6)))
         {
           /* dptr already holds the symbol */
           D(emitcode (";", "genFromRTrack dptr==#%s",x));
@@ -1185,7 +1185,7 @@ void mcs251_rtrackLoadR0R1WithSym (const char *reg, const char *x)
   if (regNum == 0 || regNum == 1)
     {
       regIdx = rx_num_to_idx(regNum);
-      if ((NULL != regs8051[regIdx].rtrack.symbol) && !strcmp (x, regs8051[regIdx].rtrack.symbol))
+      if ((NULL != mcs251_regs[regIdx].rtrack.symbol) && !strcmp (x, mcs251_regs[regIdx].rtrack.symbol))
         {
           /* register already holds the symbol */
           D(emitcode (";", "genFromRTrack %s=#%s",reg,x));

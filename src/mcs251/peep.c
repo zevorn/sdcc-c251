@@ -24,8 +24,8 @@
 
 #include <ctype.h>
 #include "common.h"
-#include "../mcs51/ralloc.h"
-#include "../mcs51/gen.h"
+#include "ralloc.h"
+#include "gen.h"
 
 #define D(x) x
 #define DEADMOVEERROR() do {werror(E_INTERNAL_ERROR, __FILE__, __LINE__, "error in deadmove");} while(0)
@@ -240,7 +240,7 @@ termScanAtFunc (const lineNode *pl, int rIdx)
     ftype = ftype->next;
   if (IFFUNC_ISBANKEDCALL(ftype) && banked_reg)
     return S4O_ABORT;
-  if (mcs51IsParmInCall (ftype, regs8051[rIdx].name))
+  if (mcs251IsParmInCall (ftype, mcs251_regs[rIdx].name))
     return S4O_ABORT;
   if (FUNC_CALLEESAVES(ftype))
     return S4O_CONTINUE;
@@ -304,7 +304,7 @@ scan4op (lineNode **pl, const char *pReg, const char *untilOp,
   len = strlen (pReg);
 
   /* get index into pReg table */
-  rIdx = mcs51_regname_to_idx (pReg);
+  rIdx = mcs251_regname_to_idx (pReg);
 
   if (rIdx < 0)
     {
@@ -460,7 +460,7 @@ scan4op (lineNode **pl, const char *pReg, const char *untilOp,
                   }
                 if (!((*pl)->ic) || !currFunc->type || FUNC_CALLEESAVES (currFunc->type))
                   return S4O_ABORT;
-                if (mcs51IsReturned (pReg))
+                if (mcs251IsReturned (pReg))
                   return S4O_ABORT;
                 return S4O_TERM;
               }
@@ -554,7 +554,7 @@ scan4op (lineNode **pl, const char *pReg, const char *untilOp,
                   return S4O_ABORT;  /* not a function? */
                 if (FUNC_CALLEESAVES (currFunc->type))
                   return S4O_ABORT; /* returning from callee saves function */
-                if (mcs51IsReturned (pReg))
+                if (mcs251IsReturned (pReg))
                   return S4O_ABORT;
                 return S4O_TERM;
               }

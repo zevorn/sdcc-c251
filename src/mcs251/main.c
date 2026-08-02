@@ -26,8 +26,8 @@
 */
 #include "common.h"
 #include "../mcs51/main.h"
-#include "../mcs51/ralloc.h"
-#include "../mcs51/gen.h"
+#include "ralloc.h"
+#include "gen.h"
 #include "peep.h"
 #include "rtrack.h"
 #include "dbuf_string.h"
@@ -86,19 +86,19 @@ static char *_mcs51_keywords[] =
 
 
 
-void mcs51_assignRegisters (ebbIndex *);
+void mcs251_assignRegisters (ebbIndex *);
 
 static int regParmFlg = 0;      /* determine if we can register a parameter     */
 static int regBitParmFlg = 0;   /* determine if we can register a bit parameter */
 static struct sym_link *regParmFuncType;
 
-extern void mcs51_init_asmops (void);
+extern void mcs251_init_asmops (void);
 
 static void
 _mcs51_init (void)
 {
   asm_addTree (&asm_asxxxx_mapping);
-  mcs51_init_asmops ();
+  mcs251_init_asmops ();
 }
 
 static void
@@ -135,7 +135,7 @@ _mcs51_regparm (sym_link *l, bool reentrant)
       return 0;
     }
 
-  bool is_regarg = mcs51IsRegArg (regParmFuncType, regParmFlg, 0);
+  bool is_regarg = mcs251IsRegArg (regParmFuncType, regParmFlg, 0);
 
   return (is_regarg ? regParmFlg : 0);
 }
@@ -1108,7 +1108,7 @@ PORT mcs251_port =
     0           /* sp points directly at last item pushed */
   },
   { -1, false, false },         // Neither int x int -> long nor unsigned long x unsigned char -> unsigned long long multiplication support routine.
-  { mcs51_emitDebuggerSymbol },
+  { mcs251_emitDebuggerSymbol },
   {
     256,        /* maxCount */
     2,          /* sizeofElement */
@@ -1124,7 +1124,7 @@ PORT mcs251_port =
   NULL,
   _mcs51_finaliseOptions,
   _mcs51_setDefaultOptions,
-  mcs51_assignRegisters,
+  mcs251_assignRegisters,
   _mcs51_getRegName,
   0,
   _mcs251_rtrackUpdate,

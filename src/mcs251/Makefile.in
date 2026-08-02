@@ -4,14 +4,9 @@ top_builddir = @top_builddir@
 top_srcdir   = @top_srcdir@
 
 CPPFLAGS += -I.
-SOURCES = main.c peep.c rtrack.c
+SOURCES = gen.c main.c peep.c ralloc.c rtrack.c
 PEEPRULES = peeph.rul
 .DEFAULT_GOAL := all
-
-ifeq (@OPT_DISABLE_MCS51@, 1)
-VPATH += :@srcdir@/../mcs51
-SOURCES += gen.c ralloc.c
-endif
 
 peeph.rul: $(top_srcdir)/src/mcs51/peeph.def $(srcdir)/peeph-mcs251.def
 	$(AWK) -f $(top_srcdir)/src/SDCCpeeph.awk $^ > $@
@@ -22,6 +17,8 @@ check: all
 		--mcs251-source $(srcdir)/main.c \
 		--mcs251-peep-source $(srcdir)/peep.c \
 		--mcs251-rtrack-source $(srcdir)/rtrack.c \
+		--mcs251-gen-source $(srcdir)/gen.c \
+		--mcs251-ralloc-source $(srcdir)/ralloc.c \
 		--mcs51-source $(top_srcdir)/src/mcs51/main.c \
 		--mcs51-peep-source $(top_srcdir)/src/mcs51/peep.c \
 		--mcs51-rtrack-source $(top_srcdir)/src/mcs51/rtrack.c
