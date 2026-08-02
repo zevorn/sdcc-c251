@@ -89,7 +89,9 @@ check: all
 		--compound-literal-source \
 			$(srcdir)/tests/conditional-compound-literal.c \
 		--statement-expression-source \
-			$(srcdir)/tests/gnu-statement-expressions.c
+			$(srcdir)/tests/gnu-statement-expressions.c \
+		--case-range-source \
+			$(srcdir)/tests/gnu-case-ranges.c
 	$(PYTHON) $(srcdir)/tests/check-diagnostics.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--incompatible-extern-source \

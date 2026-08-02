@@ -2286,7 +2286,7 @@ label
      }
    | attribute_specifier_sequence_opt CASE constant_range_expr ':'
      {
-       if (!options.std_c2y)
+       if (!options.std_c2y && !options.std_gnu)
          werror (E_CASE_RANGE_C2Y);
 
        if (STACK_EMPTY(swStk))
