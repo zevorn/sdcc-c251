@@ -4,13 +4,13 @@ top_builddir = @top_builddir@
 top_srcdir   = @top_srcdir@
 
 CPPFLAGS += -I.
-SOURCES = main.c
+SOURCES = main.c peep.c
 PEEPRULES = peeph.rul
 .DEFAULT_GOAL := all
 
 ifeq (@OPT_DISABLE_MCS51@, 1)
 VPATH += :@srcdir@/../mcs51
-SOURCES += gen.c peep.c ralloc.c rtrack.c
+SOURCES += gen.c ralloc.c rtrack.c
 endif
 
 peeph.rul: $(top_srcdir)/src/mcs51/peeph.def $(srcdir)/peeph-mcs251.def
@@ -20,6 +20,7 @@ peeph.rul: $(top_srcdir)/src/mcs51/peeph.def $(srcdir)/peeph-mcs251.def
 check: all
 	$(PYTHON) $(srcdir)/tests/check-backend-isolation.py \
 		--mcs251-source $(srcdir)/main.c \
+		--mcs251-peep-source $(srcdir)/peep.c \
 		--mcs51-source $(top_srcdir)/src/mcs51/main.c
 	$(PYTHON) $(srcdir)/tests/check-language-modes.py \
 		--sdcc $(top_builddir)/bin/sdcc \

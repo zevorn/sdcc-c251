@@ -28,7 +28,7 @@
 #include "../mcs51/main.h"
 #include "../mcs51/ralloc.h"
 #include "../mcs51/gen.h"
-#include "../mcs51/peep.h"
+#include "peep.h"
 #include "../mcs51/rtrack.h"
 #include "dbuf_string.h"
 #include "../SDCCutil.h"
@@ -1055,10 +1055,10 @@ PORT mcs251_port =
     getInstructionSize,
     getRegsRead,
     getRegsWritten,
-    mcs51DeadMove,
-    mcs51notUsed,
-    mcs51CanAssign,
-    mcs51notUsedFrom,
+    mcs251DeadMove,
+    mcs251notUsed,
+    mcs251CanAssign,
+    mcs251notUsedFrom,
     NULL,
     NULL,
     NULL,
