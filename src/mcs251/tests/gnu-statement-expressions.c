@@ -44,6 +44,70 @@ gnu_statement_expression_nested (int value)
   });
 }
 
+static inline unsigned int
+gnu_statement_expression_cast_inline (unsigned int first,
+                                      unsigned int second)
+{
+  return (unsigned int) ({
+    __typeof__ (first) local_first = first;
+    __typeof__ (second) local_second = second;
+
+    local_first < local_second ? local_first : local_second;
+  });
+}
+
+unsigned int
+gnu_statement_expression_redundant_cast (unsigned int first,
+                                         unsigned int second)
+{
+  return gnu_statement_expression_cast_inline (first, second);
+}
+
+struct gnu_statement_expression_heap
+{
+  unsigned long end_chunk;
+};
+
+typedef unsigned long gnu_statement_expression_chunksz_t;
+
+static inline unsigned long
+gnu_statement_expression_header_bytes (
+  struct gnu_statement_expression_heap *heap)
+{
+  return heap->end_chunk ? 8 : 4;
+}
+
+static inline gnu_statement_expression_chunksz_t
+gnu_statement_expression_inline_cast (
+  struct gnu_statement_expression_heap *heap,
+  unsigned long bytes, unsigned long extra)
+{
+  unsigned long chunks = bytes / 8UL + extra / 8UL;
+  unsigned long oddments =
+    ((bytes % 8UL) + (extra % 8UL) +
+     gnu_statement_expression_header_bytes (heap) + 7UL) / 8UL;
+
+  return (gnu_statement_expression_chunksz_t) ({
+    __typeof__ (chunks + oddments + 0) local_chunks =
+      chunks + oddments + 0;
+    __typeof__ (heap->end_chunk) local_end = heap->end_chunk;
+
+    local_chunks < local_end ? local_chunks : local_end;
+  });
+}
+
+unsigned long
+gnu_statement_expression_inline_cast_user (
+  struct gnu_statement_expression_heap *heap, unsigned long bytes)
+{
+  gnu_statement_expression_chunksz_t chunk_size =
+    gnu_statement_expression_inline_cast (heap, bytes, 0);
+
+  if (!chunk_size)
+    return 0;
+  return chunk_size;
+}
+
 gnu_bool
 gnu_statement_expression_boolean (int value)
 {

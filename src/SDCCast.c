@@ -214,11 +214,6 @@ copyAstValues (ast * dest, ast * src)
       AST_FOR (dest, loopExpr) = copyAst (AST_FOR (src, loopExpr));
       break;
 
-    case CAST:
-      dest->values.cast.literalFromCast = src->values.cast.literalFromCast;
-      dest->values.cast.removedCast = src->values.cast.removedCast;
-      dest->values.cast.implicitCast = src->values.cast.implicitCast;
-      dest->values.cast.semDeref = src->values.cast.semDeref;
     }
 }
 
@@ -257,6 +252,10 @@ copyAst (ast * src)
   dest->isExprStmt = src->isExprStmt;
   dest->isImplicitBlock = src->isImplicitBlock;
   dest->isStmtExpr = src->isStmtExpr;
+  dest->literalFromCast = src->literalFromCast;
+  dest->removedCast = src->removedCast;
+  dest->implicitCast = src->implicitCast;
+  dest->semDeref = src->semDeref;
 
   if (src->ftype)
     dest->etype = getSpec (dest->ftype = copyLinkChain (src->ftype));
@@ -1054,8 +1053,8 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
       if (options.std_sdcc && (TARGET_MCS51_LIKE || TARGET_MOS6502_LIKE || TARGET_PIC_LIKE) &&
         IFFUNC_HASVARARGS (functype) &&
         (IS_CAST_OP (*actParm) ||
-          (IS_AST_SYM_VALUE (*actParm) && AST_VALUES (*actParm, cast.removedCast)) ||
-          (IS_AST_LIT_VALUE (*actParm) && AST_VALUES (*actParm, cast.literalFromCast))))
+          (IS_AST_SYM_VALUE (*actParm) && (*actParm)->removedCast) ||
+          (IS_AST_LIT_VALUE (*actParm) && (*actParm)->literalFromCast)))
         {
           /* Parameter was explicitly typecast; don't touch it. */
           return 0;
@@ -1092,7 +1091,7 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
           *actParm = newNode (CAST, newType, *actParm);
           (*actParm)->filename = (*actParm)->right->filename;
           (*actParm)->lineno = (*actParm)->right->lineno;
-          AST_VALUES (*actParm, cast.implicitCast) = 1;
+          (*actParm)->implicitCast = 1;
 
           *actParm = decorateType (*actParm, resultType, true);
         }
@@ -1137,7 +1136,7 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
       *actParm = newNode (CAST, newAst_LINK (defParm->type), pTree);
       (*actParm)->filename = (*actParm)->right->filename;
       (*actParm)->lineno = (*actParm)->right->lineno;
-      AST_VALUES (*actParm, cast.implicitCast) = 1;
+      (*actParm)->implicitCast = 1;
       *actParm = decorateType (*actParm, IS_GENPTR (defParm->type) ? RESULT_TYPE_GPTR : resultType, true);
     }
 
@@ -3604,7 +3603,7 @@ optStdLibCall (ast *tree, RESULT_TYPE resulttype)
       node->lineno = parm->lineno;
 
       node->left = newNode (CAST, newAst_LINK (copyLinkChain (FUNC_ARGS(memcpy_sym->type)->type)), parm);
-      node->left->values.cast.implicitCast = 1;
+      node->left->implicitCast = 1;
       node->left->lineno = parm->lineno;
       node->left->filename = node->left->left->filename = parm->filename;
       node->left = decorateType (node->left, RESULT_TYPE_GPTR, true);
@@ -4168,7 +4167,7 @@ castBuiltinExpectArgument (ast *argument)
 
   copyAstLoc (cast, argument);
   copyAstLoc (type, argument);
-  cast->values.cast.implicitCast = 1;
+  cast->implicitCast = 1;
   return decorateType (cast, RESULT_TYPE_OTHER, false);
 }
 
@@ -4803,7 +4802,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
           tree->left = NULL;
           tree->right = NULL;
           tree->type = EX_VALUE;
-          tree->values.cast.literalFromCast = 1;
+          tree->literalFromCast = 1;
         }
 #endif
 
@@ -5706,7 +5705,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
         {
           /* mark that the explicit cast has been removed,
            * for proper processing (no integer promotion) of explicitly typecasted variable arguments */
-          tree->right->values.cast.removedCast = 1;
+          tree->right->removedCast = 1;
           return tree->right;
         }
 
@@ -5725,7 +5724,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
               tree->left = NULL;
               tree->right = NULL;
               TTYPE (tree) = tree->opval.val->type;
-              tree->values.cast.literalFromCast = 1;
+              tree->literalFromCast = 1;
             }
           else if (IS_GENPTR (LTYPE (tree)) && !IS_PTR (RTYPE (tree)) && ((int) ulFromVal (valFromType (RETYPE (tree)))) != 0)  /* special case of NULL */
             {
@@ -5798,7 +5797,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
           TETYPE (tree) = getSpec (TTYPE (tree));
           tree->left = NULL;
           tree->right = NULL;
-          tree->values.cast.literalFromCast = 1;
+          tree->literalFromCast = 1;
           return tree;
         }
 #endif
@@ -5856,7 +5855,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
               TTYPE (tree) = tree->opval.val->type;
               tree->left = NULL;
               tree->right = NULL;
-              tree->values.cast.literalFromCast = 1;
+              tree->literalFromCast = 1;
               TETYPE (tree) = getSpec (TTYPE (tree));
               return tree;
             }
@@ -5882,19 +5881,19 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
                       gpVal &= mask;
                     }
                 }
-              checkPtrCast (LTYPE (tree), RTYPE (tree), tree->values.cast.implicitCast, !ullFromVal (valFromType (RTYPE (tree))));
+              checkPtrCast (LTYPE (tree), RTYPE (tree), tree->implicitCast, !ullFromVal (valFromType (RTYPE (tree))));
               TRVAL (tree) = LRVAL (tree) = 1;
               tree->type = EX_VALUE;
               tree->opval.val = valCastLiteral (LTYPE (tree), gpVal | pVal, gpVal | pVal);
               TTYPE (tree) = tree->opval.val->type;
               tree->left = NULL;
               tree->right = NULL;
-              tree->values.cast.literalFromCast = 1;
+              tree->literalFromCast = 1;
               TETYPE (tree) = getSpec (TTYPE (tree));
               return tree;
             }
         }
-      checkPtrCast (LTYPE (tree), RTYPE (tree), tree->values.cast.implicitCast, FALSE);
+      checkPtrCast (LTYPE (tree), RTYPE (tree), tree->implicitCast, FALSE);
       if (IS_GENPTR (LTYPE (tree)) && (resultType != RESULT_TYPE_GPTR))
         {
           if (IS_PTR (RTYPE (tree)) && !IS_GENPTR (RTYPE (tree)))
@@ -6756,7 +6755,7 @@ decorateType (ast *tree, RESULT_TYPE resultType, bool reduceTypeAllowed)
               tree->right = newNode (CAST,
                                      newAst_LINK (copyLinkChain (currFunc->type->next)),
                                      tree->right);
-              tree->right->values.cast.implicitCast = 1;
+              tree->right->implicitCast = 1;
               tree->right->lineno = tree->right->left->lineno = tree->lineno;
               tree->right->filename = tree->right->left->filename = tree->filename;
               tree->right = decorateType (tree->right, IS_GENPTR (currFunc->type->next) ? RESULT_TYPE_GPTR : RESULT_TYPE_NONE, reduceTypeAllowed);

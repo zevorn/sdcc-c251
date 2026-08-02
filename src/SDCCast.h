@@ -54,6 +54,10 @@ typedef struct ast
   unsigned isExprStmt:1;
   unsigned isImplicitBlock:1;
   unsigned isStmtExpr:1;
+  unsigned literalFromCast:1;  /* EX_VALUE literal resulting from a cast */
+  unsigned removedCast:1;      /* explicit cast has been removed */
+  unsigned implicitCast:1;     /* compiler added this cast */
+  unsigned semDeref:1;         /* semantic &* dereference of _Optional */
   long level;                   /* level for expr */
   int block;                    /* block number   */
   int seqPoint;                 /* sequence point */
@@ -95,15 +99,6 @@ typedef struct ast
       symbol *condLabel;        /* conditional label     */
     }
     forVals;
-    struct
-    {
-      unsigned literalFromCast:1;       /* true if this is an EX_VALUE of LITERAL
-                                         * type resulting from a typecast.
-                                         */
-      unsigned removedCast:1;   /* true if the explicit cast has been removed */
-      unsigned implicitCast:1;  /* true if compiler added this cast */
-      bool semDeref:1;          /* semantic dereference, i.e. a &* removing _Optional represented as cast - we just need to pass this flag from the parser to the iCode */
-    } cast;
     int argreg;                 /* argreg number when operand type == EX_OPERAND */
   }
   values;

@@ -40,6 +40,32 @@ nested_expression (int value)
     });
 }
 
+struct heap_shape
+{
+    unsigned long end_chunk;
+};
+
+static inline unsigned long
+heap_header_bytes (struct heap_shape *heap)
+{
+    return heap->end_chunk ? 8 : 4;
+}
+
+static inline unsigned long
+heap_like_inline_cast (struct heap_shape *heap, unsigned long bytes)
+{
+    unsigned long chunks = bytes / 8UL;
+    unsigned long oddments =
+        ((bytes % 8UL) + heap_header_bytes (heap) + 7UL) / 8UL;
+
+    return (unsigned long) ({
+        __typeof__ (chunks + oddments) local_chunks = chunks + oddments;
+        __typeof__ (heap->end_chunk) local_end = heap->end_chunk;
+
+        local_chunks < local_end ? local_chunks : local_end;
+    });
+}
+
 static void
 print_result (unsigned char passed)
 {
@@ -63,6 +89,7 @@ print_result (unsigned char passed)
 void
 main (void)
 {
+    struct heap_shape heap = {20};
     int value = 3;
     unsigned char passed = 1;
 
@@ -71,6 +98,11 @@ main (void)
     if (mixed_declarations (5) != 12)
         passed = 0;
     if (nested_expression (5) != 12)
+        passed = 0;
+    if (heap_like_inline_cast (&heap, 17) != 4)
+        passed = 0;
+    heap.end_chunk = 0;
+    if (heap_like_inline_cast (&heap, 17) != 0)
         passed = 0;
 
     ({ ; });

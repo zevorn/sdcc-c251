@@ -381,6 +381,15 @@ def main():
                     True,
                     workspace,
                 )
+                compile_source(
+                    sdcc,
+                    statement_expression_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                    ("--stack-auto",),
+                )
             for mode in ("c11", "c17", None):
                 compile_source(
                     sdcc,

@@ -4856,7 +4856,7 @@ ast2iCode (ast * tree, int lvl)
 #else // bug #604575, is it a bug ????
       {
         operand *op = geniCodeCast (operandType (left), geniCodeRValue (right, false), false);
-        op->isSemDeref |= tree->values.cast.semDeref;
+        op->isSemDeref |= tree->semDeref;
         return op;
       }
 #endif
