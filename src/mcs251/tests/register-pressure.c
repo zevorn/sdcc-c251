@@ -100,6 +100,12 @@ mcs251_word_register_pressure (unsigned char input)
   return value0 + value1 + value2 + widened;
 }
 
+unsigned long
+mcs251_unsigned_word_multiply (unsigned int left, unsigned int right)
+{
+  return (unsigned long)left * right;
+}
+
 #if defined (MCS_REGISTER_PRESSURE_RUNTIME)
 __sfr __at (0x99) SBUF;
 
@@ -123,6 +129,9 @@ main (void)
   if (mcs251_dword_register_pressure () != 0xf2235484ul)
     passed = 0;
   if (mcs251_word_register_pressure (0x5a) != 0xa2fau)
+    passed = 0;
+  if (mcs251_unsigned_word_multiply (0x1234u, 0xabcdu) !=
+      0x0c374fa4ul)
     passed = 0;
 
   print_result (passed);

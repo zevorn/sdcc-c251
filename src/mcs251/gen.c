@@ -6143,6 +6143,72 @@ mcs251DwordForNativeTuple (const asmop *aop)
   return dwordRegisters[first / 4];
 }
 
+/* Generate the architectural unsigned 16x16-to-32 multiply.  WR12 selects
+   DR12 as the product and WR8 is a disjoint source, avoiding the undefined
+   source/output overlap boundary.  Conservatively preserve both scratch
+   tuples when they do not already form the result. */
+static bool
+mcs251GenUnsignedWordMultiply (operand *left, operand *right,
+                               operand *result)
+{
+  const char *resultDword;
+  bool preserveDword;
+  int offset;
+
+  if (AOP_SIZE (left) != 2 || AOP_SIZE (right) != 2 ||
+      AOP_SIZE (result) != 4 ||
+      !SPEC_USIGN (getSpec (operandType (left))) ||
+      !SPEC_USIGN (getSpec (operandType (right))))
+    return FALSE;
+
+  resultDword = mcs251DwordForNativeTuple (AOP (result));
+  preserveDword = !resultDword || strcmp (resultDword, "dr12");
+
+  emitpush ("r8");
+  emitpush ("r9");
+  if (preserveDword)
+    {
+      emitpush ("r12");
+      emitpush ("r13");
+      emitpush ("r14");
+      emitpush ("r15");
+    }
+
+  for (offset = 0; offset < 2; ++offset)
+    {
+      MOVA (opGet (left, offset, FALSE, FALSE));
+      emitpush ("acc");
+    }
+  for (offset = 0; offset < 2; ++offset)
+    {
+      MOVA (opGet (right, offset, FALSE, FALSE));
+      emitpush ("acc");
+    }
+
+  emitpop ("r8");
+  emitpop ("r9");
+  emitpop ("r12");
+  emitpop ("r13");
+  emitcode ("mul", "wr12,wr8");
+
+  opPut (result, "r15", 0);
+  opPut (result, "r14", 1);
+  opPut (result, "r13", 2);
+  opPut (result, "r12", 3);
+
+  if (preserveDword)
+    {
+      emitpop ("r15");
+      emitpop ("r14");
+      emitpop ("r13");
+      emitpop ("r12");
+    }
+  emitpop ("r9");
+  emitpop ("r8");
+
+  return TRUE;
+}
+
 /* Select a destructive native dword arithmetic instruction only when the
    register allocator has already made its destination one of the inputs.
    This keeps the fallback responsible for memory operands and arbitrary
@@ -6948,6 +7014,9 @@ genMult (iCode * ic)
       genMultbits (left, right, result);
       goto release;
     }
+
+  if (mcs251GenUnsignedWordMultiply (left, right, result))
+    goto release;
 
   /* if both are of size == 1 */
 #if 0                           // one of them can be a sloc shared with the result

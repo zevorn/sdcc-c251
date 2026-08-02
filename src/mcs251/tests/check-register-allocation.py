@@ -215,6 +215,25 @@ def main():
                 f"tuple:\n{word_pressure}"
             )
 
+        word_multiply = function_body(
+            assembly["mcs251"], "mcs251_unsigned_word_multiply"
+        )
+        if not re.search(
+            r"^[ \t]*mul[ \t]+wr(?:0|2|4|6|8|12|14),[ \t]*"
+            r"wr(?:0|2|4|6|8|12|14)[ \t]*$",
+            word_multiply,
+            re.IGNORECASE | re.MULTILINE,
+        ):
+            raise AssertionError(
+                "MCS251 unsigned 16x16 multiply did not select MUL WR,WR:"
+                f"\n{word_multiply}"
+            )
+        if re.search(r"\bmul[ \t]+dr", word_multiply, re.IGNORECASE):
+            raise AssertionError(
+                "MCS251 emitted the nonexistent MUL DR form:\n"
+                f"{word_multiply}"
+            )
+
         for port, text in assembly.items():
             invalid = INVALID_BYTE_REGISTER.search(text)
             if invalid:
