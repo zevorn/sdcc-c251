@@ -3182,14 +3182,18 @@ sig_handler (int signal)
  * initialises and calls the parser
  */
 
-/* Restore the function-local labels removed after the first pass over a
-   deferred inline definition.  resolveSymbols() expects every label used by
-   IFX, GOTO and FOR nodes to be present in LabelTab. */
+/* Restore function-local names removed after the first pass over a deferred
+   inline definition.  Allocation and symbol resolution expect block
+   declarations and labels to be present in their respective tables. */
 static void
-restoreDeferredInlineLabels (ast *tree)
+restoreDeferredInlineSymbols (ast *tree)
 {
   if (!tree)
     return;
+
+  if (IS_AST_OP (tree) && tree->opval.op == BLOCK)
+    for (symbol *sym = tree->values.sym; sym; sym = sym->next)
+      addSym (SymbolTab, sym, sym->name, sym->level, sym->block, false);
 
   if (IS_AST_OP (tree) && tree->opval.op == LABEL &&
       IS_AST_VALUE (tree->left) && tree->left->opval.val->sym)
@@ -3202,13 +3206,13 @@ restoreDeferredInlineLabels (ast *tree)
 
   if (IS_AST_OP (tree) && tree->opval.op == FOR)
     {
-      restoreDeferredInlineLabels (AST_FOR (tree, initExpr));
-      restoreDeferredInlineLabels (AST_FOR (tree, condExpr));
-      restoreDeferredInlineLabels (AST_FOR (tree, loopExpr));
+      restoreDeferredInlineSymbols (AST_FOR (tree, initExpr));
+      restoreDeferredInlineSymbols (AST_FOR (tree, condExpr));
+      restoreDeferredInlineSymbols (AST_FOR (tree, loopExpr));
     }
 
-  restoreDeferredInlineLabels (tree->left);
-  restoreDeferredInlineLabels (tree->right);
+  restoreDeferredInlineSymbols (tree->left);
+  restoreDeferredInlineSymbols (tree->right);
 }
 
 int
@@ -3403,7 +3407,7 @@ main (int argc, char **argv, char **envp)
            sym = setNextItem (deferredInlineFunctions))
         {
           ast *body = copyAst (sym->funcTree);
-          restoreDeferredInlineLabels (body);
+          restoreDeferredInlineSymbols (body);
           for (value *arg = FUNC_ARGS (sym->type); arg; arg = arg->next)
             if (arg->sym)
               addSymChain (&arg->sym);

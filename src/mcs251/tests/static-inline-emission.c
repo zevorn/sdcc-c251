@@ -21,7 +21,9 @@ addressed_inline_wrapper (int value)
 static inline int
 conditional_inline_wrapper (unsigned int length)
 {
-  if (length == 0)
+  unsigned int limit = length + 1;
+
+  if (limit < length)
     return -1;
 
   return length;
