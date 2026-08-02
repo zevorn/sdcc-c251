@@ -200,6 +200,21 @@ def main():
                 f"arithmetic:\n{dword_pressure}"
             )
 
+        word_pressure = function_body(
+            assembly["mcs251"], "mcs251_word_register_pressure"
+        )
+        if not re.search(
+            r"^[ \t]*(?:add|sub)[ \t]+(?:"
+            r"wr(?:8|12|14),[ \t]*wr(?:0|2|4|6|8|12|14)|"
+            r"wr(?:0|2|4|6|8|12|14),[ \t]*wr(?:8|12|14))[ \t]*$",
+            word_pressure,
+            re.IGNORECASE | re.MULTILINE,
+        ):
+            raise AssertionError(
+                "MCS251 word pressure did not use a fixed WR in native "
+                f"tuple:\n{word_pressure}"
+            )
+
         for port, text in assembly.items():
             invalid = INVALID_BYTE_REGISTER.search(text)
             if invalid:

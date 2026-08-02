@@ -75,6 +75,8 @@ mcs251_register_pressure_isr (void) __interrupt (1)
 
 volatile unsigned long mcs251_dword_values[3] =
   { 0x10203040ul, 0x50607080ul, 0x90a0b0c0ul };
+volatile unsigned int mcs251_word_values[6] =
+  { 0x1020u, 0x3040u, 0x5060u, 0x7080u, 0x90a0u, 0xb0c0u };
 
 unsigned long
 mcs251_dword_register_pressure (void)
@@ -85,6 +87,17 @@ mcs251_dword_register_pressure (void)
     mcs251_dword_values[2] ^ 0x01020304ul;
 
   return value0 + value1;
+}
+
+unsigned int
+mcs251_word_register_pressure (unsigned char input)
+{
+  unsigned int value0 = mcs251_word_values[0] + mcs251_word_values[1];
+  unsigned int value1 = mcs251_word_values[2] ^ mcs251_word_values[3];
+  unsigned int value2 = mcs251_word_values[4] + mcs251_word_values[5];
+  unsigned int widened = input;
+
+  return value0 + value1 + value2 + widened;
 }
 
 #if defined (MCS_REGISTER_PRESSURE_RUNTIME)
@@ -108,6 +121,8 @@ main (void)
   if (mcs251_byte_register_pressure (2) != 0x1c)
     passed = 0;
   if (mcs251_dword_register_pressure () != 0xf2235484ul)
+    passed = 0;
+  if (mcs251_word_register_pressure (0x5a) != 0xa2fau)
     passed = 0;
 
   print_result (passed);

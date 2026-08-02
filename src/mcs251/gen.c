@@ -6055,6 +6055,66 @@ adjustArithmeticResult (iCode * ic)
     }
 }
 
+/* Return the native word register for a two-byte MCS251 scalar tuple.
+
+   The generator visits the least-significant byte first.  Native big-endian
+   allocation therefore records [Rn+1, Rn], while WRn names the even high
+   register first. */
+static const char *
+mcs251WordForNativePair (const asmop *aop, int offset)
+{
+  reg_info *low;
+  reg_info *high;
+  static const char *const wordRegisters[] = {
+    "wr0", "wr2", "wr4", "wr6", "wr8", "wr10", "wr12", "wr14"
+  };
+
+  if (aop->type != AOP_REG ||
+      offset < 0 || offset + 1 >= aop->size)
+    return NULL;
+
+  low = aop->aopu.aop_reg[offset];
+  high = aop->aopu.aop_reg[offset + 1];
+  if (low->offset < 1 || low->offset > 15 || !(low->offset & 1) ||
+      high->offset != low->offset - 1)
+    return NULL;
+
+  return wordRegisters[high->offset / 2];
+}
+
+/* Select destructive native word arithmetic when the result already aliases
+   an input.  Other operand layouts retain the byte-at-a-time fallback. */
+static bool
+mcs251GenWordArithmetic (operand *left, operand *right, operand *result,
+                         const char *instruction, bool commutative)
+{
+  const asmop *source;
+  const char *destinationName;
+  const char *sourceName;
+
+  if (AOP_SIZE (result) != 2 ||
+      AOP_SIZE (left) != 2 || AOP_SIZE (right) != 2)
+    return FALSE;
+
+  destinationName = mcs251WordForNativePair (AOP (result), 0);
+  if (!destinationName)
+    return FALSE;
+
+  if (sameRegs (AOP (result), AOP (left)))
+    source = AOP (right);
+  else if (commutative && sameRegs (AOP (result), AOP (right)))
+    source = AOP (left);
+  else
+    return FALSE;
+
+  sourceName = mcs251WordForNativePair (source, 0);
+  if (!sourceName)
+    return FALSE;
+
+  emitcode (instruction, "%s,%s", destinationName, sourceName);
+  return TRUE;
+}
+
 /* Return the architectural dword register for a four-byte scalar tuple.
 
    The generator indexes a scalar from its least-significant byte.  Native
@@ -6193,6 +6253,11 @@ genPlus (iCode * ic)
   leftOp = IC_LEFT (ic);
   rightOp = IC_RIGHT (ic);
   op = IC_LEFT (ic);
+
+  if (!maskedtopbyte &&
+      mcs251GenWordArithmetic (leftOp, rightOp, IC_RESULT (ic),
+                              "add", TRUE))
+    goto release;
 
   if (!maskedtopbyte &&
       mcs251GenDwordArithmetic (leftOp, rightOp, IC_RESULT (ic),
@@ -6521,6 +6586,11 @@ genMinus (iCode * ic)
     goto release;
 
   size = getDataSize (IC_RESULT (ic));
+
+  if (!maskedtopbyte &&
+      mcs251GenWordArithmetic (IC_LEFT (ic), IC_RIGHT (ic),
+                              IC_RESULT (ic), "sub", FALSE))
+    goto release;
 
   if (!maskedtopbyte &&
       mcs251GenDwordArithmetic (IC_LEFT (ic), IC_RIGHT (ic),
@@ -13526,33 +13596,6 @@ mcs251CopyPlainBytes (operand *result, operand *right, int size)
 
   for (offset = 0; offset < size; ++offset)
     opPut (result, opGet (right, offset, FALSE, FALSE), offset);
-}
-
-/* Return the native word register for a two-byte MCS251 scalar tuple.
-
-   The generator visits the least-significant byte first.  Native big-endian
-   allocation therefore records [Rn+1, Rn], while WRn names the even high
-   register first. */
-static const char *
-mcs251WordForNativePair (const asmop *aop, int offset)
-{
-  reg_info *low;
-  reg_info *high;
-  static const char *const wordRegisters[] = {
-    "wr0", "wr2", "wr4", "wr6"
-  };
-
-  if (aop->type != AOP_REG ||
-      offset < 0 || offset + 1 >= aop->size)
-    return NULL;
-
-  low = aop->aopu.aop_reg[offset];
-  high = aop->aopu.aop_reg[offset + 1];
-  if (low->offset < 1 || low->offset > 7 || !(low->offset & 1) ||
-      high->offset != low->offset - 1)
-    return NULL;
-
-  return wordRegisters[high->offset / 2];
 }
 
 /*-----------------------------------------------------------------*/

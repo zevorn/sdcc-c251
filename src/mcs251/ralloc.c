@@ -206,10 +206,12 @@ registerAvailableToSymbol (const reg_info *reg, const symbol *sym)
 {
   /*
    * R8, R9, and R12-R15 are independent byte registers.  R10 and R11
-   * are excluded by their A/B alias types.  R12-R15 can also hold DR12
-   * because overlap is represented by the same underlying byte registers.
+   * are excluded by their A/B alias types.  The remaining fixed registers
+   * can also hold aligned WR tuples, and R12-R15 can hold DR12, because
+   * overlap is represented by the same underlying byte registers.
    */
   return sym->nRegs == 1 || reg->rIdx < MCS251_BANK_REG_COUNT ||
+         (sym->nRegs == 2 && reg->offset >= 8 && reg->offset <= 15) ||
          (sym->nRegs == 4 && reg->offset >= 12 && reg->offset <= 15) ||
          reg->type == REG_BIT;
 }
@@ -235,15 +237,28 @@ registerForOffset (int offset)
 static reg_info *
 allocNativeTupleByte (short type, const symbol *sym)
 {
+  static const int wordLowBytes[] = {7, 5, 3, 15, 13, 9, 1};
   static const int dwordLowBytes[] = {7, 15, 3};
-  const int *lowBytes = dwordLowBytes;
+  const int *lowBytes;
   int assigned;
-  int candidateCount = sizeof (dwordLowBytes) / sizeof (*dwordLowBytes);
+  int candidateCount;
   int candidate;
   int size = sym->nRegs;
 
-  if (type != REG_GPR || IS_AGGREGATE (sym->type) || size != 4)
+  if (type != REG_GPR || IS_AGGREGATE (sym->type) ||
+      (size != 2 && size != 4))
     return NULL;
+
+  if (size == 2)
+    {
+      lowBytes = wordLowBytes;
+      candidateCount = sizeof (wordLowBytes) / sizeof (*wordLowBytes);
+    }
+  else
+    {
+      lowBytes = dwordLowBytes;
+      candidateCount = sizeof (dwordLowBytes) / sizeof (*dwordLowBytes);
+    }
 
   for (assigned = 0; assigned < size && sym->regs[assigned]; ++assigned)
     ;
