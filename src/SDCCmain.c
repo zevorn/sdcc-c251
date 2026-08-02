@@ -3182,6 +3182,35 @@ sig_handler (int signal)
  * initialises and calls the parser
  */
 
+/* Restore the function-local labels removed after the first pass over a
+   deferred inline definition.  resolveSymbols() expects every label used by
+   IFX, GOTO and FOR nodes to be present in LabelTab. */
+static void
+restoreDeferredInlineLabels (ast *tree)
+{
+  if (!tree)
+    return;
+
+  if (IS_AST_OP (tree) && tree->opval.op == LABEL &&
+      IS_AST_VALUE (tree->left) && tree->left->opval.val->sym)
+    {
+      symbol *label = tree->left->opval.val->sym;
+
+      label->key = labelKey++;
+      addSym (LabelTab, label, label->name, label->level, 0, false);
+    }
+
+  if (IS_AST_OP (tree) && tree->opval.op == FOR)
+    {
+      restoreDeferredInlineLabels (AST_FOR (tree, initExpr));
+      restoreDeferredInlineLabels (AST_FOR (tree, condExpr));
+      restoreDeferredInlineLabels (AST_FOR (tree, loopExpr));
+    }
+
+  restoreDeferredInlineLabels (tree->left);
+  restoreDeferredInlineLabels (tree->right);
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
@@ -3374,6 +3403,7 @@ main (int argc, char **argv, char **envp)
            sym = setNextItem (deferredInlineFunctions))
         {
           ast *body = copyAst (sym->funcTree);
+          restoreDeferredInlineLabels (body);
           for (value *arg = FUNC_ARGS (sym->type); arg; arg = arg->next)
             if (arg->sym)
               addSymChain (&arg->sym);

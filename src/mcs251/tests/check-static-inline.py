@@ -7,10 +7,18 @@ import subprocess
 import tempfile
 
 
-def check_port(sdcc, source, port, workspace):
-    assembly = workspace / f"{port}-static-inline.asm"
+def check_port(sdcc, source, port, extra_options, workspace):
+    suffix = "-".join(option.lstrip("-") for option in extra_options)
+    name = port if not suffix else f"{port}-{suffix}"
+    assembly = workspace / f"{name}-static-inline.asm"
     command = [
-        str(sdcc), f"-m{port}", "-S", "-o", str(assembly), str(source),
+        str(sdcc),
+        f"-m{port}",
+        *extra_options,
+        "-S",
+        "-o",
+        str(assembly),
+        str(source),
     ]
     result = subprocess.run(
         command,
@@ -21,28 +29,31 @@ def check_port(sdcc, source, port, workspace):
     )
     if result.returncode or not assembly.is_file():
         raise RuntimeError(
-            f"{port} did not compile {source.name}:\n{result.stdout}"
+            f"{name} did not compile {source.name}:\n{result.stdout}"
         )
 
     text = assembly.read_text()
-    expected_label = re.compile(
-        r"^_addressed_inline_wrapper:\s*$", re.MULTILINE
+    expected_labels = (
+        "addressed_inline_wrapper",
+        "conditional_inline_wrapper",
     )
     forbidden = (
         "_unused_inline_wrapper:",
         "_called_inline_wrapper:",
         "_unavailable_inline_dependency",
     )
-    if len(expected_label.findall(text)) != 1:
-        raise RuntimeError(
-            f"{port} did not emit the address-taken inline definition"
-        )
+    for label in expected_labels:
+        pattern = re.compile(rf"^_{label}:\s*$", re.MULTILINE)
+        if len(pattern.findall(text)) != 1:
+            raise RuntimeError(
+                f"{name} did not emit address-taken inline {label}"
+            )
     for fragment in forbidden:
         if fragment in text:
             raise RuntimeError(
-                f"{port} unexpectedly emitted or referenced {fragment}"
+                f"{name} unexpectedly emitted or referenced {fragment}"
             )
-    print(f"PASS: {port} deferred static inline emission")
+    print(f"PASS: {name} deferred static inline emission")
 
 
 def main():
@@ -59,8 +70,14 @@ def main():
 
     with tempfile.TemporaryDirectory(prefix="sdcc-static-inline.") as tmp:
         workspace = Path(tmp)
-        for port in ("mcs51", "mcs251"):
-            check_port(sdcc, source, port, workspace)
+        configurations = (
+            ("mcs51", ()),
+            ("mcs251", ()),
+            ("mcs51", ("--stack-auto", "--std-gnu17")),
+            ("mcs251", ("--stack-auto", "--std-gnu17")),
+        )
+        for port, extra_options in configurations:
+            check_port(sdcc, source, port, extra_options, workspace)
 
 
 if __name__ == "__main__":
