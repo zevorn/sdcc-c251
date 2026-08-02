@@ -10589,12 +10589,18 @@ shiftL2Left2Result (operand * left, int offl, operand * result, int offr, int sh
 {
   const char *x;
   bool pushedB = FALSE;
+  bool managedB = FALSE;
   bool usedB = FALSE;
 
   if (sameRegs (AOP (result), AOP (left)) && ((offl + MSB16) == offr))
     {
       /* don't crash result[offr] */
       MOVA (opGet (left, offl, FALSE, FALSE));
+      if (aopGetUsesAcc (left->aop, offl + MSB16))
+        {
+          pushedB = pushB ();
+          managedB = TRUE;
+        }
       x = xch_a_aopGet (left, offl + MSB16, FALSE);
       usedB = !strncmp (x, "b", 1);
     }
@@ -10602,6 +10608,7 @@ shiftL2Left2Result (operand * left, int offl, operand * result, int offr, int sh
     {
       movLeft2Result (left, offl, result, offr, 0);
       pushedB = pushB ();
+      managedB = TRUE;
       usedB = TRUE;
       emitcode ("mov", "b,%s", opGet (left, offl + MSB16, FALSE, FALSE));
       MOVA (opGet (result, offr, FALSE, FALSE));
@@ -10621,7 +10628,8 @@ shiftL2Left2Result (operand * left, int offl, operand * result, int offr, int sh
       emitcode ("xch", "a,b");
       opPut (result, "a", offr);
       opPut (result, "b", offr + MSB16);
-      popB (pushedB);
+      if (managedB)
+        popB (pushedB);
     }
   else
     {
@@ -10637,12 +10645,18 @@ shiftR2Left2Result (operand * left, int offl, operand * result, int offr, int sh
 {
   const char *x;
   bool pushedB = FALSE;
+  bool managedB = FALSE;
   bool usedB = FALSE;
 
   if (sameRegs (AOP (result), AOP (left)) && ((offl + MSB16) == offr))
     {
       /* don't crash result[offr] */
       MOVA (opGet (left, offl, FALSE, FALSE));
+      if (aopGetUsesAcc (left->aop, offl + MSB16))
+        {
+          pushedB = pushB ();
+          managedB = TRUE;
+        }
       x = xch_a_aopGet (left, offl + MSB16, FALSE);
       usedB = !strncmp (x, "b", 1);
     }
@@ -10650,6 +10664,7 @@ shiftR2Left2Result (operand * left, int offl, operand * result, int offr, int sh
     {
       movLeft2Result (left, offl, result, offr, 0);
       pushedB = pushB ();
+      managedB = TRUE;
       usedB = TRUE;
       emitcode ("mov", "b,%s", opGet (result, offr, FALSE, FALSE));
       MOVA (opGet (left, offl + MSB16, FALSE, FALSE));
@@ -10671,7 +10686,8 @@ shiftR2Left2Result (operand * left, int offl, operand * result, int offr, int sh
       emitcode ("xch", "a,b");
       opPut (result, "a", offr);
       emitcode ("xch", "a,b");
-      popB (pushedB);
+      if (managedB)
+        popB (pushedB);
     }
   if (getDataSize (result) > 1)
     opPut (result, "a", offr + MSB16);

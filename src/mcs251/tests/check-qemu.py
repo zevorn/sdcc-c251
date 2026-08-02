@@ -116,6 +116,7 @@ def main():
     parser.add_argument("--byte-swap-builtins-source", required=True)
     parser.add_argument("--size-type-source", required=True)
     parser.add_argument("--register-pressure-source", required=True)
+    parser.add_argument("--wide-shift-source", required=True)
     parser.add_argument("--overflow-builtins-source", required=True)
     parser.add_argument("--typed-overflow-builtins-source", required=True)
     parser.add_argument("--optimization-runtime-source", required=True)
@@ -153,6 +154,7 @@ def main():
     size_type_source = Path(args.size_type_source).resolve()
     register_pressure_source = \
         Path(args.register_pressure_source).resolve()
+    wide_shift_source = Path(args.wide_shift_source).resolve()
     overflow_builtins_source = Path(args.overflow_builtins_source).resolve()
     typed_overflow_builtins_source = Path(
         args.typed_overflow_builtins_source
@@ -183,6 +185,7 @@ def main():
                  byte_swap_builtins_source,
                  size_type_source,
                  register_pressure_source,
+                 wide_shift_source,
                  overflow_builtins_source,
                  typed_overflow_builtins_source,
                  abi_regression_source,
@@ -414,6 +417,20 @@ def main():
             sys.stdout.buffer.write(run_qemu(
                 qemu, machine, register_pressure_image,
                 trace_for(register_pressure_image),
+            ))
+
+            wide_shift_image = \
+                tmpdir / f"wide-shift-{bit_name}.hex"
+            run([
+                str(sdcc), "-mmcs251", "--std=gnu17", *model_flags,
+                "--opt-code-size", "--no-xinit-opt",
+                "-DMCS251_WIDE_SHIFT_RUNTIME", *board_link_flags,
+                f"-L{bit_library_dir}", "-o", str(wide_shift_image),
+                str(wide_shift_source),
+            ], env=env)
+            sys.stdout.buffer.write(run_qemu(
+                qemu, machine, wide_shift_image,
+                trace_for(wide_shift_image),
             ))
 
         for overflow_name, model_flags, overflow_library_dir in \

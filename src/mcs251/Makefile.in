@@ -139,6 +139,9 @@ check: all
 	$(PYTHON) $(srcdir)/tests/check-register-allocation.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/register-pressure.c
+	$(PYTHON) $(srcdir)/tests/check-wide-shift-jump-table.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--source $(srcdir)/tests/large-switch.c
 	$(PYTHON) $(srcdir)/tests/check-endianness.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/endianness-layout.c \
@@ -171,6 +174,7 @@ check-qemu: all check-official-qemu check-gdbstub
 		--size-type-source $(srcdir)/tests/size-type-runtime.c \
 		--register-pressure-source \
 			$(srcdir)/tests/register-pressure.c \
+		--wide-shift-source $(srcdir)/tests/large-switch.c \
 		--overflow-builtins-source \
 			$(srcdir)/tests/gnu-overflow-builtins-runtime.c \
 		--typed-overflow-builtins-source \
