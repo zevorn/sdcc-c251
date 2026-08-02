@@ -6296,7 +6296,7 @@ genPlus (iCode * ic)
       else
         {
           MOVA (opGet (IC_LEFT (ic), 1, FALSE, FALSE));
-          emitcode ("add", "a,%s", opGet (rightOp, 1, FALSE, FALSE));
+          emitRestrictedAccumulatorOp ("add", opGet (rightOp, 1, FALSE, FALSE));
           opPut (IC_RESULT (ic), "a", 1);
         }
       goto release;
