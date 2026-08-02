@@ -1,4 +1,4 @@
-# MCS-251 ABI revision 1
+# MCS-251 ABI revision 2
 
 本文冻结 `sdcc -mmcs251` 生成的 object 与 calling convention。它描述本仓库实现
 的 SDCC 后端；它不是 Arm/Keil MCS251 ABI，也不宣称能够与 OMF-251 object 或
@@ -6,11 +6,11 @@ library 互操作。
 
 ## 兼容性标识
 
-| 项目 | revision 1 定义 |
+| 项目 | revision 2 定义 |
 |---|---|
 | target option | `-mmcs251` |
 | predefined target macro | `__SDCC_mcs251` |
-| ABI revision | `1` |
+| ABI revision | `2` |
 | object format | SDCC ASxxxx `.rel`，最终输出 Intel HEX |
 | 默认 instruction map | MCS-251 Source mode |
 | direct call / tail call | `ECALL` / `EJMP` |
@@ -28,13 +28,21 @@ compatibility macro。
 | `short` / `int` | 2 bytes |
 | `long` / `float` | 4 bytes |
 | `long long` / `double` | 8 bytes |
+| `size_t` | 4 bytes（`unsigned long`） |
 | `__bit` | 1 bit |
 
-revision 1 采用 MCS-251 原生的 big-endian scalar layout：most-significant byte
+revision 2 采用 MCS-251 原生的 big-endian scalar layout：most-significant byte
 位于最低 memory address。scalar 放入架构 WR 或 DR register tuple 时，同样由最低
 编号的 byte register 保存最高有效字节。例如 WR6 的 R6 保存 bit `15:8`，R7 保存
 bit `7:0`。`-mmcs251` 只提供这一种 object layout，不设 little-endian MCS251
 模式；独立的 `-mmcs51` target 仍沿用既有的 little-endian ABI。
+
+尽管 flat pointer 只包含 24 个 address bit，MCS251 仍把 `size_t` 定义为 32-bit
+`unsigned long`。C 要求 `size_t` 能表示 object size 与 `sizeof` 的结果，并不要求
+它能表示 pointer conversion；后者由 `uintptr_t` 承担，本 ABI 中该类型同样为
+32 bit。32-bit `size_t` 无需引入 24-bit integer type，便可覆盖完整的 flat object
+space。MCS51 则保持既有的 16-bit `unsigned int` 定义。MCS251 程序中的所有
+translation unit 与 runtime library 都必须采用 revision 2 定义。
 
 ## 指针表示
 
@@ -48,7 +56,7 @@ bit `7:0`。`-mmcs251` 只提供这一种 object layout，不设 little-endian M
 | function pointer | 3 bytes | flat 24-bit code address |
 
 三字节 pointer object 在递增地址上依次保存地址 bit `23:16`、`15:8` 和 `7:0`。
-revision 1 的 generic pointer 没有 address-space tag。pointer arithmetic 会把
+revision 2 的 generic pointer 没有 address-space tag。pointer arithmetic 会把
 carry 传播到全部 24 位，包括跨越 64 KiB boundary。generic pointer 不能表示独立
 的 direct SFR window；SFR 仍通过 `__sfr` declaration 和 direct addressing 访问。
 
@@ -63,7 +71,7 @@ DR28，再执行 `ECALL @DR28`。
 
 ## 参数与返回值
 
-revision 1 扩展 SDCC MCS-51 calling convention，而不采用 Keil register allocator。
+revision 2 扩展 SDCC MCS-51 calling convention，而不采用 Keil register allocator。
 
 - 第一个 scalar argument 和 scalar return value 使用 SDCC 常规 return register：
   byte 用 DPL，word 用 DPL/DPH，四字节 scalar 用 DPL/DPH/B/A。这里按逻辑上的
@@ -96,7 +104,7 @@ MCS251 startup module 把 SPX 初始化为 `__start__stack - 1`。hardware stack
 地址增长。call 保存三字节 return address；配置的 call overhead 已计入
 pre-increment push behavior。
 
-revision 1 对 stack-resident automatic variable、spill 和 reentrant argument 使用
+revision 2 对 stack-resident automatic variable、spill 和 reentrant argument 使用
 完整的 16 位 hardware SPX。scalar stack slot 使用 MCS251 signed `@SPX+dis16`
 addressing form。取得 stack object 地址时，会在 region `00:` 中物化一个三字节
 flat pointer，因此 frame 跨过 256-byte boundary 后，array 与 aggregate 仍然可寻址。

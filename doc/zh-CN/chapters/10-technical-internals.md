@@ -52,7 +52,7 @@ promotion、signedness 与 overflow 规则不能在变换中丢失。例如 unsi
 byte swap、取 bit、取 high byte/high word 的常见表达式会匹配目标 instruction。
 这些优化要求精确区分逻辑右移与算术右移，并维护多字节对象的 endian layout。
 
-MCS-251 ABI revision 1 采用 CPU 原生的 big-endian object layout。原生 WR/DR
+MCS-251 ABI revision 2 采用 CPU 原生的 big-endian object layout。原生 WR/DR
 register tuple 也由最低编号 register 保存最高有效字节，因此经过 alignment、
 address space、`volatile` 与 aliasing 检查后，可以直接选用 word/dword
 instruction。独立的 MCS-51 后端仍遵循其既有 little-endian layout。

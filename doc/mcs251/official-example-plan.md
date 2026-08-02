@@ -197,7 +197,7 @@ Timer、UART、GPIO、DSP32 和 TFPU 的公开实现摘要见 [QEMU 已建模外
 | P0 | K246 [10-UART1 中断收发](https://www.stcaimcu.com/thread-24465-1-1.html) | 用 SDCC `__sfr __at` 和 `__interrupt` 重写最小 RX/TX ISR + 小环形缓冲；保留 `SCON/SBUF/REN/RI/TI` 语义，删除 Timer2/PLL/pinmux 初始化 | 双向 chardev 发送固定含 `0x00/0x7f/0x80/0xff` 的序列并要求逐字节 echo；检查 ISR 后主程序继续运行 |
 | P0 | K246 [02-13 个定时器](https://www.stcaimcu.com/thread-24457-1-1.html)中的 T0/T1 | 分成 polling overflow/reload、IRQ+返回、可选 mode 2 三个小测试；不保留 13 个 timer 的单体工程结构 | 只要求计数、flag、ISR 次数及寄存器保存正确；不以墙钟时间、48 MHz 常量或 cycle 数判定 |
 | P0 | K246 分类中的 00 端口 mode、01.1/01.2 P6 跑马灯 | 重写 P0..P7 的 mode/latch 组合，bit 与 byte 读改写分开；灯效改成有限状态序列 | 新增 host-assisted qtest：截获 `gpio-out`，并通过 `gpio-in` 验证四种 mode 与 pin/latch 区别；串口只报告汇总 |
-| P0 | Keil [AN116](https://www.keil.com/appnotes/files/apnt_116.pdf)及 `apntex_116.zip` | 两个 translation unit 分置 `0xffxxxx` / `0xfexxxx`，分别测直接调用、函数指针和返回；map 必须证明跨 64 KiB。另用汇编器测试 `LCALL/RET` 与 `ECALL/ERET` 编码 | 运行结果正确且链接地址符合预期。**不要求 SDCC 模仿 Keil 的同段短调用选择**：当前 SDCC ABI revision 1 的 C 直接调用统一使用 `ECALL/ERET` |
+| P0 | Keil [AN116](https://www.keil.com/appnotes/files/apnt_116.pdf)及 `apntex_116.zip` | 两个 translation unit 分置 `0xffxxxx` / `0xfexxxx`，分别测直接调用、函数指针和返回；map 必须证明跨 64 KiB。另用汇编器测试 `LCALL/RET` 与 `ECALL/ERET` 编码 | 运行结果正确且链接地址符合预期。**不要求 SDCC 模仿 Keil 的同段短调用选择**：当前 SDCC ABI revision 2 的 C 直接调用统一使用 `ECALL/ERET` |
 | P0 | Keil [AN117](https://www.keil.com/appnotes/files/apnt_117.pdf)、MCB251 RAM Test、K246 SRAM | 独立写 `__xdata`/`__code` 对象、generic/space-specific 指针转换、循环和跨界测试 | default 与 size-optimized 两条构建均同结果；Keil 笔记的 74→49 字节只是历史数据，不是 SDCC 门槛 |
 | P1 | Keil [ROM Checksum Test](https://www.keil.com/download/docs/47.asp) | 用原创固定向量和 `__code` 指针写有限长度 checksum；不复制原数据、控制流、目标校验区或预编译映像 | 默认与 size-optimized 两条 lane 均得到精确 checksum，并证明 24 位代码指针遍历可运行 |
 | P1 | K246 04 T0/T1 外部计数、05 gate/低脉宽、06 INT0..4 | 只转 P3.4/P3.5 counter、P3.2/P3.3 gate 与 INT0/1；一个输入刺激对应一个可计数事件 | 用 qtest `gpio-in` 产生明确的 high→low 序列；INT2..4 不纳入 |
@@ -211,7 +211,7 @@ Timer、UART、GPIO、DSP32 和 TFPU 的公开实现摘要见 [QEMU 已建模外
 “SDCC 风格改写”意味着重新表达可观察行为，而不是批量替换关键字：
 
 - Keil 的项目文件、startup、segment/class、绝对地址、`interrupt N`、内存限定词和内联汇编必须按当前 SDCC MCS251 前端、汇编器与 linker script/flags 重新设计；不能把能打开 `.uvproj` 当成目标。
-- [`doc/mcs251/abi.md`](abi.md)明确说明当前是 **SDCC MCS251 ABI revision 1**，不是 Arm/Keil ABI，也不宣称 OMF-251 对象或库兼容；其直接 C 调用/返回约定是 `ECALL`/`ERET`。所以 AN116 的 `LCALL` 优化只能转成独立汇编/链接优化课题，不能作为“兼容 Keil”的验收。
+- [`doc/mcs251/abi.md`](abi.md)明确说明当前是 **SDCC MCS251 ABI revision 2**，不是 Arm/Keil ABI，也不宣称 OMF-251 对象或库兼容；其直接 C 调用/返回约定是 `ECALL`/`ERET`。所以 AN116 的 `LCALL` 优化只能转成独立汇编/链接优化课题，不能作为“兼容 Keil”的验收。
 - 不链接供应商 `.LIB`，不运行供应商预编译 HEX/BIN，也不复制原控制流、变量名、注释或输出字符串。测试源码只保留 `Source:` 链接、语义摘要和独立推导的 expected values。
 - 目标是“同一公开硬件行为在 SDCC 产物中成立”，不是源码兼容、ABI 兼容或二进制兼容。若将来要增加兼容层，应另立规格和许可审计。
 

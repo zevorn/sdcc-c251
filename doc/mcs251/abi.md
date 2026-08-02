@@ -1,4 +1,4 @@
-# SDCC MCS251 ABI revision 1
+# SDCC MCS251 ABI revision 2
 
 This document freezes the object and calling convention emitted by
 `sdcc -mmcs251`.  It describes the SDCC port implemented in this repository;
@@ -9,7 +9,7 @@ interoperability.
 
 - Target option: `-mmcs251`
 - Predefined target macro: `__SDCC_mcs251`
-- ABI revision reported by the port: `1`
+- ABI revision reported by the port: `2`
 - Object format: SDCC ASxxxx `.rel` plus Intel HEX output
 - Default instruction map: MCS-251 Source mode
 - Direct calls and tail calls: `ECALL` and `EJMP`
@@ -26,15 +26,25 @@ The MCS251 runtime libraries are built specifically for this ABI.
 | `short` / `int` | 2 bytes |
 | `long` / `float` | 4 bytes |
 | `long long` / `double` | 8 bytes |
+| `size_t` | 4 bytes (`unsigned long`) |
 | `__bit` | 1 bit |
 
-Revision 1 uses the native MCS-251 big-endian scalar layout: the
+Revision 2 uses the native MCS-251 big-endian scalar layout: the
 most-significant byte is at the lowest memory address.  A scalar held in an
 architectural WR or DR tuple likewise places its most-significant byte in the
 lowest-numbered byte register.  For example, WR6 holds bits `15:8` in R6 and
 bits `7:0` in R7.  This is the only object layout provided by `-mmcs251`;
 there is no little-endian MCS251 mode.  The separate `-mmcs51` target retains
 its established little-endian ABI.
+
+MCS251 defines `size_t` as the 32-bit `unsigned long`, although its flat
+pointers contain 24 address bits.  C requires `size_t` to represent object
+sizes and `sizeof` results; it does not require `size_t` to represent a
+converted pointer.  The latter role belongs to `uintptr_t`, which is also
+32 bits in this ABI.  The 32-bit `size_t` covers the complete flat object
+space without inventing a 24-bit integer type.  MCS51 retains its established
+16-bit `unsigned int` definition.  All translation units and runtime
+libraries in an MCS251 program must use the revision 2 definition.
 
 ## Pointer representation
 
@@ -48,7 +58,7 @@ its established little-endian ABI.
 | function pointer | 3 bytes | flat 24-bit code address |
 
 All 3-byte pointer objects store address bits `23:16`, `15:8`, and `7:0` at
-ascending addresses.  Revision 1 has no generic-pointer address-space tag.
+ascending addresses.  Revision 2 has no generic-pointer address-space tag.
 Pointer arithmetic propagates carries through all 24 bits, including across a
 64 KiB boundary.  A generic pointer cannot represent the separate direct SFR
 window; SFRs remain accessible through `__sfr` declarations and direct
@@ -68,7 +78,7 @@ function calls load a zero-extended 24-bit target into DR28 and use
 
 ## Arguments and return values
 
-Revision 1 extends the SDCC MCS-51 calling convention rather than adopting
+Revision 2 extends the SDCC MCS-51 calling convention rather than adopting
 the Keil register allocator.
 
 - The first scalar argument and scalar return value use the normal SDCC
@@ -108,7 +118,7 @@ The MCS251 startup module initializes SPX to `__start__stack - 1`.  The hardware
 stack grows toward higher addresses.  Calls use three return-address bytes;
 the configured call overhead accounts for the pre-incrementing push behavior.
 
-ABI revision 1 uses the complete 16-bit hardware SPX for stack-resident
+ABI revision 2 uses the complete 16-bit hardware SPX for stack-resident
 automatic variables, spills, and reentrant arguments.  Scalar stack slots use
 the MCS251 signed `@SPX+dis16` addressing forms.  Taking the address of a stack
 object materializes a three-byte flat pointer in region `00:`, so arrays and

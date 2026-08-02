@@ -117,11 +117,12 @@ tests execute on both QEMU targets and all MCS-251 memory-model combinations.
 The preprocessor data model follows the selected SDCC target rather than the
 machine on which SDCC runs. MCS-51 advertises its existing little-endian ABI;
 MCS-251 advertises its native big-endian ABI. Both report a 16-bit `int`, a
-32-bit `long`, a 64-bit `long long` and a three-byte generic pointer. The
-driver also supplies the GCC-style exact, least, fast, pointer and maximum
-integer type and constant macros used by portable compiler abstraction
-headers. Tests dump the real preprocessor macro set and compile expressions
-that consume those definitions for both targets.
+32-bit `long`, a 64-bit `long long` and a three-byte generic pointer. MCS-51
+retains a 16-bit `size_t`, while MCS-251 ABI revision 2 reports a 32-bit
+`size_t`. The driver also supplies the GCC-style exact, least, fast, pointer
+and maximum integer type and constant macros used by portable compiler
+abstraction headers. Tests dump the real preprocessor macro set and compile
+expressions that consume those definitions for both targets.
 
 ## What Zephyr requires from the C frontend
 
@@ -167,13 +168,16 @@ The current MCS-251 port defines these C type sizes in
 | `short` | 2 bytes |
 | `int` | 2 bytes |
 | `long` | 4 bytes |
+| `size_t` | 4 bytes (`unsigned long`) |
 | generic/data/code pointer | 3 bytes |
 
 Zephyr's public kernel header asserts that `int32_t` has the same size as
 `int`, `int64_t` has the same size as `long long`, and `intptr_t` has the same
 size as `long`. See
 [`kernel.h`](https://github.com/zephyrproject-rtos/zephyr/blob/v4.4.0/include/zephyr/kernel.h).
-Its minimal libc likewise describes a 32-bit `int` data model.
+Its minimal libc likewise describes a 32-bit `int` data model. MCS251's
+32-bit `size_t` now satisfies the corresponding size-range assumption, but
+it does not remove the separate `int` and pointer-representation boundaries.
 
 The preferred design is an explicitly selected Zephyr ABI. It keeps the
 existing 16-bit `int` ABI as the default, makes `int` 32 bits for Zephyr, and

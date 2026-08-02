@@ -255,23 +255,23 @@ STC §2.15.3，印刷 79 / PDF 113，建议超过 64 KiB 程序选 Keil Code ROM
 
 采用顺序应为：硬件编码和状态转换听 Intel；K246 的实际映射、容量和控制位听当前 STC 手册；Keil 的语言与 ABI 事实以 v5.60 规范表/详细主题为先，并用实物编译测试消除冲突。
 
-## 与当前 SDCC MCS251 ABI revision 1 的逐项对照
+## 与当前 SDCC MCS251 ABI revision 2 的逐项对照
 
-本节对照仓库中的 [SDCC MCS251 ABI revision 1](abi.md)。它只审查书面约定与官方事实是否相容，不代表这里重新验证了编译器实现。Keil 一栏是差异参照，不是兼容目标。
+本节对照仓库中的 [SDCC MCS251 ABI revision 2](abi.md)。它只审查书面约定与官方事实是否相容，不代表这里重新验证了编译器实现。Keil 一栏是差异参照，不是兼容目标。
 
-| 项目 | 当前 SDCC rev1 | Intel / Keil / STC 参照 | 结论与约束 |
+| 项目 | 当前 SDCC rev2 | Intel / Keil / STC 参照 | 结论与约束 |
 |---|---|---|---|
-| 兼容身份 | `-mmcs251`，ABI revision 1，ASxxxx `.rel` + Intel HEX；明确不是 Keil ABI | Keil 使用自己的对象、段、库和调试生态 | 边界正确；必须继续拒绝不同 ABI revision 或 Keil 对象的无声明混链 |
+| 兼容身份 | `-mmcs251`，ABI revision 2，ASxxxx `.rel` + Intel HEX；明确不是 Keil ABI | Keil 使用自己的对象、段、库和调试生态 | 边界正确；必须继续拒绝不同 ABI revision 或 Keil 对象的无声明混链 |
 | opcode mode | 默认 Source mode；启动环境须保证 CPU 处于 Source | Intel 定义两种 opcode map；Keil 默认 Source；STC 推荐 Source | 架构一致；编译器/assembler mode 标记、启动寄存器和 QEMU 初态必须端到端一致，不能只改指令编码 |
 | 标量字节序 | 采用 MCS-251 原生 big-endian 对象与 WR/DR register tuple 布局；不提供 little-endian 模式 | Intel Chapter 5 §5.2.1.1，印刷 5-2 / PDF 84，规定 word/dword 在 memory 和 register file 中为 big-endian；Keil 的 [2 B](https://www.keil.com/support/man/docs/c251/c251_ap_2bytescalar.asp) / [4 B scalar](https://www.keil.com/support/man/docs/c251/c251_ap_4bytescalar.asp) 也是高字节先存 | 与架构和 Keil 的标量端序一致；pointer size、calling convention 与 object format 仍是独立 ABI |
 | data model | `--model-small` 把普通对象放 page-zero edata；`--model-large` 放 XSEG | Keil 有 TINY/XTINY/SMALL/XSMALL/LARGE 五种，并把 code ROM model 单列 | 名称相似但语义不兼容；SDCC 文档和诊断必须始终使用自己的定义，不应承诺 Keil model 等价 |
 | `__data` / `__idata` pointer | 二者都是 1 B page-zero 地址 | Keil `data *` 为 1 B，`idata *` 为 2 B | `__idata` 明确不兼容 Keil；这只约束显式 near pointer，不限制使用 16 位 SPX 和 3 B flat address 的栈对象 |
 | `__xdata` / `__far` pointer | 3 B flat 24-bit | Keil `xdata *` 为 2 B；`far *` 为 4 B且只做 16 位算术 | 表示和语义都不兼容；SDCC `__far` 可跨 64 KiB 的行为更接近 Keil `huge`，但仍不是 Keil `huge` ABI |
 | `__code` pointer | 3 B flat 24-bit | Keil `code *` 为 2 B；全空间常量通常用 4 B `far`/`huge` pointer | 不兼容，但能自然表达 K246 的 `FC:`–`FF:` flash；转换、relocation 和只读约束需由 SDCC 自己定义 |
-| generic pointer | 3 B flat、无 address-space tag、24 位进位 | Keil 在 TINY/XTINY 为 2 B near，其余通常为 4 B far，可由 `HPTR` 改 huge | 不兼容；无 tag 意味着 generic pointer 不能表达独立 SFR space，这与 rev1 的 `__sfr` 专用访问规则一致 |
+| generic pointer | 3 B flat、无 address-space tag、24 位进位 | Keil 在 TINY/XTINY 为 2 B near，其余通常为 4 B far，可由 `HPTR` 改 huge | 不兼容；无 tag 意味着 generic pointer 不能表达独立 SFR space，这与 rev2 的 `__sfr` 专用访问规则一致 |
 | function pointer | 3 B；装入 `DR28` 后 `ECALL @DR28` | 硬件允许 24 位间接调用；Keil near function pointer 2 B、far function pointer 4 B | 硬件有效、Keil ABI 不兼容；所有间接调用必须配 `ERET` callee |
 | direct/tail call | 一律 `ECALL` / `EJMP`，普通函数一律 `ERET` | Intel 允许 24 位全空间调用；Keil 只在 `ROM(HUGE)` 的 far 路径这样做 | 是保守且可链接的独立 ABI 选择，牺牲近调用尺寸换取跨模块位置无关；后续 relaxation 必须同时证明 callee return kind |
-| 参数与返回值 | 首个 scalar/return 用 DPL/DPH/B/A；3 B pointer 用 DPL/DPH/B；bit 用 Carry | Keil 用 R11、WR6、DR4/DR0 等，4 B pointer return 在 DR0 | 明确不兼容；不得把 Keil 优化规则局部移植进 rev1 而不升 ABI revision |
+| 参数与返回值 | 首个 scalar/return 用 DPL/DPH/B/A；3 B pointer 用 DPL/DPH/B；bit 用 Carry | Keil 用 R11、WR6、DR4/DR0 等，4 B pointer return 在 DR0 | 明确不兼容；不得把 Keil 优化规则局部移植进 rev2 而不升 ABI revision |
 | 非重入参数/overlay | 后续非重入参数用 SDCC overlayable parameter areas | Keil/L251 也会静态分配和 overlay，但段名、调用图元数据和布局不同 | 只能借鉴活跃期分析思想，不能共享固定参数符号或链接器元数据 |
 | reentrant/extended stack | `__reentrant` 参数走向上增长的 hardware stack；`--stack-auto` 可把全部普通自动对象和非寄存器参数切到同一 ABI；`SPX` 由 startup 初始化；scalar slot 用 signed `@SPX+dis16`，栈对象地址物化为 region `00:` 的 3 B flat pointer | Intel 的 SPX/DR60 允许 region `00:` 的 16 位栈；STC K246 实装 16 KiB edata；Keil reentrant 也用该栈 | 已能跨越任意 256 B 页边界；default 与 stack-auto 库必须匹配，后者提供 small/large 独立库目录；实际容量由芯片 RAM、链接布局、调用深度和中断嵌套共同约束，K246 上限不能超过其 16 KiB edata |
 | return frame / `setjmp` | 所有 C call 按 3 B return PC；15 B `jmp_buf` 保存 2 B SPX、3 B PC、2 B 结果传递区和 R0–R7 | `ECALL`/`ERET` 的硬件帧正是 3 B | 已用四种 model/stack-auto 真实运行库把 SPX 设为 `0x0120`，验证 `longjmp` 恢复完整 SPX、3 B PC、16 位结果和 live register value |
@@ -279,7 +279,7 @@ STC §2.15.3，印刷 79 / PDF 113，建议超过 64 KiB 程序选 Keil Code ROM
 | XSEG 默认位置 | `0x010000`，允许 board 用 `--xram-loc` 改写 | Intel `DPXL` reset 为 `01h`；K246 的片内 xdata 从 `01:0000` 开始 | 对 K246 是合理默认，不应升级为所有 MCS-251 芯片的 ABI 常量 |
 | SFR | 不通过 flat generic pointer，到 `__sfr`/`__sbit` 专用寻址 | Intel SFR 是独立 512 B space，不属于 16 MiB memory | 架构一致；避免把 `0x000080` 与 `S:080` 合并别名 |
 
-最重要的结论是：rev1 选择了“3 B flat pointer + 原生 big-endian layout + 全远调用”，而 Keil 选择“2/4 B 分类型 pointer + big-endian layout + ROM model 决定调用距离”。两者的标量端序相同，但 pointer representation、calling convention 与 object format 不同，因而不会自然互操作。
+最重要的结论是：rev2 选择了“3 B flat pointer + 原生 big-endian layout + 全远调用”，而 Keil 选择“2/4 B 分类型 pointer + big-endian layout + ROM model 决定调用距离”。两者的标量端序相同，但 pointer representation、calling convention 与 object format 不同，因而不会自然互操作。
 
 ## SDCC 可以借鉴什么
 
@@ -287,7 +287,7 @@ STC §2.15.3，印刷 79 / PDF 113，建议超过 64 KiB 程序选 Keil Code ROM
 
 - Intel 公开架构规定的 24 位线性地址、独立 SFR/register spaces、Source/Binary opcode map、`@WRj`/`@DRk` 可达范围以及 2 B/3 B 返回地址。
 - 近/远访问代价不同的优化思想：可把确定在 region `00:` 的对象/指针用 16 位 WR 寻址，把完整线性地址用 DPX/DR 寻址。
-- 把“数据默认放置策略”和“代码调用距离策略”分离。rev1 中不能只把 `ECALL` 缩成 `LCALL`；近调用优化必须通过显式 near-function ABI、thunk，或能同时证明并改写 call/return 两端的全程序优化完成。
+- 把“数据默认放置策略”和“代码调用距离策略”分离。rev2 中不能只把 `ECALL` 缩成 `LCALL`；近调用优化必须通过显式 near-function ABI、thunk，或能同时证明并改写 call/return 两端的全程序优化完成。
 - 为跨 `0x??FFFF -> 0x??+1:0000` 的 pointer arithmetic、截断/扩展、direct/indirect call、2 B/3 B return frame 建立运行时测试。
 - K246 target/board 层采用 STC 的实际 `edata`、`xdata`、XFR、RAM-code 和 flash 映射，而不是照抄 Intel 8XMCS251Sx 的四-region 实现。
 - 只有在调用图完整且对函数指针、中断、汇编边界保守时，才考虑 overlay 优化；否则自动变量放栈或不覆盖更安全。

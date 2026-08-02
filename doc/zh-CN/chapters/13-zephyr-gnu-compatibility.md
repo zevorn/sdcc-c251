@@ -104,10 +104,11 @@ memory-model 组合。
 
 预处理器的数据模型取决于所选择的 SDCC target，而不是运行 SDCC 的 host machine。
 MCS-51 声明现有的 little-endian ABI，MCS-251 则声明原生 big-endian ABI。两者均为
-16-bit `int`、32-bit `long`、64-bit `long long` 和 3-byte generic pointer。driver
-还提供 portable compiler abstraction header 所需的 GCC 风格 exact、least、fast、
-pointer、maximum integer type macro 与 constant macro。测试会分别为两个 target
-读取真实预处理器宏集，并编译实际使用这些定义的 C expression。
+16-bit `int`、32-bit `long`、64-bit `long long` 和 3-byte generic pointer。MCS-51
+保持 16-bit `size_t`，MCS-251 ABI revision 2 则声明 32-bit `size_t`。driver 还提供
+portable compiler abstraction header 所需的 GCC 风格 exact、least、fast、pointer、
+maximum integer type macro 与 constant macro。测试会分别为两个 target 读取真实
+预处理器宏集，并编译实际使用这些定义的 C expression。
 
 ## Zephyr 对 C frontend 的要求
 
@@ -150,12 +151,15 @@ SDCC 提供了大量并不存在的 GCC semantics。
 | `short` | 2 bytes |
 | `int` | 2 bytes |
 | `long` | 4 bytes |
+| `size_t` | 4 bytes（`unsigned long`） |
 | generic/data/code pointer | 3 bytes |
 
 Zephyr 的 public kernel header 断言：`int32_t` 与 `int` 大小相同，`int64_t` 与
 `long long` 大小相同，`intptr_t` 与 `long` 大小相同。参见
 [`kernel.h`](https://github.com/zephyrproject-rtos/zephyr/blob/v4.4.0/include/zephyr/kernel.h)。
-它的 minimal libc 也以 32-bit `int` data model 为前提。
+它的 minimal libc 也以 32-bit `int` data model 为前提。MCS251 的 32-bit `size_t`
+已经满足对应的 size range 假设，但不能消除 `int` 与 pointer representation 这两处
+独立的 ABI 边界。
 
 建议增加一个显式选择的 Zephyr ABI。现行 16-bit `int` ABI 继续作为默认值；
 Zephyr ABI 把 `int` 设为 32 bit，并用 32-bit C pointer representation 保存 24-bit

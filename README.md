@@ -178,7 +178,9 @@ The current GNU C compatibility boundary is:
   `__SIZEOF_POINTER__`, `__INT32_TYPE__`, `__INTPTR_TYPE__` and the integer
   constant macros. Host preprocessor ABI and architecture macros are removed.
   MCS-51 reports little-endian layout; native MCS-251 reports big-endian
-  layout. Both keep a 16-bit `int` and a three-byte generic pointer.
+  layout. Both keep a 16-bit `int` and a three-byte generic pointer. MCS-51
+  retains a 16-bit `size_t`; MCS-251 ABI revision 2 uses a 32-bit `size_t`
+  so object-size calculations cover its complete flat address space.
 - `__asm__("instruction")` accepts a basic literal using `sdas251`/ASxxxx
   instruction syntax. GCC extended-asm operands and constraints are not
   accepted.
@@ -219,10 +221,10 @@ overflow queries; they are not by themselves Zephyr support.
 
 There are two additional compatibility boundaries outside the C parser:
 
-- The normal MCS-251 ABI has a 16-bit `int` and a 24-bit pointer. Zephyr
-  requires a 32-bit `int`, and its ELF post-link tools treat pointers as either
-  32 or 64 bits. A Zephyr ABI must be separately selectable so the existing
-  MCS-251 and MCS-51 ABIs do not change.
+- The normal MCS-251 ABI has a 16-bit `int`, a 32-bit `size_t` and a 24-bit
+  pointer. Zephyr requires a 32-bit `int`, and its ELF post-link tools treat
+  pointers as either 32 or 64 bits. A Zephyr ABI must be separately selectable
+  so the existing MCS-251 and MCS-51 ABIs do not change.
 - `sdas251` and `sdld` currently produce ASxxxx `.rel` objects and Intel HEX
   images. Zephyr requires relocatable ELF objects, named sections, archives,
   relocations, symbol tables and a final ELF executable for its generated

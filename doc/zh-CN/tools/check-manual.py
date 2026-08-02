@@ -16,7 +16,7 @@ REQUIRED_HEADINGS = {
     "调试",
     "实用技巧与支持",
     "技术资料与编译器内部原理",
-    "MCS-251 ABI revision 1",
+    "MCS-251 ABI revision 2",
     "MCS-251 指令集支持",
 }
 
