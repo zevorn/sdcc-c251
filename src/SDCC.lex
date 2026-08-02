@@ -248,6 +248,7 @@ static void checkCurrFile (const char *s);
 "__signed__"            { count (); return SIGNED; }
 "__typeof"              { count (); return TYPEOF; }
 "__typeof__"            { count (); return TYPEOF; }
+"__extension__"         { count (); return SD_EXTENSION; }
 "__volatile"            { count (); return VOLATILE; }
 "__volatile__"          { count (); return VOLATILE; }
 

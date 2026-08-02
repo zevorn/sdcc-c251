@@ -198,6 +198,7 @@ def main():
     parser.add_argument("--compound-literal-source", required=True)
     parser.add_argument("--statement-expression-source", required=True)
     parser.add_argument("--case-range-source", required=True)
+    parser.add_argument("--extension-source", required=True)
     args = parser.parse_args()
 
     sdcc = Path(args.sdcc).resolve()
@@ -256,6 +257,7 @@ def main():
         args.statement_expression_source
     ).resolve()
     case_range_source = Path(args.case_range_source).resolve()
+    extension_source = Path(args.extension_source).resolve()
     for path in (
         sdcc,
         empty_aggregate_source,
@@ -285,6 +287,7 @@ def main():
         compound_literal_source,
         statement_expression_source,
         case_range_source,
+        extension_source,
     ):
         if not path.exists():
             parser.error(f"required path does not exist: {path}")
@@ -314,6 +317,14 @@ def main():
                 compile_source(
                     sdcc,
                     keyword_alias_source,
+                    port,
+                    mode,
+                    True,
+                    workspace,
+                )
+                compile_source(
+                    sdcc,
+                    extension_source,
                     port,
                     mode,
                     True,

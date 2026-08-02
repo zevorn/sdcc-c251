@@ -91,7 +91,9 @@ check: all
 		--statement-expression-source \
 			$(srcdir)/tests/gnu-statement-expressions.c \
 		--case-range-source \
-			$(srcdir)/tests/gnu-case-ranges.c
+			$(srcdir)/tests/gnu-case-ranges.c \
+		--extension-source \
+			$(srcdir)/tests/gnu-extension-keyword.c
 	$(PYTHON) $(srcdir)/tests/check-diagnostics.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--incompatible-extern-source \
