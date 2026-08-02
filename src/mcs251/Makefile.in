@@ -136,6 +136,9 @@ check: all
 	$(PYTHON) $(srcdir)/tests/check-native-isa-selection.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/native-extension.c
+	$(PYTHON) $(srcdir)/tests/check-register-allocation.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--source $(srcdir)/tests/register-pressure.c
 	$(PYTHON) $(srcdir)/tests/check-endianness.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/endianness-layout.c \

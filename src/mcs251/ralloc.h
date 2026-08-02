@@ -31,12 +31,18 @@ enum
 {
   R7_IDX = 0, R6_IDX, R5_IDX, R4_IDX,
   R3_IDX, R2_IDX, R1_IDX, R0_IDX,
+  R15_IDX, R14_IDX, R13_IDX, R12_IDX,
+  R11_IDX, R10_IDX, R9_IDX, R8_IDX,
   B0_IDX, B1_IDX, B2_IDX, B3_IDX,
   B4_IDX, B5_IDX, B6_IDX, B7_IDX,
   CND_IDX,
   DPL_IDX, DPH_IDX, B_IDX, A_IDX,
   END_IDX
 };
+
+#define MCS251_BANK_REG_COUNT 8
+#define MCS251_BYTE_REG_COUNT 16
+#define MCS251_ALLOC_REG_COUNT 24
 
 
 #define REG_PTR 0x01
@@ -69,6 +75,7 @@ reg_info;
 extern reg_info mcs251_regs[];
 
 reg_info *mcs251_regWithIdx (int);
+int mcs251_regIdxForNumber (unsigned int);
 
 bitVect *mcs251_rUmaskForOp (operand * op);
 bitVect *mcs251_allBitregs (void);

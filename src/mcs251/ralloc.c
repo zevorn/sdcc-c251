@@ -70,6 +70,15 @@ reg_info mcs251_regs[] = {
   {REG_GPR, R2_IDX, REG_GPR, "r2", "ar2", "0", 2, 1},
   {REG_PTR, R1_IDX, REG_PTR, "r1", "ar1", "0", 1, 1},
   {REG_PTR, R0_IDX, REG_PTR, "r0", "ar0", "0", 0, 1},
+  {REG_GPR, R15_IDX, REG_GPR, "r15", "r15", NULL, 15, 1},
+  {REG_GPR, R14_IDX, REG_GPR, "r14", "r14", NULL, 14, 1},
+  {REG_GPR, R13_IDX, REG_GPR, "r13", "r13", NULL, 13, 1},
+  {REG_GPR, R12_IDX, REG_GPR, "r12", "r12", NULL, 12, 1},
+  /* R11 aliases ACC and R10 aliases B; allocate them through A/B only. */
+  {0, R11_IDX, 0, "r11", "r11", NULL, 11, 0},
+  {0, R10_IDX, 0, "r10", "r10", NULL, 10, 0},
+  {REG_GPR, R9_IDX, REG_GPR, "r9", "r9", NULL, 9, 1},
+  {REG_GPR, R8_IDX, REG_GPR, "r8", "r8", NULL, 8, 1},
   {REG_BIT, B0_IDX, REG_BIT, "b0", "b0", "bits", 0, 1},
   {REG_BIT, B1_IDX, REG_BIT, "b1", "b1", "bits", 1, 1},
   {REG_BIT, B2_IDX, REG_BIT, "b2", "b2", "bits", 2, 1},
@@ -94,6 +103,14 @@ static const char* alt_regnames[] = {
   NULL, /* R2_IDX */
   NULL, /* R1_IDX */
   NULL, /* R0_IDX */
+  NULL, /* R15_IDX */
+  NULL, /* R14_IDX */
+  NULL, /* R13_IDX */
+  NULL, /* R12_IDX */
+  NULL, /* R11_IDX */
+  NULL, /* R10_IDX */
+  NULL, /* R9_IDX */
+  NULL, /* R8_IDX */
   NULL, /* B0_IDX */
   NULL, /* B1_IDX */
   NULL, /* B2_IDX */
@@ -109,7 +126,7 @@ static const char* alt_regnames[] = {
   NULL, /* A_IDX */
 };
 
-int mcs251_nRegs = 16;
+int mcs251_nRegs = MCS251_ALLOC_REG_COUNT;
 static void spillThis (symbol *);
 static void freeAllRegs ();
 
@@ -182,6 +199,48 @@ allocReg (short type)
 }
 
 /*-----------------------------------------------------------------*/
+/* registerAvailableToSymbol - checks the current allocation stage */
+/*-----------------------------------------------------------------*/
+static bool
+registerAvailableToSymbol (const reg_info *reg, const symbol *sym)
+{
+  /*
+   * R8, R9, and R12-R15 are independent byte registers.  R10 and R11
+   * are excluded by their A/B alias types.  Wider live ranges continue
+   * to use bank-register tuples until overlapping WR/DR allocation is
+   * implemented.
+   */
+  return sym->nRegs == 1 || reg->rIdx < MCS251_BANK_REG_COUNT ||
+         reg->type == REG_BIT;
+}
+
+/*-----------------------------------------------------------------*/
+/* allocRegForSymbol - allocates a compatible register             */
+/*-----------------------------------------------------------------*/
+static reg_info *
+allocRegForSymbol (short type, const symbol *sym)
+{
+  int i;
+
+  for (i = 0; i < mcs251_nRegs; i++)
+    {
+      if (!registerAvailableToSymbol (&mcs251_regs[i], sym))
+        continue;
+
+      if ((!type || mcs251_regs[i].type == type) &&
+          mcs251_regs[i].isFree)
+        {
+          mcs251_regs[i].isFree = 0;
+          if (currFunc)
+            currFunc->regsUsed = bitVectSetBit (currFunc->regsUsed, i);
+          return &mcs251_regs[i];
+        }
+    }
+
+  return NULL;
+}
+
+/*-----------------------------------------------------------------*/
 /* allocThisReg - allocates a particular register (if free)        */
 /*-----------------------------------------------------------------*/
 static reg_info *
@@ -215,6 +274,24 @@ mcs251_regWithIdx (int idx)
 }
 
 /*-----------------------------------------------------------------*/
+/* mcs251_regIdxForNumber - maps R0-R15 to tracked register index */
+/*-----------------------------------------------------------------*/
+int
+mcs251_regIdxForNumber (unsigned int number)
+{
+  static const int indices[MCS251_BYTE_REG_COUNT] =
+    {
+      R0_IDX, R1_IDX, R2_IDX, R3_IDX,
+      R4_IDX, R5_IDX, R6_IDX, R7_IDX,
+      R8_IDX, R9_IDX, B_IDX, A_IDX,
+      R12_IDX, R13_IDX, R14_IDX, R15_IDX
+    };
+
+  wassert (number < MCS251_BYTE_REG_COUNT);
+  return indices[number];
+}
+
+/*-----------------------------------------------------------------*/
 /* freeReg - frees a register                                      */
 /*-----------------------------------------------------------------*/
 static void
@@ -234,13 +311,14 @@ freeReg (reg_info *reg)
 /* nFreeRegs - returns number of free registers                    */
 /*-----------------------------------------------------------------*/
 static int
-nFreeRegs (int type)
+nFreeRegsForSymbol (int type, const symbol *sym)
 {
   int i;
   int nfr = 0;
 
   for (i = 0; i < mcs251_nRegs; i++)
-    if (mcs251_regs[i].isFree && mcs251_regs[i].type == type)
+    if (mcs251_regs[i].isFree && mcs251_regs[i].type == type &&
+        registerAvailableToSymbol (&mcs251_regs[i], sym))
       nfr++;
   return nfr;
 }
@@ -249,16 +327,16 @@ nFreeRegs (int type)
 /* nfreeRegsType - free registers with type                         */
 /*-----------------------------------------------------------------*/
 static int
-nfreeRegsType (int type)
+nfreeRegsType (int type, const symbol *sym)
 {
   int nfr;
   if (type == REG_PTR)
     {
-      if ((nfr = nFreeRegs (type)) == 0)
-        return nFreeRegs (REG_GPR);
+      if ((nfr = nFreeRegsForSymbol (type, sym)) == 0)
+        return nFreeRegsForSymbol (REG_GPR, sym);
     }
 
-  return nFreeRegs (type);
+  return nFreeRegsForSymbol (type, sym);
 }
 
 /*-----------------------------------------------------------------*/
@@ -876,11 +954,11 @@ getRegPtr (iCode * ic, eBBlock * ebp, symbol * sym)
 
 tryAgain:
   /* try for a ptr type */
-  if ((reg = allocReg (REG_PTR)))
+  if ((reg = allocRegForSymbol (REG_PTR, sym)))
     return reg;
 
   /* try for gpr type */
-  if ((reg = allocReg (REG_GPR)))
+  if ((reg = allocRegForSymbol (REG_GPR, sym)))
     return reg;
 
   /* we have to spil */
@@ -908,11 +986,11 @@ getRegGpr (iCode * ic, eBBlock * ebp, symbol * sym)
 
 tryAgain:
   /* try for gpr type */
-  if ((reg = allocReg (REG_GPR)))
+  if ((reg = allocRegForSymbol (REG_GPR, sym)))
     return reg;
 
   if (!mcs251_ptrRegReq)
-    if ((reg = allocReg (REG_PTR)))
+    if ((reg = allocRegForSymbol (REG_PTR, sym)))
       return reg;
 
   /* we have to spil */
@@ -949,16 +1027,16 @@ getRegBit (symbol * sym)
 /* getRegPtrNoSpil - get it cannot be spilt                        */
 /*-----------------------------------------------------------------*/
 static reg_info *
-getRegPtrNoSpil ()
+getRegPtrNoSpil (symbol *sym)
 {
   reg_info *reg;
 
   /* try for a ptr type */
-  if ((reg = allocReg (REG_PTR)))
+  if ((reg = allocRegForSymbol (REG_PTR, sym)))
     return reg;
 
   /* try for gpr type */
-  if ((reg = allocReg (REG_GPR)))
+  if ((reg = allocRegForSymbol (REG_GPR, sym)))
     return reg;
 
   assert (0);
@@ -971,14 +1049,14 @@ getRegPtrNoSpil ()
 /* getRegGprNoSpil - get it cannot be spilt                        */
 /*-----------------------------------------------------------------*/
 static reg_info *
-getRegGprNoSpil ()
+getRegGprNoSpil (symbol *sym)
 {
   reg_info *reg;
-  if ((reg = allocReg (REG_GPR)))
+  if ((reg = allocRegForSymbol (REG_GPR, sym)))
     return reg;
 
   if (!mcs251_ptrRegReq)
-    if ((reg = allocReg (REG_PTR)))
+    if ((reg = allocRegForSymbol (REG_PTR, sym)))
       return reg;
 
   assert (0);
@@ -1025,6 +1103,22 @@ symHasReg (symbol * sym, reg_info * reg)
 }
 
 /*-----------------------------------------------------------------*/
+/* symbolRegistersAvailableToSymbol - checks a register transfer   */
+/*-----------------------------------------------------------------*/
+static bool
+symbolRegistersAvailableToSymbol (const symbol *from, const symbol *to)
+{
+  int i;
+  int count = min (from->nRegs, to->nRegs);
+
+  for (i = 0; i < count; ++i)
+    if (!registerAvailableToSymbol (from->regs[i], to))
+      return FALSE;
+
+  return TRUE;
+}
+
+/*-----------------------------------------------------------------*/
 /* updateRegUsage -  update the registers in use at the start of   */
 /*                   this icode                                    */
 /*-----------------------------------------------------------------*/
@@ -1042,7 +1136,7 @@ updateRegUsage (iCode * ic)
       else
         {
           ic->riu |= (1 << mcs251_regs[reg].offset);
-          BitBankUsed |= (reg >= 8);
+          BitBankUsed |= (mcs251_regs[reg].type == REG_BIT);
         }
     }
 }
@@ -1115,7 +1209,9 @@ deassignLRs (iCode * ic, eBBlock * ebp)
               !bitVectBitValue (_G.regAssigned, result->key) &&
               /* the number of free regs + number of regs in this LR
                  can accommodate the what result Needs */
-              ((nfreeRegsType (result->regType) + sym->nRegs) >= result->nRegs))
+              symbolRegistersAvailableToSymbol (sym, result) &&
+              ((nfreeRegsType (result->regType, result) + sym->nRegs) >=
+               result->nRegs))
             {
               for (i = 0; i < result->nRegs; i++)
                 if (i < sym->nRegs)
@@ -1169,8 +1265,11 @@ reassignLR (operand * op)
 /* willCauseSpill - determines if allocating will cause a spill    */
 /*-----------------------------------------------------------------*/
 static int
-willCauseSpill (int nr, int rt)
+willCauseSpill (const symbol *sym)
 {
+  int nr = sym->nRegs;
+  int rt = sym->regType;
+
   /* first check if there are any available registers
      of the type required */
   if (rt == REG_PTR)
@@ -1178,26 +1277,27 @@ willCauseSpill (int nr, int rt)
       /* special case for pointer type
          if pointer type not available then
          check for type gpr */
-      if (nFreeRegs (rt) >= nr)
+      if (nFreeRegsForSymbol (rt, sym) >= nr)
         return 0;
-      if (nFreeRegs (REG_GPR) >= nr)
+      if (nFreeRegsForSymbol (REG_GPR, sym) >= nr)
         return 0;
     }
   else if (rt == REG_BIT)
     {
-      if (nFreeRegs (rt) >= nr)
+      if (nFreeRegsForSymbol (rt, sym) >= nr)
         return 0;
     }
   else
     {
       if (mcs251_ptrRegReq)
         {
-          if (nFreeRegs (rt) >= nr)
+          if (nFreeRegsForSymbol (rt, sym) >= nr)
             return 0;
         }
       else
         {
-          if (nFreeRegs (REG_PTR) + nFreeRegs (REG_GPR) >= nr)
+          if (nFreeRegsForSymbol (REG_PTR, sym) +
+              nFreeRegsForSymbol (REG_GPR, sym) >= nr)
             return 0;
         }
     }
@@ -1395,7 +1495,7 @@ serialRegAssign (eBBlock ** ebbs, int count)
                       continue;
                     }
 
-                  willCS = willCauseSpill (sym->nRegs, sym->regType);
+                  willCS = willCauseSpill (sym);
                   /* if this is a bit variable then don't use precious registers
                      along with expensive bit-to-char conversions but just spill
                      it */
@@ -1491,7 +1591,9 @@ serialRegAssign (eBBlock ** ebbs, int count)
                         {
                           symbol *right = OP_SYMBOL (IC_RIGHT (ic));
 
-                          if (right->regs[j] && (right->regType != REG_BIT))
+                          if (right->regs[j] &&
+                              right->regType != REG_BIT &&
+                              registerAvailableToSymbol (right->regs[j], sym))
                             sym->regs[j] = allocThisReg (right->regs[j]);
                         }
                       if (!sym->regs[j])
@@ -1608,7 +1710,7 @@ fillGaps (void)
             useReg (clr->regs[k]);
         }
 
-      if (willCauseSpill (sym->nRegs, sym->regType))
+      if (willCauseSpill (sym))
         {
           /* NOPE :( clear all registers & and continue */
           freeAllRegs ();
@@ -1632,7 +1734,7 @@ fillGaps (void)
       for (i = 0; i < sym->nRegs; i++)
         {
           if (sym->regType == REG_PTR)
-            sym->regs[i] = getRegPtrNoSpil ();
+            sym->regs[i] = getRegPtrNoSpil (sym);
           else if (sym->regType == REG_BIT)
             sym->regs[i] = getRegBitNoSpil ();
           else
@@ -1642,11 +1744,13 @@ fillGaps (void)
                 {
                   symbol *right = OP_SYMBOL (IC_RIGHT (ic));
 
-                  if (right->regs[i] && right->regs[i]->type != REG_BIT)
+                  if (right->regs[i] &&
+                      right->regs[i]->type != REG_BIT &&
+                      registerAvailableToSymbol (right->regs[i], sym))
                     sym->regs[i] = allocThisReg (right->regs[i]);
                 }
               if (!sym->regs[i])
-                sym->regs[i] = getRegGprNoSpil ();
+                sym->regs[i] = getRegGprNoSpil (sym);
             }
           D (printf ("%s ", sym->regs[i]->name));
         }
@@ -3411,11 +3515,11 @@ mcs251_assignRegisters (ebbIndex * ebbi)
   mcs251_ptrRegReq = _G.stackExtend = _G.dataExtend = 0;
   if ((currFunc && IFFUNC_ISREENT (currFunc->type)) || options.stackAuto)
     {
-      mcs251_nRegs = 16;
+      mcs251_nRegs = MCS251_ALLOC_REG_COUNT;
     }
   else
     {
-      mcs251_nRegs = 8;
+      mcs251_nRegs = MCS251_BYTE_REG_COUNT;
     }
   _G.allBitregs = findAllBitregs ();
   _G.allBankregs = findAllBankregs ();

@@ -155,6 +155,8 @@ static unsigned char SRMask[] = { 0xFF, 0x7F, 0x3F, 0x1F, 0x0F,
 #define MSB24   2
 #define MSB32   3
 
+static bool isFixedByteRegisterOperand (const char *);
+
 static struct asmop asmop_a, asmop_dpl, asmop_dptr, asmop_bdptr, asmop_abdptr, asmop_r4abdptr, asmop_r5r4abdptr, asmop_r6r5r4abdptr, asmop_r7r6r5r4abdptr;
 static struct asmop *const ASMOP_A = &asmop_a;
 static struct asmop *const ASMOP_DPL = &asmop_dpl;
@@ -437,6 +439,21 @@ popB (bool pushedB)
     }
 }
 
+static void
+emitRestrictedAccumulatorOp (const char *instruction, const char *source)
+{
+  if (isFixedByteRegisterOperand (source))
+    {
+      bool pushedB = pushB ();
+
+      MOVB (source);
+      emitcode (instruction, "a,b");
+      popB (pushedB);
+    }
+  else
+    emitcode (instruction, "a,%s", source);
+}
+
 /*-----------------------------------------------------------------*/
 /* pushReg - saves register                                        */
 /*-----------------------------------------------------------------*/
@@ -471,6 +488,30 @@ popReg (int index, bool bits_popped)
   else
     emitpop (reg->dname);
   return bits_popped;
+}
+
+static void
+saveFixedByteRegisters (const symbol *function, bool save_all)
+{
+  int i;
+
+  for (i = MCS251_BANK_REG_COUNT; i < MCS251_BYTE_REG_COUNT; ++i)
+    /* R10 and R11 are saved through their B and ACC aliases. */
+    if (i != R10_IDX && i != R11_IDX &&
+        (save_all || bitVectBitValue (function->regsUsed, i)))
+      pushReg (i, TRUE);
+}
+
+static void
+restoreFixedByteRegisters (const symbol *function, bool restore_all)
+{
+  int i;
+
+  for (i = MCS251_BYTE_REG_COUNT - 1;
+       i >= MCS251_BANK_REG_COUNT; --i)
+    if (i != R10_IDX && i != R11_IDX &&
+        (restore_all || bitVectBitValue (function->regsUsed, i)))
+      popReg (i, TRUE);
 }
 
 #if 0
@@ -2450,6 +2491,55 @@ static bool aopInRn (const asmop *aop, int i)
   return (rIdx == R0_IDX || rIdx == R1_IDX || rIdx == R2_IDX || rIdx == R3_IDX || rIdx == R4_IDX || rIdx == R5_IDX || rIdx == R6_IDX || rIdx == R7_IDX);
 }
 
+/* CJNE retains the MCS-51 R0-R7 restriction in MCS-251 Source mode. */
+static const char *
+prepareCjneLeftOperand (const char *operand)
+{
+  int index = mcs251_regname_to_idx (operand);
+
+  if (index >= R15_IDX && index <= R8_IDX)
+    {
+      MOVA (operand);
+      return "a";
+    }
+
+  return operand;
+}
+
+static bool
+isFixedByteRegisterOperand (const char *operand)
+{
+  int index = mcs251_regname_to_idx (operand);
+
+  return index >= R15_IDX && index <= R8_IDX;
+}
+
+static void
+emitCjneTlabel (const char *left, const char *right, int label)
+{
+  if (isFixedByteRegisterOperand (right))
+    {
+      emitcode ("cmp", "%s,%s", left, right);
+      emitcode ("jne", "!tlabel", label);
+    }
+  else
+    emitcode ("cjne", "%s,%s,!tlabel",
+              prepareCjneLeftOperand (left), right, label);
+}
+
+static void
+emitCjneNamedLabel (const char *left, const char *right, int label)
+{
+  if (isFixedByteRegisterOperand (right))
+    {
+      emitcode ("cmp", "%s,%s", left, right);
+      emitcode ("jne", "%05d$", label);
+    }
+  else
+    emitcode ("cjne", "%s,%s,%05d$",
+              prepareCjneLeftOperand (left), right, label);
+}
+
 /*-----------------------------------------------------------------*/
 /* outAcc - output Acc                                             */
 /*-----------------------------------------------------------------*/
@@ -3145,7 +3235,7 @@ genUminus (iCode * ic)
           if (offset == 0)
             CLRC;
           emitcode ("clr", "a");
-          emitcode ("subb", "a,%s", l);
+          emitRestrictedAccumulatorOp ("subb", l);
         }
       opPut (IC_RESULT (ic), "a", offset++);
     }
@@ -3197,7 +3287,7 @@ xstackRegisters (bitVect * rsave, bool push, int count, char szRegs[32])
 
   szRegs[0] = '\0';
 
-  for (i = mcs251_nRegs; i >= 0; i--)
+  for (i = mcs251_nRegs - 1; i >= 0; i--)
     {
       if (bitVectBitValue (rsave, i))
         {
@@ -3223,6 +3313,18 @@ xstackRegisters (bitVect * rsave, bool push, int count, char szRegs[32])
         }
     }
   return mask ^ 0xFF;           //invert all bits for jbc
+}
+
+static bool
+xstackRegisterHelperSupports (bitVect *rsave)
+{
+  int i;
+
+  for (i = MCS251_BANK_REG_COUNT; i < MCS251_BYTE_REG_COUNT; ++i)
+    if (bitVectBitValue (rsave, i))
+      return FALSE;
+
+  return TRUE;
 }
 
 /*-----------------------------------------------------------------*/
@@ -3311,7 +3413,8 @@ saveRegisters (iCode * lic)
         }
       else if (count != 0)
         {
-          if ((FUNC_REGBANK (currFunc->type) == 0) && optimize.codeSize)
+          if ((FUNC_REGBANK (currFunc->type) == 0) &&
+              optimize.codeSize && xstackRegisterHelperSupports (rsave))
             {
               char szRegs[32];
               int mask = xstackRegisters (rsave, TRUE, count, szRegs);
@@ -3446,7 +3549,8 @@ unsaveRegisters (iCode * ic)
         }
       else if (count != 0)
         {
-          if ((FUNC_REGBANK (currFunc->type) == 0) && optimize.codeSize)
+          if ((FUNC_REGBANK (currFunc->type) == 0) &&
+              optimize.codeSize && xstackRegisterHelperSupports (rsave))
             {
               char szRegs[32];
               int mask = xstackRegisters (rsave, FALSE, count, szRegs);
@@ -3466,7 +3570,7 @@ unsaveRegisters (iCode * ic)
                   emitpush (REG_WITH_INDEX (R0_IDX)->dname);
                 }
               emitcode ("mov", "r0,%s", spname);
-              for (i = mcs251_nRegs; i >= 0; i--)
+              for (i = mcs251_nRegs - 1; i >= 0; i--)
                 {
                   if (bitVectBitValue (rsave, i))
                     {
@@ -3499,7 +3603,7 @@ unsaveRegisters (iCode * ic)
   else
     {
       bool bits_popped = FALSE;
-      for (i = mcs251_nRegs; i >= 0; i--)
+      for (i = mcs251_nRegs - 1; i >= 0; i--)
         {
           if (bitVectBitValue (rsave, i))
             {
@@ -4632,7 +4736,7 @@ genFunction (iCode * ic)
       int i;
 
       rbank = FUNC_REGBANK (ftype);
-      for (i = 0; i < mcs251_nRegs; i++)
+      for (i = 0; i < MCS251_BANK_REG_COUNT; i++)
         {
           if (mcs251_regs[i].type != REG_BIT)
             {
@@ -4681,6 +4785,9 @@ genFunction (iCode * ic)
         emitpush ("dpl");
       if (!inExcludeList ("dph"))
         emitpush ("dph");
+
+      /* R8-R15 are fixed registers, not members of a PSW-selected bank. */
+      saveFixedByteRegisters (sym, IFFUNC_HASFCALL (ftype));
       /* if this isr has no bank i.e. is going to
          run with bank 0 , then we need to save more
          registers :-) */
@@ -4697,7 +4804,7 @@ genFunction (iCode * ic)
               if (!bitVectIsZero (sym->regsUsed))
                 {
                   /* save the registers used */
-                  for (i = 0; i < sym->regsUsed->size; i++)
+                  for (i = 0; i < MCS251_BANK_REG_COUNT; i++)
                     {
                       if (bitVectBitValue (sym->regsUsed, i))
                         pushReg (i, TRUE);
@@ -5218,7 +5325,7 @@ genEndFunction (iCode * ic)
               if (!bitVectIsZero (sym->regsUsed))
                 {
                   /* restore the registers used */
-                  for (i = sym->regsUsed->size; i >= 0; i--)
+                  for (i = MCS251_BANK_REG_COUNT - 1; i >= 0; i--)
                     {
                       if (bitVectBitValue (sym->regsUsed, i))
                         popReg (i, TRUE);
@@ -5259,6 +5366,8 @@ genEndFunction (iCode * ic)
               emitpop ("psw");
             }
         }
+
+      restoreFixedByteRegisters (sym, IFFUNC_HASFCALL (ftype));
 
       if (!inExcludeList ("dph"))
         emitpop ("dph");
@@ -5735,12 +5844,12 @@ genPlusIncr (iCode * ic)
       emitcode ("inc", "%s", l);
       if (AOP_TYPE (IC_RESULT (ic)) == AOP_REG || IS_AOP_PREG (IC_RESULT (ic)))
         {
-          emitcode ("cjne", "%s,%s,!tlabel", l, zero, labelKey2num (tlbl->key));
+          emitCjneTlabel (l, zero, labelKey2num (tlbl->key));
         }
       else
         {
           emitcode ("clr", "a");
-          emitcode ("cjne", "a,%s,!tlabel", l, labelKey2num (tlbl->key));
+          emitCjneTlabel ("a", l, labelKey2num (tlbl->key));
         }
 
       l = opGet (IC_RESULT (ic), MSB16, FALSE, FALSE);
@@ -5754,11 +5863,11 @@ genPlusIncr (iCode * ic)
             }
           else if (AOP_TYPE (IC_RESULT (ic)) == AOP_REG || IS_AOP_PREG (IC_RESULT (ic)))
             {
-              emitcode ("cjne", "%s,%s,!tlabel", l, zero, labelKey2num (tlbl->key));
+              emitCjneTlabel (l, zero, labelKey2num (tlbl->key));
             }
           else
             {
-              emitcode ("cjne", "a,%s,!tlabel", l, labelKey2num (tlbl->key));
+              emitCjneTlabel ("a", l, labelKey2num (tlbl->key));
             }
 
           l = opGet (IC_RESULT (ic), offset, FALSE, FALSE);
@@ -5888,7 +5997,7 @@ genPlusBits (iCode * ic)
       emitcode ("clr", "a");
       emitcode ("rlc", "a");
       emitcode ("mov", "c,%s", AOP (IC_RIGHT (ic))->aopu.aop_dir);
-      emitcode ("addc", "a,%s", zero);
+      emitRestrictedAccumulatorOp ("addc", zero);
       outAcc (IC_RESULT (ic));
     }
 }
@@ -6068,7 +6177,7 @@ genPlus (iCode * ic)
           while (size--)
             {
               MOVA (opGet (IC_RIGHT (ic), offset, FALSE, FALSE));
-              emitcode ("addc", "a,%s", zero);
+              emitRestrictedAccumulatorOp ("addc", zero);
               opPut (IC_RESULT (ic), "a", offset++);
             }
         }
@@ -6162,12 +6271,16 @@ genPlus (iCode * ic)
           else if (aopGetUsesAcc (leftOp->aop, offset))
             {
               MOVA (opGet (leftOp, offset, FALSE, FALSE));
-              emitcode (add, "a, %s", aopGet (rightOp->aop, offset, false, !aopInRn (rightOp->aop, offset)));
+              emitRestrictedAccumulatorOp (
+                add, aopGet (rightOp->aop, offset, false,
+                             !aopInRn (rightOp->aop, offset)));
             }
           else
             {
               MOVA (opGet (rightOp, offset, FALSE, FALSE));
-              emitcode (add, "a, %s", aopGet (leftOp->aop, offset, false, !aopInRn (leftOp->aop, offset)));
+              emitRestrictedAccumulatorOp (
+                add, aopGet (leftOp->aop, offset, false,
+                             !aopInRn (leftOp->aop, offset)));
             }
           if (!size && maskedtopbyte)
             emitcode ("anl", "a,#!constbyte", topbytemask);
@@ -6233,12 +6346,12 @@ genMinusDec (iCode * ic)
 
       if (AOP_TYPE (IC_RESULT (ic)) == AOP_REG || IS_AOP_PREG (IC_RESULT (ic)))
         {
-          emitcode ("cjne", "%s,#!constbyte,!tlabel", l, 0xffu, labelKey2num (tlbl->key));
+          emitCjneTlabel (l, "#0xff", labelKey2num (tlbl->key));
         }
       else
         {
           emitcode ("mov", "a,#!constbyte", 0xffu);
-          emitcode ("cjne", "a,%s,!tlabel", l, labelKey2num (tlbl->key));
+          emitCjneTlabel ("a", l, labelKey2num (tlbl->key));
         }
       l = opGet (IC_RESULT (ic), MSB16, FALSE, FALSE);
       emitcode ("dec", "%s", l);
@@ -6251,11 +6364,12 @@ genMinusDec (iCode * ic)
             }
           else if (AOP_TYPE (IC_RESULT (ic)) == AOP_REG || IS_AOP_PREG (IC_RESULT (ic)))
             {
-              emitcode ("cjne", "%s,#!constbyte,!tlabel", l, 0xffu, labelKey2num (tlbl->key));
+              emitCjneTlabel (l, "#0xff",
+                              labelKey2num (tlbl->key));
             }
           else
             {
-              emitcode ("cjne", "a,%s,!tlabel", l, labelKey2num (tlbl->key));
+              emitCjneTlabel ("a", l, labelKey2num (tlbl->key));
             }
           l = opGet (IC_RESULT (ic), offset, FALSE, FALSE);
           emitcode ("dec", "%s", l);
@@ -6489,7 +6603,8 @@ genMinus (iCode * ic)
                     emitcode ("cpl", "c");
                   wassertl (!aopGetUsesAcc (leftOp->aop, offset), "accumulator clash");
                   MOVA (opGet (rightOp, offset, FALSE, FALSE));
-                  emitcode ("subb", "a,%s", opGet (leftOp, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp (
+                    "subb", opGet (leftOp, offset, FALSE, FALSE));
                   emitcode ("cpl", "a");
                   if (size)     /* skip if last byte */
                     emitcode ("cpl", "c");
@@ -6500,7 +6615,8 @@ genMinus (iCode * ic)
               MOVA (opGet (leftOp, offset, FALSE, FALSE));
               if (offset == 0)
                 CLRC;
-              emitcode ("subb", "a,%s", opGet (rightOp, offset, FALSE, FALSE));
+              emitRestrictedAccumulatorOp (
+                "subb", opGet (rightOp, offset, FALSE, FALSE));
             }
 
           if (!size && maskedtopbyte)
@@ -7395,7 +7511,8 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
         {
           char *l = Safe_strdup (opGet (left, offset, FALSE, FALSE));
           symbol *lbl = newiTempLabel (NULL);
-          emitcode ("cjne", "%s,%s,!tlabel", l, opGet (right, offset, FALSE, FALSE), labelKey2num (lbl->key));
+          const char *r = opGet (right, offset, FALSE, FALSE);
+          emitCjneTlabel (l, r, labelKey2num (lbl->key));
           Safe_free (l);
           emitLabel (lbl);
         }
@@ -7450,7 +7567,8 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
                         }
                       else
                         {
-                          emitcode ("subb", "a,%s", opGet (right, offset, FALSE, FALSE));
+                          emitRestrictedAccumulatorOp (
+                            "subb", opGet (right, offset, FALSE, FALSE));
                         }
                       offset++;
                     }
@@ -7485,7 +7603,8 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
                   if (rightInB)
                     emitcode ("subb", "a,b");
                   else
-                    emitcode ("subb", "a,%s", opGet (right, offset, FALSE, FALSE));
+                    emitRestrictedAccumulatorOp (
+                      "subb", opGet (right, offset, FALSE, FALSE));
                 }
               if (rightInB)
                 popB (pushedB);
@@ -7617,7 +7736,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
           if (EQ (l, "a") && EQ (r, zero))
             emitcode ("jnz", "!tlabel", labelKey2num (lbl->key));
           else
-            emitcode ("cjne", "%s,%s,!tlabel", l, r, labelKey2num (lbl->key));
+            emitCjneTlabel (l, r, labelKey2num (lbl->key));
           Safe_free (l);
           offset++;
         }
@@ -7735,14 +7854,18 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
                       MOVA (opGet (right, lidx, false, false));
                       chk[lidx] = FALSE;
                     }
-                  emitcode ("cjne", "a,%s,%05d$", opGet (left, lidx, false, true), lbl->key + 100);
+                  emitCjneNamedLabel (
+                    "a", opGet (left, lidx, false, true),
+                    lbl->key + 100);
 
                   for (cidx = lidx + 1; cidx < size; cidx++)
                     {
                       if (chk[cidx] && val[lidx] == val[cidx] && !IS_AOP_PREG (left))
                         {
                           chk[cidx] = FALSE;
-                          emitcode ("cjne", "a,%s,%05d$", opGet (left, cidx, false, true), lbl->key + 100);
+                          emitCjneNamedLabel (
+                            "a", opGet (left, cidx, false, true),
+                            lbl->key + 100);
                         }
                     }
                 }
@@ -7758,7 +7881,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
           if (EQ (r, zero))
             emitcode ("jnz", "!tlabel", labelKey2num (lbl->key));
           else
-            emitcode ("cjne", "a,%s,!tlabel", r, labelKey2num (lbl->key));
+            emitCjneTlabel ("a", r, labelKey2num (lbl->key));
           offset++;
         }
     }
@@ -8320,6 +8443,26 @@ mcs251GenBitwiseAccOverlap (operand *left, operand *right, operand *result,
   return TRUE;
 }
 
+/* Keep MCS-51's direct-register peephole rules away from R8-R15. */
+static void
+mcs251EmitBitwiseAccumulatorToLeft (const char *instruction,
+                                    operand *left, operand *result,
+                                    int offset)
+{
+  char *l = Safe_strdup (opGet (left, offset, FALSE, FALSE));
+
+  if (isFixedByteRegisterOperand (l))
+    {
+      MOVB (l);
+      emitcode (instruction, "a,b");
+      opPut (result, "a", offset);
+    }
+  else
+    emitcode (instruction, "%s,a", opGet (left, offset, FALSE, TRUE));
+
+  Safe_free (l);
+}
+
 /*-----------------------------------------------------------------*/
 /* genAnd  - code for and                                          */
 /*-----------------------------------------------------------------*/
@@ -8619,7 +8762,8 @@ genAnd (iCode * ic, iCode * ifx)
                     }
                   else
                     {
-                      emitcode ("anl", "%s,a", opGet (left, offset, FALSE, TRUE));
+                      mcs251EmitBitwiseAccumulatorToLeft (
+                        "anl", left, result, offset);
                     }
                 }
             }
@@ -9027,7 +9171,8 @@ genOr (iCode * ic, iCode * ifx)
                     }
                   else
                     {
-                      emitcode ("orl", "%s,a", opGet (left, offset, FALSE, TRUE));
+                      mcs251EmitBitwiseAccumulatorToLeft (
+                        "orl", left, result, offset);
                     }
                 }
             }
@@ -9401,7 +9546,8 @@ genXor (iCode * ic, iCode * ifx)
                     }
                   else
                     {
-                      emitcode ("xrl", "%s,a", opGet (left, offset, FALSE, TRUE));
+                      mcs251EmitBitwiseAccumulatorToLeft (
+                        "xrl", left, result, offset);
                     }
                 }
             }

@@ -630,12 +630,20 @@ static mcs51operanddata mcs51operandDataTable[] =
     {"psw",  CND_IDX, -1},
     {"r0",   R0_IDX,  -1},
     {"r1",   R1_IDX,  -1},
+    {"r10",  B_IDX,   -1},
+    {"r11",  A_IDX,   -1},
+    {"r12",  R12_IDX, -1},
+    {"r13",  R13_IDX, -1},
+    {"r14",  R14_IDX, -1},
+    {"r15",  R15_IDX, -1},
     {"r2",   R2_IDX,  -1},
     {"r3",   R3_IDX,  -1},
     {"r4",   R4_IDX,  -1},
     {"r5",   R5_IDX,  -1},
     {"r6",   R6_IDX,  -1},
     {"r7",   R7_IDX,  -1},
+    {"r8",   R8_IDX,  -1},
+    {"r9",   R9_IDX,  -1},
   };
 
 static int
@@ -695,9 +703,10 @@ mcs251UpdateWideOperandRW (asmLineNode *aln, const char *op,
     return false;
 
   for (int i = 0; i < bytes; ++i)
-    if (first + i <= 7)
-      mcs251UpdateRegRW (aln, R0_IDX - first - i,
-                       indirect ? "r" : optype);
+    if (first + i < MCS251_BYTE_REG_COUNT)
+      mcs251UpdateRegRW (
+        aln, mcs251_regIdxForNumber (first + i),
+        indirect ? "r" : optype);
   return true;
 }
 

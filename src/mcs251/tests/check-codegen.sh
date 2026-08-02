@@ -51,24 +51,37 @@ mkdir -p "$test_dir"
 
 # Indexed MCS251 stack operands are loaded through A.  An in-place increment
 # must store the incremented byte back before the following comparison.
-awk '
+# A loop-counter increment must update either the indexed stack slot or a
+# native fixed byte register when it remains allocated in R8-R15.
+if ! awk '
     previous ~ /^[[:space:]]*inc[[:space:]]+a[[:space:]]*$/ &&
         $0 ~ /^[[:space:]]*mov[[:space:]]+@spx[-+][^,]*,[[:space:]]*a[[:space:]]*$/ {
         found = 1
     }
     { previous = $0 }
     END { exit !found }
-' "$test_dir/mullonglong.asm"
+' "$test_dir/mullonglong.asm" &&
+        ! grep -Eq '^[[:space:]]*inc[[:space:]]+r(8|9|1[0-5])[[:space:]]*$' \
+            "$test_dir/mullonglong.asm"; then
+    echo "MCS251 increment lost its register or stack write-back" >&2
+    exit 1
+fi
 
-# The same accumulator proxy is used for an indexed stack decrement.
-awk '
+# A decrement must update either the indexed stack slot or a native fixed
+# byte register when register allocation keeps the loop counter in R8-R15.
+if ! awk '
     previous ~ /^[[:space:]]*dec[[:space:]]+a[[:space:]]*$/ &&
         $0 ~ /^[[:space:]]*mov[[:space:]]+@spx[-+][^,]*,[[:space:]]*a[[:space:]]*$/ {
         found = 1
     }
     { previous = $0 }
     END { exit !found }
-' "$test_dir/divuint.asm"
+' "$test_dir/divuint.asm" &&
+        ! grep -Eq '^[[:space:]]*dec[[:space:]]+r(8|9|1[0-5])[[:space:]]*$' \
+            "$test_dir/divuint.asm"; then
+    echo "MCS251 decrement lost its register or stack write-back" >&2
+    exit 1
+fi
 
 grep -Eq '^[[:space:]]*inc[[:space:]]+a,#[^;]*(2|0x02)$' \
     "$test_dir/native-optimization.asm"
@@ -159,16 +172,16 @@ awk '
         checked = dpl && dph && b && a
         after_call = 0
     }
-    after_call && /^[[:space:]]*mov[[:space:]]+r[0-7],[[:space:]]*dpl$/ {
+    after_call && /^[[:space:]]*mov[[:space:]]+r([0-9]|1[0-5]),[[:space:]]*dpl$/ {
         dpl = 1
     }
-    after_call && /^[[:space:]]*mov[[:space:]]+r[0-7],[[:space:]]*dph$/ {
+    after_call && /^[[:space:]]*mov[[:space:]]+r([0-9]|1[0-5]),[[:space:]]*dph$/ {
         dph = 1
     }
-    after_call && /^[[:space:]]*mov[[:space:]]+r[0-7],[[:space:]]*b$/ {
+    after_call && /^[[:space:]]*mov[[:space:]]+r([0-9]|1[0-5]),[[:space:]]*b$/ {
         b = 1
     }
-    after_call && /^[[:space:]]*mov[[:space:]]+r[0-7],[[:space:]]*a$/ {
+    after_call && /^[[:space:]]*mov[[:space:]]+r([0-9]|1[0-5]),[[:space:]]*a$/ {
         a = 1
     }
     END { exit !checked }

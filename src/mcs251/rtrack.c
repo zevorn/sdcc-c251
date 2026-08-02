@@ -61,12 +61,8 @@ static int enableextraverbose = -1;
 
 static unsigned int rx_num_to_idx (const unsigned int num)
 {
-  const unsigned int regidx[8] =
-    { R7_IDX, R6_IDX, R5_IDX, R4_IDX, R3_IDX, R2_IDX, R1_IDX, R0_IDX };
-
-  assert( 7 >= num );
-
-  return regidx [num & 0x7];
+  assert (num < MCS251_BYTE_REG_COUNT);
+  return mcs251_regIdxForNumber (num);
 }
 
 
@@ -232,6 +228,10 @@ static void invalidateAllRx()
 static void invalidateAll()
 {
   invalidateAllRx();
+
+  for (unsigned int i = MCS251_BANK_REG_COUNT;
+       i < MCS251_BYTE_REG_COUNT; ++i)
+    rtrack_data_unset (rx_num_to_idx (i));
 
   rtrack_data_unset (DPL_IDX);
   rtrack_data_unset (DPH_IDX);
