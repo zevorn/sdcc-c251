@@ -119,6 +119,28 @@ mcs251_high_register_shift (unsigned int year, unsigned int day)
 
   return result + saved0 + saved1 + saved2;
 }
+
+unsigned char
+mcs251_high_register_loop (void)
+{
+  unsigned char value0 = mcs251_pressure_values[0];
+  unsigned char value1 = mcs251_pressure_values[1];
+  unsigned char value2 = mcs251_pressure_values[2];
+  unsigned char value3 = mcs251_pressure_values[3];
+  unsigned char value4 = mcs251_pressure_values[4];
+  unsigned char value5 = mcs251_pressure_values[5];
+  unsigned char value6 = mcs251_pressure_values[6];
+  unsigned char value7 = mcs251_pressure_values[7];
+
+  value1 += value7;
+  value7 ^= value0;
+  value7 = value7 - 1;
+  if (value7)
+    value0 += value4;
+
+  return value0 ^ value1 ^ value2 ^ value3 ^
+         value4 ^ value5 ^ value6 ^ value7;
+}
 #endif
 
 #if defined (MCS_REGISTER_PRESSURE_RUNTIME)
@@ -150,6 +172,8 @@ main (void)
     passed = 0;
 #if defined (__SDCC_mcs251)
   if (mcs251_high_register_shift (369, 307) != 0xa069u)
+    passed = 0;
+  if (mcs251_high_register_loop () != 0x07)
     passed = 0;
 #endif
 

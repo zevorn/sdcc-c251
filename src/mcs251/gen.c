@@ -14026,12 +14026,13 @@ genDjnz (iCode * ic, iCode * ifx)
     {
       const char *counter = opGet (IC_RESULT (ic), 0, FALSE, FALSE);
 
-      /* DJNZ only encodes R0 through R7.  A fixed R8-R15 byte register yet
-         serves fine as the loop counter; decrement it and test directly. */
+      /* DJNZ only encodes R0 through R7.  Compare a fixed R8-R15 byte
+         register against zero without borrowing the accumulator. */
       if (isFixedByteRegisterOperand (counter))
         {
           emitcode ("dec", "%s", counter);
-          emitcode ("jnz", "!tlabel", labelKey2num (lbl->key));
+          emitcode ("cmp", "%s,#0x00", counter);
+          emitcode ("jne", "!tlabel", labelKey2num (lbl->key));
         }
       else
         emitcode ("djnz", "%s,!tlabel", counter, labelKey2num (lbl->key));

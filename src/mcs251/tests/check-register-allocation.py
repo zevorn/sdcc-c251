@@ -28,6 +28,10 @@ INVALID_HIGH_XCH = re.compile(
     r"^[ \t]*xch[ \t]+a,[ \t]*r(?:8|9|1[0-5])[ \t]*$",
     re.IGNORECASE | re.MULTILINE,
 )
+INVALID_HIGH_DJNZ = re.compile(
+    r"^[ \t]*djnz[ \t]+r(?:8|9|1[0-5])(?:[ \t]*,|\b)",
+    re.IGNORECASE | re.MULTILINE,
+)
 ALIASED_REGISTER_ALLOCATION = re.compile(
     r"Allocated to registers[^\n]*\br1[01]\b",
     re.IGNORECASE,
@@ -291,6 +295,13 @@ def main():
                 raise AssertionError(
                     f"{name} emitted XCH with R8-R15: "
                     f"{invalid_xch.group(0).strip()}"
+                )
+
+            invalid_djnz = INVALID_HIGH_DJNZ.search(assembly[name])
+            if invalid_djnz:
+                raise AssertionError(
+                    f"{name} emitted DJNZ with R8-R15: "
+                    f"{invalid_djnz.group(0).strip()}"
                 )
 
             aliased = ALIASED_REGISTER_ALLOCATION.search(assembly[name])
