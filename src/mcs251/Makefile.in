@@ -169,6 +169,8 @@ check-qemu: all check-official-qemu check-gdbstub
 		--byte-swap-builtins-source \
 			$(srcdir)/tests/gnu-byte-swap-builtins-runtime.c \
 		--size-type-source $(srcdir)/tests/size-type-runtime.c \
+		--register-pressure-source \
+			$(srcdir)/tests/register-pressure.c \
 		--overflow-builtins-source \
 			$(srcdir)/tests/gnu-overflow-builtins-runtime.c \
 		--typed-overflow-builtins-source \
@@ -229,6 +231,8 @@ check-mcs51-qemu: all
 		--byte-swap-builtins-source \
 			$(srcdir)/tests/gnu-byte-swap-builtins-runtime.c \
 		--size-type-source $(srcdir)/tests/size-type-runtime.c \
+		--register-pressure-source \
+			$(srcdir)/tests/register-pressure.c \
 		--overflow-builtins-source \
 			$(srcdir)/tests/gnu-overflow-builtins-runtime.c \
 		--typed-overflow-builtins-source \

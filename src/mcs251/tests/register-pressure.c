@@ -72,3 +72,31 @@ mcs251_register_pressure_isr (void) __interrupt (1)
 {
   mcs251_pressure_values[0] = mcs251_byte_register_pressure (2);
 }
+
+#if defined (MCS_REGISTER_PRESSURE_RUNTIME)
+__sfr __at (0x99) SBUF;
+
+static void
+print_result (unsigned char passed)
+{
+  const char *text = passed ? "PASS\n" : "FAIL\n";
+
+  while (*text)
+    SBUF = *text++;
+}
+
+void
+main (void)
+{
+  unsigned char passed = mcs251_byte_register_call_pressure () == 0x0c;
+
+  mcs251_pressure_values[0] = 1;
+  if (mcs251_byte_register_pressure (2) != 0x1c)
+    passed = 0;
+
+  print_result (passed);
+  for (;;)
+    {
+    }
+}
+#endif

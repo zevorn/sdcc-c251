@@ -158,6 +158,7 @@ def main():
     parser.add_argument("--bit-builtins-source", required=True)
     parser.add_argument("--byte-swap-builtins-source", required=True)
     parser.add_argument("--size-type-source", required=True)
+    parser.add_argument("--register-pressure-source", required=True)
     parser.add_argument("--overflow-builtins-source", required=True)
     parser.add_argument("--typed-overflow-builtins-source", required=True)
     parser.add_argument("--longlong-source", required=True)
@@ -180,6 +181,8 @@ def main():
         args.byte_swap_builtins_source
     ).resolve()
     size_type_source = Path(args.size_type_source).resolve()
+    register_pressure_source = \
+        Path(args.register_pressure_source).resolve()
     overflow_builtins_source = Path(args.overflow_builtins_source).resolve()
     typed_overflow_builtins_source = Path(
         args.typed_overflow_builtins_source
@@ -194,6 +197,7 @@ def main():
         bit_builtins_source, longlong_source, device_include, library_dir,
         byte_swap_builtins_source,
         size_type_source,
+        register_pressure_source,
         overflow_builtins_source, stack_auto_library_dir,
         typed_overflow_builtins_source,
     )
@@ -321,6 +325,16 @@ def main():
             run_qemu(
                 qemu, machine, size_type_image,
                 trace_for(size_type_image),
+            )
+
+            _, register_pressure_image = build(
+                sdcc, register_pressure_source, device_include,
+                bit_library, output_dir, f"register-pressure-{bit_name}",
+                (*bit_flags, "-DMCS_REGISTER_PRESSURE_RUNTIME"),
+            )
+            run_qemu(
+                qemu, machine, register_pressure_image,
+                trace_for(register_pressure_image),
             )
 
         overflow_configurations = (
