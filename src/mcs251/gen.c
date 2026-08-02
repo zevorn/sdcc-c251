@@ -7888,7 +7888,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
                   MOVA (opGet (left, 0, false, false));
                   for (cidx = 1; cidx < size; cidx++)
                     if (chk[cidx])
-                      emitcode ("orl", "a,%s", opGet (left, cidx, false, true));
+                      emitRestrictedAccumulatorOp ("orl", opGet (left, cidx, false, true));
                   emitcode ("jnz", "%05d$", lbl->key + 100);
                   return;
                 }
@@ -7904,7 +7904,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
                   MOVA (opGet (left, 0, false, false));
                   for (cidx = 1; cidx < size; cidx++)
                     if (chk[cidx])
-                      emitcode ("anl", "a,%s", opGet (left, cidx, false, false));
+                      emitRestrictedAccumulatorOp ("anl", opGet (left, cidx, false, false));
                   emitcode ("cjne", "a,#0xFF,%05d$", lbl->key + 100);
                   return;
                 }
@@ -8752,7 +8752,7 @@ genAnd (iCode * ic, iCode * ifx)
                   else
                     {
                       if (bytelit != 0x0FFL)
-                        emitcode ("anl", "a,%s", opGet (right, offset, FALSE, TRUE));
+                        emitRestrictedAccumulatorOp ("anl", opGet (right, offset, FALSE, TRUE));
                       emitcode ("jnz", "!tlabel", labelKey2num (tlbl->key));
                     }
                 }
@@ -8800,7 +8800,7 @@ genAnd (iCode * ic, iCode * ifx)
               if (IS_AOP_PREG (result) || AOP_TYPE (result) == AOP_MCS251_STK)
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("anl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("anl", opGet (right, offset, FALSE, FALSE));
                   opPut (result, "a", offset);
                 }
               else if (AOP_TYPE (left) != AOP_DPTR)
@@ -8823,7 +8823,7 @@ genAnd (iCode * ic, iCode * ifx)
                 {
                   if (offset)
                     emitcode ("mov", "a,b");
-                  emitcode ("anl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("anl", opGet (right, offset, FALSE, FALSE));
                   if (offset)
                     emitcode ("mov", "b,a");
                 }
@@ -8837,7 +8837,7 @@ genAnd (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("anl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("anl", opGet (right, offset, FALSE, FALSE));
                   opPut (result, "a", offset);
                 }
               else
@@ -8845,7 +8845,7 @@ genAnd (iCode * ic, iCode * ifx)
                   MOVA (opGet (right, offset, FALSE, FALSE));
                   if (IS_AOP_PREG (result))
                     {
-                      emitcode ("anl", "a,%s", opGet (left, offset, FALSE, TRUE));
+                      emitRestrictedAccumulatorOp ("anl", opGet (left, offset, FALSE, TRUE));
                       opPut (result, "a", offset);
                     }
                   else
@@ -8876,7 +8876,7 @@ genAnd (iCode * ic, iCode * ifx)
                 {
                   if (offset)
                     emitcode ("mov", "a,b");
-                  emitcode ("anl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("anl", opGet (right, offset, FALSE, FALSE));
                 }
               else if (AOP_TYPE (left) == AOP_ACC)
                 {
@@ -8904,12 +8904,12 @@ genAnd (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("anl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("anl", opGet (right, offset, FALSE, FALSE));
                 }
               else
                 {
                   MOVA (opGet (right, offset, FALSE, FALSE));
-                  emitcode ("anl", "a,%s", opGet (left, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("anl", opGet (left, offset, FALSE, FALSE));
                 }
 
               emitcode ("jnz", "!tlabel", labelKey2num (tlbl->key));
@@ -8960,7 +8960,7 @@ genAnd (iCode * ic, iCode * ifx)
                 {
                   if (offset)
                     emitcode ("mov", "a,b");
-                  emitcode ("anl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("anl", opGet (right, offset, FALSE, FALSE));
                 }
               else if (AOP_TYPE (left) == AOP_ACC)
                 {
@@ -8988,12 +8988,12 @@ genAnd (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("anl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("anl", opGet (right, offset, FALSE, FALSE));
                 }
               else
                 {
                   MOVA (opGet (right, offset, FALSE, FALSE));
-                  emitcode ("anl", "a,%s", opGet (left, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("anl", opGet (left, offset, FALSE, FALSE));
                 }
               opPut (result, "a", offset);
             }
@@ -9209,7 +9209,7 @@ genOr (iCode * ic, iCode * ifx)
               if (IS_AOP_PREG (left) || AOP_TYPE (left) == AOP_MCS251_STK)
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("orl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("orl", opGet (right, offset, FALSE, FALSE));
                   opPut (result, "a", offset);
                 }
               else if (AOP_TYPE (left) != AOP_DPTR)
@@ -9232,7 +9232,7 @@ genOr (iCode * ic, iCode * ifx)
                 {
                   if (offset)
                     emitcode ("mov", "a,b");
-                  emitcode ("orl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("orl", opGet (right, offset, FALSE, FALSE));
                   if (offset)
                     emitcode ("mov", "b,a");
                 }
@@ -9246,7 +9246,7 @@ genOr (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("orl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("orl", opGet (right, offset, FALSE, FALSE));
                   opPut (result, "a", offset);
                 }
               else
@@ -9254,7 +9254,7 @@ genOr (iCode * ic, iCode * ifx)
                   MOVA (opGet (right, offset, FALSE, FALSE));
                   if (IS_AOP_PREG (left))
                     {
-                      emitcode ("orl", "a,%s", opGet (left, offset, FALSE, TRUE));
+                      emitRestrictedAccumulatorOp ("orl", opGet (left, offset, FALSE, TRUE));
                       opPut (result, "a", offset);
                     }
                   else
@@ -9285,7 +9285,7 @@ genOr (iCode * ic, iCode * ifx)
                 {
                   if (offset)
                     emitcode ("mov", "a,b");
-                  emitcode ("orl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("orl", opGet (right, offset, FALSE, FALSE));
                 }
               else if (AOP_TYPE (left) == AOP_ACC)
                 {
@@ -9313,12 +9313,12 @@ genOr (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("orl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("orl", opGet (right, offset, FALSE, FALSE));
                 }
               else
                 {
                   MOVA (opGet (right, offset, FALSE, FALSE));
-                  emitcode ("orl", "a,%s", opGet (left, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("orl", opGet (left, offset, FALSE, FALSE));
                 }
 
               emitcode ("jnz", "!tlabel", labelKey2num (tlbl->key));
@@ -9370,7 +9370,7 @@ genOr (iCode * ic, iCode * ifx)
                 {
                   if (offset)
                     emitcode ("mov", "a,b");
-                  emitcode ("orl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("orl", opGet (right, offset, FALSE, FALSE));
                 }
               else if (AOP_TYPE (left) == AOP_ACC)
                 {
@@ -9398,12 +9398,12 @@ genOr (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("orl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("orl", opGet (right, offset, FALSE, FALSE));
                 }
               else
                 {
                   MOVA (opGet (right, offset, FALSE, FALSE));
-                  emitcode ("orl", "a,%s", opGet (left, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("orl", opGet (left, offset, FALSE, FALSE));
                 }
               opPut (result, "a", offset);
             }
@@ -9584,7 +9584,7 @@ genXor (iCode * ic, iCode * ifx)
               if (IS_AOP_PREG (left) || AOP_TYPE (left) == AOP_MCS251_STK)
                 {
                   MOVA (opGet (left, offset, FALSE, TRUE));
-                  emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("xrl", opGet (right, offset, FALSE, FALSE));
                   opPut (result, "a", offset);
                 }
               else if (AOP_TYPE (left) != AOP_DPTR)
@@ -9607,7 +9607,7 @@ genXor (iCode * ic, iCode * ifx)
                 {
                   if (offset)
                     emitcode ("mov", "a,b");
-                  emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("xrl", opGet (right, offset, FALSE, FALSE));
                   if (offset)
                     emitcode ("mov", "b,a");
                 }
@@ -9621,7 +9621,7 @@ genXor (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("xrl", opGet (right, offset, FALSE, FALSE));
                   opPut (result, "a", offset);
                 }
               else
@@ -9629,7 +9629,7 @@ genXor (iCode * ic, iCode * ifx)
                   MOVA (opGet (right, offset, FALSE, FALSE));
                   if (IS_AOP_PREG (left))
                     {
-                      emitcode ("xrl", "a,%s", opGet (left, offset, FALSE, TRUE));
+                      emitRestrictedAccumulatorOp ("xrl", opGet (left, offset, FALSE, TRUE));
                       opPut (result, "a", offset);
                     }
                   else
@@ -9665,7 +9665,7 @@ genXor (iCode * ic, iCode * ifx)
                 {
                   if (offset)
                     emitcode ("mov", "a,b");
-                  emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("xrl", opGet (right, offset, FALSE, FALSE));
                 }
               else if (AOP_TYPE (left) == AOP_ACC)
                 {
@@ -9693,12 +9693,12 @@ genXor (iCode * ic, iCode * ifx)
               else if (aopGetUsesAcc (left->aop, offset))
                 {
                   MOVA (opGet (left, offset, FALSE, FALSE));
-                  emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("xrl", opGet (right, offset, FALSE, FALSE));
                 }
               else
                 {
                   MOVA (opGet (right, offset, FALSE, FALSE));
-                  emitcode ("xrl", "a,%s", opGet (left, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("xrl", opGet (left, offset, FALSE, FALSE));
                 }
 
               emitcode ("jnz", "!tlabel", labelKey2num (tlbl->key));
@@ -9745,7 +9745,7 @@ genXor (iCode * ic, iCode * ifx)
                 {
                   if (offset)
                     emitcode ("mov", "a,b");
-                  emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("xrl", opGet (right, offset, FALSE, FALSE));
                 }
               else if (AOP_TYPE (left) == AOP_ACC)
                 {
@@ -9776,12 +9776,12 @@ genXor (iCode * ic, iCode * ifx)
                   if (aopIsLitVal (right->aop, offset, 1, 0xff))
                     emitcode ("cpl", "a");
                   else
-                    emitcode ("xrl", "a,%s", opGet (right, offset, FALSE, FALSE));
+                    emitRestrictedAccumulatorOp ("xrl", opGet (right, offset, FALSE, FALSE));
                 }
               else
                 {
                   MOVA (opGet (right, offset, FALSE, FALSE));
-                  emitcode ("xrl", "a,%s", opGet (left, offset, FALSE, FALSE));
+                  emitRestrictedAccumulatorOp ("xrl", opGet (left, offset, FALSE, FALSE));
                 }
               opPut (result, "a", offset);
             }
@@ -10356,11 +10356,11 @@ AccAXLsh (const char *x, int shCount)
       emitAccumulatorExchange (x);        // CCCCCDDD:BBB00000
       AccRol (shCount);         // DDDCCCCC:BBB00000
       emitAccumulatorExchange (x);        // BBB00000:DDDCCCCC
-      emitcode ("xrl", "a,%s", x);      // (BBB^DDD)CCCCC:DDDCCCCC
+      emitRestrictedAccumulatorOp ("xrl", x);      // (BBB^DDD)CCCCC:DDDCCCCC
       emitAccumulatorExchange (x);        // DDDCCCCC:(BBB^DDD)CCCCC
       emitcode ("anl", "a,#!constbyte", mask);  // DDD00000:(BBB^DDD)CCCCC
       emitAccumulatorExchange (x);        // (BBB^DDD)CCCCC:DDD00000
-      emitcode ("xrl", "a,%s", x);      // BBBCCCCC:DDD00000
+      emitRestrictedAccumulatorOp ("xrl", x);      // BBBCCCCC:DDD00000
       break;
     case 6:                    // AAAAAABB:CCCCCCDD
       mask = SRMask[shCount];
@@ -10418,11 +10418,11 @@ AccAXRsh (const char *x, int shCount)
       emitAccumulatorExchange (x);        // CCCCCDDD:BBBAAAAA
       AccRol (8 - shCount);     // DDDCCCCC:BBBAAAAA
       emitcode ("anl", "a,#!constbyte", mask);  // 000CCCCC:BBBAAAAA
-      emitcode ("xrl", "a,%s", x);      // BBB(CCCCC^AAAAA):BBBAAAAA
+      emitRestrictedAccumulatorOp ("xrl", x);      // BBB(CCCCC^AAAAA):BBBAAAAA
       emitAccumulatorExchange (x);        // BBBAAAAA:BBB(CCCCC^AAAAA)
       emitcode ("anl", "a,#!constbyte", mask);  // 000AAAAA:BBB(CCCCC^AAAAA)
       emitAccumulatorExchange (x);        // BBB(CCCCC^AAAAA):000AAAAA
-      emitcode ("xrl", "a,%s", x);      // BBBCCCCC:000AAAAA
+      emitRestrictedAccumulatorOp ("xrl", x);      // BBBCCCCC:000AAAAA
       emitAccumulatorExchange (x);        // 000AAAAA:BBBCCCCC
       break;
     case 6:                    // AABBBBBB:CCDDDDDD
@@ -10475,11 +10475,11 @@ AccAXRshS (const char *x, int shCount)
       emitAccumulatorExchange (x);        // CCCCCDDD:BBBAAAAA
       AccRol (8 - shCount);     // DDDCCCCC:BBBAAAAA
       emitcode ("anl", "a,#!constbyte", mask);  // 000CCCCC:BBBAAAAA
-      emitcode ("xrl", "a,%s", x);      // BBB(CCCCC^AAAAA):BBBAAAAA
+      emitRestrictedAccumulatorOp ("xrl", x);      // BBB(CCCCC^AAAAA):BBBAAAAA
       emitAccumulatorExchange (x);        // BBBAAAAA:BBB(CCCCC^AAAAA)
       emitcode ("anl", "a,#!constbyte", mask);  // 000AAAAA:BBB(CCCCC^AAAAA)
       emitAccumulatorExchange (x);        // BBB(CCCCC^AAAAA):000AAAAA
-      emitcode ("xrl", "a,%s", x);      // BBBCCCCC:000AAAAA
+      emitRestrictedAccumulatorOp ("xrl", x);      // BBBCCCCC:000AAAAA
       emitAccumulatorExchange (x);        // 000SAAAA:BBBCCCCC
       emitcode ("jnb", "acc.%d,!tlabel", 7 - shCount, labelKey2num (tlbl->key));
       mask = ~SRMask[shCount];
@@ -10645,7 +10645,7 @@ shiftLLeftOrResult (operand * left, int offl, operand * result, int offr, int sh
     }
   else
     {
-      emitcode ("orl", "a,%s", opGet (result, offr, FALSE, FALSE));
+      emitRestrictedAccumulatorOp ("orl", opGet (result, offr, FALSE, FALSE));
     }
   /* back to result */
   opPut (result, "a", offr);
@@ -10669,7 +10669,7 @@ shiftRLeftOrResult (operand * left, int offl, operand * result, int offr, int sh
     }
   else
     {
-      emitcode ("orl", "a,%s", opGet (result, offr, FALSE, FALSE));
+      emitRestrictedAccumulatorOp ("orl", opGet (result, offr, FALSE, FALSE));
     }
   /* back to result */
   opPut (result, "a", offr);
@@ -13520,7 +13520,7 @@ genJumpTab (iCode * ic)
       /* Scale the selector by the jump-table entry size. */
       if ((AOP_TYPE (cond) == AOP_REG) || (IS_AOP_PREG (cond) && !AOP (cond)->paged && !IS_VOLATILE (operandType (cond))))
         {
-          emitcode ("add", "a,%s", l);
+          emitRestrictedAccumulatorOp ("add", l);
           emitcode ("add", "a,acc");
         }
       else

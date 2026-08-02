@@ -40,6 +40,15 @@ INVALID_HIGH_BANK_ALIAS = re.compile(
     r"\bar(?:8|9|1[0-5])\b",
     re.IGNORECASE,
 )
+# In MCS-251 Source mode these accumulator-memory forms only encode R0-R7 as
+# the high operand (or none at all): ADD/ADDC/SUBB A,Rn, ANL/ORL/XRL A,Rn,
+# CJNE A,Rn, and the CJNE Rn,#imm forms.  Any emitted occurrence with an
+# R8-R15 operand is an illegal instruction the assembler would reject.
+INVALID_HIGH_FIXED_ACC_OP = re.compile(
+    r"^[ \t]*(?:(?:add|addc|subb|anl|orl|xrl)[ \t]+a,[ \t]*|"
+    r"cjne[ \t]+(?:a,[ \t]*)?)r(?:8|9|1[0-5])\b",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def compile_source(
@@ -302,6 +311,13 @@ def main():
                 raise AssertionError(
                     f"{name} emitted DJNZ with R8-R15: "
                     f"{invalid_djnz.group(0).strip()}"
+                )
+
+            invalid_acc = INVALID_HIGH_FIXED_ACC_OP.search(assembly[name])
+            if invalid_acc:
+                raise AssertionError(
+                    f"{name} emitted an R0-R7 accumulator op with an "
+                    f"R8-R15 operand: {invalid_acc.group(0).strip()}"
                 )
 
             aliased = ALIASED_REGISTER_ALLOCATION.search(assembly[name])
