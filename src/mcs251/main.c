@@ -29,7 +29,7 @@
 #include "../mcs51/ralloc.h"
 #include "../mcs51/gen.h"
 #include "peep.h"
-#include "../mcs51/rtrack.h"
+#include "rtrack.h"
 #include "dbuf_string.h"
 #include "../SDCCutil.h"
 
@@ -1127,7 +1127,7 @@ PORT mcs251_port =
   mcs51_assignRegisters,
   _mcs51_getRegName,
   0,
-  _mcs51_rtrackUpdate,
+  _mcs251_rtrackUpdate,
   _mcs51_keywords,
   _mcs51_genAssemblerStart,
   NULL,                         /* no genAssemblerEnd */

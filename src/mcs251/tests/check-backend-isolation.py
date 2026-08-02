@@ -19,6 +19,12 @@ MCS251_PEEP_EXPORTS = (
     "mcs251notUsedFrom",
     "mcs251CanAssign",
 )
+MCS251_RTRACK_EXPORTS = (
+    "_mcs251_rtrackUpdate",
+    "mcs251_rtrackGetLit",
+    "mcs251_rtrackMoveALit",
+    "mcs251_rtrackLoadDptrWithSym",
+)
 
 
 def check_mcs251_source(source):
@@ -48,8 +54,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mcs251-source", required=True)
     parser.add_argument("--mcs251-peep-source", required=True)
+    parser.add_argument("--mcs251-rtrack-source", required=True)
     parser.add_argument("--mcs51-source", required=True)
     parser.add_argument("--mcs51-peep-source", required=True)
+    parser.add_argument("--mcs51-rtrack-source", required=True)
     args = parser.parse_args()
 
     source = Path(args.mcs251_source)
@@ -77,9 +85,28 @@ def main():
             f"{', '.join(missing_callbacks)}"
         )
 
+    rtrack_source = Path(args.mcs251_rtrack_source)
+    rtrack_text = check_mcs251_source(rtrack_source)
+    missing_exports = [
+        symbol
+        for symbol in MCS251_RTRACK_EXPORTS
+        if not re.search(rf"\b{symbol}\s*\(", rtrack_text)
+    ]
+    if missing_exports:
+        raise RuntimeError(
+            f"{rtrack_source} does not define MCS251 register tracking: "
+            f"{', '.join(missing_exports)}"
+        )
+
+    if "_mcs251_rtrackUpdate" not in text:
+        raise RuntimeError(
+            f"{source} does not use the MCS251 register tracking callback"
+        )
+
     for mcs51_source in (
         Path(args.mcs51_source),
         Path(args.mcs51_peep_source),
+        Path(args.mcs51_rtrack_source),
     ):
         mcs51_text = mcs51_source.read_text(encoding="utf-8")
         selectors = [
@@ -93,7 +120,7 @@ def main():
                 f"{', '.join(selectors)}"
             )
 
-    print("PASS: MCS251 owns its port and peephole implementation sources")
+    print("PASS: MCS251 owns its port, peephole, and rtrack sources")
 
 
 if __name__ == "__main__":
