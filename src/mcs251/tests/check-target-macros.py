@@ -130,10 +130,12 @@ PORT_MACROS = {
     "mcs51": {
         "__BYTE_ORDER__": "__ORDER_LITTLE_ENDIAN__",
         "__STDC_ENDIAN_NATIVE__": "__STDC_ENDIAN_LITTLE__",
+        "__SDCCCALL": "0",
     },
     "mcs251": {
         "__BYTE_ORDER__": "__ORDER_BIG_ENDIAN__",
         "__STDC_ENDIAN_NATIVE__": "__STDC_ENDIAN_BIG__",
+        "__SDCCCALL": "2",
     },
 }
 
@@ -241,6 +243,7 @@ def check_macros(sdcc, device_include, source, port, mode):
     macros = read_macros(sdcc, device_include, source, port, mode)
     expected = COMMON_MACROS | PORT_SIZE_MACROS[port] | {
         "__BYTE_ORDER__": PORT_MACROS[port]["__BYTE_ORDER__"],
+        "__SDCCCALL": PORT_MACROS[port]["__SDCCCALL"],
     }
 
     failures = []

@@ -1305,7 +1305,7 @@ PORT MCS51_PORT_OBJECT =
   },
   { _mcs51_genExtraAreas, NULL },
 #ifdef MCS251_PORT
-  1,                            // SDCC MCS251 ABI revision
+  2,                            // SDCC MCS251 ABI revision
 #else
   0,                            // ABI revision
 #endif
