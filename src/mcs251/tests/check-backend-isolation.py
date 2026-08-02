@@ -13,6 +13,11 @@ TRANSITIONAL_TARGET_SELECTORS = (
     "MCS251_PORT",
     "TARGET_IS_MCS251",
 )
+COMPILE_TIME_POLICY_LITERAL = re.compile(
+    r"\bif\s*\(\s*!?(?:true|false)\b"
+    r"|\b(?:true|false)\s*(?:&&|\|\||\?)"
+    r"|!(?:true|false)\b"
+)
 MCS251_PEEP_EXPORTS = (
     "mcs251DeadMove",
     "mcs251notUsed",
@@ -68,6 +73,16 @@ def check_mcs251_source(source):
         )
 
     return text
+
+
+def check_bound_policy(source, text):
+    match = COMPILE_TIME_POLICY_LITERAL.search(text)
+    if match:
+        line = text.count("\n", 0, match.start()) + 1
+        raise RuntimeError(
+            f"{source}:{line} still contains a compile-time target-policy "
+            "literal"
+        )
 
 
 def main():
@@ -129,6 +144,7 @@ def main():
 
     gen_source = Path(args.mcs251_gen_source)
     gen_text = check_mcs251_source(gen_source)
+    check_bound_policy(gen_source, gen_text)
     missing_exports = [
         symbol
         for symbol in MCS251_GEN_EXPORTS
@@ -142,6 +158,7 @@ def main():
 
     ralloc_source = Path(args.mcs251_ralloc_source)
     ralloc_text = check_mcs251_source(ralloc_source)
+    check_bound_policy(ralloc_source, ralloc_text)
     missing_exports = [
         symbol
         for symbol in MCS251_RALLOC_EXPORTS
