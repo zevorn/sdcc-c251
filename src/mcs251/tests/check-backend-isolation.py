@@ -126,7 +126,7 @@ def main():
         )
 
     gen_source = Path(args.mcs251_gen_source)
-    gen_text = read_owned_source(gen_source)
+    gen_text = check_mcs251_source(gen_source)
     missing_exports = [
         symbol
         for symbol in MCS251_GEN_EXPORTS
@@ -139,7 +139,7 @@ def main():
         )
 
     ralloc_source = Path(args.mcs251_ralloc_source)
-    ralloc_text = read_owned_source(ralloc_source)
+    ralloc_text = check_mcs251_source(ralloc_source)
     missing_exports = [
         symbol
         for symbol in MCS251_RALLOC_EXPORTS
