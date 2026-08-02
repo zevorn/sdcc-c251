@@ -150,6 +150,9 @@ check: all
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/endianness-layout.c \
 		--aggregate-source $(srcdir)/tests/aggregate-return.c
+	$(PYTHON) $(srcdir)/tests/check-elf-output.py \
+		--sdcc $(top_builddir)/bin/sdcc \
+		--source $(srcdir)/tests/elf-output-probe.c
 
 QEMU_MCS251 ?= $(HOME)/oss/qemu/builds/build-mcs251/qemu-system-mcs251
 QEMU_MCS51 ?= $(HOME)/oss/qemu/builds/build-mcs51/qemu-system-mcs51

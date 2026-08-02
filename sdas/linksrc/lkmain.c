@@ -1074,7 +1074,8 @@ parse()
 					break;
 
 				case 'E':
-                                        if (TARGET_IS_6808 || TARGET_IS_STM8) {
+                                        if (TARGET_IS_6808 || TARGET_IS_STM8 ||
+                                            is_sdld_target_8051_like ()) {
                                                 oflag = 4;
 						break;
 					}

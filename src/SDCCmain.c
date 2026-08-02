@@ -107,6 +107,7 @@ char buffer[PATH_MAX * 2];
 #define OPTION_HELP                 "--help"
 #define OPTION_OUT_FMT_IHX          "--out-fmt-ihx"
 #define OPTION_OUT_FMT_S19          "--out-fmt-s19"
+#define OPTION_OUT_FMT_ELF          "--out-fmt-elf"
 #define OPTION_PEEP_FILE            "--peep-file"
 #define OPTION_LIB_PATH             "--lib-path"
 #define OPTION_CALLEE_SAVES         "--callee-saves"
@@ -258,6 +259,7 @@ static const OPTION optionsTable[] = {
   {0,   OPTION_LIB_PATH, &libPathsSet, "<path> use this path to search for libraries", CLAT_ADD_SET},
   {0,   OPTION_OUT_FMT_IHX, NULL, "Output in Intel hex format"},
   {0,   OPTION_OUT_FMT_S19, NULL, "Output in S19 hex format"},
+  {0,   OPTION_OUT_FMT_ELF, NULL, "Output in ELF32 executable format"},
   {0,   OPTION_XRAM_LOC, NULL, "<nnnn> External Ram start location", CLAT_INTEGER},
   {0,   OPTION_XRAM_SIZE, NULL, "<nnnn> External Ram size"},
   {0,   OPTION_IRAM_SIZE, &options.iram_size, "<nnnn> Internal Ram size", CLAT_INTEGER},
@@ -1154,6 +1156,12 @@ parseCmdLine (int argc, char **argv)
           if (strcmp (argv[i], OPTION_OUT_FMT_S19) == 0)
             {
               options.out_fmt = 's';
+              continue;
+            }
+
+          if (strcmp (argv[i], OPTION_OUT_FMT_ELF) == 0)
+            {
+              options.out_fmt = 'E';
               continue;
             }
 

@@ -75,7 +75,8 @@ enum
   EM_68HC11 = 70,
   EM_68HC12 = 53,
   EM_68HC16 = 69,
-  EM_STM8 = 186
+  EM_STM8 = 186,
+  EM_8051 = 165
 };
 
 enum
@@ -532,8 +533,18 @@ elfGenerateSyms(struct head *hp)
             {
               symhdr = (Elf32_Sym *)new (sizeof (*symhdr));
               symhdr->st_name = strtabFindOrAdd(&strtab,sym->s_id);
-              symhdr->st_value = sym->s_addr + sym->s_axp->a_addr;
-              symhdr->st_shndx = strtabFindShndx(&shstrtab,sym->s_axp->a_bap->a_id);
+              if (sym->s_axp && sym->s_axp->a_bap)
+                {
+                  symhdr->st_value = sym->s_addr + sym->s_axp->a_addr;
+                  symhdr->st_shndx = strtabFindShndx(&shstrtab,sym->s_axp->a_bap->a_id);
+                }
+              else
+                {
+                  /* Absolute or relational symbol without an area; emit it
+                     as an absolute value so the ELF stays readable. */
+                  symhdr->st_value = sym->s_addr;
+                  symhdr->st_shndx = SHN_ABS;
+                }
               symhdr->st_info = ELF32_ST_INFO(STB_GLOBAL,STT_FUNC);
               if(!symhdr->st_shndx)
                 {
@@ -718,7 +729,8 @@ elfGenerate (void)
   ehdr.e_ident[EI_VERSION] = 1;
   ehdr.e_ident[EI_PAD] = 8;
   ehdr.e_type = ET_EXEC;
-  ehdr.e_machine = TARGET_IS_STM8 ? EM_STM8 : EM_68HC08; /* FIXME: get rid of hardcoded value - EEP */
+  ehdr.e_machine = is_sdld_target_8051_like () ? EM_8051 :
+                   (TARGET_IS_STM8 ? EM_STM8 : EM_68HC08);
   ehdr.e_phentsize = sizeof (*phdrp);
   ehdr.e_shentsize = sizeof (*shdrp);
   ehdr.e_ehsize = sizeof (ehdr);
