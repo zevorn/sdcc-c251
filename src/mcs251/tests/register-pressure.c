@@ -106,6 +106,21 @@ mcs251_unsigned_word_multiply (unsigned int left, unsigned int right)
   return (unsigned long)left * right;
 }
 
+#if defined (__SDCC_mcs251)
+unsigned int
+mcs251_high_register_shift (unsigned int year, unsigned int day)
+{
+  unsigned int saved0 = mcs251_word_values[0];
+  unsigned int saved1 = mcs251_word_values[1];
+  unsigned int saved2 = mcs251_word_values[2];
+  unsigned int result;
+
+  result = year * 365u + year / 4u - year / 100u + day;
+
+  return result + saved0 + saved1 + saved2;
+}
+#endif
+
 #if defined (MCS_REGISTER_PRESSURE_RUNTIME)
 __sfr __at (0x99) SBUF;
 
@@ -133,6 +148,10 @@ main (void)
   if (mcs251_unsigned_word_multiply (0x1234u, 0xabcdu) !=
       0x0c374fa4ul)
     passed = 0;
+#if defined (__SDCC_mcs251)
+  if (mcs251_high_register_shift (369, 307) != 0xa069u)
+    passed = 0;
+#endif
 
   print_result (passed);
   for (;;)

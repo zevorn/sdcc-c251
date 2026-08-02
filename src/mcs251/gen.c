@@ -402,6 +402,21 @@ emitpop (const char *arg)
   wassertl (_G.stack.pushed >= 0, "stack underflow");
 }
 
+/* XCH A,Rn only encodes R0-R7.  Preserve the same semantics for the fixed
+   R8-R15 byte registers without borrowing another live register. */
+static void
+emitAccumulatorExchange (const char *operand)
+{
+  if (isFixedByteRegisterOperand (operand))
+    {
+      emitpush ("acc");
+      MOVA (operand);
+      emitpop (operand);
+    }
+  else
+    emitcode ("xch", "a,%s", operand);
+}
+
 /*-----------------------------------------------------------------*/
 /* pushB - saves register B if necessary                           */
 /*-----------------------------------------------------------------*/
@@ -956,10 +971,10 @@ aopPtrForSym (symbol * sym, bool accuse, int offset, asmop * aop, iCode * ic)
     {
       if (accuse)
         {
-          emitcode ("xch", "a,%s", aop->aopu.aop_ptr->name);
+          emitAccumulatorExchange (aop->aopu.aop_ptr->name);
           emitcode ("mov", "a,%s", base);
           emitcode ("add", "a,#0x%02x", offset & 0xff);
-          emitcode ("xch", "a,%s", aop->aopu.aop_ptr->name);
+          emitAccumulatorExchange (aop->aopu.aop_ptr->name);
         }
       else
         {
@@ -2715,7 +2730,7 @@ xch_a_aopGet (operand * oper, int offset, bool dname)
   else
     {
       l = opGet (oper, offset, false, dname);
-      emitcode ("xch", "a,%s", l);
+      emitAccumulatorExchange (l);
     }
   return l;
 }
@@ -2798,15 +2813,15 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset, bool a_dead)
     }
   else if (aopInRn (from, from_offset))
     {
-      emitcode ("xch", "a, %s", from->aopu.aop_reg[from_offset]->name);
+      emitAccumulatorExchange (from->aopu.aop_reg[from_offset]->name);
       cheapMove (to, to_offset, ASMOP_A, 0, false);
-      emitcode ("xch", "a, %s", from->aopu.aop_reg[from_offset]->name);
+      emitAccumulatorExchange (from->aopu.aop_reg[from_offset]->name);
     }
   else if (aopInRn (to, to_offset))
     {
-      emitcode ("xch", "a, %s", to->aopu.aop_reg[to_offset]->name);
+      emitAccumulatorExchange (to->aopu.aop_reg[to_offset]->name);
       cheapMove (ASMOP_A, 0, from, from_offset, true);
-      emitcode ("xch", "a, %s", to->aopu.aop_reg[to_offset]->name);
+      emitAccumulatorExchange (to->aopu.aop_reg[to_offset]->name);
     }
   else if (!a_dead)
     {
@@ -2876,17 +2891,17 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
           continue;
         if (aopInReg (source, soffset + i, A_IDX))
           {
-            emitcode ("xch", "a, %s", source->aopu.aop_reg[soffset + j]->name);
+            emitAccumulatorExchange (source->aopu.aop_reg[soffset + j]->name);
           }
         else if (aopInReg (result, roffset + i, A_IDX))
           {
-            emitcode ("xch", "a, %s", source->aopu.aop_reg[soffset + i]->name);
+            emitAccumulatorExchange (source->aopu.aop_reg[soffset + i]->name);
           }
         else
           {
-            emitcode ("xch", "a, %s", source->aopu.aop_reg[soffset + i]->name);
-            emitcode ("xch", "a, %s", source->aopu.aop_reg[soffset + j]->name);
-            emitcode ("xch", "a, %s", source->aopu.aop_reg[soffset + i]->name);
+            emitAccumulatorExchange (source->aopu.aop_reg[soffset + i]->name);
+            emitAccumulatorExchange (source->aopu.aop_reg[soffset + j]->name);
+            emitAccumulatorExchange (source->aopu.aop_reg[soffset + i]->name);
           }
         assigned[i] = assigned[j] = true;
         regsize -= 2;
@@ -5098,11 +5113,11 @@ genFunction (iCode * ic)
         }
       else if (i > 4 && freereg)
         {
-          emitcode ("xch", "a,%s", freereg);
+          emitAccumulatorExchange (freereg);
           emitcode ("mov", "a,sp");
           emitcode ("add", "a,#!constbyte", i);
           emitcode ("mov", "sp,a");
-          emitcode ("xch", "a,%s", freereg);
+          emitAccumulatorExchange (freereg);
         }
       else if (i > 7)
         {
@@ -5138,14 +5153,14 @@ genFunction (iCode * ic)
       else if (i > 4)
         {
           if (freereg)
-            emitcode ("xch", "a,%s", freereg);
+            emitAccumulatorExchange (freereg);
           else
             emitpush ("acc");
           emitcode ("mov", "a,_spx");
           emitcode ("add", "a,#0x%02x", i & 0xff);
           emitcode ("mov", "_spx,a");
           if (freereg)
-            emitcode ("xch", "a,%s", freereg);
+            emitAccumulatorExchange (freereg);
           else
             emitpop ("acc");
         }
@@ -5641,28 +5656,28 @@ genRet (iCode *ic)
               for (int i = 0; i < size; i++)
                 {
                   MOVA (opGet (IC_LEFT (ic), i, false, false));
-                  emitcode ("xch", "a,%s", tempRegs[0]->name);
+                  emitAccumulatorExchange (tempRegs[0]->name);
                   emitcode ("xch", "a,dpl");
-                  emitcode ("xch", "a,%s", tempRegs[0]->name);
-                  emitcode ("xch", "a,%s", tempRegs[1]->name);
+                  emitAccumulatorExchange (tempRegs[0]->name);
+                  emitAccumulatorExchange (tempRegs[1]->name);
                   emitcode ("xch", "a,dph");
-                  emitcode ("xch", "a,%s", tempRegs[1]->name);
-                  emitcode ("xch", "a,%s", tempRegs[2]->name);
+                  emitAccumulatorExchange (tempRegs[1]->name);
+                  emitAccumulatorExchange (tempRegs[2]->name);
                   emitcode ("xch", "a,dpxl");
-                  emitcode ("xch", "a,%s", tempRegs[2]->name);
+                  emitAccumulatorExchange (tempRegs[2]->name);
                   emitcode (RUNTIME_CALL, "__gptrput");
                   if (i + 1 < size)
                     {
                       incrementFarPointer ();
-                      emitcode ("xch", "a,%s", tempRegs[0]->name);
+                      emitAccumulatorExchange (tempRegs[0]->name);
                       emitcode ("xch", "a,dpl");
-                      emitcode ("xch", "a,%s", tempRegs[0]->name);
-                      emitcode ("xch", "a,%s", tempRegs[1]->name);
+                      emitAccumulatorExchange (tempRegs[0]->name);
+                      emitAccumulatorExchange (tempRegs[1]->name);
                       emitcode ("xch", "a,dph");
-                      emitcode ("xch", "a,%s", tempRegs[1]->name);
-                      emitcode ("xch", "a,%s", tempRegs[2]->name);
+                      emitAccumulatorExchange (tempRegs[1]->name);
+                      emitAccumulatorExchange (tempRegs[2]->name);
                       emitcode ("xch", "a,dpxl");
-                      emitcode ("xch", "a,%s", tempRegs[2]->name);
+                      emitAccumulatorExchange (tempRegs[2]->name);
                     }
                 }
             }
@@ -10073,9 +10088,9 @@ genGetWord (iCode * ic)
           // xch  a,r1      r1          r0
           // xch  a,r0      a     r1
 
-          emitcode ("xch", "a,%s", opGet (left, offset, false, false));
-          emitcode ("xch", "a,%s", opGet (left, offset + 1, false, false));
-          emitcode ("xch", "a,%s", opGet (left, offset, false, false));
+          emitAccumulatorExchange (opGet (left, offset, false, false));
+          emitAccumulatorExchange (opGet (left, offset + 1, false, false));
+          emitAccumulatorExchange (opGet (left, offset, false, false));
           goto done;
         }
       else if (AOP (left)->aopu.aop_reg[offset+1]->rIdx == AOP (result)->aopu.aop_reg[0]->rIdx)
@@ -10350,9 +10365,9 @@ static void
 AccAXRrl1 (const char *x)
 {
   emitcode ("rrc", "a");
-  emitcode ("xch", "a,%s", x);
+  emitAccumulatorExchange (x);
   emitcode ("rrc", "a");
-  emitcode ("xch", "a,%s", x);
+  emitAccumulatorExchange (x);
 }
 
 /*-----------------------------------------------------------------*/
@@ -10361,9 +10376,9 @@ AccAXRrl1 (const char *x)
 static void
 AccAXLrl1 (const char *x)
 {
-  emitcode ("xch", "a,%s", x);
+  emitAccumulatorExchange (x);
   emitcode ("rlc", "a");
-  emitcode ("xch", "a,%s", x);
+  emitAccumulatorExchange (x);
   emitcode ("rlc", "a");
 }
 
@@ -10373,9 +10388,9 @@ AccAXLrl1 (const char *x)
 static void
 AccAXLsh1 (const char *x)
 {
-  emitcode ("xch", "a,%s", x);
+  emitAccumulatorExchange (x);
   emitcode ("add", "a,acc");
-  emitcode ("xch", "a,%s", x);
+  emitAccumulatorExchange (x);
   emitcode ("rlc", "a");
 }
 
@@ -10404,35 +10419,35 @@ AccAXLsh (const char *x, int shCount)
       mask = SLMask[shCount];
       AccRol (shCount);         // BBBAAAAA:CCCCCDDD
       emitcode ("anl", "a,#!constbyte", mask);  // BBB00000:CCCCCDDD
-      emitcode ("xch", "a,%s", x);      // CCCCCDDD:BBB00000
+      emitAccumulatorExchange (x);        // CCCCCDDD:BBB00000
       AccRol (shCount);         // DDDCCCCC:BBB00000
-      emitcode ("xch", "a,%s", x);      // BBB00000:DDDCCCCC
+      emitAccumulatorExchange (x);        // BBB00000:DDDCCCCC
       emitcode ("xrl", "a,%s", x);      // (BBB^DDD)CCCCC:DDDCCCCC
-      emitcode ("xch", "a,%s", x);      // DDDCCCCC:(BBB^DDD)CCCCC
+      emitAccumulatorExchange (x);        // DDDCCCCC:(BBB^DDD)CCCCC
       emitcode ("anl", "a,#!constbyte", mask);  // DDD00000:(BBB^DDD)CCCCC
-      emitcode ("xch", "a,%s", x);      // (BBB^DDD)CCCCC:DDD00000
+      emitAccumulatorExchange (x);        // (BBB^DDD)CCCCC:DDD00000
       emitcode ("xrl", "a,%s", x);      // BBBCCCCC:DDD00000
       break;
     case 6:                    // AAAAAABB:CCCCCCDD
       mask = SRMask[shCount];
       emitcode ("anl", "a,#!constbyte", mask);  // 000000BB:CCCCCCDD
       emitcode ("mov", "c,acc.0");      // c = B
-      emitcode ("xch", "a,%s", x);      // CCCCCCDD:000000BB
+      emitAccumulatorExchange (x);        // CCCCCCDD:000000BB
       emitcode ("rrc", "a");
-      emitcode ("xch", "a,%s", x);
+      emitAccumulatorExchange (x);
       emitcode ("rrc", "a");
       emitcode ("mov", "c,acc.0");      //<< get correct bit
-      emitcode ("xch", "a,%s", x);
+      emitAccumulatorExchange (x);
       emitcode ("rrc", "a");
-      emitcode ("xch", "a,%s", x);
+      emitAccumulatorExchange (x);
       emitcode ("rrc", "a");
-      emitcode ("xch", "a,%s", x);
+      emitAccumulatorExchange (x);
       break;
     case 7:                    // a:x <<= 7
       mask = SRMask[shCount];
       emitcode ("anl", "a,#!constbyte", mask);  // 0000000B:CCCCCCCD
       emitcode ("mov", "c,acc.0");      // c = B
-      emitcode ("xch", "a,%s", x);      // CCCCCCCD:0000000B
+      emitAccumulatorExchange (x);        // CCCCCCCD:0000000B
       AccAXRrl1 (x);            // BCCCCCCC:D0000000
       break;
     default:
@@ -10466,28 +10481,28 @@ AccAXRsh (const char *x, int shCount)
     case 4:
     case 5:                    // AAAAABBB:CCCCCDDD = a:x
       AccRol (8 - shCount);     // BBBAAAAA:DDDCCCCC
-      emitcode ("xch", "a,%s", x);      // CCCCCDDD:BBBAAAAA
+      emitAccumulatorExchange (x);        // CCCCCDDD:BBBAAAAA
       AccRol (8 - shCount);     // DDDCCCCC:BBBAAAAA
       emitcode ("anl", "a,#!constbyte", mask);  // 000CCCCC:BBBAAAAA
       emitcode ("xrl", "a,%s", x);      // BBB(CCCCC^AAAAA):BBBAAAAA
-      emitcode ("xch", "a,%s", x);      // BBBAAAAA:BBB(CCCCC^AAAAA)
+      emitAccumulatorExchange (x);        // BBBAAAAA:BBB(CCCCC^AAAAA)
       emitcode ("anl", "a,#!constbyte", mask);  // 000AAAAA:BBB(CCCCC^AAAAA)
-      emitcode ("xch", "a,%s", x);      // BBB(CCCCC^AAAAA):000AAAAA
+      emitAccumulatorExchange (x);        // BBB(CCCCC^AAAAA):000AAAAA
       emitcode ("xrl", "a,%s", x);      // BBBCCCCC:000AAAAA
-      emitcode ("xch", "a,%s", x);      // 000AAAAA:BBBCCCCC
+      emitAccumulatorExchange (x);        // 000AAAAA:BBBCCCCC
       break;
     case 6:                    // AABBBBBB:CCDDDDDD
       emitcode ("mov", "c,acc.7");
       AccAXLrl1 (x);            // ABBBBBBC:CDDDDDDA
       emitcode ("mov", "c,acc.7");
       AccAXLrl1 (x);            // BBBBBBCC:DDDDDDAA
-      emitcode ("xch", "a,%s", x);      // DDDDDDAA:BBBBBBCC
+      emitAccumulatorExchange (x);        // DDDDDDAA:BBBBBBCC
       emitcode ("anl", "a,#!constbyte", mask);  // 000000AA:BBBBBBCC
       break;
     case 7:                    // ABBBBBBB:CDDDDDDD
       emitcode ("mov", "c,acc.7");      // c = A
       AccAXLrl1 (x);            // BBBBBBBC:DDDDDDDA
-      emitcode ("xch", "a,%s", x);      // DDDDDDDA:BBBBBBCC
+      emitAccumulatorExchange (x);        // DDDDDDDA:BBBBBBCC
       emitcode ("anl", "a,#!constbyte", mask);  // 0000000A:BBBBBBBC
       break;
     default:
@@ -10523,15 +10538,15 @@ AccAXRshS (const char *x, int shCount)
     case 5:                    // AAAAABBB:CCCCCDDD = a:x
       tlbl = newiTempLabel (NULL);
       AccRol (8 - shCount);     // BBBAAAAA:CCCCCDDD
-      emitcode ("xch", "a,%s", x);      // CCCCCDDD:BBBAAAAA
+      emitAccumulatorExchange (x);        // CCCCCDDD:BBBAAAAA
       AccRol (8 - shCount);     // DDDCCCCC:BBBAAAAA
       emitcode ("anl", "a,#!constbyte", mask);  // 000CCCCC:BBBAAAAA
       emitcode ("xrl", "a,%s", x);      // BBB(CCCCC^AAAAA):BBBAAAAA
-      emitcode ("xch", "a,%s", x);      // BBBAAAAA:BBB(CCCCC^AAAAA)
+      emitAccumulatorExchange (x);        // BBBAAAAA:BBB(CCCCC^AAAAA)
       emitcode ("anl", "a,#!constbyte", mask);  // 000AAAAA:BBB(CCCCC^AAAAA)
-      emitcode ("xch", "a,%s", x);      // BBB(CCCCC^AAAAA):000AAAAA
+      emitAccumulatorExchange (x);        // BBB(CCCCC^AAAAA):000AAAAA
       emitcode ("xrl", "a,%s", x);      // BBBCCCCC:000AAAAA
-      emitcode ("xch", "a,%s", x);      // 000SAAAA:BBBCCCCC
+      emitAccumulatorExchange (x);        // 000SAAAA:BBBCCCCC
       emitcode ("jnb", "acc.%d,!tlabel", 7 - shCount, labelKey2num (tlbl->key));
       mask = ~SRMask[shCount];
       emitcode ("orl", "a,#!constbyte", mask);  // 111AAAAA:BBBCCCCC
@@ -10543,7 +10558,7 @@ AccAXRshS (const char *x, int shCount)
       AccAXLrl1 (x);            // ABBBBBBC:CDDDDDDA
       emitcode ("mov", "c,acc.7");
       AccAXLrl1 (x);            // BBBBBBCC:DDDDDDAA
-      emitcode ("xch", "a,%s", x);      // DDDDDDAA:BBBBBBCC
+      emitAccumulatorExchange (x);        // DDDDDDAA:BBBBBBCC
       emitcode ("anl", "a,#!constbyte", mask);  // 000000AA:BBBBBBCC
       emitcode ("jnb", "acc.%d,!tlabel", 7 - shCount, labelKey2num (tlbl->key));
       mask = ~SRMask[shCount];
@@ -10554,7 +10569,7 @@ AccAXRshS (const char *x, int shCount)
       tlbl = newiTempLabel (NULL);
       emitcode ("mov", "c,acc.7");      // c = A
       AccAXLrl1 (x);            // BBBBBBBC:DDDDDDDA
-      emitcode ("xch", "a,%s", x);      // DDDDDDDA:BBBBBBCC
+      emitAccumulatorExchange (x);        // DDDDDDDA:BBBBBBCC
       emitcode ("anl", "a,#!constbyte", mask);  // 0000000A:BBBBBBBC
       emitcode ("jnb", "acc.%d,!tlabel", 7 - shCount, labelKey2num (tlbl->key));
       mask = ~SRMask[shCount];
@@ -13494,9 +13509,9 @@ genAssign (iCode * ic)
     result->aop->aopu.aop_reg[0]->rIdx == right->aop->aopu.aop_reg[1]->rIdx &&
     result->aop->aopu.aop_reg[1]->rIdx == right->aop->aopu.aop_reg[0]->rIdx)
     {
-      emitcode ("xch", "a, %s", opGet (result, 0, false, false));
-      emitcode ("xch", "a, %s", opGet (result, 1, false, false));
-      emitcode ("xch", "a, %s", opGet (result, 0, false, false));
+      emitAccumulatorExchange (opGet (result, 0, false, false));
+      emitAccumulatorExchange (opGet (result, 1, false, false));
+      emitAccumulatorExchange (opGet (result, 0, false, false));
     }
   else if (AOP_TYPE (result) == AOP_DPTR &&
            mcs251AopUsesDpxValue (AOP (right), 0, size))

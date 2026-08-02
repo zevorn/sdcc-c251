@@ -24,6 +24,10 @@ INVALID_HIGH_CARRY_SOURCE = re.compile(
     r"^[ \t]*(?:addc|subb)[ \t]+a,[ \t]*r(?:8|9|1[0-5])[ \t]*$",
     re.IGNORECASE | re.MULTILINE,
 )
+INVALID_HIGH_XCH = re.compile(
+    r"^[ \t]*xch[ \t]+a,[ \t]*r(?:8|9|1[0-5])[ \t]*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 ALIASED_REGISTER_ALLOCATION = re.compile(
     r"Allocated to registers[^\n]*\br1[01]\b",
     re.IGNORECASE,
@@ -234,6 +238,21 @@ def main():
                 f"{word_multiply}"
             )
 
+        high_register_shift = function_body(
+            assembly["mcs251"], "mcs251_high_register_shift"
+        )
+        if not re.search(
+            r"^[ \t]*push[ \t]+acc[ \t]*$\n"
+            r"^[ \t]*mov[ \t]+a,[ \t]*(r(?:8|9|1[2-5]))[ \t]*$\n"
+            r"^[ \t]*pop[ \t]+\1[ \t]*$",
+            high_register_shift,
+            re.IGNORECASE | re.MULTILINE,
+        ):
+            raise AssertionError(
+                "MCS251 high-register shift did not lower accumulator "
+                f"exchange through the stack:\n{high_register_shift}"
+            )
+
         for port, text in assembly.items():
             invalid = INVALID_BYTE_REGISTER.search(text)
             if invalid:
@@ -265,6 +284,13 @@ def main():
                 raise AssertionError(
                     f"{name} emitted a carry instruction with R8-R15: "
                     f"{invalid_carry.group(0).strip()}"
+                )
+
+            invalid_xch = INVALID_HIGH_XCH.search(assembly[name])
+            if invalid_xch:
+                raise AssertionError(
+                    f"{name} emitted XCH with R8-R15: "
+                    f"{invalid_xch.group(0).strip()}"
                 )
 
             aliased = ALIASED_REGISTER_ALLOCATION.search(assembly[name])
