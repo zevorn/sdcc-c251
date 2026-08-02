@@ -21,7 +21,9 @@ check: all
 		--mcs251-ralloc-source $(srcdir)/ralloc.c \
 		--mcs51-source $(top_srcdir)/src/mcs51/main.c \
 		--mcs51-peep-source $(top_srcdir)/src/mcs51/peep.c \
-		--mcs51-rtrack-source $(top_srcdir)/src/mcs51/rtrack.c
+		--mcs51-rtrack-source $(top_srcdir)/src/mcs51/rtrack.c \
+		--mcs51-gen-source $(top_srcdir)/src/mcs51/gen.c \
+		--mcs51-ralloc-source $(top_srcdir)/src/mcs51/ralloc.c
 	$(PYTHON) $(srcdir)/tests/check-language-modes.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/language-mode.c

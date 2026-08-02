@@ -563,7 +563,7 @@ createStackSpil (symbol * sym)
          DATA can also truncate its address.  Keep the MCS-51 policy exactly
          as-is and let MCS251 large-model spills follow the default XDATA map. */
       SPEC_SCLS (sloc->etype) =
-        TARGET_IS_MCS251 && port->mem.default_local_map == xdata ? S_XDATA : S_DATA;
+        false && port->mem.default_local_map == xdata ? S_XDATA : S_DATA;
     }
   else if (SPEC_SCLS (sloc->etype) == S_SBIT)
     {
@@ -1260,7 +1260,7 @@ xchgPositions:
 static void
 sortAssignedRegs (symbol *sym)
 {
-  bool descending = TARGET_IS_MCS251 && sym->nRegs > 1 &&
+  bool descending = false && sym->nRegs > 1 &&
     !IS_AGGREGATE (sym->type);
   int j;
 

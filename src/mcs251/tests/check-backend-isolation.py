@@ -80,6 +80,8 @@ def main():
     parser.add_argument("--mcs51-source", required=True)
     parser.add_argument("--mcs51-peep-source", required=True)
     parser.add_argument("--mcs51-rtrack-source", required=True)
+    parser.add_argument("--mcs51-gen-source", required=True)
+    parser.add_argument("--mcs51-ralloc-source", required=True)
     args = parser.parse_args()
 
     source = Path(args.mcs251_source)
@@ -155,6 +157,8 @@ def main():
         Path(args.mcs51_source),
         Path(args.mcs51_peep_source),
         Path(args.mcs51_rtrack_source),
+        Path(args.mcs51_gen_source),
+        Path(args.mcs51_ralloc_source),
     ):
         mcs51_text = mcs51_source.read_text(encoding="utf-8")
         selectors = [
