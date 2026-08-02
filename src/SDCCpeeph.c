@@ -2604,6 +2604,34 @@ FBYNAME (notInJumpTable)
   return (currPl->ic && currPl->ic->op != JUMPTABLE);
 }
 
+/*-----------------------------------------------------------------*/
+/* lowDJNZReg - the operand is a byte register DJNZ can address.     */
+/* MCS-251 DJNZ only encodes R0-R7, so a rule that folds a decrement */
+/* into DJNZ must not fire for the fixed R8-R15 byte registers.      */
+/* MCS-51 never allocates those, so this condition is a no-op there. */
+/*-----------------------------------------------------------------*/
+FBYNAME (lowDJNZReg)
+{
+  char *var;
+  set *operands = setFromConditionArgs (cmdLine, vars);
+
+  if (!operands || !(var = setFirstItem (operands)))
+    {
+      fprintf (stderr,
+               "*** internal error: lowDJNZReg peephole restriction"
+               " requires an operand: %s\n", cmdLine);
+      return FALSE;
+    }
+  if (var[0] == 'r' && ISCHARDIGIT (var[1]))
+    {
+      if (var[1] == '1' && ISCHARDIGIT (var[2]))
+        return FALSE;             /* r10 ... r15 */
+      return var[1] < '8';        /* r0 ... r7 */
+    }
+  /* acc, b, bits etc. are addressable directly. */
+  return TRUE;
+}
+
 static const struct ftab
 {
   const char *fname;
@@ -2709,6 +2737,9 @@ ftab[] =                                            // sorted on the number of t
   },
   {
     "notInJumpTable", notInJumpTable
+  },
+  {
+    "lowDJNZReg", lowDJNZReg
   },
 };
 

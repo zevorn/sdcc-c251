@@ -14024,7 +14024,17 @@ genDjnz (iCode * ic, iCode * ifx)
     }
   else
     {
-      emitcode ("djnz", "%s,!tlabel", opGet (IC_RESULT (ic), 0, FALSE, FALSE), labelKey2num (lbl->key));
+      const char *counter = opGet (IC_RESULT (ic), 0, FALSE, FALSE);
+
+      /* DJNZ only encodes R0 through R7.  A fixed R8-R15 byte register yet
+         serves fine as the loop counter; decrement it and test directly. */
+      if (isFixedByteRegisterOperand (counter))
+        {
+          emitcode ("dec", "%s", counter);
+          emitcode ("jnz", "!tlabel", labelKey2num (lbl->key));
+        }
+      else
+        emitcode ("djnz", "%s,!tlabel", counter, labelKey2num (lbl->key));
     }
   emitcode ("sjmp", "!tlabel", labelKey2num (lbl1->key));
   emitLabel (lbl);

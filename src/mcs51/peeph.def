@@ -3999,7 +3999,7 @@ replace {
 } by {
 	;	Peephole 253.a	optimized decrement with compare
 	djnz	%1,%2
-} if notVolatile(%1)
+} if notVolatile(%1), lowDJNZReg(%1)
 
 // unsigned char i=8; do{ } while(--i != 0);
 // this applies if i is kept in data memory
@@ -4011,7 +4011,7 @@ replace {
 } by {
 	;	Peephole 253.b	optimized decrement with compare
 	djnz	%1,%2
-} if notVolatile(%1), operandsNotRelated(%1 '@r0' '@r1')
+} if notVolatile(%1), operandsNotRelated(%1 '@r0' '@r1'), lowDJNZReg(%1)
 
 
 // applies to f.e. funptrs.c
