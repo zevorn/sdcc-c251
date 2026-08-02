@@ -98,6 +98,7 @@ make -C support/valdiag test-mcs251
 - 原生 `MOVS`/`MOVZ` byte extension 与 `MOVH` high-word replacement；
 - 对齐 register tuple 上的原生 32 位 `ADD DR,DR`、`SUB DR,DR`，并通过跨字节
   carry 与 borrow 运行测题；
+- 通过 `MUL WR,WR` 实现原生无符号 16×16→32 位乘法，并验证完整的大端乘积；
 - 16 位 `ANL`、`ORL`、`XRL`，以及部分 32 位 `XRL`；
 - 16 位 immediate `CMP`；
 - 合法的 DPX、SPX addressing，并排除 unsupported operand form；
@@ -118,6 +119,8 @@ target，也不表示每个 C 表达式都已经获得最优 instruction selecti
 - 原生 32 位 register 加减目前要求两个对齐的 DR tuple，且 destructive result 已经
   alias 某个合法 input。memory operand 与任意交叠 tuple 继续使用经过测试的逐字节
   fallback。
+- 原生 `MUL WR,WR` 选择目前覆盖两个无符号 16 位 operand 产生 32 位 result 的情形；
+  有符号以及其他位宽的乘法继续使用既有编译器路径或 runtime library。
 - DSP32、TFPU、MDU32 和芯片外设是由寄存器控制的 STC SoC 功能，不是 MCS-251
   CPU opcode，因此不计入 65 个指令族。
 - golden bytes 来自已经审阅的指令表，这并不会让 QEMU 成为独立的硬件真值；

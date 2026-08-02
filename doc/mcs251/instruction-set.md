@@ -107,6 +107,8 @@ large stack-auto configurations.  Current code-generation assertions cover:
 - native `MOVS`/`MOVZ` byte extension and `MOVH` high-word replacement;
 - native 32-bit `ADD DR,DR` and `SUB DR,DR` for aligned register tuples,
   including cross-byte carry and borrow runtime cases;
+- native unsigned 16-by-16 multiplication with a 32-bit result through
+  `MUL WR,WR`, including full big-endian product validation;
 - 16-bit `ANL`, `ORL` and `XRL`, plus selected 32-bit `XRL` operations;
 - immediate 16-bit `CMP`;
 - legal DPX and SPX addressing without unsupported operand forms;
@@ -131,6 +133,9 @@ selection is optimal for every C expression.
   aligned DR tuples and a destructive result that already aliases a legal
   input.  Memory operands and arbitrary overlapping tuples retain the tested
   byte-at-a-time fallback.
+- Native `MUL WR,WR` selection currently covers unsigned 16-bit operands with
+  a 32-bit result.  Signed and other-width multiplication retains the existing
+  compiler or runtime-library path.
 - DSP32, TFPU, MDU32 and chip peripherals are STC SoC facilities controlled
   through registers.  They are not MCS-251 CPU opcodes and are not included in
   the 65-family ISA total.
