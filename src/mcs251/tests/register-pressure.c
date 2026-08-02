@@ -73,6 +73,20 @@ mcs251_register_pressure_isr (void) __interrupt (1)
   mcs251_pressure_values[0] = mcs251_byte_register_pressure (2);
 }
 
+volatile unsigned long mcs251_dword_values[3] =
+  { 0x10203040ul, 0x50607080ul, 0x90a0b0c0ul };
+
+unsigned long
+mcs251_dword_register_pressure (void)
+{
+  unsigned long value0 =
+    mcs251_dword_values[0] + mcs251_dword_values[1];
+  unsigned long value1 =
+    mcs251_dword_values[2] ^ 0x01020304ul;
+
+  return value0 + value1;
+}
+
 #if defined (MCS_REGISTER_PRESSURE_RUNTIME)
 __sfr __at (0x99) SBUF;
 
@@ -92,6 +106,8 @@ main (void)
 
   mcs251_pressure_values[0] = 1;
   if (mcs251_byte_register_pressure (2) != 0x1c)
+    passed = 0;
+  if (mcs251_dword_register_pressure () != 0xf2235484ul)
     passed = 0;
 
   print_result (passed);

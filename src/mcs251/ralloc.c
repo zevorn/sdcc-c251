@@ -206,12 +206,102 @@ registerAvailableToSymbol (const reg_info *reg, const symbol *sym)
 {
   /*
    * R8, R9, and R12-R15 are independent byte registers.  R10 and R11
-   * are excluded by their A/B alias types.  Wider live ranges continue
-   * to use bank-register tuples until overlapping WR/DR allocation is
-   * implemented.
+   * are excluded by their A/B alias types.  R12-R15 can also hold DR12
+   * because overlap is represented by the same underlying byte registers.
    */
   return sym->nRegs == 1 || reg->rIdx < MCS251_BANK_REG_COUNT ||
+         (sym->nRegs == 4 && reg->offset >= 12 && reg->offset <= 15) ||
          reg->type == REG_BIT;
+}
+
+/* Return the byte-register entry for an architectural register-file
+   position.  Only R0-R15 are byte-addressable allocation units. */
+static reg_info *
+registerForOffset (int offset)
+{
+  int i;
+
+  for (i = 0; i < MCS251_BYTE_REG_COUNT; ++i)
+    if (mcs251_regs[i].offset == offset)
+      return &mcs251_regs[i];
+
+  return NULL;
+}
+
+/* Allocate one byte of an aligned native WR/DR tuple.  The scalar register
+   array is filled least-significant byte first, so tuple candidates name
+   their highest-numbered byte.  Keeping overlap at the byte-register level
+   makes R12-R15 allocations automatically conflict with WR12/WR14/DR12. */
+static reg_info *
+allocNativeTupleByte (short type, const symbol *sym)
+{
+  static const int dwordLowBytes[] = {7, 15, 3};
+  const int *lowBytes = dwordLowBytes;
+  int assigned;
+  int candidateCount = sizeof (dwordLowBytes) / sizeof (*dwordLowBytes);
+  int candidate;
+  int size = sym->nRegs;
+
+  if (type != REG_GPR || IS_AGGREGATE (sym->type) || size != 4)
+    return NULL;
+
+  for (assigned = 0; assigned < size && sym->regs[assigned]; ++assigned)
+    ;
+
+  if (assigned)
+    {
+      bool knownLowByte = false;
+      int previous;
+      reg_info *reg = registerForOffset (
+        sym->regs[0]->offset - assigned);
+
+      for (candidate = 0; candidate < candidateCount; ++candidate)
+        knownLowByte |= sym->regs[0]->offset == lowBytes[candidate];
+      for (previous = 1; previous < assigned; ++previous)
+        if (sym->regs[previous]->offset !=
+            sym->regs[0]->offset - previous)
+          return NULL;
+
+      if (!knownLowByte || !reg || !reg->isFree ||
+          (reg->type != REG_GPR &&
+           (mcs251_ptrRegReq || reg->type != REG_PTR)) ||
+          !registerAvailableToSymbol (reg, sym))
+        return NULL;
+
+      reg->isFree = 0;
+      if (currFunc)
+        currFunc->regsUsed = bitVectSetBit (currFunc->regsUsed, reg->rIdx);
+      return reg;
+    }
+
+  for (candidate = 0; candidate < candidateCount; ++candidate)
+    {
+      int byte;
+
+      for (byte = 0; byte < size; ++byte)
+        {
+          reg_info *reg = registerForOffset (lowBytes[candidate] - byte);
+
+          if (!reg || !reg->isFree ||
+              (reg->type != REG_GPR &&
+               (mcs251_ptrRegReq || reg->type != REG_PTR)) ||
+              !registerAvailableToSymbol (reg, sym))
+            break;
+        }
+
+      if (byte == size)
+        {
+          reg_info *reg = registerForOffset (lowBytes[candidate]);
+
+          reg->isFree = 0;
+          if (currFunc)
+            currFunc->regsUsed =
+              bitVectSetBit (currFunc->regsUsed, reg->rIdx);
+          return reg;
+        }
+    }
+
+  return NULL;
 }
 
 /*-----------------------------------------------------------------*/
@@ -220,7 +310,11 @@ registerAvailableToSymbol (const reg_info *reg, const symbol *sym)
 static reg_info *
 allocRegForSymbol (short type, const symbol *sym)
 {
+  reg_info *tupleReg = allocNativeTupleByte (type, sym);
   int i;
+
+  if (tupleReg)
+    return tupleReg;
 
   for (i = 0; i < mcs251_nRegs; i++)
     {

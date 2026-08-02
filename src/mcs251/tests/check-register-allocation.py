@@ -185,6 +185,21 @@ def main():
                 "MCS251 caller did not restore a live fixed register"
             )
 
+        dword_pressure = function_body(
+            assembly["mcs251"], "mcs251_dword_register_pressure"
+        )
+        if not re.search(
+            r"^[ \t]*(?:add|sub)[ \t]+(?:"
+            r"dr12,[ \t]*dr(?:0|4|8|12|16|20|24|28)|"
+            r"dr(?:0|4|8|12|16|20|24|28),[ \t]*dr12)[ \t]*$",
+            dword_pressure,
+            re.IGNORECASE | re.MULTILINE,
+        ):
+            raise AssertionError(
+                "MCS251 dword pressure did not use DR12 in native "
+                f"arithmetic:\n{dword_pressure}"
+            )
+
         for port, text in assembly.items():
             invalid = INVALID_BYTE_REGISTER.search(text)
             if invalid:
