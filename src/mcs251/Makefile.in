@@ -22,7 +22,8 @@ check: all
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/language-mode.c
 	$(PYTHON) $(srcdir)/tests/check-target-macros.py \
-		--sdcc $(top_builddir)/bin/sdcc
+		--sdcc $(top_builddir)/bin/sdcc \
+		--device-include $(top_srcdir)/device/include
 	$(PYTHON) $(srcdir)/tests/check-static-inline.py \
 		--sdcc $(top_builddir)/bin/sdcc \
 		--source $(srcdir)/tests/static-inline-emission.c
@@ -158,6 +159,7 @@ check-qemu: all check-official-qemu check-gdbstub
 			$(srcdir)/tests/gnu-bit-builtins-runtime.c \
 		--byte-swap-builtins-source \
 			$(srcdir)/tests/gnu-byte-swap-builtins-runtime.c \
+		--size-type-source $(srcdir)/tests/size-type-runtime.c \
 		--overflow-builtins-source \
 			$(srcdir)/tests/gnu-overflow-builtins-runtime.c \
 		--typed-overflow-builtins-source \
@@ -217,6 +219,7 @@ check-mcs51-qemu: all
 			$(srcdir)/tests/gnu-bit-builtins-runtime.c \
 		--byte-swap-builtins-source \
 			$(srcdir)/tests/gnu-byte-swap-builtins-runtime.c \
+		--size-type-source $(srcdir)/tests/size-type-runtime.c \
 		--overflow-builtins-source \
 			$(srcdir)/tests/gnu-overflow-builtins-runtime.c \
 		--typed-overflow-builtins-source \

@@ -5394,7 +5394,11 @@ initBuiltIns ()
 
   if (!nonbuiltin_memcpy)
     {
-      nonbuiltin_memcpy = funcOfTypeVarg ("__memcpy", "vg*", 3, (const char * []){"vg*", "Cvg*", "Ui"});
+      const char *size_type = TARGET_IS_MCS251 ? "Ul" : "Ui";
+
+      nonbuiltin_memcpy =
+        funcOfTypeVarg ("__memcpy", "vg*", 3,
+                        (const char * []){"vg*", "Cvg*", size_type});
       FUNC_ISBUILTIN (nonbuiltin_memcpy->type) = 0;
       FUNC_ISREENT (nonbuiltin_memcpy->type) = options.stackAuto;
     }

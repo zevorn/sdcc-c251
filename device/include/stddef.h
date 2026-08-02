@@ -45,7 +45,12 @@
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
+#if defined (__SDCC_mcs251)
+  /* The native MCS-251 ABI uses a 32-bit object-size type. */
+  typedef unsigned long size_t;
+#else
   typedef unsigned int size_t;
+#endif
 #endif
 
 #if __STDC_VERSION__ >= 201112L

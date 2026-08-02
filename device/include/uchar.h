@@ -36,7 +36,11 @@
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
+#if defined (__SDCC_mcs251)
+  typedef unsigned long size_t;
+#else
   typedef unsigned int size_t;
+#endif
 #endif
 
 #if __STDC_VERSION__ >= 202311L
@@ -66,4 +70,3 @@ size_t __mbstoc16s(char16_t *restrict c16s, const char *restrict s, size_t n);
 size_t __c16stombs(char *restrict s, const char16_t *restrict c16s, size_t n);
 
 #endif
-

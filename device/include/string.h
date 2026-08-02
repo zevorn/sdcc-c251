@@ -37,7 +37,11 @@
 
 #ifndef __SIZE_T_DEFINED
 # define __SIZE_T_DEFINED
+#if defined (__SDCC_mcs251)
+  typedef unsigned long size_t;
+#else
   typedef unsigned int size_t;
+#endif
 #endif
 
 /* Bounds-checking interfaces from annex K of the C11 standard. */
@@ -304,4 +308,3 @@ extern void *__memcpy (void *dest, const void *_NEAR src, _NEAR size_t n);
 #endif
 
 #endif
-

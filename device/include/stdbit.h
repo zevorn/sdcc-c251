@@ -31,7 +31,11 @@
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
+#if defined (__SDCC_mcs251)
+  typedef unsigned long size_t;
+#else
   typedef unsigned int size_t;
+#endif
 #endif
 
 #ifndef __SPECIFIED_WIDTH_INTEGER_TYPES_DEFINED

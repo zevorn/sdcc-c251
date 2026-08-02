@@ -2402,9 +2402,6 @@ static const preprocessor_define mcsPreprocessorDefines[] =
   { "__PTRDIFF_TYPE__", "__INT32_TYPE__" },
   { "__PTRDIFF_MAX__", "__INT32_MAX__" },
   { "__PTRDIFF_WIDTH__", "__LONG_WIDTH__" },
-  { "__SIZE_TYPE__", "unsigned int" },
-  { "__SIZE_MAX__", "65535U" },
-  { "__SIZE_WIDTH__", "__INT_WIDTH__" },
   { "__WCHAR_TYPE__", "__UINT32_TYPE__" },
   { "__WCHAR_MAX__", "__UINT32_MAX__" },
   { "__WCHAR_WIDTH__", "__LONG_WIDTH__" },
@@ -2791,13 +2788,27 @@ preProcess (char **envp)
           addPreprocessorUIntDefine ("__SIZEOF_PTRDIFF_T__",
                                      port->s.long_size);
           addPreprocessorUIntDefine ("__SIZEOF_SIZE_T__",
-                                     port->s.int_size);
+                                     TARGET_IS_MCS251 ?
+                                     port->s.long_size : port->s.int_size);
           addPreprocessorUIntDefine ("__SIZEOF_WCHAR_T__",
                                      port->s.long_size);
           addPreprocessorUIntDefine ("__SIZEOF_WINT_T__",
                                      port->s.long_size);
           for (define = mcsPreprocessorDefines; define->name; ++define)
             addPreprocessorDefine (define->name, define->value);
+
+          if (TARGET_IS_MCS251)
+            {
+              addPreprocessorDefine ("__SIZE_TYPE__", "unsigned long");
+              addPreprocessorDefine ("__SIZE_MAX__", "4294967295UL");
+              addPreprocessorDefine ("__SIZE_WIDTH__", "__LONG_WIDTH__");
+            }
+          else
+            {
+              addPreprocessorDefine ("__SIZE_TYPE__", "unsigned int");
+              addPreprocessorDefine ("__SIZE_MAX__", "65535U");
+              addPreprocessorDefine ("__SIZE_WIDTH__", "__INT_WIDTH__");
+            }
         }
       addSet (&preArgvSet,
               Safe_strdup ("-D__ORDER_LITTLE_ENDIAN__=1234"));

@@ -147,21 +147,35 @@ grep -Eq '^[[:space:]]*mov[[:space:]]+a,[[:space:]]*@dpx$' \
 grep -Eq '^[[:space:]]*addc[[:space:]]+a,[[:space:]]*#(0x)?0+$' \
     "$test_dir/native-optimization-large.asm"
 
-# In the large model, bsearch spills __mulint's return value to far memory.
-# Save DPL (directly or through a stack push) before materializing that spill
-# destination in DPTR; loading the destination first destroys byte zero of the
-# return value.
-sed -n '/^[[:space:]]*ecall[[:space:]][[:space:]]*__mulint$/,/^[[:space:]]*mov[[:space:]][[:space:]]*dptr,[[:space:]]*#_bsearch_sloc/p' \
-    "$test_dir/bsearch-large.asm" > "$test_dir/bsearch-mulint-return.asm"
-capture_line=$(grep -En '^[[:space:]]*(mov[[:space:]]+a,[[:space:]]*dpl|push[[:space:]]+dpl)$' \
-    "$test_dir/bsearch-mulint-return.asm" | head -1 | cut -d: -f1)
-address_line=$(grep -En '^[[:space:]]*mov[[:space:]]+dptr,[[:space:]]*#_bsearch_sloc[0-9_]+$' \
-    "$test_dir/bsearch-mulint-return.asm" | head -1 | cut -d: -f1)
-if test -z "$capture_line" || test -z "$address_line" || \
-        test "$capture_line" -ge "$address_line"; then
-    echo "MCS251 large-model store clobbered a DPTR return byte" >&2
+# With a 32-bit size_t, bsearch multiplies two unsigned longs.  Capture all
+# four __mullong return registers before materializing a far address in DPTR;
+# loading the address first destroys DPL and DPH.
+awk '
+    /^[[:space:]]*ecall[[:space:]]+__mullong$/ {
+        after_call = 1
+        next
+    }
+    after_call && /^[[:space:]]*mov[[:space:]]+dptr,/ {
+        checked = dpl && dph && b && a
+        after_call = 0
+    }
+    after_call && /^[[:space:]]*mov[[:space:]]+r[0-7],[[:space:]]*dpl$/ {
+        dpl = 1
+    }
+    after_call && /^[[:space:]]*mov[[:space:]]+r[0-7],[[:space:]]*dph$/ {
+        dph = 1
+    }
+    after_call && /^[[:space:]]*mov[[:space:]]+r[0-7],[[:space:]]*b$/ {
+        b = 1
+    }
+    after_call && /^[[:space:]]*mov[[:space:]]+r[0-7],[[:space:]]*a$/ {
+        a = 1
+    }
+    END { exit !checked }
+' "$test_dir/bsearch-large.asm" || {
+    echo "MCS251 large-model store clobbered a long return byte" >&2
     exit 1
-fi
+}
 
 grep -Eq '^[[:space:]]*ecall[[:space:]]+_mcs251_callee$' \
     "$test_dir/call-24bit.asm"

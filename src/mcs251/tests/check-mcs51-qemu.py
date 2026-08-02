@@ -157,6 +157,7 @@ def main():
     parser.add_argument("--statement-expression-source", required=True)
     parser.add_argument("--bit-builtins-source", required=True)
     parser.add_argument("--byte-swap-builtins-source", required=True)
+    parser.add_argument("--size-type-source", required=True)
     parser.add_argument("--overflow-builtins-source", required=True)
     parser.add_argument("--typed-overflow-builtins-source", required=True)
     parser.add_argument("--longlong-source", required=True)
@@ -178,6 +179,7 @@ def main():
     byte_swap_builtins_source = Path(
         args.byte_swap_builtins_source
     ).resolve()
+    size_type_source = Path(args.size_type_source).resolve()
     overflow_builtins_source = Path(args.overflow_builtins_source).resolve()
     typed_overflow_builtins_source = Path(
         args.typed_overflow_builtins_source
@@ -191,6 +193,7 @@ def main():
         sdcc, qemu, source, statement_expression_source,
         bit_builtins_source, longlong_source, device_include, library_dir,
         byte_swap_builtins_source,
+        size_type_source,
         overflow_builtins_source, stack_auto_library_dir,
         typed_overflow_builtins_source,
     )
@@ -308,6 +311,16 @@ def main():
             run_qemu(
                 qemu, machine, byte_swap_image,
                 trace_for(byte_swap_image),
+            )
+
+            _, size_type_image = build(
+                sdcc, size_type_source, device_include,
+                bit_library, output_dir, f"size-type-{bit_name}",
+                bit_flags,
+            )
+            run_qemu(
+                qemu, machine, size_type_image,
+                trace_for(size_type_image),
             )
 
         overflow_configurations = (

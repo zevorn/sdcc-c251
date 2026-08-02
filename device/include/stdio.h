@@ -47,7 +47,11 @@
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
+#if defined (__SDCC_mcs251)
+  typedef unsigned long size_t;
+#else
   typedef unsigned int size_t;
+#endif
 #endif
 
 /* Bounds-checking interfaces from annex K of the C11 standard. */
@@ -107,4 +111,3 @@ extern void printf_tiny(__code const char *fmt, ...) _REENTRANT;
 #endif
 
 #endif /* __SDCC_STDIO_H */
-

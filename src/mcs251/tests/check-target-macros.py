@@ -113,10 +113,6 @@ COMMON_MACROS = {
     "__PTRDIFF_MAX__": "2147483647L",
     "__PTRDIFF_WIDTH__": "32",
     "__SIZEOF_PTRDIFF_T__": "4",
-    "__SIZE_TYPE__": "unsigned int",
-    "__SIZE_MAX__": "65535U",
-    "__SIZE_WIDTH__": "16",
-    "__SIZEOF_SIZE_T__": "2",
     "__WCHAR_TYPE__": "unsigned long int",
     "__WCHAR_MAX__": "4294967295UL",
     "__WCHAR_WIDTH__": "32",
@@ -141,6 +137,31 @@ PORT_MACROS = {
     },
 }
 
+PORT_SIZE_MACROS = {
+    "mcs51": {
+        "__SIZE_TYPE__": "unsigned int",
+        "__SIZE_MAX__": "65535U",
+        "__SIZE_WIDTH__": "16",
+        "__SIZEOF_SIZE_T__": "2",
+    },
+    "mcs251": {
+        "__SIZE_TYPE__": "unsigned long",
+        "__SIZE_MAX__": "4294967295UL",
+        "__SIZE_WIDTH__": "32",
+        "__SIZEOF_SIZE_T__": "4",
+    },
+}
+
+SIZE_T_HEADERS = (
+    "stddef.h",
+    "stdio.h",
+    "stdlib.h",
+    "string.h",
+    "stdbit.h",
+    "uchar.h",
+    "wchar.h",
+)
+
 HOST_MACROS = (
     "__GNUC__",
     "__clang__",
@@ -164,13 +185,13 @@ HOST_MACROS = (
 )
 
 
-def read_macros(sdcc, source, port, mode, options=()):
+def read_macros(sdcc, device_include, source, port, mode, options=()):
     mode_name = mode if mode else "default"
     command = [str(sdcc), f"-m{port}"]
     if mode:
         command.append(f"--std={mode}")
     command.extend(options)
-    command.extend(["-E", "-dM", str(source)])
+    command.extend([f"-I{device_include}", "-E", "-dM", str(source)])
     result = subprocess.run(
         command,
         stdout=subprocess.PIPE,
@@ -215,10 +236,10 @@ def normalize_macro(value):
     return " ".join(value.split())
 
 
-def check_macros(sdcc, source, port, mode):
+def check_macros(sdcc, device_include, source, port, mode):
     mode_name = mode if mode else "default"
-    macros = read_macros(sdcc, source, port, mode)
-    expected = COMMON_MACROS | {
+    macros = read_macros(sdcc, device_include, source, port, mode)
+    expected = COMMON_MACROS | PORT_SIZE_MACROS[port] | {
         "__BYTE_ORDER__": PORT_MACROS[port]["__BYTE_ORDER__"],
     }
 
@@ -244,10 +265,17 @@ def check_macros(sdcc, source, port, mode):
     print(f"PASS: {port} --std={mode_name} target macros match its ABI")
 
 
-def check_char_signedness(sdcc, source, port):
-    default_macros = read_macros(sdcc, source, port, "gnu17")
+def check_char_signedness(sdcc, device_include, source, port):
+    default_macros = read_macros(
+        sdcc, device_include, source, port, "gnu17"
+    )
     signed_macros = read_macros(
-        sdcc, source, port, "gnu17", ("--fsigned-char",)
+        sdcc,
+        device_include,
+        source,
+        port,
+        "gnu17",
+        ("--fsigned-char",),
     )
     if default_macros.get("__CHAR_UNSIGNED__") != "1":
         raise RuntimeError(f"{port} does not advertise its unsigned char ABI")
@@ -256,19 +284,30 @@ def check_char_signedness(sdcc, source, port):
     print(f"PASS: {port} char signedness macros follow the selected ABI")
 
 
-def check_macro_semantics(sdcc, source, port):
+def check_macro_semantics(sdcc, device_include, source, port):
     expected_byte_order = PORT_MACROS[port]["__BYTE_ORDER__"]
     expected_stdc_endian = PORT_MACROS[port]["__STDC_ENDIAN_NATIVE__"]
+    expected_size = PORT_SIZE_MACROS[port]["__SIZEOF_SIZE_T__"]
+    expected_type = PORT_SIZE_MACROS[port]["__SIZE_TYPE__"]
     source.write_text(
         "\n".join(
             (
+                "#include <stddef.h>",
+                "#include <stdint.h>",
                 "#include <stdbit.h>",
                 "_Static_assert(sizeof(__INT8_TYPE__) == 1, \"int8\");",
                 "_Static_assert(sizeof(__INT16_TYPE__) == 2, \"int16\");",
                 "_Static_assert(sizeof(__INT32_TYPE__) == 4, \"int32\");",
                 "_Static_assert(sizeof(__INT64_TYPE__) == 8, \"int64\");",
                 "_Static_assert(sizeof(__INTPTR_TYPE__) == 4, \"intptr\");",
-                "_Static_assert(sizeof(__SIZE_TYPE__) == 2, \"size_t\");",
+                f"_Static_assert(sizeof(__SIZE_TYPE__) == "
+                f"{expected_size}, \"size macro\");",
+                f"_Static_assert(sizeof(size_t) == {expected_size}, "
+                '"size_t");',
+                "_Static_assert(__builtin_types_compatible_p("
+                f"size_t, {expected_type}), \"size type\");",
+                "_Static_assert(SIZE_MAX == __SIZE_MAX__, "
+                '"size maximum");',
                 "_Static_assert(__INT32_C(1) == 1L, \"int32 constant\");",
                 "_Static_assert(__UINT64_C(1) == 1ULL, \"uint64 constant\");",
                 f"_Static_assert(__BYTE_ORDER__ == {expected_byte_order}, "
@@ -284,6 +323,7 @@ def check_macro_semantics(sdcc, source, port):
         f"-m{port}",
         "--std=gnu17",
         "--Werror",
+        f"-I{device_include}",
         "--syntax-only",
         str(source),
     ]
@@ -302,14 +342,62 @@ def check_macro_semantics(sdcc, source, port):
     print(f"PASS: {port} target type and constant macros compile")
 
 
+def check_size_t_headers(sdcc, device_include, source, port):
+    expected_size = PORT_SIZE_MACROS[port]["__SIZEOF_SIZE_T__"]
+    expected_type = PORT_SIZE_MACROS[port]["__SIZE_TYPE__"]
+
+    for header in SIZE_T_HEADERS:
+        source.write_text(
+            "\n".join(
+                (
+                    f"#include <{header}>",
+                    "#include <stdint.h>",
+                    f"_Static_assert(sizeof(size_t) == {expected_size}, "
+                    f'\"{header} size\");',
+                    "_Static_assert(__builtin_types_compatible_p("
+                    f"size_t, {expected_type}), \"{header} type\");",
+                    "_Static_assert(SIZE_MAX == __SIZE_MAX__, "
+                    f'\"{header} maximum\");',
+                    "",
+                )
+            )
+        )
+        command = [
+            str(sdcc),
+            f"-m{port}",
+            "--std=gnu17",
+            "--Werror",
+            f"-I{device_include}",
+            "--syntax-only",
+            str(source),
+        ]
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        if result.returncode:
+            raise RuntimeError(
+                f"{port} {header} exposes an invalid size_t:\n"
+                f"{result.stdout}{result.stderr}"
+            )
+        print(f"PASS: {port} {header} exposes its ABI size_t")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sdcc", required=True)
+    parser.add_argument("--device-include", required=True)
     args = parser.parse_args()
 
     sdcc = Path(args.sdcc).resolve()
+    device_include = Path(args.device_include).resolve()
     if not sdcc.is_file():
         parser.error(f"compiler does not exist: {sdcc}")
+    if not device_include.is_dir():
+        parser.error(f"include directory does not exist: {device_include}")
 
     with tempfile.TemporaryDirectory(prefix="sdcc-target-macros.") as tmp:
         source = Path(tmp) / "empty.c"
@@ -317,9 +405,16 @@ def main():
         semantic_source = Path(tmp) / "target-macro-semantics.c"
         for port in PORT_MACROS:
             for mode in (None, "gnu17"):
-                check_macros(sdcc, source, port, mode)
-            check_char_signedness(sdcc, source, port)
-            check_macro_semantics(sdcc, semantic_source, port)
+                check_macros(
+                    sdcc, device_include, source, port, mode
+                )
+            check_char_signedness(sdcc, device_include, source, port)
+            check_macro_semantics(
+                sdcc, device_include, semantic_source, port
+            )
+            check_size_t_headers(
+                sdcc, device_include, semantic_source, port
+            )
 
 
 if __name__ == "__main__":

@@ -46,6 +46,14 @@ void *calloc (size_t nmemb, size_t size)
 {
 	void HEAPSPACE *ptr;
 
+#if defined(__SDCC_mcs251)
+	size_t msize;
+
+	if (size && nmemb > SIZE_MAX / size)
+		return(0);
+
+	msize = nmemb * size;
+#else
 	unsigned long msize = (unsigned long)nmemb * (unsigned long)size;
 
 	_Static_assert(sizeof(unsigned long) >= sizeof(size_t) * 2,
@@ -53,6 +61,7 @@ void *calloc (size_t nmemb, size_t size)
 
 	if (msize > SIZE_MAX)
 		return(0);
+#endif
 
 	if (ptr = malloc(msize))
 		memset(ptr, 0, msize);

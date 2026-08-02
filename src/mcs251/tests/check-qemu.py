@@ -114,6 +114,7 @@ def main():
     parser.add_argument("--statement-expression-source", required=True)
     parser.add_argument("--bit-builtins-source", required=True)
     parser.add_argument("--byte-swap-builtins-source", required=True)
+    parser.add_argument("--size-type-source", required=True)
     parser.add_argument("--overflow-builtins-source", required=True)
     parser.add_argument("--typed-overflow-builtins-source", required=True)
     parser.add_argument("--optimization-runtime-source", required=True)
@@ -148,6 +149,7 @@ def main():
     byte_swap_builtins_source = Path(
         args.byte_swap_builtins_source
     ).resolve()
+    size_type_source = Path(args.size_type_source).resolve()
     overflow_builtins_source = Path(args.overflow_builtins_source).resolve()
     typed_overflow_builtins_source = Path(
         args.typed_overflow_builtins_source
@@ -176,6 +178,7 @@ def main():
                  statement_expression_source,
                  bit_builtins_source,
                  byte_swap_builtins_source,
+                 size_type_source,
                  overflow_builtins_source,
                  typed_overflow_builtins_source,
                  abi_regression_source,
@@ -380,6 +383,18 @@ def main():
             sys.stdout.buffer.write(run_qemu(
                 qemu, machine, byte_swap_image,
                 trace_for(byte_swap_image),
+            ))
+
+            size_type_image = tmpdir / f"size-type-{bit_name}.hex"
+            run([
+                str(sdcc), "-mmcs251", "--std=gnu17", *model_flags,
+                "--no-xinit-opt", *board_link_flags,
+                f"-I{device_include}", f"-L{bit_library_dir}",
+                "-o", str(size_type_image), str(size_type_source),
+            ], env=env)
+            sys.stdout.buffer.write(run_qemu(
+                qemu, machine, size_type_image,
+                trace_for(size_type_image),
             ))
 
         for overflow_name, model_flags, overflow_library_dir in \

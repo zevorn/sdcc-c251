@@ -237,7 +237,11 @@ typedef unsigned long long int  uintmax_t;
 #define SIG_ATOMIC_MAX        (255)
 
 /* Limit of `size_t' type.  */
+#if defined (__SDCC_mcs251)
+#define SIZE_MAX               (4294967295UL)
+#else
 #define SIZE_MAX               (65535u)
+#endif
 
 /* Signed.  */
 #define INT8_C(c)      c

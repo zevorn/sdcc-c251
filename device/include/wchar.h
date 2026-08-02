@@ -37,7 +37,11 @@
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
+#if defined (__SDCC_mcs251)
+  typedef unsigned long size_t;
+#else
   typedef unsigned int size_t;
+#endif
 #endif
 
 #ifndef __MBSTATE_T_DEFINED
@@ -126,4 +130,3 @@ unsigned long long int wcstoull(const wchar_t nptr[restrict  static 1], wchar_t 
 #endif
 
 #endif /* __SDCC_WCHAR_H */
-
