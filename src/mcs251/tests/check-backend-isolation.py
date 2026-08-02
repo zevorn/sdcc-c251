@@ -9,6 +9,10 @@ MCS51_SOURCE_INCLUDE = re.compile(
     r'^\s*#\s*include\s*["<][^">]*mcs51/[^">]*\.c[">]',
     re.MULTILINE,
 )
+TRANSITIONAL_TARGET_SELECTORS = (
+    "MCS251_PORT",
+    "TARGET_IS_MCS251",
+)
 
 
 def main():
@@ -23,6 +27,17 @@ def main():
         raise RuntimeError(
             f"{source} directly includes MCS51 implementation source: "
             f"{match.group(0).strip()}"
+        )
+
+    selectors = [
+        selector
+        for selector in TRANSITIONAL_TARGET_SELECTORS
+        if re.search(rf"\b{selector}\b", text)
+    ]
+    if selectors:
+        raise RuntimeError(
+            f"{source} still uses transitional target selectors: "
+            f"{', '.join(selectors)}"
         )
 
     print("PASS: MCS251 owns its port implementation source")
