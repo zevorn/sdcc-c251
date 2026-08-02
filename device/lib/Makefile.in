@@ -811,7 +811,8 @@ Makefile.dep: $(SOURCES) $(INCDIR)/*.h $(PORTINCDIR)/*.h
 	rm -f Makefile.dep
 	for i in $(filter %.c,$^); do \
 	  $(CPP) -std=c23 -M $(CPPFLAGS) $$i >$${i}.dep; \
-	  cat $${i}.dep >>Makefile.dep; \
+	  sed '1s|^\([^:]*\)\.o:|$$(PORT)/\1$$(OEXT):|' \
+	    $${i}.dep >>Makefile.dep; \
 	  rm $${i}.dep; \
 	done
 
