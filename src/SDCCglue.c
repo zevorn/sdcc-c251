@@ -1078,6 +1078,11 @@ printIvalStruct (symbol *sym, sym_link *type, initList *ilist, struct dbuf_s *oB
 
   sflds = SPEC_STRUCT (type)->fields;
 
+  /* GNU empty structs ("struct S { }", size 0) have no initialized
+   * members.  Bail out before any dereference of the (NULL) field list. */
+  if (sflds == NULL)
+    return;
+
   if (ilist)
     {
       if (ilist->type != INIT_DEEP)
