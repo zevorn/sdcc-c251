@@ -1,0 +1,81 @@
+name: Debug Unicode
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out SDCC
+        uses: actions/checkout@v6
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            bison build-essential flex libboost-dev libglib2.0-dev \
+            libpixman-1-dev libreadline-dev ninja-build pkg-config \
+            python3-venv texinfo zlib1g-dev
+
+      - name: Configure SDCC
+        run: |
+          mkdir sdcc-build
+          cd sdcc-build
+          CFLAGS=-std=gnu17 ../configure \
+            --enable-mcs251-port \
+            --disable-z80-port \
+            --disable-z180-port \
+            --disable-r2k-port \
+            --disable-r2ka-port \
+            --disable-r3ka-port \
+            --disable-r4k-port \
+            --disable-r5k-port \
+            --disable-r6k-port \
+            --disable-sm83-port \
+            --disable-tlcs90-port \
+            --disable-ez80-port \
+            --disable-z80n-port \
+            --disable-r800-port \
+            --disable-ds390-port \
+            --disable-ds400-port \
+            --disable-pic14-port \
+            --disable-pic16-port \
+            --disable-hc08-port \
+            --disable-s08-port \
+            --disable-stm8-port \
+            --disable-pdk13-port \
+            --disable-pdk14-port \
+            --disable-pdk15-port \
+            --disable-mos6502-port \
+            --disable-mos65c02-port \
+            --disable-f8-port \
+            --disable-f8l-port \
+            --disable-non-free \
+            --disable-sdcdb
+
+      - name: Build SDCC
+        run: make -C sdcc-build -j"$(nproc)"
+
+      - name: Reproduce failing compile and hexdump
+        run: |
+          set -x
+          env | grep -i -E "lang|lc_" || true
+          cd /tmp
+          /home/runner/work/sdcc-c251/sdcc-c251/sdcc-build/bin/sdcc \
+            -mmcs51 --std=c11 -c \
+            -o /tmp/gnuovf.rel \
+            /home/runner/work/sdcc-c251/sdcc-c251/src/mcs251/tests/gnu-typed-overflow-builtins.c \
+            > /tmp/out.txt 2>&1 || true
+          echo "=== output size ==="
+          wc -c /tmp/out.txt
+          echo "=== non-ascii bytes ==="
+          python3 -c "
+data = open('/tmp/out.txt','rb').read()
+for i, b in enumerate(data):
+    if b >= 0x80:
+        print(f'pos {i}: byte 0x{b:02x} context: {data[max(0,i-60):i+60]!r}')
+"
+          echo "=== first 2000 bytes hexdump ==="
+          head -c 2000 /tmp/out.txt | hexdump -C | head -60
