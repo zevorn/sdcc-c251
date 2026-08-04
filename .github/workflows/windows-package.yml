@@ -221,4 +221,10 @@ jobs:
           } else {
             ("SDCC MCS-251 (C251) port package for " + $tag) | Set-Content -Encoding utf8 $notesFile
           }
-          gh release create $tag $archive --repo $repo --title $tag --notes-file $notesFile
+          gh release view $tag --repo $repo | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            gh release edit $tag --repo $repo --title $tag --notes-file $notesFile
+            gh release upload $tag $archive --repo $repo --clobber
+          } else {
+            gh release create $tag $archive --repo $repo --title $tag --notes-file $notesFile
+          }
