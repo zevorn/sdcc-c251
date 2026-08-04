@@ -79,3 +79,5 @@ for i, b in enumerate(data):
 "
           echo "=== first 2000 bytes hexdump ==="
           head -c 2000 /tmp/out.txt | hexdump -C | head -60
+
+# debug
