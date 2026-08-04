@@ -153,6 +153,7 @@ GTE_SKIP_TESTS += \
 	pr29797-1.c \
 	pr45262.c \
 	pr66556.c \
+	pr67781.c \
 	vrp-5.c \
 	vrp-6.c
 
