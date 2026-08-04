@@ -91,6 +91,7 @@ def main():
     parser.add_argument("--mcs251-peep-source", required=True)
     parser.add_argument("--mcs251-rtrack-source", required=True)
     parser.add_argument("--mcs251-gen-source", required=True)
+    parser.add_argument("--mcs251-gen-lower-source", default=None)
     parser.add_argument("--mcs251-ralloc-source", required=True)
     parser.add_argument("--mcs51-source", required=True)
     parser.add_argument("--mcs51-peep-source", required=True)
@@ -144,6 +145,10 @@ def main():
 
     gen_source = Path(args.mcs251_gen_source)
     gen_text = check_mcs251_source(gen_source)
+    if args.mcs251_gen_lower_source:
+        gen_lower_source = Path(args.mcs251_gen_lower_source)
+        gen_lower_text = gen_lower_source.read_text(encoding="utf-8")
+        gen_text += "\n" + gen_lower_text
     check_bound_policy(gen_source, gen_text)
     missing_exports = [
         symbol

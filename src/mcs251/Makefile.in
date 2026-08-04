@@ -18,6 +18,7 @@ check: all
 		--mcs251-peep-source $(srcdir)/peep.c \
 		--mcs251-rtrack-source $(srcdir)/rtrack.c \
 		--mcs251-gen-source $(srcdir)/gen.c \
+		--mcs251-gen-lower-source $(srcdir)/gen_lower.c.inc \
 		--mcs251-ralloc-source $(srcdir)/ralloc.c \
 		--mcs51-source $(top_srcdir)/src/mcs51/main.c \
 		--mcs51-peep-source $(top_srcdir)/src/mcs51/peep.c \
