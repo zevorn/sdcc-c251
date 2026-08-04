@@ -6954,6 +6954,30 @@ typeofOp (ast *tree)
   sym_link *type = copyLinkChain (tree->ftype);
   sym_link *spec_type;
   for (spec_type = type; !IS_SPEC (spec_type); spec_type = spec_type->next);
+
+  /* An address-of expression over an automatic local gets its pointer
+     space from the storage class that allocLocal will assign, which has
+     not happened yet while a GNU/C23 auto declaration infers its type
+     from the initializer.  Mirror allocLocal's choice so the inferred
+     pointer space matches the final expression type (bug: tst_auto in
+     the MCS-51 medium/large/huge models). */
+  if (IS_ADDRESS_OF_OP (tree) && IS_AST_SYM_VALUE (tree->left))
+    {
+      symbol *sym = AST_SYMBOL (tree->left);
+      if (sym->level && !IS_STATIC (sym->etype) &&
+          !SPEC_OCLS (sym->etype) &&
+          !(options.stackAuto ||
+            (currFunc && IFFUNC_ISREENT (currFunc->type))))
+        {
+          memmap *localMap =
+            options.model == MODEL_SMALL
+              ? (options.noOverlay ? port->mem.default_local_map : overlay)
+              : port->mem.default_local_map;
+          if (localMap && localMap->ptrType)
+            DCL_TYPE (type) = localMap->ptrType;
+        }
+    }
+
   SPEC_SCLS (spec_type) = 0;
   SPEC_STAT (spec_type) = 0;
   SPEC_CONSTEXPR (spec_type) = 0;
