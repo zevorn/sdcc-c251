@@ -210,14 +210,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $repo = "${{ github.repository }}"
           $tag = "${{ github.ref_name }}"
-          $archive = Join-Path $env:GITHUB_WORKSPACE `
-            "sdcc-mcs251-windows-x64-${{ github.sha }}.zip"
-          $notes = & git tag -l --format="%(contents)" $tag
-          if ($LASTEXITCODE -ne 0) {
-            $notes = "SDCC MCS-251 (C251) port package for $tag"
+          $archive = "sdcc-mcs251-windows-x64-${{ github.sha }}.zip"
+          $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
+          $tagInfo = gh api ("repos/" + $repo + "/git/ref/tags/" + $tag) | ConvertFrom-Json
+          if ($tagInfo.object.type -eq "tag") {
+            $tagObject = gh api ("repos/" + $repo + "/git/tags/" + $tagInfo.object.sha) | ConvertFrom-Json
+            $tagObject.message | Set-Content -Encoding utf8 $notesFile
+          } else {
+            ("SDCC MCS-251 (C251) port package for " + $tag) | Set-Content -Encoding utf8 $notesFile
           }
-          gh release create $tag $archive `
-            --repo "${{ github.repository }}" `
-            --title $tag `
-            --notes $notes
+          gh release create $tag $archive --repo $repo --title $tag --notes-file $notesFile
