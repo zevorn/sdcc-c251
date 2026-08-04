@@ -25,7 +25,7 @@
     atomic changes after this source-level split is regression tested.
 */
 #include "common.h"
-#include "../mcs51/main.h"
+#include "main.h"
 #include "ralloc.h"
 #include "gen.h"
 #include "peep.h"
@@ -44,7 +44,7 @@ static char _defaultRules[] =
 #define OPTION_HUGE_MODEL           "--model-huge"
 #define OPTION_STACK_SIZE           "--stack-size"
 
-static OPTION _mcs51_options[] =
+static OPTION _mcs251_options[] =
   {
     { 0, OPTION_SMALL_MODEL, NULL, "internal data space is used (default)"},
     { 0, OPTION_MEDIUM_MODEL, NULL, "external paged data space is used"},
@@ -57,7 +57,7 @@ static OPTION _mcs51_options[] =
   };
 
 /* list of key words used by msc51 */
-static char *_mcs51_keywords[] =
+static char *_mcs251_keywords[] =
 {
   "at",
   "banked",
@@ -95,14 +95,14 @@ static struct sym_link *regParmFuncType;
 extern void mcs251_init_asmops (void);
 
 static void
-_mcs51_init (void)
+_mcs251_init (void)
 {
   asm_addTree (&asm_asxxxx_mapping);
   mcs251_init_asmops ();
 }
 
 static void
-_mcs51_reset_regparm (struct sym_link *funcType)
+_mcs251_reset_regparm (struct sym_link *funcType)
 {
   regParmFlg = 0;
   regBitParmFlg = 0;
@@ -110,7 +110,7 @@ _mcs51_reset_regparm (struct sym_link *funcType)
 }
 
 static int
-_mcs51_regparm (sym_link *l, bool reentrant)
+_mcs251_regparm (sym_link *l, bool reentrant)
 {
   ++regParmFlg;
 
@@ -141,7 +141,7 @@ _mcs51_regparm (sym_link *l, bool reentrant)
 }
 
 static bool
-_mcs51_parseOptions (int *pargc, char **argv, int *i)
+_mcs251_parseOptions (int *pargc, char **argv, int *i)
 {
   /* TODO: allow port-specific command line options to specify
    * segment names here.
@@ -150,7 +150,7 @@ _mcs51_parseOptions (int *pargc, char **argv, int *i)
 }
 
 static void
-_mcs51_finaliseOptions (void)
+_mcs251_finaliseOptions (void)
 {
   if (options.noXinitOpt)
     port->genXINIT=0;
@@ -188,7 +188,7 @@ _mcs51_finaliseOptions (void)
 }
 
 static void
-_mcs51_setDefaultOptions (void)
+_mcs251_setDefaultOptions (void)
 {
   /* MCS251 generic and far pointers share one flat address space.  Keep XSEG
      out of page-zero edata by default; 0x010000 is also the STC32G on-chip
@@ -200,7 +200,7 @@ _mcs51_setDefaultOptions (void)
 }
 
 static const char *
-_mcs51_getRegName (const struct reg_info *reg)
+_mcs251_getRegName (const struct reg_info *reg)
 {
   if (reg)
     return reg->name;
@@ -208,7 +208,7 @@ _mcs51_getRegName (const struct reg_info *reg)
 }
 
 static void
-_mcs51_genAssemblerStart (FILE * of)
+_mcs251_genAssemblerStart (FILE * of)
 {
   if (!options.noOptsdccInAsm)
     {
@@ -249,7 +249,7 @@ _mcs51_genAssemblerStart (FILE * of)
 
 /* Generate interrupt vector table. */
 static int
-_mcs51_genIVT (struct dbuf_s *oBuf, symbol **interrupts, int maxInterrupts)
+_mcs251_genIVT (struct dbuf_s *oBuf, symbol **interrupts, int maxInterrupts)
 {
   int i;
 
@@ -287,7 +287,7 @@ _mcs51_genIVT (struct dbuf_s *oBuf, symbol **interrupts, int maxInterrupts)
 }
 
 static void
-_mcs51_genExtraAreas(FILE *of, bool hasMain)
+_mcs251_genExtraAreas(FILE *of, bool hasMain)
 {
   tfprintf (of, "\t!area\n", HOME_NAME);
   tfprintf (of, "\t!area\n", "GSINIT0 (CODE)");
@@ -302,7 +302,7 @@ _mcs51_genExtraAreas(FILE *of, bool hasMain)
 }
 
 static void
-_mcs51_genInitStartup (FILE *of)
+_mcs251_genInitStartup (FILE *of)
 {
   tfprintf (of, "\t!global\n", "__sdcc_gsinit_startup");
   tfprintf (of, "\t!global\n", "__sdcc_program_startup");
@@ -326,7 +326,7 @@ _mcs51_genInitStartup (FILE *of)
 
 
 /* Generate code to copy XINIT to XISEG */
-static void _mcs51_genXINIT (FILE * of)
+static void _mcs251_genXINIT (FILE * of)
 {
   tfprintf (of, "\t!global\n", "__mcs51_genXINIT");
 
@@ -1110,7 +1110,7 @@ PORT mcs251_port =
     false,                      // Flat MCS251 generic pointers address edata/xdata/code, not the direct SFR window.
     1                           // No fancy alignments supported.
   },
-  { _mcs51_genExtraAreas, NULL },
+  { _mcs251_genExtraAreas, NULL },
   2,                            // SDCC MCS251 ABI revision
   {
     +1,         /* direction (+1 = stack grows up) */
@@ -1132,24 +1132,24 @@ PORT mcs251_port =
     6,          /* sizeofDispatch */
   },
   "_",
-  _mcs51_init,
-  _mcs51_parseOptions,
-  _mcs51_options,
+  _mcs251_init,
+  _mcs251_parseOptions,
+  _mcs251_options,
   NULL,
-  _mcs51_finaliseOptions,
-  _mcs51_setDefaultOptions,
+  _mcs251_finaliseOptions,
+  _mcs251_setDefaultOptions,
   mcs251_assignRegisters,
-  _mcs51_getRegName,
+  _mcs251_getRegName,
   0,
   _mcs251_rtrackUpdate,
-  _mcs51_keywords,
-  _mcs51_genAssemblerStart,
+  _mcs251_keywords,
+  _mcs251_genAssemblerStart,
   NULL,                         /* no genAssemblerEnd */
-  _mcs51_genIVT,
-  _mcs51_genXINIT,
-  _mcs51_genInitStartup,
-  _mcs51_reset_regparm,
-  _mcs51_regparm,
+  _mcs251_genIVT,
+  _mcs251_genXINIT,
+  _mcs251_genInitStartup,
+  _mcs251_reset_regparm,
+  _mcs251_regparm,
   NULL,                         /* process_pragma */
   NULL,                         /* getMangledFunctionName */
   _hasNativeMulFor,             /* hasNativeMulFor */

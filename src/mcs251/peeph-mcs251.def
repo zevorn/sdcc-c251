@@ -478,3 +478,237 @@ replace {
 	ejmp	%1
 	;
 } if optimizeReturn(), notSame(%1 '_longjmp'), labelRefCount(%2 0)
+
+// === MCS251 code-size optimizations ===
+
+// Eliminate redundant 24-bit dptr reload when dptr is preserved across
+// a simple arithmetic operation.  The generator materializes the full
+// 24-bit address before every @dpx access even when dptr was not touched.
+//
+// Pattern: read-modify-write with immediate add
+replace {
+	mov	dptr,#%1
+	mov	dpxl,#%2
+	mov	a,@dpx
+	add	a,#%3
+	mov	dptr,#%1
+	mov	dpxl,#%2
+	mov	@dpx,a
+} by {
+	mov	dptr,#%1
+	mov	dpxl,#%2
+	mov	a,@dpx
+	add	a,#%3
+	mov	@dpx,a
+}
+
+// Same for addc (high byte of 32-bit increment)
+replace {
+	mov	dptr,#%1
+	mov	dpxl,#%2
+	mov	a,@dpx
+	addc	a,#%3
+	mov	dptr,#%1
+	mov	dpxl,#%2
+	mov	@dpx,a
+} by {
+	mov	dptr,#%1
+	mov	dpxl,#%2
+	mov	a,@dpx
+	addc	a,#%3
+	mov	@dpx,a
+}
+
+// Redundant dptr reload in consecutive identical address loads
+replace {
+	mov	dptr,#%1
+	mov	dpxl,#%2
+	mov	dptr,#%1
+	mov	dpxl,#%2
+} by {
+	mov	dptr,#%1
+	mov	dpxl,#%2
+}
+
+// Merge consecutive inc spx,#4 into fewer larger increments.
+// The prologue expands stack allocation as a run of inc spx,#4
+// instructions.  An inc spx,#4 is 3 bytes; two of them (6 bytes)
+// can be replaced by inc spx,#4 + inc spx,#4... wait, we can't
+// make a single larger inc.  But we CAN eliminate inc/dec pairs
+// that cancel out.
+
+// Two inc spx,#4 can be written as one inc spx,#4 + inc spx,#4.
+// Since MCS251 has no inc spx,#8, this is already optimal.
+//
+// However, we CAN merge the epilogue dec chain with the prologue inc.
+// If a function's prologue has inc spx,#4; ...; inc spx,#4 and
+// epilogue has dec spx,#4; ...; dec spx,#4, the peephole can't
+// help because they're far apart.
+
+// What we CAN do: eliminate redundant push/pop of the same register
+// when they cancel out within a basic block.
+
+// Eliminate push acc; ... (no use of acc or stack); pop acc
+// This requires knowing that acc is not used between push and pop.
+// The peephole can only match exact sequences, so we target
+// the simplest case: push acc immediately followed by pop acc
+replace {
+	push	acc
+	pop	acc
+} by {
+	; peephole: removed redundant push/pop acc
+}
+
+// push arN followed immediately by pop arN
+replace {
+	push	ar0
+	pop	ar0
+} by {
+	; peephole: removed redundant push/pop ar0
+}
+
+replace {
+	push	ar1
+	pop	ar1
+} by {
+	; peephole: removed redundant push/pop ar1
+}
+
+replace {
+	push	ar2
+	pop	ar2
+} by {
+	; peephole: removed redundant push/pop ar2
+}
+
+replace {
+	push	ar3
+	pop	ar3
+} by {
+	; peephole: removed redundant push/pop ar3
+}
+
+replace {
+	push	ar4
+	pop	ar4
+} by {
+	; peephole: removed redundant push/pop ar4
+}
+
+replace {
+	push	ar5
+	pop	ar5
+} by {
+	; peephole: removed redundant push/pop ar5
+}
+
+replace {
+	push	ar6
+	pop	ar6
+} by {
+	; peephole: removed redundant push/pop ar6
+}
+
+replace {
+	push	ar7
+	pop	ar7
+} by {
+	; peephole: removed redundant push/pop ar7
+}
+
+// Store to XDATA followed by reload of the same 24-bit address
+// for another store.  The mov @dpx,a does not invalidate dptr.
+replace {
+	mov	dptr,#%1
+	mov	dpxl,#%2
+	mov	@dpx,a
+	mov	dptr,#%1
+	mov	dpxl,#%2
+} by {
+	mov	dptr,#%1
+	mov	dpxl,#%2
+	mov	@dpx,a
+	; dptr preserved, reuse for next access
+}
+
+
+// Merge byte-pair hardware-stack loads into native 16-bit WR loads.
+// The generator ships 16-bit stack operands through the accumulator one
+// byte at a time:  mov a,@spx-0xNNNN; mov r7,a; mov a,@spx-0x(NNNN+1);
+// mov r6,a  (10 bytes) becomes the native little-endian word load
+// mov wr6,@spx-0x(NNNN+1)  (4 bytes, 6 bytes saved).  inSequence() proves
+// the hex offsets are consecutive.  The byte order was verified against
+// QEMU: WRj loads Rj from the lower address and Rj+1 from the higher one,
+// which is exactly what the accumulator pair produced.
+replace {
+	mov	a,@spx-0x%1
+	mov	r7,a
+	mov	a,@spx-0x%2
+	mov	r6,a
+} by {
+	mov	wr6,@spx-0x%2
+} if inSequence('1' %1 %2)
+
+replace {
+	mov	a,@spx-0x%1
+	mov	r5,a
+	mov	a,@spx-0x%2
+	mov	r4,a
+} by {
+	mov	wr4,@spx-0x%2
+} if inSequence('1' %1 %2)
+
+replace {
+	mov	a,@spx-0x%1
+	mov	r3,a
+	mov	a,@spx-0x%2
+	mov	r2,a
+} by {
+	mov	wr2,@spx-0x%2
+} if inSequence('1' %1 %2)
+
+replace {
+	mov	a,@spx-0x%1
+	mov	r1,a
+	mov	a,@spx-0x%2
+	mov	r0,a
+} by {
+	mov	wr0,@spx-0x%2
+} if inSequence('1' %1 %2)
+
+// Merge byte-pair hardware-stack stores into native 16-bit WR stores.
+replace {
+	mov	a,r7
+	mov	@spx-0x%1,a
+	mov	a,r6
+	mov	@spx-0x%2,a
+} by {
+	mov	@spx-0x%2,wr6
+} if inSequence('1' %1 %2)
+
+replace {
+	mov	a,r5
+	mov	@spx-0x%1,a
+	mov	a,r4
+	mov	@spx-0x%2,a
+} by {
+	mov	@spx-0x%2,wr4
+} if inSequence('1' %1 %2)
+
+replace {
+	mov	a,r3
+	mov	@spx-0x%1,a
+	mov	a,r2
+	mov	@spx-0x%2,a
+} by {
+	mov	@spx-0x%2,wr2
+} if inSequence('1' %1 %2)
+
+replace {
+	mov	a,r1
+	mov	@spx-0x%1,a
+	mov	a,r0
+	mov	@spx-0x%2,a
+} by {
+	mov	@spx-0x%2,wr0
+} if inSequence('1' %1 %2)
