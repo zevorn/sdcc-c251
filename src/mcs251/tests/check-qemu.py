@@ -384,7 +384,8 @@ def main():
             run([
                 str(sdcc), "-mmcs251", "--std=gnu17", *model_flags,
                 "--no-xinit-opt", *board_link_flags,
-                f"-L{bit_library_dir}", "-o", str(byte_swap_image),
+                f"-I{device_include}", f"-L{bit_library_dir}",
+                "-o", str(byte_swap_image),
                 str(byte_swap_builtins_source),
             ], env=env)
             sys.stdout.buffer.write(run_qemu(
