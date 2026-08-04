@@ -6,6 +6,8 @@ import re
 import subprocess
 import tempfile
 
+DEVICE_INCLUDE = None
+
 
 def compile_source(
     sdcc,
@@ -25,6 +27,8 @@ def compile_source(
     if mode:
         command.append(f"--std={mode}")
     command.extend(extra_options)
+    if DEVICE_INCLUDE:
+        command.extend([f"-I{DEVICE_INCLUDE}"])
     command.extend(["-c", "-o", str(object_file), str(source)])
 
     result = subprocess.run(
@@ -170,6 +174,7 @@ def check_constant_p_side_effects(sdcc, source, port, mode, workspace):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sdcc", required=True)
+    parser.add_argument("--device-include", default=None)
     parser.add_argument("--empty-aggregate-source", required=True)
     parser.add_argument("--keyword-alias-source", required=True)
     parser.add_argument("--attribute-source", required=True)
@@ -203,6 +208,10 @@ def main():
     parser.add_argument("--case-range-source", required=True)
     parser.add_argument("--extension-source", required=True)
     args = parser.parse_args()
+
+    global DEVICE_INCLUDE
+    if args.device_include:
+        DEVICE_INCLUDE = str(Path(args.device_include).resolve())
 
     sdcc = Path(args.sdcc).resolve()
     empty_aggregate_source = Path(args.empty_aggregate_source).resolve()

@@ -39,6 +39,7 @@ check: all
 		--source $(srcdir)/tests/compound-literal-argument.c
 	$(PYTHON) $(srcdir)/tests/check-gnu-extensions.py \
 		--sdcc $(top_builddir)/bin/sdcc \
+		--device-include $(top_srcdir)/device/include \
 		--empty-aggregate-source \
 			$(srcdir)/tests/gnu-empty-aggregate.c \
 		--keyword-alias-source \
