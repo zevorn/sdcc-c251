@@ -14,6 +14,7 @@ def run(command):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        errors="replace",
     )
     if completed.returncode:
         raise AssertionError(

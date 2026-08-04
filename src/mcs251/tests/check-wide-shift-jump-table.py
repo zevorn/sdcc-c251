@@ -26,6 +26,7 @@ def compile_source(sdcc, source, port, output, extra_flags=(), assemble=False):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        errors="replace",
     )
     if completed.returncode:
         raise AssertionError(

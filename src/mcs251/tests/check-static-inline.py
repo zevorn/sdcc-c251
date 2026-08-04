@@ -25,6 +25,7 @@ def check_port(sdcc, source, port, extra_options, workspace):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        errors="replace",
         check=False,
     )
     if result.returncode or not assembly.is_file():

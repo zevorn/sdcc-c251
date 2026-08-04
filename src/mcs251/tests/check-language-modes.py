@@ -30,6 +30,7 @@ def check_mode(
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        errors="replace",
         check=False,
     )
     has_error = re.search(r"(?:^|\s)error(?:\s+[0-9]+)?:", result.stdout)

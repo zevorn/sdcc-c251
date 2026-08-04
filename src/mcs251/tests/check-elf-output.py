@@ -50,11 +50,11 @@ def main():
         subprocess.run(
             [args.sdcc, "-mmcs251", "--stack-auto", "--model-small",
              "-c", "-o", rel, args.source],
-            check=True, capture_output=True, text=True)
+            check=True, capture_output=True, text=True, errors="replace")
         subprocess.run(
             [args.sdcc, "-mmcs251", "--stack-auto", "--model-small",
              "--out-fmt-elf", "-o", elf, rel],
-            check=True, capture_output=True, text=True)
+            check=True, capture_output=True, text=True, errors="replace")
 
         with open(elf, "rb") as fp:
             loaded = ELFFile(fp)

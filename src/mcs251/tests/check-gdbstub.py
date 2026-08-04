@@ -120,7 +120,7 @@ def resolve_machine(qemu, requested):
     result = subprocess.run(
         [str(qemu), "-machine", "help"],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        text=True, check=False,
+        text=True, errors="replace", check=False,
     )
     available = {
         line.split()[0] for line in result.stdout.splitlines() if line.strip()

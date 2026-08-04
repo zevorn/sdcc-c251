@@ -25,6 +25,7 @@ def run(command):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        errors="replace",
         check=False,
     )
     if result.returncode:

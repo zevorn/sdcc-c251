@@ -32,6 +32,7 @@ def compile_source(
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        errors="replace",
         check=False,
     )
     has_error = re.search(r"(?:^|\s)error(?:\s+[0-9]+)?:", result.stdout)
@@ -78,6 +79,7 @@ def check_expect_hints(sdcc, source, port, mode, workspace):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        errors="replace",
         check=False,
     )
     dump_file = dump_dir / f"{source.stem}.dumpraw0"
@@ -132,6 +134,7 @@ def check_constant_p_side_effects(sdcc, source, port, mode, workspace):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        errors="replace",
         check=False,
     )
     dump_file = dump_dir / f"{source.stem}.dumpraw0"

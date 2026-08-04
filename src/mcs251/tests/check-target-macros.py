@@ -199,6 +199,7 @@ def read_macros(sdcc, device_include, source, port, mode, options=()):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        errors="replace",
         check=False,
     )
     if result.returncode:
@@ -335,6 +336,7 @@ def check_macro_semantics(sdcc, device_include, source, port):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        errors="replace",
         check=False,
     )
     if result.returncode:
@@ -379,6 +381,7 @@ def check_size_t_headers(sdcc, device_include, source, port):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            errors="replace",
             check=False,
         )
         if result.returncode:
