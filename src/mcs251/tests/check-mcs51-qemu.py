@@ -37,6 +37,7 @@ def build(
 
     run([
         str(sdcc), "-mmcs51", *extra_flags,
+        f"-I{device_include}", f"-I{device_include / 'mcs51'}",
         "-S", "-o", str(assembly), str(source),
     ], env=env)
     run([
