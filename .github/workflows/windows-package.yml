@@ -4,13 +4,15 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: windows-package-${{ github.workflow }}-${{ github.ref }}
@@ -29,6 +31,9 @@ jobs:
 
       - name: Check out SDCC
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Set up MSYS2 UCRT64
         uses: msys2/setup-msys2@v2
@@ -198,3 +203,21 @@ jobs:
           path: sdcc-mcs251-windows-x64-${{ github.sha }}.zip
           archive: false
           retention-days: 30
+
+      - name: Publish GitHub Release for tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $archive = Join-Path $env:GITHUB_WORKSPACE `
+            "sdcc-mcs251-windows-x64-${{ github.sha }}.zip"
+          $notes = & git tag -l --format="%(contents)" $tag
+          if ($LASTEXITCODE -ne 0) {
+            $notes = "SDCC MCS-251 (C251) port package for $tag"
+          }
+          gh release create $tag $archive `
+            --repo "${{ github.repository }}" `
+            --title $tag `
+            --notes $notes
