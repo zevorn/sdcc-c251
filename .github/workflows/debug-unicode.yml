@@ -71,13 +71,11 @@ jobs:
           echo "=== output size ==="
           wc -c /tmp/out.txt
           echo "=== non-ascii bytes ==="
-          python3 -c "
-data = open('/tmp/out.txt','rb').read()
-for i, b in enumerate(data):
-    if b >= 0x80:
-        print(f'pos {i}: byte 0x{b:02x} context: {data[max(0,i-60):i+60]!r}')
-"
+          python3 <<'PYEOF'
+          data = open('/tmp/out.txt','rb').read()
+          for i, b in enumerate(data):
+              if b >= 0x80:
+                  print('pos %d: byte 0x%02x context: %r' % (i, b, data[max(0,i-60):i+60]))
+          PYEOF
           echo "=== first 2000 bytes hexdump ==="
           head -c 2000 /tmp/out.txt | hexdump -C | head -60
-
-# debug
