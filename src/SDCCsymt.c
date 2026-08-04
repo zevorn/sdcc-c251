@@ -1905,13 +1905,13 @@ compStructSize (int su, structdef * sdef)
                   bitfield_max = port->s.long_size * 8;
                 else
                   bitfield_max = port->s.int_size * 8;
-                if (loop->bitVar > bitfield_max)
+                if (loop->bitVar > (int) bitfield_max)
                   werror (E_BITFLD_SIZE, bitfield_max);
               }
               break;
             case V_BITINT:
               SPEC_NOUN (loop->etype) = V_BITINTBITFIELD;
-              if (loop->bitVar > SPEC_BITINTWIDTH (loop->etype))
+              if (loop->bitVar > (int) SPEC_BITINTWIDTH (loop->etype))
                 werror (E_BITFLD_SIZE , SPEC_BITINTWIDTH (loop->etype));
               break;
             default:
