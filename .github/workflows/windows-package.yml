@@ -34,6 +34,7 @@ jobs:
           sudo apt-get install --no-install-recommends -y \
             fonts-dejavu-core \
             fonts-noto-cjk \
+            fonts-texgyre \
             lmodern \
             pandoc \
             texlive-lang-chinese \
