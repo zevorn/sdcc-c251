@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDCC MCS-251 (C251) 移植版</title>
+<meta name="description" content="SDCC 编译器 MCS-251 (Intel/STC 8 位增强型 MCU) 移植版：特性、更新记录与下载">
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg2: #1e293b;
+    --fg: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent2: #818cf8;
+    --ok: #4ade80;
+    --border: #334155;
+    --card: #1e293b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.7;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  header {
+    background: linear-gradient(135deg, #0c4a6e 0%, #1e3a8a 55%, #312e81 100%);
+    padding: 72px 0 64px;
+    text-align: center;
+  }
+  header h1 { font-size: 2.4rem; letter-spacing: .5px; }
+  header .sub { color: #bae6fd; margin-top: 10px; font-size: 1.1rem; }
+  header .tag {
+    display: inline-block; margin-top: 18px; padding: 6px 16px;
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+    border-radius: 999px; color: #e0f2fe; font-size: .9rem;
+  }
+  .badges { margin-top: 22px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .badges a {
+    color: #fff; text-decoration: none; font-size: .92rem;
+    padding: 9px 20px; border-radius: 8px; background: var(--accent);
+    transition: filter .15s;
+  }
+  .badges a.gh { background: #334155; }
+  .badges a:hover { filter: brightness(1.15); }
+
+  /* Sections */
+  section { padding: 48px 0; border-bottom: 1px solid var(--border); }
+  section h2 {
+    font-size: 1.5rem; margin-bottom: 22px; color: var(--accent);
+    display: flex; align-items: center; gap: 10px;
+  }
+  section h2::before {
+    content: ""; width: 6px; height: 24px; border-radius: 3px;
+    background: linear-gradient(var(--accent), var(--accent2));
+  }
+  section.alt { background: var(--bg2); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px;
+  }
+  .card h3 { font-size: 1.05rem; color: var(--accent); margin-bottom: 8px; }
+  .card p, .card li { font-size: .92rem; color: var(--muted); }
+  .card ul { padding-left: 18px; }
+  .card li { margin: 4px 0; }
+
+  /* Changelog */
+  .release {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 22px 24px; margin-bottom: 18px;
+  }
+  .release .ver {
+    font-size: 1.2rem; font-weight: 600; color: var(--fg);
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .release .ver .date { font-size: .85rem; color: var(--muted); font-weight: 400; }
+  .release .ver .pill {
+    font-size: .72rem; padding: 2px 10px; border-radius: 999px;
+    background: rgba(74,222,128,.15); color: var(--ok);
+    border: 1px solid rgba(74,222,128,.35);
+  }
+  .release ul { margin: 12px 0 0 20px; color: var(--muted); font-size: .93rem; }
+  .release ul li { margin: 4px 0; }
+  .release ul ul { margin-top: 2px; }
+  .release a.dl {
+    display: inline-block; margin-top: 14px; padding: 7px 18px;
+    background: var(--accent); color: #fff; text-decoration: none;
+    border-radius: 8px; font-size: .88rem;
+  }
+  .release a.dl:hover { filter: brightness(1.15); }
+
+  /* Download table */
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--accent); font-weight: 600; }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+
+  /* Docs */
+  .docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .docs a {
+    display: block; padding: 14px 18px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px; color: var(--fg);
+    text-decoration: none; font-size: .95rem;
+  }
+  .docs a small { display: block; color: var(--muted); font-size: .8rem; margin-top: 4px; }
+  .docs a:hover { border-color: var(--accent); }
+
+  footer { padding: 36px 0; text-align: center; color: var(--muted); font-size: .85rem; }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 640px) {
+    header { padding: 48px 0 40px; }
+    header h1 { font-size: 1.7rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>SDCC MCS-251 (C251) 移植版</h1>
+    <div class="sub">面向 Intel/STC MCS-251 增强型 8 位 MCU 的 SDCC 编译器移植</div>
+    <div class="tag">基于上游 SDCC 4.6.0 · v4.6.0-mcs251-20260804</div>
+    <div class="badges">
+      <a href="https://github.com/zevorn/sdcc-c251/releases/latest">⬇ 下载 Windows 包</a>
+      <a class="gh" href="https://github.com/zevorn/sdcc-c251">GitHub 仓库</a>
+      <a class="gh" href="https://github.com/zevorn/sdcc-c251/releases">全部 Release</a>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>简介</h2>
+    <p style="color:var(--muted)">
+      SDCC（Small Device C Compiler）的 <strong>MCS-251</strong> 目标移植版，支持
+      Intel 80C251 及国产 <strong>STC32G</strong> 系列芯片（如 STC32G144K246，246 KB
+      Flash / 144 KB RAM），并提供 QEMU 模拟器支持。在完整保留 MCS-51 目标的同时，
+      新增 24 位寻址、原生字/双字指令与独立后端。
+    </p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <h2>主要特性</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>目标支持</h3>
+        <ul>
+          <li>MCS-251 全新目标后端（24 位地址空间）</li>
+          <li>STC32G144K246 芯片 + QEMU 模拟器</li>
+          <li>MCS-251 指令集：字节扩展、MOVH、原生字/双字运算</li>
+          <li>独立汇编器 sdas251 / 链接器 / ELF32 输出</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>代码生成</h3>
+        <ul>
+          <li>R0-R15 固定寄存器分配（字节/字/双字元组）</li>
+          <li>专用寄存器追踪与窥孔优化</li>
+          <li>DPTR 24 位地址缓存，消除冗余重载</li>
+          <li>WR 寄存器合并（栈操作数 10→4 字节）</li>
+          <li>原生 MUL 与双字加/减法</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>GNU C 扩展</h3>
+        <ul>
+          <li>C11/C17 语言模式与 GNU 方言</li>
+          <li>语句表达式、case 范围、__attribute__</li>
+          <li>__typeof__ / __auto_type</li>
+          <li>__builtin_expect / bswap / overflow 等内建函数</li>
+          <li>位运算内建（popcount/clz/ctz/ffs）</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>ABI 与生态</h3>
+        <ul>
+          <li>原生大端 MCS-251 ABI，32 位 size_t</li>
+          <li>GNU 兼容预处理器数据模型宏</li>
+          <li>Zephyr RTOS 可在 STC32G 上编译运行</li>
+          <li>MCS-51 回归套件全绿（4 种模型 × stack-auto）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>更新记录</h2>
+
+    <div class="release">
+      <div class="ver">v4.6.0-mcs251-20260804 <span class="date">2026-08-04</span> <span class="pill">最新</span></div>
+      <ul>
+        <li>目标支持：MCS-251 后端、STC32G144K246、QEMU 模拟器、ELF32 链接输出</li>
+        <li>代码生成：独立后端（gen.c + gen_lower.c.inc）、固定寄存器分配、DPTR 缓存、WR 合并、窥孔规则 480→714 行（+18 条）</li>
+        <li>ABI：原生大端、32 位 size_t、GNU 兼容数据模型宏</li>
+        <li>GNU C：C11/C17、语句表达式、属性、typeof/auto_type、overflow/bswap/bit 内建</li>
+        <li>修复：零宽位域误报（unsigned 比较陷阱）、auto 指针空间推断（medium/large/huge）、CI 全套基础设施修复</li>
+        <li>CI：MCS-51 系列全绿（编译器检查 + 完整回归 + QEMU 运行时测试）</li>
+        <li>Zephyr：hello_world 在 STC32G 上运行，Flash 占用约 114 KB / 246 KB</li>
+        <li>文档：ABI 规范、指令覆盖、Zephyr/GNU 兼容性、中文用户手册（PDF/HTML 随包发布）</li>
+      </ul>
+      <a class="dl" href="https://github.com/zevorn/sdcc-c251/releases/download/v4.6.0-mcs251-20260804/sdcc-mcs251-windows-x64-b09075b6a93e6afe10645181e3aeff041ea37f87.zip">⬇ 下载 Windows x64 包（27.9 MB）</a>
+    </div>
+
+    <div class="release">
+      <div class="ver">开发基线 <span class="date">2026-08-02 之前</span></div>
+      <ul>
+        <li>MCS-251 目标配置、汇编器/链接器支持、指令编码测试</li>
+        <li>MCS-251 代码生成、内存模型头文件、运行时库</li>
+        <li>QEMU 回归端口、外设测试、ABI 文档</li>
+        <li>中文 SDCC 用户手册（13 章，含 MCS-251 专章）</li>
+        <li>GNU C11/C17 语言模式、空聚合体、属性语法、64 位整数支持</li>
+        <li>MCS-251 CI（MCS-51 系列）、Windows 二进制包 CI</li>
+        <li>原生大端 ABI、MCS-251 寄存器元组、dword 加/减法</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <h2>文档</h2>
+    <div class="docs">
+      <a href="https://github.com/zevorn/sdcc-c251/blob/main/doc/mcs251/abi.md">MCS-251 ABI 规范<small>原生大端 ABI、寄存器元组、调用约定</small></a>
+      <a href="https://github.com/zevorn/sdcc-c251/blob/main/doc/mcs251/instruction-set.md">指令覆盖说明<small>MCS-251 指令集与编译器支持矩阵</small></a>
+      <a href="https://github.com/zevorn/sdcc-c251/blob/main/doc/mcs251/zephyr-gnu-compatibility.md">GNU C / Zephyr 兼容性<small>语言模式与 Zephyr 工具链状态</small></a>
+      <a href="https://github.com/zevorn/sdcc-c251/blob/main/doc/mcs251/debugging.md">调试指南<small>GDB stub 与 QEMU 调试</small></a>
+      <a href="https://github.com/zevorn/sdcc-c251/blob/main/doc/zh-CN/README.md">中文用户手册<small>SDCC 编译器用户指南（简体中文，13 章）</small></a>
+      <a href="https://github.com/zevorn/sdcc-c251/blob/main/README.md">仓库 README<small>构建、测试与 Windows 本地打包指南</small></a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>快速上手</h2>
+    <table>
+      <tr><th>用途</th><th>命令</th></tr>
+      <tr><td>编译（大模型）</td><td><code>sdcc -mmcs251 --model-large -o app.ihx app.c</code></td></tr>
+      <tr><td>编译（小模型）</td><td><code>sdcc -mmcs251 --model-small -o app.ihx app.c</code></td></tr>
+      <tr><td>QEMU 运行</td><td><code>qemu-system-mcs251 -M stc32g144k246 -device loader,file=app.ihx -nographic</code></td></tr>
+      <tr><td>Zephyr 构建</td><td><code>west build -b stc32g144k246 ... (--model-large)</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>基于 <a href="https://sdcc.sourceforge.net/">SDCC</a> 上游 4.6.0 构建 ·
+      源码：<a href="https://github.com/zevorn/sdcc-c251">github.com/zevorn/sdcc-c251</a></p>
+    <p style="margin-top:6px">SDCC © 其贡献者 · MCS-251 移植为独立维护分支</p>
+  </div>
+</footer>
+
+</body>
+</html>
