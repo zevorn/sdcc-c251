@@ -19,10 +19,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  docs:
+    name: Build Chinese manual
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+
+      - name: Install documentation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            fonts-dejavu-core \
+            fonts-noto-cjk \
+            pandoc \
+            texlive-lang-chinese \
+            texlive-latex-extra \
+            texlive-xetex
+
+      - name: Build Chinese manual
+        run: make -C doc/zh-CN check all
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: sdcc-manual-zh-CN
+          path: |
+            doc/zh-CN/build/sdccman-zh-CN.pdf
+            doc/zh-CN/build/sdccman-zh-CN.html
+          if-no-files-found: error
+
   windows-package:
     name: Build and verify Windows x64 package
     runs-on: windows-latest
     timeout-minutes: 90
+    needs: docs
 
     steps:
       - name: Preserve repository line endings
@@ -188,6 +221,19 @@ jobs:
               throw "the packaged compiler failed to build $($build.Name)"
             }
           }
+
+      - name: Download Chinese manual
+        uses: actions/download-artifact@v5
+        with:
+          name: sdcc-manual-zh-CN
+          path: doc/zh-CN/build
+
+      - name: Bundle MCS251 documentation
+        shell: msys2 {0}
+        run: |
+          mkdir -p windows-package/sdcc-mcs251/doc
+          cp -a doc/mcs251 windows-package/sdcc-mcs251/doc/mcs251
+          cp -a doc/zh-CN windows-package/sdcc-mcs251/doc/zh-CN
 
       - name: Create Windows ZIP package
         shell: pwsh
